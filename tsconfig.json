@@ -1,0 +1,39 @@
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "declaration": true,
+    "removeComments": true,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "allowSyntheticDefaultImports": true,
+    "target": "ES2023",
+    "sourceMap": true,
+    "outDir": "./dist",
+    "baseUrl": "./",
+    "incremental": true,
+    "skipLibCheck": true,
+    "strictNullChecks": true,
+    "forceConsistentCasingInFileNames": true,
+    "noImplicitAny": false,
+    "strictBindCallApply": false,
+    "noFallthroughCasesInSwitch": false,
+    "paths": {
+      "@config": ["src/config"],
+      "@modules/*": ["src/modules/*"],
+      "@types": ["src/types"],
+      "@filter": ["src/common/filter"],
+      "@pipe": ["src/common/pipe"],
+      "@enum": ["src/types/enum"],
+      "@interceptor": ["src/common/interceptor"],
+      "@constant": ["src/constant"],
+      "@middleware": ["src/common/middleware"],
+      "@guard": ["src/common/guard"],
+      "@shared/*": ["src/shared/*"],
+      "@log": ["src/common/log"],
+      "@decorators": ["src/decorators"],
+      "@transform": ["src/common/transform"],
+      "@utils": ["src/utils"],
+      "@test": ["test"]
+    }
+  }
+}
