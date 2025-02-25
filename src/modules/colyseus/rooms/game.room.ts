@@ -1,5 +1,5 @@
-import { Room, Client } from 'colyseus';
-import { Schema, type } from '@colyseus/schema';
+import { MapSchema, Schema, type } from '@colyseus/schema';
+import { Client, Room } from 'colyseus';
 
 class Player extends Schema {
   @type('string') id: string = '';
@@ -8,7 +8,16 @@ class Player extends Schema {
 }
 
 class GameState extends Schema {
-  @type({ map: Player }) players = new Map<string, Player>();
+  @type({ map: Player }) players = new MapSchema<Player>();
+  createPlayer(sessionId: string) {
+    this.players.set(
+      sessionId,
+      new Player().assign({
+        x: 0,
+        y: 0,
+      }),
+    );
+  }
 }
 
 export class GameRoom extends Room<GameState> {
@@ -69,7 +78,14 @@ export class GameRoom extends Room<GameState> {
   onJoin(client: Client) {
     const player = new Player();
     player.id = client.sessionId;
-    this.state.players.set(client.sessionId, player);
+    this.state.createPlayer(client.sessionId);
+
+    this.state.players.onAdd((player, sessionId) => {
+      console.log(
+        `👤 New player added: ${sessionId} at (${player.x}, ${player.y})`,
+      );
+    });
+
     console.log(`Player ${client.sessionId} joined`);
   }
 
