@@ -2,22 +2,24 @@ import { MapSchema, Schema, type } from '@colyseus/schema';
 import { Client, Room } from 'colyseus';
 
 class Player extends Schema {
-  @type('string') id: string = '';
-  @type('number') x: number = 0;
-  @type('number') y: number = 0;
+  @type("string", { manual: false }) id: string = "";
+  @type("number", { manual: false }) x: number = 0;
+  @type("number", { manual: false }) y: number = 0;
 }
 
 class GameState extends Schema {
-  @type({ map: Player }) players = new MapSchema<Player>();
-  createPlayer(sessionId: string) {
-    this.players.set(
-      sessionId,
-      new Player().assign({
-        x: 0,
-        y: 0,
-      }),
-    );
-  }
+  @type({ map: Player }) players = new Map<string, Player>();
+  // createPlayer(id: string) {
+  //   console.log("create new player: " + id );
+  //   this.players.set(
+  //     id,
+  //     new Player().assign({
+  //       id,
+  //       x: 0,
+  //       y: 0
+  //     }),
+  //   );
+  // }
 }
 
 export class GameRoom extends Room<GameState> {
@@ -25,7 +27,7 @@ export class GameRoom extends Room<GameState> {
 
   onCreate() {
     this.setState(new GameState());
-
+    
     this.onMessage('move', (client, message) => {
       console.log(`Received move from ${client.sessionId}:`, message);
       const player = this.state.players.get(client.sessionId);
@@ -78,15 +80,15 @@ export class GameRoom extends Room<GameState> {
   onJoin(client: Client) {
     const player = new Player();
     player.id = client.sessionId;
-    this.state.createPlayer(client.sessionId);
-
-    this.state.players.onAdd((player, sessionId) => {
-      console.log(
-        `👤 New player added: ${sessionId} at (${player.x}, ${player.y})`,
-      );
-    });
-
-    console.log(`Player ${client.sessionId} joined`);
+    player.x = 0;
+    player.y = 0;
+    // this.state.createPlayer(client.sessionId);
+    this.state.players.set(client.sessionId, player);
+    console.log(`Player ${client.sessionId} joined`, player);
+    // console.log("Player added:", this.state.players);
+    setTimeout(() => {
+      console.log(this.state.toJSON())
+    }, 1000);
   }
 
   onLeave(client: Client) {

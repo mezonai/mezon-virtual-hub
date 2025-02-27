@@ -13,7 +13,7 @@ export class ColyseusModule implements OnModuleInit, OnModuleDestroy {
     const httpServer = createServer();
     this.gameServer = new Server({ server: httpServer });
 
-    this.gameServer.define('game_room', GameRoom);
+    this.gameServer.define('my_room', GameRoom);
 
     this.gameServer.listen(3001);
     console.log('Colyseus WebSocket server running on ws://localhost:3001');
