@@ -1,20 +1,76 @@
-# Introduction 
-TODO: Give a short introduction of your project. Let this section explain the objectives or the motivation behind this project. 
+# Mezon Virtual Hub BE
 
-# Getting Started
-TODO: Guide users through getting your code up and running on their own system. In this section you can talk about:
-1.	Installation process
-2.	Software dependencies
-3.	Latest releases
-4.	API references
+## Prerequisites
+- Docker installed
 
-# Build and Test
-TODO: Describe and show how to build your code and run the tests. 
+## Installation
+1. Clone the repository:
+    ```sh
+    git clone https://ops.nccsoft.vn/DefaultCollection/MezonVirtualHub/_git/MezonVirtualHub_BE
+    ```
+2. Navigate to the project directory:
+    ```sh
+    cd MezoneVirtualHub_BE
+    ```
+3. Create .env file: (sample in .env.sample)
 
-# Contribute
-TODO: Explain how other users and developers can contribute to make your code better. 
+## Usage (Manual)
+1. Install node version 22.
+2. Install postgres server local.
+3. Create .env file for each folder (frontend and backend, follow the sample in .env.sample)
+4. Run `yarn`
+5. Change workdir to the directory you wanna run and run `yarn dev`
 
-If you want to learn more about creating good readme files then refer the following [guidelines](https://docs.microsoft.com/en-us/azure/devops/repos/git/create-a-readme?view=azure-devops). You can also seek inspiration from the below readme files:
-- [ASP.NET Core](https://github.com/aspnet/Home)
-- [Visual Studio Code](https://github.com/Microsoft/vscode)
-- [Chakra Core](https://github.com/Microsoft/ChakraCore)
+## Usage (Docker)
+### Development mode
+1. Start the development server:
+
+    **If you're using docker-compose:**
+
+    ```sh
+    docker-up.sh --build --debug
+    ```
+
+    **If you're using docker core (`docker compose`):**
+
+    ```sh
+    docker-up.sh --build --debug --core
+    ```
+
+2. Open your browser and go to `http://localhost:8123` (backend).
+
+### Production mode
+1. Start the production server:
+
+    **If you're using docker-compose:**
+
+    ```sh
+    docker-up.sh --build
+    ```
+
+    **If you're using docker core (`docker compose`):**
+
+    ```sh
+    docker-up.sh --build --core
+    ```
+
+2. Open your browser and go to `http://localhost:8778` (backend).
+
+## Contributing
+1. Fork the repository.
+2. Create a new branch:
+    ```sh
+    git checkout -b feature-branch
+    ```
+3. Make your changes and commit them:
+    ```sh
+    git commit -m "Description of changes"
+    ```
+4. Push to the branch:
+    ```sh
+    git push origin feature-branch
+    ```
+5. Open a pull request.
+
+## License
+This project is licensed under the [MIT](LICENSE) License.

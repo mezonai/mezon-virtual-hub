@@ -1,22 +1,27 @@
 import { Module, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { Server } from 'colyseus';
-import { createServer } from 'http';
 import { GameRoom } from './rooms/game.room';
+import { Inject } from '@nestjs/common';
+import { NestApplication } from '@nestjs/core';
 
 @Module({
   providers: [],
+  imports: [NestApplication],
 })
 export class ColyseusModule implements OnModuleInit, OnModuleDestroy {
   private gameServer: Server;
 
+  constructor(@Inject(NestApplication) private readonly app: NestApplication) {}
+
   onModuleInit() {
-    const httpServer = createServer();
+    const httpServer = this.app.getHttpServer();
+
     this.gameServer = new Server({ server: httpServer });
 
     this.gameServer.define('game_room', GameRoom);
 
-    this.gameServer.listen(3001);
-    console.log('Colyseus WebSocket server running on ws://localhost:3001');
+    this.gameServer.listen(8001);
+    console.log('Colyseus WebSocket server running on ws://localhost:8001');
   }
 
   onModuleDestroy() {
