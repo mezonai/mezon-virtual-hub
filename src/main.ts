@@ -9,8 +9,6 @@ import { GameRoom } from '@modules/colyseus/rooms/game.room';
 import { WebSocketTransport } from '@colyseus/ws-transport';
 
 async function bootstrap() {
-  console.log(config());
-
   const app = await NestFactory.create(AppModule);
   app.setGlobalPrefix('api');
   app.enableCors();
