@@ -1,25 +1,14 @@
-import { MapSchema, Schema, type } from '@colyseus/schema';
+import { Schema, type } from '@colyseus/schema';
 import { Client, Room } from 'colyseus';
 
 class Player extends Schema {
-  @type("string", { manual: false }) id: string = "";
-  @type("number", { manual: false }) x: number = 0;
-  @type("number", { manual: false }) y: number = 0;
+  @type("string") id: string = "";
+  @type("number") x: number = 0;
+  @type("number") y: number = 0;
 }
 
 class GameState extends Schema {
   @type({ map: Player }) players = new Map<string, Player>();
-  // createPlayer(id: string) {
-  //   console.log("create new player: " + id );
-  //   this.players.set(
-  //     id,
-  //     new Player().assign({
-  //       id,
-  //       x: 0,
-  //       y: 0
-  //     }),
-  //   );
-  // }
 }
 
 export class GameRoom extends Room<GameState> {
@@ -27,28 +16,24 @@ export class GameRoom extends Room<GameState> {
 
   onCreate() {
     this.setState(new GameState());
-    
+
     this.onMessage('move', (client, message) => {
-      console.log(`Received move from ${client.sessionId}:`, message);
       const player = this.state.players.get(client.sessionId);
       if (player) {
         player.x = message.x || 0;
         player.y = message.y || 0;
-        console.log(`Updated player position:`, { x: player.x, y: player.y });
 
         this.broadcast('updatePosition', {
           id: client.sessionId,
           x: player.x,
           y: player.y,
+          sX: message.sX,
+          anim: message.anim
         });
       }
     });
 
     this.onMessage('*', (client, type, message) => {
-      //
-      // Triggers when any other type of message is sent,
-      // excluding "action", which has its own specific handler defined above.
-      //
       console.log(client.sessionId, 'sent', type, message);
     });
 
@@ -82,13 +67,7 @@ export class GameRoom extends Room<GameState> {
     player.id = client.sessionId;
     player.x = 0;
     player.y = 0;
-    // this.state.createPlayer(client.sessionId);
     this.state.players.set(client.sessionId, player);
-    console.log(`Player ${client.sessionId} joined`, player);
-    // console.log("Player added:", this.state.players);
-    setTimeout(() => {
-      console.log(this.state.toJSON())
-    }, 1000);
   }
 
   onLeave(client: Client) {
