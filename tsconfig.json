@@ -21,21 +21,9 @@
     "noFallthroughCasesInSwitch": false,
     "paths": {
       "@config": ["src/config"],
-      "@modules/*": ["src/modules/*"],
-      "@types": ["src/types"],
-      "@filter": ["src/common/filter"],
-      "@pipe": ["src/common/pipe"],
-      "@enum": ["src/types/enum"],
-      "@interceptor": ["src/common/interceptor"],
-      "@constant": ["src/constant"],
-      "@middleware": ["src/common/middleware"],
-      "@guard": ["src/common/guard"],
-      "@shared/*": ["src/shared/*"],
-      "@log": ["src/common/log"],
-      "@decorators": ["src/decorators"],
-      "@transform": ["src/common/transform"],
-      "@utils": ["src/utils"],
-      "@test": ["test"]
+      "@*": [
+        "./src/*"
+      ]
     }
   }
 }
