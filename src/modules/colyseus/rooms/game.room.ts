@@ -1,23 +1,14 @@
-import { MapSchema, Schema, type } from '@colyseus/schema';
+import { Schema, type } from '@colyseus/schema';
 import { Client, Room } from 'colyseus';
 
 class Player extends Schema {
-  @type('string') id: string = '';
-  @type('number') x: number = 0;
-  @type('number') y: number = 0;
+  @type("string") id: string = "";
+  @type("number") x: number = 0;
+  @type("number") y: number = 0;
 }
 
 class GameState extends Schema {
-  @type({ map: Player }) players = new MapSchema<Player>();
-  createPlayer(sessionId: string) {
-    this.players.set(
-      sessionId,
-      new Player().assign({
-        x: 0,
-        y: 0,
-      }),
-    );
-  }
+  @type({ map: Player }) players = new Map<string, Player>();
 }
 
 export class GameRoom extends Room<GameState> {
@@ -27,26 +18,22 @@ export class GameRoom extends Room<GameState> {
     this.setState(new GameState());
 
     this.onMessage('move', (client, message) => {
-      console.log(`Received move from ${client.sessionId}:`, message);
       const player = this.state.players.get(client.sessionId);
       if (player) {
         player.x = message.x || 0;
         player.y = message.y || 0;
-        console.log(`Updated player position:`, { x: player.x, y: player.y });
 
         this.broadcast('updatePosition', {
           id: client.sessionId,
           x: player.x,
           y: player.y,
+          sX: message.sX,
+          anim: message.anim
         });
       }
     });
 
     this.onMessage('*', (client, type, message) => {
-      //
-      // Triggers when any other type of message is sent,
-      // excluding "action", which has its own specific handler defined above.
-      //
       console.log(client.sessionId, 'sent', type, message);
     });
 
@@ -78,15 +65,9 @@ export class GameRoom extends Room<GameState> {
   onJoin(client: Client) {
     const player = new Player();
     player.id = client.sessionId;
-    this.state.createPlayer(client.sessionId);
-
-    this.state.players.onAdd((player, sessionId) => {
-      console.log(
-        `👤 New player added: ${sessionId} at (${player.x}, ${player.y})`,
-      );
-    });
-
-    console.log(`Player ${client.sessionId} joined`);
+    player.x = 0;
+    player.y = 0;
+    this.state.players.set(client.sessionId, player);
   }
 
   onLeave(client: Client) {
