@@ -3,6 +3,7 @@ import { Server } from 'colyseus';
 import { GameRoom } from './rooms/game.room';
 import { Inject } from '@nestjs/common';
 import { NestApplication } from '@nestjs/core';
+import config from '@config/env.config';
 
 @Module({
   providers: [],
@@ -20,7 +21,7 @@ export class ColyseusModule implements OnModuleInit, OnModuleDestroy {
 
     this.gameServer.define('my_room', GameRoom);
 
-    this.gameServer.listen(8001);
+    this.gameServer.listen(+config().GAME_PORT);
     console.log('Colyseus WebSocket server running on ws://localhost:8001');
   }
 

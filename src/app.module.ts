@@ -10,7 +10,6 @@ import config, { envFilePath } from '@config/env.config';
 import { dataSourceOption } from './config/data-source.config';
 import { ItemModule } from '@modules/item/item.module';
 import { LoggerModule } from '@libs/logger';
-import { createServer } from 'http';
 
 @Module({
   imports: [
