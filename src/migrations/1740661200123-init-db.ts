@@ -5,8 +5,10 @@ export class InitDb1740661200123 implements MigrationInterface {
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`
+      CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
       CREATE TABLE "user" (
-        "id" SERIAL PRIMARY KEY,
+        "id" UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
         "external_id" VARCHAR UNIQUE NULL,
         "auth_provider" VARCHAR NULL,
         "username" VARCHAR UNIQUE NOT NULL,
@@ -23,7 +25,7 @@ export class InitDb1740661200123 implements MigrationInterface {
 
     await queryRunner.query(`
       CREATE TABLE "map" (
-        "id" SERIAL PRIMARY KEY,
+        "id" UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
         "name" VARCHAR NOT NULL,
         "width" INT NOT NULL,
         "height" INT NOT NULL,
@@ -35,7 +37,7 @@ export class InitDb1740661200123 implements MigrationInterface {
 
     await queryRunner.query(`
       CREATE TABLE "item" (
-        "id" SERIAL PRIMARY KEY,
+        "id" UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
         "name" VARCHAR NOT NULL,
         "description" TEXT NULL,
         "width" INT NOT NULL,
@@ -50,9 +52,9 @@ export class InitDb1740661200123 implements MigrationInterface {
 
     await queryRunner.query(`
       CREATE TABLE "inventory" (
-        "id" SERIAL PRIMARY KEY,
-        "user_id" INT NOT NULL,
-        "item_id" INT NOT NULL,
+        "id" UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        "user_id" UUID NOT NULL,
+        "item_id" UUID NOT NULL,
         "equipped" BOOLEAN DEFAULT false,
         CONSTRAINT "FK_inventory_user" FOREIGN KEY ("user_id") REFERENCES "user" ("id") ON DELETE CASCADE,
         CONSTRAINT "FK_inventory_item" FOREIGN KEY ("item_id") REFERENCES "item" ("id") ON DELETE CASCADE

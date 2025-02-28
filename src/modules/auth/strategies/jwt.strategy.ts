@@ -1,4 +1,4 @@
-import { USER_TOKEN } from '@libs/constant/meta-key.constant';
+import { USER_TOKEN } from '@constant/meta-key.constant';
 import { UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { isEmail } from 'class-validator';
@@ -43,6 +43,8 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     if (isNaN(expireDate.getTime()) || now > expireDate.getTime()) {
       throw new UnauthorizedException('JWT token is expired');
     }
+    console.log('user', user);
+    
 
     this.cls.set(USER_TOKEN, user);
     request.sessionToken = sessionToken;

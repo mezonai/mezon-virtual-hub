@@ -16,21 +16,21 @@ import moment from 'moment';
 import { OAuth2Request } from './dtos/request';
 import { JwtPayload } from './dtos/response';
 import { OAuth2Service } from './oauth2.service';
-import { User } from '@modules/user/entity/user.entity';
+import { UserEntity } from '@modules/user/entity/user.entity';
 import { Result } from '@types';
 
 @Injectable()
 export class AuthService {
-  private readonly userRepository: GenericRepository<User>;
+  private readonly userRepository: GenericRepository<UserEntity>;
   constructor(
     private manager: EntityManager,
     private readonly jwtService: JwtService,
     private readonly oauth2Service: OAuth2Service,
   ) {
-    this.userRepository = new GenericRepository(User, manager);
+    this.userRepository = new GenericRepository(UserEntity, manager);
   }
 
-  async verifyOAuth2(payload: OAuth2Request): Promise<Result> {
+  async verifyOAuth2(payload: OAuth2Request) {
     try {
       const data = await this.oauth2Service.getOAuth2Token(payload);
 
@@ -46,7 +46,7 @@ export class AuthService {
 
       if (user) {
         const tokens = await this.generateAccessAndRefreshTokens(user);
-        return new Result({ data: tokens });
+        return tokens;
       }
 
       const newUser = await this.userRepository.create({
@@ -54,7 +54,7 @@ export class AuthService {
         username: oryInfo.sub,
       });
       const tokens = await this.generateAccessAndRefreshTokens(newUser);
-      return new Result({ data: tokens });
+      return tokens;
     } catch (error) {
       throw error;
     }
@@ -74,7 +74,7 @@ export class AuthService {
   }
 
   async generateAccessAndRefreshTokens(
-    user: User,
+    user: UserEntity,
     providedSessionToken?: string,
   ) {
     const { email } = user;

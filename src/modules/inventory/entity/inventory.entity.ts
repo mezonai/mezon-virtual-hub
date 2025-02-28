@@ -1,5 +1,5 @@
 import { Item } from '@modules/item/entity/item.entity';
-import { User } from '@modules/user/entity/user.entity';
+import { UserEntity } from '@modules/user/entity/user.entity';
 import {
   Entity,
   Column,
@@ -13,9 +13,9 @@ export class Inventory {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @ManyToOne(() => User, (user) => user.inventories, { onDelete: 'CASCADE' })
+  @ManyToOne(() => UserEntity, (user) => user.inventories, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'user_id' })
-  user: User;
+  user: UserEntity;
 
   @ManyToOne(() => Item)
   @JoinColumn({ name: 'item_id' })

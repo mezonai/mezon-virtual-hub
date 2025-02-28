@@ -1,7 +1,7 @@
 import { Request } from "express";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 import { IsNotEmpty, IsOptional, IsString } from "class-validator";
-import { User } from "@modules/user/entity/user.entity";
+import { UserEntity } from "@modules/user/entity/user.entity";
 
 export class OAuth2Request {
   @ApiProperty()
@@ -27,6 +27,6 @@ export class RefreshTokenDto {
 }
 
 export class ValidateJwtRequest extends Request {
-  user?: User;
+  user?: UserEntity;
   sessionToken?: string;
 }

@@ -11,7 +11,7 @@ import {
   FindOneOptions,
 } from 'typeorm';
 
-import { NOT_FOUND_MSG } from '@libs/constant/errorMsg';
+import { NOT_FOUND_MSG } from '@constant/errorMsg';
 import { SortOrder } from '@enum';
 
 export class GenericRepository<T extends ObjectLiteral> {

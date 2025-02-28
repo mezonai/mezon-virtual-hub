@@ -10,6 +10,11 @@ import config, { envFilePath } from '@config/env.config';
 import { dataSourceOption } from './config/data-source.config';
 import { ItemModule } from '@modules/item/item.module';
 import { LoggerModule } from '@libs/logger';
+import { FilterModule } from '@libs/filter';
+import { InterceptorModule } from '@libs/interceptor';
+import { ClsModule } from 'nestjs-cls';
+import { GuardModule } from '@libs/guard/guard.module';
+import { InventoryModule } from '@modules/inventory/inventory.module';
 
 @Module({
   imports: [
@@ -23,8 +28,16 @@ import { LoggerModule } from '@libs/logger';
     AuthModule,
     UserModule,
     ItemModule,
+    InventoryModule,
     MapModule,
     LoggerModule,
+    FilterModule,
+    InterceptorModule,
+    GuardModule,
+    ClsModule.forRoot({
+      global: true,
+      middleware: { mount: true },
+    }),
   ],
 })
 export class AppModule {}
