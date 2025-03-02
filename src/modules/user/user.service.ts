@@ -76,4 +76,13 @@ export class UserService {
 
     return this.userRepository.save(user);
   }
+
+  async getUsersByMapId(mapId: string): Promise<UserEntity[]> {
+    const users = await this.userRepository
+      .createQueryBuilder('user')
+      .where('map_id = :mapId', { mapId })
+      .getMany();
+
+    return users;
+  }
 }
