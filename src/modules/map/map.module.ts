@@ -5,9 +5,16 @@ import { MapService } from './map.service';
 import { MapEntity } from './entity/map.entity';
 import { ClsModule } from 'nestjs-cls';
 import { JwtModule } from '@nestjs/jwt';
+import { UserModule } from '@modules/user/user.module';
+import { forwardRef } from '@nestjs/common';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([MapEntity]), ClsModule, JwtModule],
+  imports: [
+    TypeOrmModule.forFeature([MapEntity]), 
+    ClsModule, 
+    JwtModule,
+    forwardRef(() => UserModule),
+  ],
   providers: [MapService],
   controllers: [MapController],
   exports: [MapService],
