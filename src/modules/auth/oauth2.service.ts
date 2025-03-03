@@ -1,6 +1,6 @@
-import { Injectable } from "@nestjs/common";
-import config from "@config/env.config";
-import { OAuth2Request } from "./dtos/request";
+import { Injectable } from '@nestjs/common';
+import config from '@config/env.config';
+import { OAuth2Request } from './dtos/request';
 
 @Injectable()
 export class OAuth2Service {
@@ -11,33 +11,46 @@ export class OAuth2Service {
   private async callOAuth2Api(
     path: string,
     body: Record<string, any>,
-    method: "POST" | "GET",
+    method: 'POST' | 'GET',
   ) {
-    const response = await fetch(this.OAUTH2_URL + path, {
-      method,
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body: new URLSearchParams({
-        ...body,
-        client_id: this.CLIENT_ID,
-        client_secret: this.CLIENT_SECRET,
-        redirect_uri: this.REDIRECT_URI,
-      }),
-    });
+    try {
+      const response = await fetch(this.OAUTH2_URL + path, {
+        method,
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+          ...body,
+          client_id: this.CLIENT_ID,
+          client_secret: this.CLIENT_SECRET,
+          redirect_uri: this.REDIRECT_URI,
+        }),
+      });
 
-    return await response.json();
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error(errorData);
+        throw new Error(
+          `OAuth2 API Error: ${response.status} - ${response.statusText}.`,
+        );
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error calling OAuth2 API:', error);
+      throw error;
+    }
   }
 
   async getOAuth2Token(payload: OAuth2Request) {
     const body = {
-      grant_type: "authorization_code",
+      grant_type: 'authorization_code',
       ...payload,
     };
     return await this.callOAuth2Api(
       config().OAUTH2_URL_TOKEN_PATH,
       body,
-      "POST",
+      'POST',
     );
   }
 
@@ -46,7 +59,7 @@ export class OAuth2Service {
     return await this.callOAuth2Api(
       config().OAUTH2_URL_DECODE_PATH,
       body,
-      "POST",
+      'POST',
     );
   }
 }

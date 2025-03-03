@@ -39,7 +39,7 @@ export class AuthService {
       );
 
       if (!isEmail(oryInfo.sub)) {
-        throw new BadRequestException();
+        throw new BadRequestException(`${oryInfo.sub} is not an email!`);
       }
 
       const user = await this.findUserByEmail(oryInfo.sub);

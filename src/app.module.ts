@@ -1,20 +1,22 @@
-import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { ConfigModule } from '@nestjs/config';
+import config, {
+  configValidationSchema,
+  envFilePath,
+} from '@config/env.config';
 import { AuthModule } from '@modules/auth/auth.module';
-import { ColyseusModule } from '@modules/colyseus/colyseus.module';
 import { MapModule } from '@modules/map/map.module';
 import { UserModule } from '@modules/user/user.module';
-import config, { envFilePath } from '@config/env.config';
+import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
+import { TypeOrmModule } from '@nestjs/typeorm';
 
-import { dataSourceOption } from './config/data-source.config';
-import { ItemModule } from '@modules/item/item.module';
-import { LoggerModule } from '@libs/logger';
 import { FilterModule } from '@libs/filter';
-import { InterceptorModule } from '@libs/interceptor';
-import { ClsModule } from 'nestjs-cls';
 import { GuardModule } from '@libs/guard/guard.module';
+import { InterceptorModule } from '@libs/interceptor';
+import { LoggerModule } from '@libs/logger';
 import { InventoryModule } from '@modules/inventory/inventory.module';
+import { ItemModule } from '@modules/item/item.module';
+import { ClsModule } from 'nestjs-cls';
+import { dataSourceOption } from './config/data-source.config';
 
 @Module({
   imports: [
@@ -22,6 +24,7 @@ import { InventoryModule } from '@modules/inventory/inventory.module';
       load: [config],
       isGlobal: true,
       envFilePath: envFilePath,
+      validationSchema: configValidationSchema,
     }),
     TypeOrmModule.forRoot(dataSourceOption),
     // ColyseusModule,
