@@ -16,7 +16,7 @@ import { UserEntity } from './entity/user.entity';
 import { UserInformationDto } from './dto/user.dto';
 
 @ApiBearerAuth()
-@Controller('users')
+@Controller('user')
 @ApiTags('User')
 export class UserController {
   constructor(

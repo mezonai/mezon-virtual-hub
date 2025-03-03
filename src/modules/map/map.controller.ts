@@ -4,14 +4,14 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Logger } from '@libs/logger';
 
 import { Public } from '@libs/decorator';
-import { MapService } from './map.service';
-import { UserService } from '../user/user.service';
+import { Body, Delete, Param, Put } from '@nestjs/common';
 import { ClsService } from 'nestjs-cls';
-import { Body, Delete, Param, Post, Put } from '@nestjs/common';
-import { CreateMapDto, UpdateMapDto } from './dto/map.dto';
+import { UserService } from '../user/user.service';
+import { UpdateMapDto } from './dto/map.dto';
+import { MapService } from './map.service';
 
 @ApiBearerAuth()
-@Controller('maps')
+@Controller('map')
 @ApiTags('Map')
 export class MapController {
   constructor(
@@ -33,7 +33,6 @@ export class MapController {
   }
 
   @Get('/:id')
-  @Public()
   @ApiOperation({
     summary: 'Get map details by id',
   })
