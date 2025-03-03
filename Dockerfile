@@ -15,7 +15,9 @@ FROM node:22-alpine
 
 COPY --chown=node:node --from=build /app/node_modules ./node_modules
 COPY --chown=node:node --from=build /app/dist ./dist
+RUN mkdir -p /app/logs
 
 ENV ENV=prod
 
-CMD ["node", "dist/main.js"]
+# CMD ["node", "dist/main.js"]
+CMD ["sh", "-c", "node dist/main.js > /app/logs/output.log 2>&1"]
