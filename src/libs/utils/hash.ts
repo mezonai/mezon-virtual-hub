@@ -3,7 +3,7 @@ import crypto from 'crypto';
 
 export const generateMezonHash = (data: object) => {
   const secretKey = crypto
-    .createHmac('sha256', configEnv().MEZON_APPLICATION_ID)
+    .createHmac('sha256', configEnv().MEZON_APPLICATION_SECRET)
     .update('WebAppData')
     .digest('hex');
 
