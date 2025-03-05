@@ -7,17 +7,18 @@ import {
 
 import { EntityManager } from 'typeorm';
 
-import config from '@config/env.config';
 import { GenericRepository } from '@libs/repository/genericRepository';
 import { JwtService } from '@nestjs/jwt';
 import { isEmail } from 'class-validator';
 import crypto from 'crypto';
 import moment from 'moment';
-import { OAuth2Request } from './dtos/request';
+import { LoginMezonDto, OAuth2Request } from './dtos/request';
 import { JwtPayload } from './dtos/response';
 import { OAuth2Service } from './oauth2.service';
 import { UserEntity } from '@modules/user/entity/user.entity';
 import { Result } from '@types';
+import { generateMezonHash } from '@libs/utils/hash';
+import { configEnv } from '@config/env.config';
 
 @Injectable()
 export class AuthService {
@@ -83,7 +84,7 @@ export class AuthService {
       JWT_REFRESH_TOKEN_SECRET: refreshSecret,
       JWT_ACCESS_TOKEN_EXPIRES_IN_MINUTES: accessTokenExpiration,
       JWT_REFRESH_TOKEN_EXPIRES_IN_MINUTES: refreshTokenExpiration,
-    } = config();
+    } = configEnv();
 
     const sessionToken =
       providedSessionToken ?? crypto.randomBytes(5).toString('hex');
@@ -112,16 +113,14 @@ export class AuthService {
   async verifyRefreshToken(refreshToken: string) {
     try {
       const payload: JwtPayload = this.jwtService.verify(refreshToken, {
-        secret: config().JWT_REFRESH_TOKEN_SECRET,
+        secret: configEnv().JWT_REFRESH_TOKEN_SECRET,
       });
 
-      const { sessionToken, email, expireTime } = payload;
+      const { sessionToken, email, expireTime, username } = payload;
 
-      if (!isEmail(email)) {
-        throw new UnauthorizedException();
-      }
-
-      const user = await this.findUserByEmail(email);
+      const user = await this.userRepository.findOne({
+        where: [{ username }, { email }],
+      });
 
       if (!user) {
         throw new UnauthorizedException();
@@ -145,7 +144,7 @@ export class AuthService {
         sessionToken,
       );
 
-      return new Result({ data: tokens });
+      return tokens;
     } catch (error) {
       if (
         error instanceof UnauthorizedException ||
@@ -156,5 +155,31 @@ export class AuthService {
 
       throw new UnauthorizedException();
     }
+  }
+
+  async loginWithMezonHash(payload: LoginMezonDto) {
+    const { hash, userid, username } = payload;
+    const hashGenerate = generateMezonHash(payload);
+
+    if (hashGenerate !== hash) {
+      throw new BadRequestException('Invalid hash');
+    }
+
+    const user = await this.userRepository.findOne({
+      where: [{ username }, { mezon_id: userid }],
+    });
+
+    if (user) {
+      const tokens = await this.generateAccessAndRefreshTokens(user);
+      return tokens;
+    }
+
+    const newUser = await this.userRepository.create({
+      username,
+      mezon_id: userid,
+    });
+
+    const tokens = await this.generateAccessAndRefreshTokens(newUser);
+    return tokens;
   }
 }

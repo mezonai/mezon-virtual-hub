@@ -8,13 +8,16 @@ export class UserEntity extends AuditEntity {
   @Column({ type: 'varchar', unique: true, nullable: true })
   external_id: string | null;
 
+  @Column({ type: 'varchar', unique: true, nullable: true })
+  mezon_id: string | null;
+
   @Column({ type: 'varchar', nullable: true })
   auth_provider: string | null;
 
   @Column({ type: 'varchar', unique: true })
   username: string;
 
-  @Column({ type: 'varchar', unique: true })
+  @Column({ type: 'varchar', unique: true, nullable: true })
   email: string;
 
   @Column({ type: 'varchar', nullable: true })

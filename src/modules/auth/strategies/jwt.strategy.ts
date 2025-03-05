@@ -8,33 +8,38 @@ import { AuthService } from '../auth.service';
 import { ValidateJwtRequest } from '../dtos/request';
 import { JwtPayload } from '../dtos/response';
 
-import config from '@config/env.config';
+import { configEnv } from '@config/env.config';
 import { Injectable } from '@nestjs/common/decorators/core';
+import { GenericRepository } from '@libs/repository/genericRepository';
+import { UserEntity } from '@modules/user/entity/user.entity';
+import { EntityManager } from 'typeorm';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
+  private readonly userRepository: GenericRepository<UserEntity>;
   constructor(
     private readonly authService: AuthService,
     private readonly cls: ClsService,
+    private manager: EntityManager,
   ) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: true,
-      secretOrKey: config().JWT_ACCESS_TOKEN_SECRET,
+      secretOrKey: configEnv().JWT_ACCESS_TOKEN_SECRET,
       passReqToCallback: true,
     });
+    this.userRepository = new GenericRepository(UserEntity, manager);
   }
 
   async validate(request: ValidateJwtRequest, payload: JwtPayload) {
-    const { email, expireTime, sessionToken } = payload;
+    const { email, expireTime, sessionToken, username } = payload;
 
-    if (!isEmail(email)) {
-      throw new UnauthorizedException();
-    }
+    const user = await this.userRepository.findOne({
+      where: [{ username }, { email }],
+    });
 
-    const user = await this.authService.findUserByEmail(email);
     if (!user) {
-      throw new UnauthorizedException(`User ${email} does not found`);
+      throw new UnauthorizedException(`User does not found`);
     }
 
     const now = new Date().getTime();
@@ -43,8 +48,6 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     if (isNaN(expireDate.getTime()) || now > expireDate.getTime()) {
       throw new UnauthorizedException('JWT token is expired');
     }
-    console.log('user', user);
-    
 
     this.cls.set(USER_TOKEN, user);
     request.sessionToken = sessionToken;

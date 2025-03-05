@@ -31,7 +31,8 @@ export class OAuth2ORYTokenPayload {
 }
 
 export class JwtPayload {
-  email: string;
+  email?: string;
+  username: string;
   iat: number;
   sessionToken: string;
   expireTime: string | Date;

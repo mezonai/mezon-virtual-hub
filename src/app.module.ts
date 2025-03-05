@@ -1,7 +1,4 @@
-import config, {
-  configValidationSchema,
-  envFilePath,
-} from '@config/env.config';
+import { configEnv, configValidationSchema, envFilePath } from '@config/env.config';
 import { AuthModule } from '@modules/auth/auth.module';
 import { MapModule } from '@modules/map/map.module';
 import { UserModule } from '@modules/user/user.module';
@@ -21,7 +18,7 @@ import { dataSourceOption } from './config/data-source.config';
 @Module({
   imports: [
     ConfigModule.forRoot({
-      load: [config],
+      load: [configEnv],
       isGlobal: true,
       envFilePath: envFilePath,
       validationSchema: configValidationSchema,
