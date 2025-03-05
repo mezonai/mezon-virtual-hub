@@ -1,7 +1,7 @@
-import { Request } from "express";
-import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
-import { IsNotEmpty, IsOptional, IsString } from "class-validator";
-import { UserEntity } from "@modules/user/entity/user.entity";
+import { Request } from 'express';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { UserEntity } from '@modules/user/entity/user.entity';
 
 export class OAuth2Request {
   @ApiProperty()
@@ -29,4 +29,18 @@ export class RefreshTokenDto {
 export class ValidateJwtRequest extends Request {
   user?: UserEntity;
   sessionToken?: string;
+}
+
+export class LoginMezonDto {
+  @IsString()
+  @IsNotEmpty()
+  userid: string;
+
+  @IsString()
+  @IsNotEmpty()
+  username: string;
+
+  @IsString()
+  @IsNotEmpty()
+  hash: string;
 }

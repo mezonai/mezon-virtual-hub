@@ -3,7 +3,7 @@ import { ValidationPipe, VersioningType } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { createServer } from 'http';
-import config from '@config/env.config';
+import { configEnv } from '@config/env.config';
 import { Server } from '@colyseus/core';
 import { GameRoom } from '@modules/colyseus/rooms/game.room';
 import { WebSocketTransport } from '@colyseus/ws-transport';
@@ -20,8 +20,8 @@ async function bootstrap() {
     }),
   );
   swaggerConfig(app);
-  await app.listen(config().PORT);
-  console.log(`HTTP server running on http://localhost:${config().PORT}/api`);
+  await app.listen(configEnv().PORT);
+  console.log(`HTTP server running on http://localhost:${configEnv().PORT}/api`);
 
   const gameServer = new Server({
     transport: new WebSocketTransport({
@@ -30,9 +30,9 @@ async function bootstrap() {
   });
   gameServer.define('my_room', GameRoom);
 
-  gameServer.listen(+config().GAME_PORT);
+  gameServer.listen(configEnv().GAME_PORT);
   console.log(
-    `Colyseus WebSocket server running on ws://localhost:${config().GAME_PORT}`,
+    `Colyseus WebSocket server running on ws://localhost:${configEnv().GAME_PORT}`,
   );
 }
 
