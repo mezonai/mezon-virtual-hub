@@ -1,57 +1,7 @@
+import { InventoryDto } from '@modules/inventory/dto/inventory.dto';
+import { MapDtoRequest } from '@modules/map/dto/map.dto';
 import { Expose, Type } from 'class-transformer';
-import { IsOptional, IsString, IsUUID } from 'class-validator';
-
-class ItemDto {
-  @Expose()
-  id: string;
-
-  @Expose()
-  name: string;
-
-  @Expose()
-  description: string;
-
-  @Expose()
-  width: number;
-
-  @Expose()
-  height: number;
-
-  @Expose()
-  is_equippable: boolean;
-
-  @Expose()
-  isStatic: boolean;
-}
-
-class InventoryDto {
-  @Expose()
-  id: string;
-
-  @Expose()
-  equipped: boolean;
-
-  @Type(() => ItemDto)
-  @Expose()
-  item: ItemDto;
-}
-
-class MapDto {
-  @Expose()
-  id: string;
-
-  @Expose()
-  name: string;
-
-  @Expose()
-  map_key: string;
-
-  @Expose()
-  width: number;
-
-  @Expose()
-  height: number;
-}
+import { IsNumber, IsOptional, IsString, IsUUID } from 'class-validator';
 
 export class UserInformationDto {
   @Expose()
@@ -68,35 +18,21 @@ export class UserInformationDto {
   @Expose()
   inventories: InventoryDto[];
 
-  @Type(() => MapDto)
+  @Type(() => MapDtoRequest)
   @Expose()
-  map: MapDto | null;
+  map: MapDtoRequest | null;
 }
 
 export class UpdateUserDto {
   @IsOptional()
-  @IsString()
-  username?: string;
+  @IsUUID()
+  map_id?: string;
 
   @IsOptional()
-  @IsString()
-  email?: string;
-
-  @IsOptional()
-  @IsString()
-  avatar_url?: string;
-
-  @IsOptional()
+  @IsNumber()
   position_x?: number;
 
   @IsOptional()
+  @IsNumber()
   position_y?: number;
-
-  @IsOptional()
-  @IsUUID()
-  mapId?: string;
-
-  @IsOptional()
-  @IsUUID('all', { each: true })
-  inventoryIds?: string[];
 }

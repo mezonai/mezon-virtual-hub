@@ -45,34 +45,32 @@ export class UserService {
     });
   }
 
-  async updateUser(userId: string, updateDto: UpdateUserDto): Promise<UserEntity> {
+  async updateUser(
+    userId: string,
+    updateDto: UpdateUserDto,
+  ): Promise<UserEntity> {
     const user = await this.userRepository.findOne({ where: { id: userId } });
 
     if (!user) {
       throw new NotFoundException('User not found');
     }
 
-    if (updateDto.mapId) {
-      const map = await this.mapRepository.findOne({ where: { id: updateDto.mapId } });
+    if (updateDto.map_id) {
+      const map = await this.mapRepository.findOne({
+        where: { id: updateDto.map_id },
+      });
       if (!map) {
         throw new NotFoundException('Map not found');
       }
       user.map = map;
     }
 
-    if (updateDto.inventoryIds && updateDto.inventoryIds.length > 0) {
-      const inventories = await this.inventoryRepository.findByIds(updateDto.inventoryIds);
-      if (inventories.length !== updateDto.inventoryIds.length) {
-        throw new NotFoundException('One or more inventories not found');
-      }
-      user.inventories = inventories;
+    if (updateDto.position_x !== undefined) {
+      user.position_x = updateDto.position_x;
     }
-
-    user.username = updateDto.username || user.username;
-    user.email = updateDto.email || user.email;
-    user.avatar_url = updateDto.avatar_url || user.avatar_url;
-    user.position_x = updateDto.position_x || user.position_x;
-    user.position_y = updateDto.position_y || user.position_y;
+    if (updateDto.position_y !== undefined) {
+      user.position_y = updateDto.position_y;
+    }
 
     return this.userRepository.save(user);
   }
