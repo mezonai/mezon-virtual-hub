@@ -42,6 +42,7 @@ export class AuthController {
           userid: '123456',
           username: 'mezonUser',
           hash: 'abcdef1234567890abcdef1234567890',
+          avatar_url: 'https://cdn.example.vn/12346'
         },
       },
     },
