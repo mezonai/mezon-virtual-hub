@@ -45,8 +45,7 @@ export class LoginMezonDto {
   @IsNotEmpty()
   hash: string;
 
-  @ApiPropertyOptional()
-  @Optional()
-  @IsEmail()
+  @IsOptional()
+  @IsString()
   avatar_url?: string;
 }
