@@ -77,7 +77,7 @@ export class AuthService {
     user: UserEntity,
     providedSessionToken?: string,
   ) {
-    const { email } = user;
+    const { email, username } = user;
     const {
       JWT_ACCESS_TOKEN_SECRET: secret,
       JWT_REFRESH_TOKEN_SECRET: refreshSecret,
@@ -94,14 +94,14 @@ export class AuthService {
       .toDate();
 
     const accessToken = this.jwtService.sign(
-      { email, sessionToken, expireTime },
+      { email, username, sessionToken, expireTime },
       {
         secret: secret,
       },
     );
 
     const refreshToken = this.jwtService.sign(
-      { email, sessionToken, expireTime: refreshTokenExpireTime },
+      { email, username, sessionToken, expireTime: refreshTokenExpireTime },
       {
         secret: refreshSecret,
       },
@@ -157,9 +157,9 @@ export class AuthService {
   }
 
   async loginWithMezonHash(payload: LoginMezonDto) {
-    const { hash, userid, username } = payload;
+    const { hash, userid, username, avatar_url } = payload;
     const hashGenerate = generateMezonHash(payload);
-    
+
     if (hashGenerate !== hash) {
       throw new BadRequestException('Invalid hash');
     }
@@ -176,6 +176,7 @@ export class AuthService {
     const newUser = await this.userRepository.create({
       username,
       mezon_id: userid,
+      avatar_url,
     });
 
     const tokens = await this.generateAccessAndRefreshTokens(newUser);

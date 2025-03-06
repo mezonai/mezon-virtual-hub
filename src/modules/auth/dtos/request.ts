@@ -1,7 +1,8 @@
 import { Request } from 'express';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 import { UserEntity } from '@modules/user/entity/user.entity';
+import { Optional } from '@nestjs/common';
 
 export class OAuth2Request {
   @ApiProperty()
@@ -43,4 +44,9 @@ export class LoginMezonDto {
   @IsString()
   @IsNotEmpty()
   hash: string;
+
+  @ApiPropertyOptional()
+  @Optional()
+  @IsEmail()
+  avatar_url?: string;
 }
