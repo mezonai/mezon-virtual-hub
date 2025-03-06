@@ -57,7 +57,16 @@ export class AuthController {
 
   @Public()
   @Post('refresh-token')
-  @ApiBody({ type: RefreshTokenDto })
+  @ApiBody({
+    type: RefreshTokenDto,
+    examples: {
+      example1: {
+        value: {
+          refreshToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+        },
+      },
+    },
+  })
   @ApiResponseWithAuthToken()
   @ApiOperation({
     summary: 'Get new access token and refresh token',
