@@ -1,7 +1,7 @@
 
 FROM nginx:alpine
 
-COPY ../nginx_frontend.conf /etc/nginx/conf.d/default.conf
-COPY . /usr/share/nginx/html
+COPY nginx_frontend.conf /etc/nginx/conf.d/default.conf
+COPY ./frontend/. /usr/share/nginx/html
 
 CMD ["nginx", "-g", "daemon off;"]
