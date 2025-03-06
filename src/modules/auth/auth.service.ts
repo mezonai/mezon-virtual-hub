@@ -16,7 +16,6 @@ import { LoginMezonDto, OAuth2Request } from './dtos/request';
 import { JwtPayload } from './dtos/response';
 import { OAuth2Service } from './oauth2.service';
 import { UserEntity } from '@modules/user/entity/user.entity';
-import { Result } from '@types';
 import { generateMezonHash } from '@libs/utils/hash';
 import { configEnv } from '@config/env.config';
 
@@ -160,7 +159,7 @@ export class AuthService {
   async loginWithMezonHash(payload: LoginMezonDto) {
     const { hash, userid, username } = payload;
     const hashGenerate = generateMezonHash(payload);
-
+    
     if (hashGenerate !== hash) {
       throw new BadRequestException('Invalid hash');
     }

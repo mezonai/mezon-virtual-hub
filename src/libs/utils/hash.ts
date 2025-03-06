@@ -1,22 +1,21 @@
 import { configEnv } from '@config/env.config';
-import crypto from 'crypto';
+import { LoginMezonDto } from '@modules/auth/dtos/request';
+import * as crypto from 'crypto';
 
-export const generateMezonHash = (data: object) => {
-  const secretKey = crypto
-    .createHmac('sha256', configEnv().MEZON_APPLICATION_SECRET)
-    .update('WebAppData')
-    .digest('hex');
+function hmacSHA256(secret: string, data: string): Buffer {
+  return crypto.createHmac('sha256', secret).update(data).digest();
+}
 
-  const dataKeys = Object.keys(data)
-    .filter((key) => key !== 'hash')
-    .sort();
-
-  const dataCheckString = dataKeys
-    .map((key) => `${key}=${data[key]}`)
-    .join('\n');
-
+export function generateMezonHash({ userid, username }: LoginMezonDto): string {
+  const secretKey = hmacSHA256(
+    configEnv().MEZON_APPLICATION_TOKEN,
+    'WebAppData',
+  );
+  const dataKeys = [`userid=${userid}`, `username=${username}`];
+  dataKeys.sort();
+  const dataCheckString = dataKeys.join('\n');
   return crypto
     .createHmac('sha256', secretKey)
     .update(dataCheckString)
     .digest('hex');
-};
+}

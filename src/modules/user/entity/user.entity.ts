@@ -23,11 +23,11 @@ export class UserEntity extends AuditEntity {
   @Column({ type: 'varchar', nullable: true })
   avatar_url: string | null;
 
-  @Column({ type: 'int', nullable: true, default: 0 })
-  position_x: number | null;
+  @Column({ type: 'int', default: 0 })
+  position_x: number;
 
-  @Column({ type: 'int', nullable: true, default: 0 })
-  position_y: number | null;
+  @Column({ type: 'int', default: 0 })
+  position_y: number;
 
   @ManyToOne(() => MapEntity, { nullable: true })
   @JoinColumn({ name: 'map_id' })
