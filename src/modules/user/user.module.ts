@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { UserEntity } from './entity/user.entity';
 import { UserController } from './user.controller';
@@ -12,10 +12,9 @@ import { InventoryModule } from '@modules/inventory/inventory.module';
   imports: [
     TypeOrmModule.forFeature([UserEntity, MapEntity, Inventory]),
     JwtModule.register({}),
-    InventoryModule,
   ],
   controllers: [UserController],
   providers: [UserService],
-  exports: [UserService], 
+  exports: [UserService],
 })
 export class UserModule {}

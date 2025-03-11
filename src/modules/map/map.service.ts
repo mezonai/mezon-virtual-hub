@@ -4,6 +4,7 @@ import { EntityManager, Repository } from 'typeorm';
 import { MapEntity } from './entity/map.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CreateMapDto, UpdateMapDto } from './dto/map.dto';
+import { USER_TOKEN } from '@constant';
 
 @Injectable()
 export class MapService extends BaseService<MapEntity> {

@@ -14,8 +14,6 @@ export class UserService {
     private readonly userRepository: Repository<UserEntity>,
     @InjectRepository(MapEntity)
     private readonly mapRepository: Repository<MapEntity>,
-    @InjectRepository(Inventory)
-    private readonly inventoryRepository: Repository<Inventory>,
   ) {}
 
   async getUserInformation(userId: string): Promise<UserInformationDto> {
@@ -39,6 +37,7 @@ export class UserService {
         position_x: userInfo.position_x,
         position_y: userInfo.position_y,
         avatar_url: userInfo.avatar_url,
+        gold: userInfo.gold,
       },
       inventories: userInfo.inventories,
       map: userInfo.map,

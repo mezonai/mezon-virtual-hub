@@ -7,3 +7,13 @@ export enum MapKey {
   QN = 'qn',
   SG = 'sg',
 }
+
+export enum ItemType {
+  HAT = 1,
+  SQUARE = 2,
+  SHIRT = 3,
+  HAIR = 4,
+  PANTS = 5,
+  SHOES = 6,
+  ACCESSORY = 7,
+}

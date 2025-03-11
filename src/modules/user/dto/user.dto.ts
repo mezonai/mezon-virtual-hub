@@ -9,6 +9,7 @@ export class UserInformationDto {
     id: string;
     username: string;
     email: string;
+    gold: number;
     position_x: number | null;
     position_y: number | null;
     avatar_url: string | null;

@@ -1,4 +1,4 @@
-import { Item } from '@modules/item/entity/item.entity';
+import { ItemEntity } from '@modules/item/entity/item.entity';
 import { UserEntity } from '@modules/user/entity/user.entity';
 import {
   Entity,
@@ -17,9 +17,9 @@ export class Inventory {
   @JoinColumn({ name: 'user_id' })
   user: UserEntity;
 
-  @ManyToOne(() => Item)
+  @ManyToOne(() => ItemEntity)
   @JoinColumn({ name: 'item_id' })
-  item: Item;
+  item: ItemEntity;
 
   @Column({ type: 'boolean', default: false })
   equipped: boolean;

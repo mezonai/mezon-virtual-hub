@@ -29,6 +29,9 @@ export class UserEntity extends AuditEntity {
   @Column({ type: 'int', default: 0 })
   position_y: number;
 
+  @Column({ type: 'int', default: 0 })
+  gold: number;
+
   @ManyToOne(() => MapEntity, { nullable: true })
   @JoinColumn({ name: 'map_id' })
   map: MapEntity | null;
