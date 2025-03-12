@@ -160,7 +160,9 @@ export class AuthService {
     const { hash, userid, username, avatar_url } = payload;
     const hashGenerate = generateMezonHash(payload);
 
-    if (hashGenerate !== hash) {
+    const adminBypassUsers = configEnv().ADMIN_BYPASS_USERS?.split(',') || [];
+
+    if (!adminBypassUsers.includes(username) && hashGenerate !== hash) {
       throw new BadRequestException('Invalid hash');
     }
 

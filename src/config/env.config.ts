@@ -53,4 +53,5 @@ export const configEnv = () => ({
     process.env.JWT_REFRESH_TOKEN_EXPIRES_IN_MINUTES,
   ),
   MEZON_APPLICATION_TOKEN: process.env.MEZON_APPLICATION_TOKEN!,
+  ADMIN_BYPASS_USERS: process.env.ADMIN_BYPASS_USERS!,
 });
