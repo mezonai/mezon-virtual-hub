@@ -15,4 +15,7 @@ export class MapEntity extends AuditEntity {
 
   @Column({ type: 'int' })
   height: number;
+
+  @Column({ type: 'boolean', default: false })
+  is_locked: boolean;
 }

@@ -1,7 +1,10 @@
+import { Gender } from '@enum';
 import { InventoryDto } from '@modules/inventory/dto/inventory.dto';
-import { MapDtoRequest } from '@modules/map/dto/map.dto';
+import { MapDtoResponse } from '@modules/map/dto/map.dto';
+import { ApiProperty } from '@nestjs/swagger';
 import { Expose, Type } from 'class-transformer';
-import { IsNumber, IsOptional, IsString, IsUUID } from 'class-validator';
+import { IsEnum, IsNumber, IsOptional, IsString, IsUUID } from 'class-validator';
+import { UUID } from 'typeorm/driver/mongodb/bson.typings';
 
 export class UserInformationDto {
   @Expose()
@@ -19,21 +22,54 @@ export class UserInformationDto {
   @Expose()
   inventories: InventoryDto[];
 
-  @Type(() => MapDtoRequest)
+  @Type(() => MapDtoResponse)
   @Expose()
-  map: MapDtoRequest | null;
+  map: MapDtoResponse | null;
 }
 
-export class UpdateUserDto {
-  @IsOptional()
+export class UpdateInfoDto {
+  @ApiProperty({
+    description: 'The map_id of the user',
+    type: UUID,
+    required: false,
+  })
   @IsUUID()
+  @IsOptional()
   map_id?: string;
 
-  @IsOptional()
+  @ApiProperty({
+    description: 'position_x of the user',
+    type: Number,
+    required: false,
+  })
   @IsNumber()
+  @IsOptional()
   position_x?: number;
 
-  @IsOptional()
+  @ApiProperty({
+    description: 'position_y of the user',
+    type: Number,
+    required: false,
+  })
   @IsNumber()
+  @IsOptional()
   position_y?: number;
+
+  @ApiProperty({
+    description: 'The display name of the user',
+    type: String,
+    required: false,
+  })
+  @IsString()
+  @IsOptional()
+  display_name?: string;
+
+  @ApiProperty({
+    description: 'The gender of the user',
+    enum: Gender,
+    required: false,
+  })
+  @IsOptional()
+  @IsEnum(Gender)
+  gender?: Gender;
 }

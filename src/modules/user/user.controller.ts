@@ -1,7 +1,6 @@
-import { Body, Controller, Get, Post, Put } from '@nestjs/common';
+import { Body, Controller, Get, Put } from '@nestjs/common';
 import {
   ApiBearerAuth,
-  ApiBody,
   ApiOperation,
   ApiResponse,
   ApiTags,
@@ -9,12 +8,11 @@ import {
 
 import { Logger } from '@libs/logger';
 
-import { UserService } from './user.service';
-import { ClsService } from 'nestjs-cls';
 import { USER_TOKEN } from '@constant';
+import { ClsService } from 'nestjs-cls';
+import { UpdateInfoDto, UserInformationDto } from './dto/user.dto';
 import { UserEntity } from './entity/user.entity';
-import { UpdateUserDto, UserInformationDto } from './dto/user.dto';
-import { ApiUpdateUser } from '@libs/decorator';
+import { UserService } from './user.service';
 
 @ApiBearerAuth()
 @Controller('user')
@@ -42,10 +40,9 @@ export class UserController {
   @ApiOperation({
     summary: 'Update user information',
   })
-  @ApiUpdateUser()
-  @ApiResponse({ type: UpdateUserDto })
-  async updateUser(@Body() payload: UpdateUserDto) {
+  @ApiResponse({ type: UpdateInfoDto })
+  async updateUserInfo(@Body() payload: UpdateInfoDto) {
     const user = this.cls.get<UserEntity>(USER_TOKEN);
-    return await this.userService.updateUser(user.id, payload);
+    return await this.userService.updateUserInfo(user, payload);
   }
 }

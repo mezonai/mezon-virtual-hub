@@ -1,10 +1,11 @@
 import { BaseService } from '@libs/base/base.service';
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { EntityManager, Repository } from 'typeorm';
 import { MapEntity } from './entity/map.entity';
 import { InjectRepository } from '@nestjs/typeorm';
-import { CreateMapDto, UpdateMapDto } from './dto/map.dto';
+import { CreateMapDto, MapDtoResponse, UpdateMapDto } from './dto/map.dto';
 import { USER_TOKEN } from '@constant';
+import { plainToClass, plainToInstance } from 'class-transformer';
 
 @Injectable()
 export class MapService extends BaseService<MapEntity> {
@@ -18,7 +19,8 @@ export class MapService extends BaseService<MapEntity> {
 
   async getAllMaps() {
     const maps = await this.find();
-    return maps;
+
+    return plainToInstance(MapDtoResponse, maps);
   }
 
   async getMapById(id: string) {
@@ -40,14 +42,20 @@ export class MapService extends BaseService<MapEntity> {
   // }
 
   async updateMap(id: string, mapData: UpdateMapDto) {
-    const map = await this.mapRepository.findOne({ where: { id: mapData.id } });
+    const map = await this.mapRepository.findOne({ where: { id } });
     if (!map) {
-      throw new Error('Map not found');
+      throw new NotFoundException(`Map with ID ${id} not found`);
     }
-    map.name = mapData.name || '';
-    map.width = mapData.width || 0;
-    map.height = mapData.height || 0;
-    return this.mapRepository.update({ id: mapData.id }, map);
+
+    const filteredData = Object.fromEntries(
+      Object.entries(mapData).filter(
+        ([_, value]) => value !== null && value !== undefined,
+      ),
+    );
+
+    Object.assign(map, filteredData);
+
+    return this.mapRepository.update({ id }, map);
   }
 
   async deleteMap(id: string) {

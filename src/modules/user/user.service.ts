@@ -1,11 +1,10 @@
-import { plainToClass } from 'class-transformer';
-import { UserEntity } from './entity/user.entity';
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { Repository } from 'typeorm';
-import { InjectRepository } from '@nestjs/typeorm';
-import { UpdateUserDto, UserInformationDto } from './dto/user.dto';
 import { MapEntity } from '@modules/map/entity/map.entity';
-import { Inventory } from '@modules/inventory/entity/inventory.entity';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { plainToClass } from 'class-transformer';
+import { Repository } from 'typeorm';
+import { UpdateInfoDto, UserInformationDto } from './dto/user.dto';
+import { UserEntity } from './entity/user.entity';
 
 @Injectable()
 export class UserService {
@@ -38,40 +37,38 @@ export class UserService {
         position_y: userInfo.position_y,
         avatar_url: userInfo.avatar_url,
         gold: userInfo.gold,
+        gender: userInfo.gender,
+        display_name: userInfo.display_name,
       },
       inventories: userInfo.inventories,
       map: userInfo.map,
     });
   }
 
-  async updateUser(
-    userId: string,
-    updateDto: UpdateUserDto,
-  ): Promise<UserEntity> {
-    const user = await this.userRepository.findOne({ where: { id: userId } });
-
-    if (!user) {
-      throw new NotFoundException('User not found');
-    }
-
+  async updateUserInfo(user: UserEntity, updateDto: UpdateInfoDto) {
     if (updateDto.map_id) {
       const map = await this.mapRepository.findOne({
-        where: { id: updateDto.map_id },
+        where: { id: updateDto.map_id, is_locked: false },
       });
+
       if (!map) {
-        throw new NotFoundException('Map not found');
+        throw new NotFoundException('Map not found or be locked');
       }
+
       user.map = map;
     }
 
-    if (updateDto.position_x !== undefined) {
-      user.position_x = updateDto.position_x;
-    }
-    if (updateDto.position_y !== undefined) {
-      user.position_y = updateDto.position_y;
-    }
+    const { map_id, ...filteredData } = updateDto;
 
-    return this.userRepository.save(user);
+    const dataToUpdate = Object.fromEntries(
+      Object.entries(filteredData).filter(
+        ([_, value]) => value !== null && value !== undefined,
+      ),
+    );
+
+    Object.assign(user, dataToUpdate);
+
+    await this.userRepository.update(user.id, user);
   }
 
   async getUsersByMapId(mapId: string): Promise<UserEntity[]> {

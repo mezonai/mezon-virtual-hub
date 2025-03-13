@@ -17,3 +17,8 @@ export enum ItemType {
   SHOES = 6,
   ACCESSORY = 7,
 }
+
+export enum Gender {
+  MALE = 'male',
+  FEMALE = 'female',
+}

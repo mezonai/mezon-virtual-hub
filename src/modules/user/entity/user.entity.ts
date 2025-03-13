@@ -1,3 +1,4 @@
+import { Gender } from '@enum';
 import { Inventory } from '@modules/inventory/entity/inventory.entity';
 import { MapEntity } from '@modules/map/entity/map.entity';
 import { AuditEntity } from '@types';
@@ -21,6 +22,9 @@ export class UserEntity extends AuditEntity {
   email: string;
 
   @Column({ type: 'varchar', nullable: true })
+  display_name: string | null;
+
+  @Column({ type: 'varchar', nullable: true })
   avatar_url: string | null;
 
   @Column({ type: 'int', default: 0 })
@@ -31,6 +35,9 @@ export class UserEntity extends AuditEntity {
 
   @Column({ type: 'int', default: 0 })
   gold: number;
+  
+  @Column({ type: 'enum', enum: Gender, nullable: true })
+  gender: Gender | null;
 
   @ManyToOne(() => MapEntity, { nullable: true })
   @JoinColumn({ name: 'map_id' })

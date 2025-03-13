@@ -1,5 +1,5 @@
 import { Controller, Get } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
 
 import { Logger } from '@libs/logger';
 
@@ -51,6 +51,10 @@ export class MapController {
   @Put('/:id')
   @ApiOperation({
     summary: 'Update an existing map',
+  })
+  @ApiBody({
+    description: 'Fields to update the map',
+    type: UpdateMapDto, 
   })
   async updateMap(@Param('id') id: string, @Body() updateMapDto: UpdateMapDto) {
     return await this.mapService.updateMap(id, updateMapDto);
