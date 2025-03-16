@@ -7,6 +7,7 @@ import { configEnv } from '@config/env.config';
 import { Server } from '@colyseus/core';
 import { GameRoom } from '@modules/colyseus/rooms/game.room';
 import { WebSocketTransport } from '@colyseus/ws-transport';
+import { monitor } from "@colyseus/monitor";
 
 const logger = new Logger('Bootstrap');
 
@@ -51,6 +52,13 @@ async function bootstrap() {
     const env = configEnv();
     const app = await setupNestApp();
     const { gameServer, httpServer } = await setupColyseusServer();
+
+    /**
+     * Bind @colyseus/monitor
+     * It is recommended to protect this route with a password.
+     * Read more: https://docs.colyseus.io/tools/monitor/
+     */
+    app.use("/colyseus", monitor());
 
     // Start HTTP server
     await app.listen(env.PORT);

@@ -29,6 +29,7 @@
     "db:revert:prod": "cross-env ENV=prod yarn typeorm migration:revert"
   },
   "dependencies": {
+    "@colyseus/monitor": "^0.16.6",
     "@colyseus/schema": "2.0.36",
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.0",
