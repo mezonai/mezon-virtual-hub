@@ -14,6 +14,7 @@ import { InventoryModule } from '@modules/inventory/inventory.module';
 import { ItemModule } from '@modules/item/item.module';
 import { ClsModule } from 'nestjs-cls';
 import { dataSourceOption } from './config/data-source.config';
+import { LogViewerModule } from '@modules/log-viewer/log-viewer.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { dataSourceOption } from './config/data-source.config';
     ItemModule,
     InventoryModule,
     MapModule,
+    LogViewerModule,
     LoggerModule,
     FilterModule,
     InterceptorModule,
