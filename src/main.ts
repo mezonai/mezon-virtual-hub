@@ -8,6 +8,7 @@ import { Server } from '@colyseus/core';
 import { GameRoom } from '@modules/colyseus/rooms/game.room';
 import { WebSocketTransport } from '@colyseus/ws-transport';
 import { monitor } from "@colyseus/monitor";
+import { MapKey } from './enum/entity.enum';
 
 const logger = new Logger('Bootstrap');
 
@@ -43,7 +44,11 @@ async function setupColyseusServer() {
     }),
   });
   
-  gameServer.define('my_room', GameRoom);
+  // Define GameRoom for all MapKey values
+  Object.values(MapKey).forEach(mapKey => {
+    gameServer.define(mapKey as string, GameRoom);
+    logger.log(`Defined game room for map: ${mapKey}`);
+  });
   return { gameServer, httpServer };
 }
 
