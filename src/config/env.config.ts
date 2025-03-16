@@ -30,6 +30,7 @@ const validateEnv = {
 export const configValidationSchema = Joi.object(validateEnv);
 
 export const configEnv = () => ({
+  ALLOWED_ORIGINS: '*',
   PORT: Number(process.env.PORT),
   GAME_PORT: Number(process.env.GAME_PORT),
   DB_NAME: process.env.POSTGRES_DB!,

@@ -19,5 +19,4 @@ RUN mkdir -p /app/logs
 
 ENV ENV=prod
 
-# CMD ["node", "dist/main.js"]
 CMD ["sh", "-c", "node dist/main.js > /app/logs/output.log 2>&1"]
