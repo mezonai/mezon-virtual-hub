@@ -2,7 +2,7 @@ import { MapEntity } from '@modules/map/entity/map.entity';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { plainToClass } from 'class-transformer';
-import { Repository } from 'typeorm';
+import { FindOneOptions, Repository } from 'typeorm';
 import { UpdateInfoDto, UserInformationDto } from './dto/user.dto';
 import { UserEntity } from './entity/user.entity';
 
@@ -78,5 +78,9 @@ export class UserService {
       .getMany();
 
     return users;
+  }
+
+  async findOne(options: FindOneOptions<UserEntity>) {
+    return await this.userRepository.findOne(options);
   }
 }

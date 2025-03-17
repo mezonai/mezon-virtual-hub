@@ -17,7 +17,7 @@ export class Logger extends ConsoleLogger implements LoggerService {
     super.warn(message, context || this.context);
   }
 
-  debug(message: string, context?: string) {
+  debug(message: string, context?: string) {  
     super.debug(message, context || this.context);
   }
 

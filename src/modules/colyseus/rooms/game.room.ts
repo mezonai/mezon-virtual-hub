@@ -1,27 +1,105 @@
+import { ExtractAuthData, ExtractUserData } from '@colyseus/core/build/Room';
 import { Schema, type } from '@colyseus/schema';
-import { Client, Room } from 'colyseus';
+import { configEnv } from '@config/env.config';
 import { Logger } from '@libs/logger';
-
+import { JwtPayload } from '@modules/auth/dtos/response';
+import { UserEntity } from '@modules/user/entity/user.entity';
+import {
+  ForbiddenException,
+  Inject,
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Client, Room } from 'colyseus';
+import { IncomingMessage } from 'http';
+import { Repository } from 'typeorm';
 
 class Player extends Schema {
-  @type("string") id: string = "";
-  @type("string") name: string = "";
-  @type("number") x: number = 0;
-  @type("number") y: number = 0;
+  @type('string') id: string = '';
+  @type('string') display_name: string = '';
+  @type('number') x: number = 0;
+  @type('number') y: number = 0;
 }
 
 class RoomState extends Schema {
   @type({ map: Player }) players = new Map<string, Player>();
 }
 
+@Injectable()
 export class GameRoom extends Room<RoomState> {
   maxClients = 50; // Max players
-
+  logger = new Logger();
   constructor(
-    private readonly logger: Logger
+    @InjectRepository(UserEntity)
+    private readonly userRepository: Repository<UserEntity>,
+    @Inject() private readonly jwtService: JwtService,
   ) {
     super();
     this.logger.log(`GameRoom created : ${this.roomName}`);
+  }
+
+  verifyJwt(token: string): JwtPayload {
+    try {
+      const payload: JwtPayload = this.jwtService.verify(token, {
+        secret: configEnv().JWT_ACCESS_TOKEN_SECRET,
+      });
+
+      const { email, expireTime, username } = payload;
+
+      const expireDate = new Date(expireTime);
+      const now = new Date().getTime();
+
+      if (
+        !expireTime ||
+        isNaN(expireDate.getTime()) ||
+        now > expireDate.getTime()
+      ) {
+        throw new ForbiddenException(
+          'Your session has expired. Please log in again to continue.',
+        );
+      }
+
+      return payload;
+    } catch (error) {
+      if (
+        error instanceof UnauthorizedException ||
+        error instanceof ForbiddenException
+      ) {
+        throw error;
+      }
+
+      throw new UnauthorizedException();
+    }
+  }
+
+  async onAuth(
+    client: Client,
+    options: { accessToken: string },
+    request?: IncomingMessage,
+  ) {
+    const { username, email } = this.verifyJwt(options.accessToken);
+
+    const user = await this.userRepository.findOne({
+      where: [{ username }, { email }],
+      relations: ['map'],
+    });
+
+    if (!user || !user.map) {
+      throw new NotFoundException('User not found or not assigned to any map');
+    }
+
+    if (user.map.map_key !== this.roomName) {
+      throw new ForbiddenException(
+        `User is not allowed in this room: ${this.roomId}`,
+      );
+    }
+
+    console.log(`User ${user.username} is allowed in ${this.roomId}`);
+    client.userData = user;
+    return true;
   }
 
   onCreate() {
@@ -37,7 +115,7 @@ export class GameRoom extends Room<RoomState> {
           x: player.x,
           y: player.y,
           sX: message.sX,
-          anim: message.anim
+          anim: message.anim,
         });
       }
     });
@@ -72,24 +150,48 @@ export class GameRoom extends Room<RoomState> {
     this.clock.setTimeout(() => this.disconnect(), 5 * 60 * 1000);
   }
 
-  onJoin(client: Client, options: any, auth: any) {
-    this.logger.log(`Player ${client.sessionId} joined room ${this.roomName}`);
+  onJoin(client: Client<UserEntity>, options: any, auth: any) {
+    const { userData } = client;
+
+    this.logger.log(
+      `Player ${userData?.username} joined room ${this.roomName}`,
+    );
+
     const player = new Player();
     player.id = client.sessionId;
-    player.x = 0;
-    player.y = 0;
-    player.name = client.userData?.name || 'Guest ' + client.sessionId;
+    player.x = userData?.position_x ?? 0;
+    player.y = userData?.position_y ?? 0;
+    player.display_name = userData?.display_name || userData?.username || '';
 
     this.state.players.set(client.sessionId, player);
     this.broadcast('newPlayer', {
       id: client.sessionId,
       x: player.x,
       y: player.y,
-      name: player.name,
+      display_name: player.display_name,
     });
   }
 
-  onLeave(client: Client) {
+  onLeave(client: Client<UserEntity>) {
+    console.log(
+      'this.state.players.get(client.sessionId)?.x',
+      this.state.players.get(client.sessionId),
+      client.sessionId,
+    );
+
+    if (client.userData) {
+      const { userData } = client;
+
+      userData.position_x = Math.floor(
+        this.state.players.get(client.sessionId)?.x || 0,
+      );
+      userData.position_y = Math.floor(
+        this.state.players.get(client.sessionId)?.y || 0,
+      );
+
+      this.userRepository.update(userData.id, userData);
+    }
+
     if (this.state.players.has(client.sessionId)) {
       this.broadcast('playerLeft', client.sessionId);
       this.state.players.delete(client.sessionId);
@@ -98,6 +200,9 @@ export class GameRoom extends Room<RoomState> {
   }
 
   onUncaughtException(err: Error, methodName: string) {
-    this.logger.error(`An error occurred in ${methodName}: ${err}`, err.stack || 'No stack trace');
+    this.logger.error(
+      `An error occurred in ${methodName}: ${err}`,
+      err.stack || 'No stack trace',
+    );
   }
 }

@@ -1,3 +1,4 @@
+import { Logger } from '@libs/logger';
 import {
   CallHandler,
   ExecutionContext,
@@ -10,12 +11,19 @@ import { IResponse } from '@types';
 import { Request, Response } from 'express';
 import { ClsService } from 'nestjs-cls';
 import { catchError, Observable, of } from 'rxjs';
+import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
 export class LogErrorInterceptor implements NestInterceptor {
-  constructor(private readonly cls: ClsService) {}
+  constructor(
+    private readonly cls: ClsService,
+    private readonly log: Logger,
+  ) {
+    this.log.setContext(LogErrorInterceptor.name);
+  }
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
+    this.cls.set('requestId', uuidv4());
     return next.handle().pipe(
       catchError((err) => {
         let code = HttpStatus.INTERNAL_SERVER_ERROR;
@@ -28,8 +36,10 @@ export class LogErrorInterceptor implements NestInterceptor {
               ? (err.getResponse()['message'] ?? err.getResponse())
               : err.getResponse();
           code = err.getStatus();
+          this.log.log(`[${path}] ${message}`);
+        } else {
+          this.log.error(err, path);
         }
-
         const errorResponse: IResponse<null> = {
           code,
           message,

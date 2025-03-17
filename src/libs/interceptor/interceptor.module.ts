@@ -3,9 +3,10 @@ import { APP_INTERCEPTOR } from '@nestjs/core';
 import { LogErrorInterceptor } from './log-error.interceptor';
 import { ResponseInterceptor } from './response.interceptor';
 import { ClsModule } from 'nestjs-cls';
+import { LoggerModule } from '@libs/logger';
 
 @Module({
-  imports: [ClsModule],
+  imports: [ClsModule, LoggerModule],
   providers: [
     {
       provide: APP_INTERCEPTOR,

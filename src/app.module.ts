@@ -1,4 +1,8 @@
-import { configEnv, configValidationSchema, envFilePath } from '@config/env.config';
+import {
+  configEnv,
+  configValidationSchema,
+  envFilePath,
+} from '@config/env.config';
 import { AuthModule } from '@modules/auth/auth.module';
 import { MapModule } from '@modules/map/map.module';
 import { UserModule } from '@modules/user/user.module';
@@ -25,7 +29,6 @@ import { LogViewerModule } from '@modules/log-viewer/log-viewer.module';
       validationSchema: configValidationSchema,
     }),
     TypeOrmModule.forRoot(dataSourceOption),
-    // ColyseusModule,
     AuthModule,
     UserModule,
     ItemModule,
