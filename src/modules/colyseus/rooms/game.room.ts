@@ -164,21 +164,9 @@ export class GameRoom extends Room<RoomState> {
     player.display_name = userData?.display_name || userData?.username || '';
 
     this.state.players.set(client.sessionId, player);
-    this.broadcast('newPlayer', {
-      id: client.sessionId,
-      x: player.x,
-      y: player.y,
-      display_name: player.display_name,
-    });
   }
 
   onLeave(client: Client<UserEntity>) {
-    console.log(
-      'this.state.players.get(client.sessionId)?.x',
-      this.state.players.get(client.sessionId),
-      client.sessionId,
-    );
-
     if (client.userData) {
       const { userData } = client;
 
