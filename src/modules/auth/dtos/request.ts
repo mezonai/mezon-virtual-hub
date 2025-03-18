@@ -33,19 +33,27 @@ export class ValidateJwtRequest extends Request {
 }
 
 export class LoginMezonDto {
-  @IsString()
+  @ApiProperty({
+    description: 'Web app data takes from mezon app',
+    example: 'query_id=UO25KGASFAEFARUE&user=%7B%22',
+  })
   @IsNotEmpty()
-  userid: string;
-
   @IsString()
-  @IsNotEmpty()
-  username: string;
-
-  @IsString()
-  @IsNotEmpty()
-  hash: string;
-
-  @IsOptional()
-  @IsString()
-  avatar_url?: string;
+  web_app_data: string;
 }
+
+export type WebAppData = {
+  query_id: string;
+  user: string;
+  auth_date: string;
+  signature: string;
+  hash: string;
+};
+
+export type UserInfoWebAppData = {
+  id: string;
+  username: string;
+  display_name: string;
+  avatar_url: string;
+  mezon_id: string;
+};

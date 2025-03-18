@@ -7,17 +7,22 @@ import {
 
 import { EntityManager } from 'typeorm';
 
+import { configEnv } from '@config/env.config';
 import { GenericRepository } from '@libs/repository/genericRepository';
+import { generateMezonHash } from '@libs/utils/hash';
+import { UserEntity } from '@modules/user/entity/user.entity';
 import { JwtService } from '@nestjs/jwt';
 import { isEmail } from 'class-validator';
 import crypto from 'crypto';
 import moment from 'moment';
-import { LoginMezonDto, OAuth2Request } from './dtos/request';
+import {
+  LoginMezonDto,
+  OAuth2Request,
+  UserInfoWebAppData,
+  WebAppData,
+} from './dtos/request';
 import { JwtPayload } from './dtos/response';
 import { OAuth2Service } from './oauth2.service';
-import { UserEntity } from '@modules/user/entity/user.entity';
-import { generateMezonHash } from '@libs/utils/hash';
-import { configEnv } from '@config/env.config';
 
 @Injectable()
 export class AuthService {
@@ -157,17 +162,24 @@ export class AuthService {
   }
 
   async loginWithMezonHash(payload: LoginMezonDto) {
-    const { hash, userid, username, avatar_url } = payload;
-    const hashGenerate = generateMezonHash(payload);
+    const { web_app_data } = payload;
+    const hashGenerate = generateMezonHash(web_app_data);
 
     const adminBypassUsers = configEnv().ADMIN_BYPASS_USERS?.split(',') || [];
+
+    const { hash, user: mezonUserInfo } = Object.fromEntries<WebAppData | any>(
+      new URLSearchParams(decodeURIComponent(web_app_data)),
+    ) as WebAppData;
+
+    const { avatar_url, id, mezon_id, username }: UserInfoWebAppData =
+      JSON.parse(mezonUserInfo);
 
     if (!adminBypassUsers.includes(username) && hashGenerate !== hash) {
       throw new BadRequestException('Invalid hash');
     }
 
     const user = await this.userRepository.findOne({
-      where: [{ username }, { mezon_id: userid }],
+      where: [{ username }, { mezon_id: id }],
     });
 
     if (user) {
@@ -177,8 +189,9 @@ export class AuthService {
 
     const newUser = await this.userRepository.create({
       username,
-      mezon_id: userid,
+      mezon_id: id,
       avatar_url,
+      email: mezon_id,
     });
 
     const tokens = await this.generateAccessAndRefreshTokens(newUser);

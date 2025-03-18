@@ -32,21 +32,7 @@ export class AuthController {
 
   @Public()
   @Post('mezon-login')
-  @ApiBody({
-    type: LoginMezonDto,
-    examples: {
-      example1: {
-        summary: 'Example Mezon Login',
-        description: 'Sample data for Mezon login request',
-        value: {
-          userid: '123456',
-          username: 'mezonUser',
-          hash: 'abcdef1234567890abcdef1234567890',
-          avatar_url: 'https://cdn.example.vn/12346'
-        },
-      },
-    },
-  })
+  @ApiBody({ type: LoginMezonDto })
   @ApiResponseWithAuthToken()
   @ApiOperation({
     summary: 'Login by Mezon token hash',
