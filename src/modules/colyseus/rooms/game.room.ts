@@ -126,6 +126,13 @@ export class GameRoom extends Room<RoomState> {
     });
 
     this.logger.log(`Room created! ${this.roomId}`);
+
+    this.onMessage('chat', (client, message) => {
+      console.log(
+        `💬 [${client.sessionId}] ${message.sender}: ${message.text}`,
+      );
+      this.broadcast('chat', message);
+    });
   }
 
   onBeforePatch() {
