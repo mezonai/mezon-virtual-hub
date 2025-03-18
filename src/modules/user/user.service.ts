@@ -39,6 +39,7 @@ export class UserService {
         gold: userInfo.gold,
         gender: userInfo.gender,
         display_name: userInfo.display_name,
+        skin_set: userInfo.skin_set,
       },
       inventories: userInfo.inventories,
       map: userInfo.map,

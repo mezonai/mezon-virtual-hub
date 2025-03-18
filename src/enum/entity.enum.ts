@@ -9,13 +9,13 @@ export enum MapKey {
 }
 
 export enum ItemType {
-  HAT = 1,
-  SQUARE = 2,
-  SHIRT = 3,
-  HAIR = 4,
-  PANTS = 5,
-  SHOES = 6,
-  ACCESSORY = 7,
+  Hair = 1,
+  Hat = 2,
+  Face = 3,
+  Eyes = 4,
+  Upper = 5,
+  Lower = 6,
+  Glasses = 7,
 }
 
 export enum Gender {

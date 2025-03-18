@@ -75,6 +75,12 @@ export class MapDtoResponse {
   created_at: Date;
 
   @Expose()
+  default_position_x: number;
+
+  @Expose()
+  default_position_y: number;
+
+  @Expose()
   updated_at: Date;
 
   @Exclude()

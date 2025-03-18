@@ -16,6 +16,12 @@ export class MapEntity extends AuditEntity {
   @Column({ type: 'int' })
   height: number;
 
+  @Column({ type: 'int', default: 0 })
+  default_position_x: number;
+
+  @Column({ type: 'int', default: 0 })
+  default_position_y: number;
+
   @Column({ type: 'boolean', default: false })
   is_locked: boolean;
 }

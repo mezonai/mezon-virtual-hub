@@ -39,6 +39,9 @@ export class UserEntity extends AuditEntity {
   @Column({ type: 'enum', enum: Gender, nullable: true })
   gender: Gender | null;
 
+  @Column('text', { array: true, nullable: true })
+  skin_set: string[];
+
   @ManyToOne(() => MapEntity, { nullable: true })
   @JoinColumn({ name: 'map_id' })
   map: MapEntity | null;

@@ -92,7 +92,7 @@ export class ItemDtoRequest {
     description:
       'Type of the item (e.g., 1 for ACCESSORY, 2 for Shirt, 3 for Hair,...)',
     enum: ItemType,
-    example: ItemType.ACCESSORY,
+    example: ItemType.Face,
   })
   @IsNumber()
   type: number;
