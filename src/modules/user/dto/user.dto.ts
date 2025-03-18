@@ -3,7 +3,7 @@ import { InventoryDto } from '@modules/inventory/dto/inventory.dto';
 import { MapDtoResponse } from '@modules/map/dto/map.dto';
 import { ApiProperty } from '@nestjs/swagger';
 import { Expose, Type } from 'class-transformer';
-import { IsEnum, IsNumber, IsOptional, IsString, IsUUID } from 'class-validator';
+import { IsArray, IsEnum, IsNumber, IsOptional, IsString, IsUUID } from 'class-validator';
 import { UUID } from 'typeorm/driver/mongodb/bson.typings';
 
 export class UserInformationDto {
@@ -72,4 +72,14 @@ export class UpdateInfoDto {
   @IsOptional()
   @IsEnum(Gender)
   gender?: Gender;
+
+  @ApiProperty({
+    description: 'The skin set of the user',
+    type: [String],
+    required: false,
+  })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  skin_set?: string[];
 }
