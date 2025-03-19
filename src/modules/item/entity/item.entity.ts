@@ -19,7 +19,7 @@ export class ItemEntity extends AuditEntity {
   @Column({ type: 'int', default: 0 })
   gold: number;
 
-  @Column({ type: 'int', unique: true })
+  @Column({ type: 'int' })
   type: ItemType;
 
   @Column({ type: 'boolean', default: false })

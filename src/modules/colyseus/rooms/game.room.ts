@@ -47,7 +47,7 @@ export class GameRoom extends Room<RoomState> {
         secret: configEnv().JWT_ACCESS_TOKEN_SECRET,
       });
 
-      const { email, expireTime, username } = payload;
+      const { expireTime } = payload;
 
       const expireDate = new Date(expireTime);
       const now = new Date().getTime();
@@ -174,24 +174,25 @@ export class GameRoom extends Room<RoomState> {
   }
 
   onLeave(client: Client<UserEntity>) {
-    if (client.userData) {
-      const { userData } = client;
+    const { userData } = client;
+    if (userData) {
+      const positionUpdate = {
+        position_x: Math.floor(
+          this.state.players.get(client.sessionId)?.x || 0,
+        ),
+        position_y: Math.floor(
+          this.state.players.get(client.sessionId)?.y || 0,
+        ),
+      };
 
-      userData.position_x = Math.floor(
-        this.state.players.get(client.sessionId)?.x || 0,
-      );
-      userData.position_y = Math.floor(
-        this.state.players.get(client.sessionId)?.y || 0,
-      );
-
-      this.userRepository.update(userData.id, userData);
+      this.userRepository.update(userData.id, positionUpdate);
     }
 
     if (this.state.players.has(client.sessionId)) {
       this.broadcast('playerLeft', client.sessionId);
       this.state.players.delete(client.sessionId);
     }
-    this.logger.log(`Player ${client.sessionId} left room ${this.roomName}`);
+    this.logger.log(`Player ${userData?.username} left room ${this.roomName}`);
   }
 
   onUncaughtException(err: Error, methodName: string) {
