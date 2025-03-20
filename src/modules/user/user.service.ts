@@ -56,6 +56,11 @@ export class UserService {
         throw new NotFoundException('Map not found or be locked');
       }
 
+      if (map.id !== updateDto.map_id) {
+        user.position_x = map.default_position_x;
+        user.position_y = map.default_position_y;
+      }
+
       user.map = map;
     }
 

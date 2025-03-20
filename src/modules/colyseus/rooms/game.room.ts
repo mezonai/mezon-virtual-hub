@@ -188,6 +188,7 @@ export class GameRoom extends Room<RoomState> {
     player.x = userData?.position_x ?? 0;
     player.y = userData?.position_y ?? 0;
     player.display_name = userData?.display_name || userData?.username || '';
+    player.skin_set = userData?.skin_set.join('/') || '';
 
     this.state.players.set(client.sessionId, player);
   }
