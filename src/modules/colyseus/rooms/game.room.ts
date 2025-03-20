@@ -20,6 +20,7 @@ import { Repository } from 'typeorm';
 class Player extends Schema {
   @type('string') id: string = '';
   @type('string') display_name: string = '';
+  @type('string') skin_set: string = '';
   @type('number') x: number = 0;
   @type('number') y: number = 0;
 }
@@ -47,7 +48,7 @@ export class GameRoom extends Room<RoomState> {
         secret: configEnv().JWT_ACCESS_TOKEN_SECRET,
       });
 
-      const { expireTime } = payload;
+      const { expireTime, username } = payload;
 
       const expireDate = new Date(expireTime);
       const now = new Date().getTime();
@@ -131,6 +132,24 @@ export class GameRoom extends Room<RoomState> {
       console.log(
         `💬 [${client.sessionId}] ${message.sender}: ${message.text}`,
       );
+      this.broadcast('chat', message);
+    });
+
+    this.onMessage('playerUpdateSkin', async (client, message) => {
+      const skinArray = message.skin_set.split('/');
+      const user = client.userData;
+
+      if (user) {
+        this.userRepository.update(user.id, { skin_set: message.skin_set });
+      }
+
+      this.broadcast('onPlayerUpdateSkin', {
+        sessionId: client.sessionId,
+        skin_set: skinArray,
+      });
+    });
+
+    this.onMessage('chat', (client, message) => {
       this.broadcast('chat', message);
     });
   }
