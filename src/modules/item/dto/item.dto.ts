@@ -51,33 +51,14 @@ export class ItemDtoRequest {
   name: string;
 
   @ApiProperty({
-    description: 'Description of the item',
-    example: 'A sharp sword for combat',
-    required: false,
-  })
-  @IsString()
-  @IsOptional()
-  description?: string;
-
-  @ApiProperty({
-    description: 'Width of the item',
+    description: 'Gender can use this item',
     example: 0,
-    required: false,
+    required: true,
     default: 0,
   })
   @IsNumber()
   @IsOptional()
-  width?: number;
-
-  @ApiProperty({
-    description: 'Height of the item',
-    example: 0,
-    required: false,
-    default: 0,
-  })
-  @IsNumber()
-  @IsOptional()
-  height?: number;
+  gender?: number;
 
   @ApiProperty({
     description: 'Gold value of the item',
