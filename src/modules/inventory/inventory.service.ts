@@ -19,7 +19,7 @@ export class InventoryService {
     private readonly userRepository: Repository<UserEntity>,
     @InjectRepository(ItemEntity)
     private readonly itemRepository: Repository<ItemEntity>,
-  ) { }
+  ) {}
 
   async buyItem(user: UserEntity, itemId: string): Promise<Inventory> {
     const item = await this.itemRepository.findOne({ where: { id: itemId } });
@@ -31,24 +31,38 @@ export class InventoryService {
       throw new BadRequestException('Not enough gold');
     }
 
-    user.gold -= item.gold;
-    await this.userRepository.save(user);
-
-    const inventory = this.inventoryRepository.create({
-      user,
-      item,
-      equipped: false,
+    let inventory = await this.inventoryRepository.findOne({
+      where: { user: { id: user.id }, item: { id: itemId } },
     });
 
+    if (inventory) {
+      if (!item.is_stackable) {
+        throw new BadRequestException(
+          'You already own this item and cannot have more than one.',
+        );
+      }
+      inventory.quantity += 1;
+    } else {
+      inventory = this.inventoryRepository.create({
+        user,
+        item,
+        equipped: false,
+      });
+    }
+
+    user.gold -= item.gold;
+    await this.userRepository.save(user);
     await this.inventoryRepository.save(inventory);
 
-    let response_inventory_data = {
+    const response_inventory_data = {
       inventory_data: {
         id: inventory.id,
         equipped: inventory.equipped,
-        item: item
-      }
-    }
+        quantity: inventory.quantity,
+        item: item,
+      },
+    };
+
     const response_data = { ...response_inventory_data, user_gold: user.gold };
     return plainToInstance(Inventory, response_data);
   }

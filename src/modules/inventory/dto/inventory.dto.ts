@@ -1,5 +1,5 @@
 import { ItemDto } from '@modules/item/dto/item.dto';
-import { Expose, Type } from 'class-transformer';
+import { Exclude, Expose, Type } from 'class-transformer';
 
 export class InventoryDto {
   @Expose()
@@ -7,6 +7,15 @@ export class InventoryDto {
 
   @Expose()
   equipped: boolean;
+
+  @Exclude()
+  deleted_at: Date | null;
+
+  @Exclude()
+  updated_at: Date | null;
+
+  @Exclude()
+  created_at: Date | null;
 
   @Type(() => ItemDto)
   @Expose()

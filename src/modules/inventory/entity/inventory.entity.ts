@@ -1,19 +1,18 @@
 import { ItemEntity } from '@modules/item/entity/item.entity';
 import { UserEntity } from '@modules/user/entity/user.entity';
+import { AuditEntity } from '@types';
 import {
-  Entity,
   Column,
-  ManyToOne,
+  Entity,
   JoinColumn,
-  PrimaryGeneratedColumn,
+  ManyToOne
 } from 'typeorm';
 
 @Entity({ name: 'inventory' })
-export class Inventory {
-  @PrimaryGeneratedColumn()
-  id: number;
-
-  @ManyToOne(() => UserEntity, (user) => user.inventories, { onDelete: 'CASCADE' })
+export class Inventory extends AuditEntity {
+  @ManyToOne(() => UserEntity, (user) => user.inventories, {
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'user_id' })
   user: UserEntity;
 
@@ -23,4 +22,7 @@ export class Inventory {
 
   @Column({ type: 'boolean', default: false })
   equipped: boolean;
+
+  @Column({ type: 'int', default: 1 })
+  quantity: number;
 }

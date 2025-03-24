@@ -140,7 +140,12 @@ export class GameRoom extends Room<RoomState> {
       const user = client.userData;
 
       if (user) {
-        this.userRepository.update(user.id, { skin_set: message.skin_set });
+        this.userRepository.update(user.id, { skin_set: skinArray });
+      }
+
+      const player = this.state.players.get(client.sessionId);
+      if (player) {
+        player.skin_set = skinArray.join('/');
       }
 
       this.broadcast('onPlayerUpdateSkin', {
@@ -188,7 +193,7 @@ export class GameRoom extends Room<RoomState> {
     player.x = userData?.position_x ?? 0;
     player.y = userData?.position_y ?? 0;
     player.display_name = userData?.display_name || userData?.username || '';
-    player.skin_set = userData?.skin_set.join('/') || '';
+    player.skin_set = userData?.skin_set?.join('/') || '';
 
     this.state.players.set(client.sessionId, player);
   }

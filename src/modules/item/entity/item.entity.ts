@@ -21,4 +21,7 @@ export class ItemEntity extends AuditEntity {
 
   @Column({ type: 'boolean', default: false })
   is_static: boolean;
+
+  @Column({ type: 'boolean', default: false })
+  is_stackable: boolean;
 }
