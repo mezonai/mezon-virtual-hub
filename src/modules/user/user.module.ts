@@ -7,11 +7,13 @@ import { JwtModule } from '@nestjs/jwt';
 import { MapEntity } from '@modules/map/entity/map.entity';
 import { Inventory } from '@modules/inventory/entity/inventory.entity';
 import { InventoryModule } from '@modules/inventory/inventory.module';
+import { LoggerModule } from '@libs/logger';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([UserEntity, MapEntity, Inventory]),
     JwtModule.register({}),
+    LoggerModule
   ],
   controllers: [UserController],
   providers: [UserService],

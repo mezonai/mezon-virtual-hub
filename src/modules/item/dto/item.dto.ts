@@ -1,6 +1,6 @@
 import { Exclude, Expose } from 'class-transformer';
 import { ItemEntity } from '../entity/item.entity';
-import { ItemType } from '@enum';
+import { Gender, ItemType } from '@enum';
 import { ApiProperty } from '@nestjs/swagger';
 import { IsString, IsOptional, IsNumber } from 'class-validator';
 
@@ -10,15 +10,6 @@ export class ItemDto {
 
   @Expose()
   name: string;
-
-  @Expose()
-  description: string;
-
-  @Expose()
-  width: number;
-
-  @Expose()
-  height: number;
 
   @Expose()
   is_equippable: boolean;
@@ -31,6 +22,9 @@ export class ItemDto {
 
   @Expose()
   type: number;
+
+  @Expose()
+  gender: Gender;
 
   @Exclude()
   deleted_at: Date | null;
@@ -52,13 +46,12 @@ export class ItemDtoRequest {
 
   @ApiProperty({
     description: 'Gender can use this item',
-    example: 0,
-    required: true,
-    default: 0,
+    example: Gender.NOT_SPECIFIED,
+    default: Gender.NOT_SPECIFIED,
+    enum: Gender,
   })
-  @IsNumber()
   @IsOptional()
-  gender?: number;
+  gender: Gender = Gender.NOT_SPECIFIED;
 
   @ApiProperty({
     description: 'Gold value of the item',
