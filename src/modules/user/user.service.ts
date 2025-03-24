@@ -1,5 +1,5 @@
 import { MapEntity } from '@modules/map/entity/map.entity';
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { plainToClass } from 'class-transformer';
 import { FindOneOptions, Repository } from 'typeorm';
@@ -56,7 +56,7 @@ export class UserService {
         throw new NotFoundException('Map not found or be locked');
       }
 
-      if (map.id !== updateDto.map_id) {
+      if (user.id !== updateDto.map_id) {
         user.position_x = map.default_position_x;
         user.position_y = map.default_position_y;
       }

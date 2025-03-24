@@ -10,12 +10,6 @@ export class MapEntity extends AuditEntity {
   @Column({ type: 'enum', enum: MapKey, unique: true })
   map_key: MapKey;
 
-  @Column({ type: 'int' })
-  width: number;
-
-  @Column({ type: 'int' })
-  height: number;
-
   @Column({ type: 'int', default: 0 })
   default_position_x: number;
 

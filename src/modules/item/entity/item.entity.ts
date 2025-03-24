@@ -1,4 +1,4 @@
-import { ItemType } from '@enum';
+import { Gender, ItemType } from '@enum';
 import { AuditEntity } from '@types';
 import { Entity, Column } from 'typeorm';
 
@@ -7,8 +7,8 @@ export class ItemEntity extends AuditEntity {
   @Column({ type: 'varchar' })
   name: string;
 
-  @Column({ type: 'int', default: -1 })
-  gender: number;
+  @Column({ type: 'enum', enum: Gender, default: Gender.NOT_SPECIFIED })
+  gender: Gender = Gender.NOT_SPECIFIED;
 
   @Column({ type: 'int', default: 0 })
   gold: number;
