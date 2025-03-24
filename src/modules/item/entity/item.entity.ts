@@ -7,14 +7,8 @@ export class ItemEntity extends AuditEntity {
   @Column({ type: 'varchar' })
   name: string;
 
-  @Column({ type: 'text', nullable: true })
-  description: string;
-
-  @Column({ type: 'int', default: 0 })
-  width: number;
-
-  @Column({ type: 'int', default: 0 })
-  height: number;
+  @Column({ type: 'int', default: -1 })
+  gender: number;
 
   @Column({ type: 'int', default: 0 })
   gold: number;
