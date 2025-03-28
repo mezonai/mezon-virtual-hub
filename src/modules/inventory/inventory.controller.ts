@@ -1,9 +1,9 @@
-import { Controller, Post, Param, ParseIntPipe } from '@nestjs/common';
+import { Controller, Post, Param, ParseIntPipe, ParseUUIDPipe } from '@nestjs/common';
 import { InventoryService } from './inventory.service';
 import { ClsService } from 'nestjs-cls';
 import { USER_TOKEN } from '@constant';
 import { UserEntity } from '@modules/user/entity/user.entity';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiParam, ApiTags } from '@nestjs/swagger';
 
 @ApiBearerAuth()
 @Controller('inventory')
@@ -14,9 +14,13 @@ export class InventoryController {
     private readonly cls: ClsService,
   ) {}
 
-  @Post('buy/:itemId')
-  async buyItem(@Param('itemId') itemId: string) {
+  @Post('buy/:item_id')
+  @ApiParam({
+    name: 'item_id',
+    example: '91bea29f-0e87-42a5-b851-d9d0386ac32f',
+  })
+  async buyItem(@Param('item_id', ParseUUIDPipe) item_id: string) {
     const user = this.cls.get<UserEntity>(USER_TOKEN);
-    return this.inventoryService.buyItem(user, itemId);
+    return this.inventoryService.buyItem(user, item_id);
   }
 }

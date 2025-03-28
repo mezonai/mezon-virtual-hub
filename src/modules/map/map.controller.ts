@@ -1,4 +1,4 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
 
 import { Logger } from '@libs/logger';
@@ -9,6 +9,7 @@ import { ClsService } from 'nestjs-cls';
 import { UserService } from '../user/user.service';
 import { UpdateMapDto } from './dto/map.dto';
 import { MapService } from './map.service';
+import { AdminBypassGuard } from '@libs/guard/admin.guard';
 
 @ApiBearerAuth()
 @Controller('map')
@@ -49,6 +50,7 @@ export class MapController {
   // }
 
   @Put('/:id')
+  @UseGuards(AdminBypassGuard)
   @ApiOperation({
     summary: 'Update an existing map',
   })
@@ -61,6 +63,7 @@ export class MapController {
   }
 
   @Delete('/:id')
+  @UseGuards(AdminBypassGuard)
   @ApiOperation({
     summary: 'Delete a map',
   })

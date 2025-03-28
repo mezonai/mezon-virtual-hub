@@ -1,11 +1,13 @@
-import { Controller, Get, HttpException, HttpStatus, Res } from '@nestjs/common';
+import { Controller, Get, HttpException, HttpStatus, Res, UseGuards } from '@nestjs/common';
 import { Response } from 'express';
 import { exec } from 'child_process';
 
 import { existsSync } from 'fs';
 import { Public } from '@libs/decorator';
+import { AdminBypassGuard } from '@libs/guard/admin.guard';
 
 @Controller('log-viewer')
+@UseGuards(AdminBypassGuard)
 export class LogViewerController {
   @Public()
   @Get('logs')

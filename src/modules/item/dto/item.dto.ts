@@ -84,4 +84,11 @@ export class ItemDtoRequest {
   })
   @IsOptional()
   is_static?: boolean;
+
+  @ApiProperty({
+    description: 'Indicates if the item is owned once or stack',
+    example: false,
+  })
+  @IsOptional()
+  is_stackable?: boolean;
 }

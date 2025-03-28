@@ -1,5 +1,5 @@
 import { BaseService } from '@libs/base/base.service';
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { plainToInstance } from 'class-transformer';
 import { EntityManager, Repository } from 'typeorm';
@@ -34,6 +34,23 @@ export class ItemService extends BaseService<ItemEntity> {
     await this.itemRepository.save(newItem);
 
     return plainToInstance(ItemDto, newItem);
+  }
+
+  async updateItem(updateItem: ItemDtoRequest, itemId: string) {
+    const existedItem = await this.itemRepository.findOne({
+      where: {
+        id: itemId,
+      },
+    });
+
+    if (!existedItem) {
+      throw new NotFoundException(`Item ${itemId} not found`)
+    }
+
+    await this.itemRepository.update(itemId, updateItem);
+
+    Object.assign(existedItem, updateItem);
+    return plainToInstance(ItemDto, existedItem);
   }
 
   async deleteItem(id: string) {
