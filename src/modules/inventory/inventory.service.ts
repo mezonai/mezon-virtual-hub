@@ -42,6 +42,7 @@ export class InventoryService {
         );
       }
       inventory.quantity += 1;
+      await this.inventoryRepository.save(inventory);
     } else {
       inventory = this.inventoryRepository.create({
         user,
@@ -52,7 +53,6 @@ export class InventoryService {
 
     user.gold -= item.gold;
     await this.userRepository.save(user);
-    await this.inventoryRepository.save(inventory);
 
     const response_inventory_data = {
       inventory_data: {
