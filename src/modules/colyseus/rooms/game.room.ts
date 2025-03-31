@@ -149,15 +149,20 @@ export class GameRoom extends Room<RoomState> {
     this.state.items.set("car2", new Item({ x: 300, y: 400, type: "gokart" }));
 
     this.onMessage("move", (client, buffer: ArrayBuffer) => {
-      const data = this.decodeMoveData(new Uint8Array(buffer));
-      const player = this.state.players.get(client.sessionId);
-      if (player) {
-        player.assign({
-          x: data.x,
-          y: data.y
-        });
+      try {
+        const data = this.decodeMoveData(new Uint8Array(buffer));
+        const player = this.state.players.get(client.sessionId);
+        if (player) {
+          player.assign({
+            x: data.x,
+            y: data.y
+          });
 
-        this.broadcast("updatePosition", this.encodeMoveData(client.sessionId, data.x, data.y, data.sX, data.anim));
+          this.broadcast("updatePosition", this.encodeMoveData(client.sessionId, data.x, data.y, data.sX, data.anim));
+        }
+      } catch (error) {
+        this.logger.error("Error decoding move data", error);
+        return;
       }
     });
 

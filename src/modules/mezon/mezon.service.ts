@@ -22,9 +22,16 @@ export class MezonService implements OnModuleInit, OnModuleDestroy {
     this.client = new MezonClient(configEnv().MEZON_APPLICATION_TOKEN);
     await this.client.authenticate();
 
-    this.logger.log('Mezon client authenticated');
+    this.logger.log('Mezon client authenticated in module init');
 
     this.client.on(Events.TokenSend, async (event: TokenSentEvent) => {
+      this.logger.log(`Received TokenSend event mezon service: ${JSON.stringify(event)}`);
+      if (event.receiver_id === process.env.BOT_ID) {
+        // Handle token received event
+        this.logger.log(`Processing token for receiver: ${event.receiver_id}`);
+        // Example: Call service to process transaction
+        // await TransactionService.OnBuyItem(event);
+      }
     });
 
     this.client.on(Events.ChannelMessage, (event) => {
