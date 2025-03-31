@@ -25,6 +25,7 @@ const validateEnv = {
   JWT_ACCESS_TOKEN_EXPIRES_IN_MINUTES: Joi.number().default(60),
   JWT_REFRESH_TOKEN_EXPIRES_IN_MINUTES: Joi.number().default(10080),
   MEZON_APPLICATION_TOKEN: Joi.string().required(),
+  MEZON_APPLICATION_ID: Joi.string().required(),
 };
 
 export const configValidationSchema = Joi.object(validateEnv);
@@ -53,6 +54,7 @@ export const configEnv = () => ({
   JWT_REFRESH_TOKEN_EXPIRES_IN_MINUTES: Number(
     process.env.JWT_REFRESH_TOKEN_EXPIRES_IN_MINUTES,
   ),
-  MEZON_APPLICATION_TOKEN: process.env.MEZON_APPLICATION_TOKEN!,
   ADMIN_BYPASS_USERS: process.env.ADMIN_BYPASS_USERS!,
+  MEZON_APPLICATION_TOKEN: process.env.MEZON_APPLICATION_TOKEN!,
+  MEZON_APPLICATION_ID: process.env.MEZON_APPLICATION_ID!,
 });

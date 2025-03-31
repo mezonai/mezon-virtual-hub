@@ -19,6 +19,7 @@ import { ItemModule } from '@modules/item/item.module';
 import { ClsModule } from 'nestjs-cls';
 import { dataSourceOption } from './config/data-source.config';
 import { LogViewerModule } from '@modules/log-viewer/log-viewer.module';
+import { MezonModule } from '@modules/mezon/mezon.module';
 
 @Module({
   imports: [
@@ -39,6 +40,7 @@ import { LogViewerModule } from '@modules/log-viewer/log-viewer.module';
     FilterModule,
     InterceptorModule,
     GuardModule,
+    MezonModule,
     ClsModule.forRoot({
       global: true,
       middleware: { mount: true },

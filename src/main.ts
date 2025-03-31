@@ -3,6 +3,7 @@ import { monitor } from '@colyseus/monitor';
 import { WebSocketTransport } from '@colyseus/ws-transport';
 import { swaggerConfig } from '@config';
 import { configEnv } from '@config/env.config';
+import { SUB_GAME_ROOM } from '@constant';
 import { GameRoom } from '@modules/colyseus/rooms/game.room';
 import { INestApplication, Logger, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
@@ -34,7 +35,15 @@ async function setupNestApp() {
   return app;
 }
 
-async function setupColyseusServer(app) {
+function defineRoomWithPaths(gameServer: Server, app: INestApplication<any>, baseKey: string) {
+  SUB_GAME_ROOM.forEach((subPath) => {
+    const roomPath = `${baseKey}${subPath}`;
+    gameServer.define(roomPath, injectDeps(app, GameRoom));
+    logger.log(`Defined game room: ${roomPath}`);
+  });
+}
+
+async function setupColyseusServer(app: INestApplication<any>) {
   const httpServer = createServer();
   const gameServer = new Server({
     transport: new WebSocketTransport({
@@ -46,8 +55,7 @@ async function setupColyseusServer(app) {
 
   // Define GameRoom for all MapKey values
   Object.values(MapKey).forEach((mapKey) => {
-    gameServer.define(mapKey as string, injectDeps(app, GameRoom));
-    logger.log(`Defined game room for map: ${mapKey}`);
+    defineRoomWithPaths(gameServer, app, mapKey);
   });
   return { gameServer, httpServer };
 }

@@ -7,7 +7,6 @@ import { Public } from '@libs/decorator';
 import { AdminBypassGuard } from '@libs/guard/admin.guard';
 
 @Controller('log-viewer')
-@UseGuards(AdminBypassGuard)
 export class LogViewerController {
   @Public()
   @Get('logs')
