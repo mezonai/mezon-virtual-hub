@@ -25,8 +25,15 @@ class Player extends Schema {
   @type('number') y: number = 0;
 }
 
+class Item extends Schema {
+  @type("number") x: number = 0;
+  @type("number") y: number = 0;
+  @type("string") type: string = "";
+}
+
 class RoomState extends Schema {
   @type({ map: Player }) players = new Map<string, Player>();
+  @type({ map: Item }) items = new Map<string, Item>();
 }
 
 @Injectable()
@@ -91,10 +98,9 @@ export class GameRoom extends Room<RoomState> {
     if (!user || !user.map) {
       throw new NotFoundException('User not found or not assigned to any map');
     }
-
     if (user.map.map_key !== this.roomName) {
       throw new ForbiddenException(
-        `User is not allowed in this room: ${this.roomId}`,
+        `User is not allowed in this room: ${this.roomName}`,
       );
     }
 
@@ -103,23 +109,58 @@ export class GameRoom extends Room<RoomState> {
     return true;
   }
 
+  private decodeMoveData(buffer: Uint8Array) {
+    const view = new DataView(buffer.buffer, buffer.byteOffset, buffer.byteLength);
+    const x = view.getInt16(0, true);
+    const y = view.getInt16(2, true);
+    const sX = view.getInt8(4);
+
+    const animBytes = buffer.slice(5);
+    const anim = new TextDecoder().decode(animBytes);
+
+    return { x, y, sX, anim };
+  }
+
+  private encodeMoveData(sessionId: string, x: number, y: number, sX: number, anim: string): Uint8Array {
+    const sessionBytes = new TextEncoder().encode(sessionId);
+    const animBytes = new TextEncoder().encode(anim);
+
+    const totalSize = 6 + sessionBytes.length + animBytes.length;
+    console.log(totalSize)
+    const buffer = new ArrayBuffer(totalSize);
+    const view = new DataView(buffer);
+    const uint8Array = new Uint8Array(buffer);
+
+    view.setInt16(0, x, true);
+    view.setInt16(2, y, true);
+    view.setInt8(4, sX);
+    view.setUint8(5, sessionBytes.length);
+
+    uint8Array.set(sessionBytes, 6);
+
+    uint8Array.set(animBytes, 6 + sessionBytes.length);
+
+    return uint8Array;
+  }
+
   onCreate() {
     this.setState(new RoomState());
+    this.state.items.set("car1", new Item({ x: 100, y: 200, type: "gokart" }));
+    this.state.items.set("car2", new Item({ x: 300, y: 400, type: "gokart" }));
 
-    this.onMessage('move', (client, message) => {
+    this.onMessage("move", (client, buffer: ArrayBuffer) => {
+      const data = this.decodeMoveData(new Uint8Array(buffer));
       const player = this.state.players.get(client.sessionId);
       if (player) {
-        player.x = message.x || 0;
-        player.y = message.y || 0;
-        this.broadcast('updatePosition', {
-          id: client.sessionId,
-          x: player.x,
-          y: player.y,
-          sX: message.sX,
-          anim: message.anim,
+        player.assign({
+          x: data.x,
+          y: data.y
         });
+
+        this.broadcast("updatePosition", this.encodeMoveData(client.sessionId, data.x, data.y, data.sX, data.anim));
       }
     });
+
 
     this.onMessage('*', (client, type, message) => {
       // Use the logger instead of console.log
@@ -128,11 +169,8 @@ export class GameRoom extends Room<RoomState> {
 
     this.logger.log(`Room created! ${this.roomId}`);
 
-    this.onMessage('chat', (client, message) => {
-      console.log(
-        `💬 [${client.sessionId}] ${message.sender}: ${message.text}`,
-      );
-      this.broadcast('chat', message);
+    this.onMessage('chat', (client, buffer) => {
+      this.broadcast('chat', buffer);
     });
 
     this.onMessage('playerUpdateSkin', async (client, message) => {
@@ -152,10 +190,6 @@ export class GameRoom extends Room<RoomState> {
         sessionId: client.sessionId,
         skin_set: skinArray,
       });
-    });
-
-    this.onMessage('chat', (client, message) => {
-      this.broadcast('chat', message);
     });
   }
 
@@ -214,7 +248,6 @@ export class GameRoom extends Room<RoomState> {
     }
 
     if (this.state.players.has(client.sessionId)) {
-      this.broadcast('playerLeft', client.sessionId);
       this.state.players.delete(client.sessionId);
     }
     this.logger.log(`Player ${userData?.username} left room ${this.roomName}`);
