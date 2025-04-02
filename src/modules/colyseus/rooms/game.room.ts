@@ -1,7 +1,9 @@
 import { ExtractAuthData, ExtractUserData } from '@colyseus/core/build/Room';
 import { Schema, type } from '@colyseus/schema';
 import { configEnv } from '@config/env.config';
+import { SUB_GAME_ROOM } from '@constant';
 import { Logger } from '@libs/logger';
+import { flattenRooms } from '@libs/utils/mapper';
 import { JwtPayload } from '@modules/auth/dtos/response';
 import { UserEntity } from '@modules/user/entity/user.entity';
 import {
@@ -98,7 +100,8 @@ export class GameRoom extends Room<RoomState> {
     if (!user || !user.map) {
       throw new NotFoundException('User not found or not assigned to any map');
     }
-    if (user.map.map_key !== this.roomName) {
+
+    if (!this.roomName.startsWith(user.map.map_key)) {
       throw new ForbiddenException(
         `User is not allowed in this room: ${this.roomName}`,
       );
@@ -222,19 +225,32 @@ export class GameRoom extends Room<RoomState> {
 
   onJoin(client: Client<UserEntity>, options: any, auth: any) {
     const { userData } = client;
-
-    this.logger.log(
-      `Player ${userData?.username} joined room ${this.roomName}`,
-    );
-
+  
+    this.logger.log(`Player ${userData?.username} joined room ${this.roomName}`);
+  
+    const roomSegments = this.roomName.split('/');
+    const finalRoom = roomSegments[roomSegments.length - 1];
+  
+    const flatRooms = flattenRooms(SUB_GAME_ROOM);
+    const room = flatRooms[finalRoom];
+  
+    // Create player object and set position based on found room or user data
     const player = new Player();
     player.id = client.sessionId;
-    player.x = userData?.position_x ?? 0;
-    player.y = userData?.position_y ?? 0;
+  
+    if (room?.default_position_x && room?.default_position_y) {
+      player.x = room.default_position_x;
+      player.y = room.default_position_y;
+    } else {
+      player.x = userData?.position_x ?? 0;
+      player.y = userData?.position_y ?? 0;
+    }
+  
     player.display_name = userData?.display_name || userData?.username || '';
     player.skin_set = userData?.skin_set?.join('/') || '';
-
+  
     this.state.players.set(client.sessionId, player);
+    this.logger.log(`Player ${userData?.username} has position ${player.x} ${player.y}`);
   }
 
   onLeave(client: Client<UserEntity>) {

@@ -35,14 +35,26 @@ async function setupNestApp() {
   return app;
 }
 
-function defineRoomWithPaths(gameServer: Server, app: INestApplication<any>, baseKey: string) {
-  SUB_GAME_ROOM.forEach((subPath) => {
-    const roomPath = `${baseKey}${subPath}`;
+function defineRoomWithPaths(
+  gameServer: Server,
+  app: INestApplication<any>,
+  baseKey: string,
+  rooms = SUB_GAME_ROOM,
+  parentPath = ""
+) {
+  Object.entries(rooms).forEach(([subPath, config]) => {
+    const roomPath = `${baseKey}${parentPath}/${subPath}`.replace(/\/+/g, "/"); // Ensure proper path format
+
     gameServer.define(roomPath, injectDeps(app, GameRoom));
     logger.log(`Defined game room: ${roomPath}`);
+
+    if (config.children) {
+      Object.entries(config.children).forEach(([childKey, childConfig]) => {
+        defineRoomWithPaths(gameServer, app, baseKey, { [childKey]: childConfig }, `${parentPath}/${subPath}`);
+      });
+    }
   });
 }
-
 async function setupColyseusServer(app: INestApplication<any>) {
   const httpServer = createServer();
   const gameServer = new Server({

@@ -26,12 +26,7 @@ export class MezonService implements OnModuleInit, OnModuleDestroy {
 
     this.client.on(Events.TokenSend, async (event: TokenSentEvent) => {
       this.logger.log(`Received TokenSend event mezon service: ${JSON.stringify(event)}`);
-      if (event.receiver_id === process.env.BOT_ID) {
-        // Handle token received event
-        this.logger.log(`Processing token for receiver: ${event.receiver_id}`);
-        // Example: Call service to process transaction
-        // await TransactionService.OnBuyItem(event);
-      }
+      this.transferTokenToGold(event);
     });
 
     this.client.on(Events.ChannelMessage, (event) => {

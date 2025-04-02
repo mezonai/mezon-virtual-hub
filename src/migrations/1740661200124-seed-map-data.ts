@@ -16,12 +16,12 @@ export class SeedMapData1740661200124 implements MigrationInterface {
     `);
 
     await queryRunner.query(`
-      UPDATE "map" SET default_position_x = 637, default_position_y = 182 
+      UPDATE "map" SET default_position_x = 912, default_position_y = -261
       WHERE map_key = '${MapKey.SG}';
     `);
 
     await queryRunner.query(`
-      UPDATE "map" SET default_position_x = 0, default_position_y = -965 
+      UPDATE "map" SET default_position_x = 912, default_position_y = -261 
       WHERE map_key = '${MapKey.HN1}';
     `);
   }
