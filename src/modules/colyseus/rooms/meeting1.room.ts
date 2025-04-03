@@ -1,22 +1,17 @@
 import { UserEntity } from '@modules/user/entity/user.entity';
-import {
-  Injectable
-} from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { Player } from '@types';
 import { Client } from 'colyseus';
 import { BaseGameRoom } from './base-game.room';
 
-
 @Injectable()
-export class GameRoom extends BaseGameRoom {
-
+export class Meeting1Room extends BaseGameRoom {
   onJoin(client: Client<UserEntity>, options: any, auth: any) {
     const { userData } = client;
     this.logger.log(
       `Player ${userData?.username} joined room ${this.roomName}`,
     );
 
-    // Create player object and set position based on found room or user data
     const player = new Player();
     player.id = client.sessionId;
     player.x = userData?.position_x ?? 0;
@@ -29,26 +24,5 @@ export class GameRoom extends BaseGameRoom {
     this.logger.log(
       `Player ${userData?.username} has position ${player.x} ${player.y}`,
     );
-  }
-
-  onLeave(client: Client<UserEntity>) {
-    const { userData } = client;
-    if (userData) {
-      const positionUpdate = {
-        position_x: Math.floor(
-          this.state.players.get(client.sessionId)?.x || 0,
-        ),
-        position_y: Math.floor(
-          this.state.players.get(client.sessionId)?.y || 0,
-        ),
-      };
-
-      this.userRepository.update(userData.id, positionUpdate);
-    }
-
-    if (this.state.players.has(client.sessionId)) {
-      this.state.players.delete(client.sessionId);
-    }
-    this.logger.log(`Player ${userData?.username} left room ${this.roomName}`);
   }
 }

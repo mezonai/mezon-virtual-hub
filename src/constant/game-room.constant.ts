@@ -1,24 +1,29 @@
+import { GameRoom } from '@modules/colyseus/rooms/game.room';
+import { Meeting1Room } from '@modules/colyseus/rooms/meeting1.room';
+import { OfficeRoom } from '@modules/colyseus/rooms/office.room';
+import { Shop1Room } from '@modules/colyseus/rooms/shop1.room';
+import { Type } from '@nestjs/common';
+import { Room } from 'colyseus';
+
 export const SUB_GAME_ROOM: Record<
   string,
-  { 
-    default_position_x: number; 
-    default_position_y: number; 
-    children?: typeof SUB_GAME_ROOM
+  {
+    children?: typeof SUB_GAME_ROOM;
+    room: Type<Room>;
   }
 > = {
   '': {
-    default_position_x: 0,
-    default_position_y: 0,
+    room: GameRoom,
   },
   'office': {
-    default_position_x: 912,
-    default_position_y: -261,
+    room: OfficeRoom,
     children: {
-      'meeting-room1': { default_position_x: 0, default_position_y: 0 },
+      'meeting-room1': {
+        room: Meeting1Room,
+      },
     },
   },
-  'shop1': { 
-    default_position_x: 0,
-    default_position_y: -302,
+  'shop1': {
+    room: Shop1Room,
   },
 };
