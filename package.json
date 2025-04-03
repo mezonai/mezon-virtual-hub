@@ -31,6 +31,7 @@
   "dependencies": {
     "@colyseus/monitor": "^0.16.6",
     "@colyseus/schema": "2.0.36",
+    "@google/genai": "^0.7.0",
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.0",
     "@nestjs/core": "^11.0.1",

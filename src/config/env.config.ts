@@ -26,6 +26,9 @@ const validateEnv = {
   JWT_REFRESH_TOKEN_EXPIRES_IN_MINUTES: Joi.number().default(10080),
   MEZON_APPLICATION_TOKEN: Joi.string().required(),
   MEZON_APPLICATION_ID: Joi.string().required(),
+  GOOGLE_GEN_AI_API_KEY: Joi.string().required(),
+  QUIZ_PROMPT_CONTENT: Joi.string().required(),
+  QUIZ_PROMPT_RESPONSE_FORMAT: Joi.string().required(),
 };
 
 export const configValidationSchema = Joi.object(validateEnv);
@@ -57,4 +60,10 @@ export const configEnv = () => ({
   ADMIN_BYPASS_USERS: process.env.ADMIN_BYPASS_USERS!,
   MEZON_APPLICATION_TOKEN: process.env.MEZON_APPLICATION_TOKEN!,
   MEZON_APPLICATION_ID: process.env.MEZON_APPLICATION_ID!,
+  GOOGLE_GEN_AI_API_KEY: process.env.GOOGLE_GEN_AI_API_KEY!,
+  QUIZ_QUESTION_FETCH_INTERVAL_SECONDS: +(
+    process.env.QUIZ_QUESTION_FETCH_INTERVAL_SECONDS ?? 10000
+  ),
+  QUIZ_PROMPT_CONTENT: process.env.QUIZ_PROMPT_CONTENT!,
+  QUIZ_PROMPT_RESPONSE_FORMAT: process.env.QUIZ_PROMPT_RESPONSE_FORMAT!,
 });

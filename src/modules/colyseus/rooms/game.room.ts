@@ -2,7 +2,9 @@ import { ExtractAuthData, ExtractUserData } from '@colyseus/core/build/Room';
 import { Schema, type } from '@colyseus/schema';
 import { configEnv } from '@config/env.config';
 import { SUB_GAME_ROOM } from '@constant';
+import { GoogleGenAI } from '@google/genai';
 import { Logger } from '@libs/logger';
+import { cleanAndStringifyJson } from '@libs/utils';
 import { flattenRooms } from '@libs/utils/mapper';
 import { JwtPayload } from '@modules/auth/dtos/response';
 import { UserEntity } from '@modules/user/entity/user.entity';
@@ -28,9 +30,9 @@ class Player extends Schema {
 }
 
 class Item extends Schema {
-  @type("number") x: number = 0;
-  @type("number") y: number = 0;
-  @type("string") type: string = "";
+  @type('number') x: number = 0;
+  @type('number') y: number = 0;
+  @type('string') type: string = '';
 }
 
 class RoomState extends Schema {
@@ -42,6 +44,7 @@ class RoomState extends Schema {
 export class GameRoom extends Room<RoomState> {
   maxClients = 50; // Max players
   logger = new Logger();
+  private aiService: GoogleGenAI;
   constructor(
     @InjectRepository(UserEntity)
     private readonly userRepository: Repository<UserEntity>,
@@ -49,6 +52,9 @@ export class GameRoom extends Room<RoomState> {
   ) {
     super();
     this.logger.log(`GameRoom created : ${this.roomName}`);
+    this.aiService = new GoogleGenAI({
+      apiKey: configEnv().GOOGLE_GEN_AI_API_KEY,
+    });
   }
 
   verifyJwt(token: string): JwtPayload {
@@ -113,7 +119,11 @@ export class GameRoom extends Room<RoomState> {
   }
 
   private decodeMoveData(buffer: Uint8Array) {
-    const view = new DataView(buffer.buffer, buffer.byteOffset, buffer.byteLength);
+    const view = new DataView(
+      buffer.buffer,
+      buffer.byteOffset,
+      buffer.byteLength,
+    );
     const x = view.getInt16(0, true);
     const y = view.getInt16(2, true);
     const sX = view.getInt8(4);
@@ -124,12 +134,18 @@ export class GameRoom extends Room<RoomState> {
     return { x, y, sX, anim };
   }
 
-  private encodeMoveData(sessionId: string, x: number, y: number, sX: number, anim: string): Uint8Array {
+  private encodeMoveData(
+    sessionId: string,
+    x: number,
+    y: number,
+    sX: number,
+    anim: string,
+  ): Uint8Array {
     const sessionBytes = new TextEncoder().encode(sessionId);
     const animBytes = new TextEncoder().encode(anim);
 
     const totalSize = 6 + sessionBytes.length + animBytes.length;
-    console.log(totalSize)
+    console.log(totalSize);
     const buffer = new ArrayBuffer(totalSize);
     const view = new DataView(buffer);
     const uint8Array = new Uint8Array(buffer);
@@ -148,27 +164,35 @@ export class GameRoom extends Room<RoomState> {
 
   onCreate() {
     this.setState(new RoomState());
-    this.state.items.set("car1", new Item({ x: 100, y: 200, type: "gokart" }));
-    this.state.items.set("car2", new Item({ x: 300, y: 400, type: "gokart" }));
+    this.state.items.set('car1', new Item({ x: 100, y: 200, type: 'gokart' }));
+    this.state.items.set('car2', new Item({ x: 300, y: 400, type: 'gokart' }));
 
-    this.onMessage("move", (client, buffer: ArrayBuffer) => {
+    this.onMessage('move', (client, buffer: ArrayBuffer) => {
       try {
         const data = this.decodeMoveData(new Uint8Array(buffer));
         const player = this.state.players.get(client.sessionId);
         if (player) {
           player.assign({
             x: data.x,
-            y: data.y
+            y: data.y,
           });
 
-          this.broadcast("updatePosition", this.encodeMoveData(client.sessionId, data.x, data.y, data.sX, data.anim));
+          this.broadcast(
+            'updatePosition',
+            this.encodeMoveData(
+              client.sessionId,
+              data.x,
+              data.y,
+              data.sX,
+              data.anim,
+            ),
+          );
         }
       } catch (error) {
-        this.logger.error("Error decoding move data", error);
+        this.logger.error('Error decoding move data', error);
         return;
       }
     });
-
 
     this.onMessage('*', (client, type, message) => {
       // Use the logger instead of console.log
@@ -199,6 +223,8 @@ export class GameRoom extends Room<RoomState> {
         skin_set: skinArray,
       });
     });
+
+    this.scheduleQuizBroadcast();
   }
 
   onBeforePatch() {
@@ -225,19 +251,21 @@ export class GameRoom extends Room<RoomState> {
 
   onJoin(client: Client<UserEntity>, options: any, auth: any) {
     const { userData } = client;
-  
-    this.logger.log(`Player ${userData?.username} joined room ${this.roomName}`);
-  
+
+    this.logger.log(
+      `Player ${userData?.username} joined room ${this.roomName}`,
+    );
+
     const roomSegments = this.roomName.split('/');
     const finalRoom = roomSegments[roomSegments.length - 1];
-  
+
     const flatRooms = flattenRooms(SUB_GAME_ROOM);
     const room = flatRooms[finalRoom];
-  
+
     // Create player object and set position based on found room or user data
     const player = new Player();
     player.id = client.sessionId;
-  
+
     if (room?.default_position_x && room?.default_position_y) {
       player.x = room.default_position_x;
       player.y = room.default_position_y;
@@ -245,12 +273,14 @@ export class GameRoom extends Room<RoomState> {
       player.x = userData?.position_x ?? 0;
       player.y = userData?.position_y ?? 0;
     }
-  
+
     player.display_name = userData?.display_name || userData?.username || '';
     player.skin_set = userData?.skin_set?.join('/') || '';
-  
+
     this.state.players.set(client.sessionId, player);
-    this.logger.log(`Player ${userData?.username} has position ${player.x} ${player.y}`);
+    this.logger.log(
+      `Player ${userData?.username} has position ${player.x} ${player.y}`,
+    );
   }
 
   onLeave(client: Client<UserEntity>) {
@@ -279,5 +309,31 @@ export class GameRoom extends Room<RoomState> {
       `An error occurred in ${methodName}: ${err}`,
       err.stack || 'No stack trace',
     );
+  }
+
+  async getQuizQuestion() {
+    try {
+      const { QUIZ_PROMPT_RESPONSE_FORMAT, QUIZ_PROMPT_CONTENT } = configEnv();
+      const response = await this.aiService.models.generateContent({
+        model: 'gemini-2.0-flash',
+        contents: QUIZ_PROMPT_CONTENT + QUIZ_PROMPT_RESPONSE_FORMAT,
+      });
+      return cleanAndStringifyJson(response.text ?? '');
+    } catch (error) {
+      this.logger.error('Error fetching trivia question:', error);
+      throw error;
+    }
+  }
+
+  private scheduleQuizBroadcast() {
+    setInterval(async () => {
+      try {
+        const quiz = await this.getQuizQuestion();
+        this.broadcast('quizQuestion', quiz);
+        this.logger.log(`Broadcasted quiz: ${JSON.stringify(quiz)}`);
+      } catch (error) {
+        this.logger.error('Failed to fetch quiz question', error);
+      }
+    }, configEnv().QUIZ_QUESTION_FETCH_INTERVAL_SECONDS);
   }
 }
