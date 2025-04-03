@@ -43,7 +43,7 @@ function defineRoomWithPaths(
   parentPath = ""
 ) {
   Object.entries(rooms).forEach(([subPath, config]) => {
-    const roomPath = `${baseKey}${parentPath}/${subPath}`.replace(/\/+/g, "/"); // Ensure proper path format
+    const roomPath = `${baseKey}${parentPath}${subPath ? `/${subPath}` : ""}`.replace(/\/+/g, "/"); // Ensure proper path format
 
     gameServer.define(roomPath, injectDeps(app, GameRoom));
     logger.log(`Defined game room: ${roomPath}`);

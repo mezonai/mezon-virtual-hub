@@ -6,9 +6,13 @@ export const SUB_GAME_ROOM: Record<
     children?: typeof SUB_GAME_ROOM
   }
 > = {
-  'office': {
+  '': {
     default_position_x: 0,
     default_position_y: 0,
+  },
+  'office': {
+    default_position_x: 912,
+    default_position_y: -261,
     children: {
       'meeting-room1': { default_position_x: 0, default_position_y: 0 },
     },
