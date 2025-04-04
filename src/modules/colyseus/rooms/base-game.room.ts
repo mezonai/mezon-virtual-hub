@@ -276,6 +276,6 @@ export class BaseGameRoom extends Room<RoomState> {
       } catch (error) {
         this.logger.error('Failed to fetch quiz question', error);
       }
-    }, configEnv().QUIZ_QUESTION_FETCH_INTERVAL_SECONDS);
+    }, configEnv().QUIZ_QUESTION_FETCH_INTERVAL_SECONDS * 1000);
   }
 }
