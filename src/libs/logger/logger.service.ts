@@ -9,7 +9,7 @@ export class Logger extends ConsoleLogger implements LoggerService {
     }
   }
 
-  error(message: string, trace: string, context?: string) {
+  error(message: string, trace?: string, context?: string) {
     super.error(message, trace, context || this.context);
   }
 

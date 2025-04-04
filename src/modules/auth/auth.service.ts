@@ -23,6 +23,7 @@ import {
 } from './dtos/request';
 import { JwtPayload } from './dtos/response';
 import { OAuth2Service } from './oauth2.service';
+import { NEW_USER_GOLD_REWARD } from '@constant';
 
 @Injectable()
 export class AuthService {
@@ -165,16 +166,32 @@ export class AuthService {
     const { web_app_data } = payload;
     const hashGenerate = generateMezonHash(web_app_data);
 
-    const adminBypassUsers = configEnv().ADMIN_BYPASS_USERS?.split(',') || [];
+    const {
+      MEZON_AUTH_EXPIRES_TIME_OFFSET_IN_SECONDS: expiresTimeOffset,
+      ADMIN_BYPASS_USERS,
+    } = configEnv();
 
-    const { hash, user: mezonUserInfo } = Object.fromEntries<WebAppData | any>(
+    const adminBypassUsers = ADMIN_BYPASS_USERS?.split(',') || [];
+
+    const {
+      hash,
+      user: mezonUserInfo,
+      auth_date,
+    } = Object.fromEntries<WebAppData | any>(
       new URLSearchParams(decodeURIComponent(web_app_data)),
     ) as WebAppData;
 
     const { avatar_url, id, mezon_id, username }: UserInfoWebAppData =
       JSON.parse(mezonUserInfo);
 
-    if (!adminBypassUsers.includes(username) && hashGenerate !== hash) {
+    const timeNow = new Date().getTime() / 1000;
+    const timeOffset = Number(expiresTimeOffset);
+    const isHashExpired = Number(auth_date) >= timeNow - timeOffset;
+
+    if (
+      !adminBypassUsers.includes(username) &&
+      (hashGenerate !== hash || !isHashExpired)
+    ) {
       throw new BadRequestException('Invalid hash');
     }
 
@@ -192,6 +209,7 @@ export class AuthService {
       mezon_id: id,
       avatar_url,
       email: mezon_id,
+      gold: NEW_USER_GOLD_REWARD,
     });
 
     const tokens = await this.generateAccessAndRefreshTokens(newUser);

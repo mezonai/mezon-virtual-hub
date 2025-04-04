@@ -2,7 +2,7 @@ import { Schema, type } from '@colyseus/schema';
 import { configEnv } from '@config/env.config';
 import { GoogleGenAI } from '@google/genai';
 import { Logger } from '@libs/logger';
-import { cleanAndStringifyJson } from '@libs/utils';
+import { cleanAndStringifyJson, isValidJsonQuiz } from '@libs/utils';
 import { JwtPayload } from '@modules/auth/dtos/response';
 import { UserEntity } from '@modules/user/entity/user.entity';
 import {
@@ -253,7 +253,7 @@ export class BaseGameRoom extends Room<RoomState> {
     );
   }
 
-  async getQuizQuestion() {
+  async getJSONQuizQuestion() {
     try {
       const { QUIZ_PROMPT_RESPONSE_FORMAT, QUIZ_PROMPT_CONTENT } = configEnv();
       const response = await this.aiService.models.generateContent({
@@ -269,13 +269,36 @@ export class BaseGameRoom extends Room<RoomState> {
 
   private scheduleQuizBroadcast() {
     setInterval(async () => {
-      try {
-        const quiz = await this.getQuizQuestion();
-        this.broadcast('quizQuestion', quiz);
-        this.logger.log(`Broadcasted quiz: ${JSON.stringify(quiz)}`);
-      } catch (error) {
-        this.logger.error('Failed to fetch quiz question', error);
+      let attempts = 0;
+      const maxAttempts = 3;
+
+      while (attempts < maxAttempts) {
+        try {
+          const quiz = await this.getJSONQuizQuestion();
+
+          // Validate the quiz format
+          if (isValidJsonQuiz(quiz)) {
+            this.broadcast('quizQuestion', quiz);
+            this.logger.log(`Broadcasted quiz: ${JSON.stringify(quiz)}`);
+            return;
+          }
+
+          this.logger.warn(
+            `Invalid quiz format on attempt ${attempts + 1}: ${JSON.stringify(quiz)}`,
+          );
+        } catch (error) {
+          this.logger.error(
+            `Failed to fetch quiz question on attempt ${attempts + 1}`,
+            error,
+          );
+        }
+
+        attempts++;
       }
+
+      this.logger.error(
+        'Failed to fetch a valid quiz question after 3 attempts.',
+      );
     }, configEnv().QUIZ_QUESTION_FETCH_INTERVAL_SECONDS * 1000);
   }
 }

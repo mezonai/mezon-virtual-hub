@@ -4,19 +4,21 @@ import { MapEntity } from '@modules/map/entity/map.entity';
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { UserEntity } from './entity/user.entity';
-import { UserController } from './user.controller';
-import { UserService } from './user.service';
+import { GameController } from './game.controller';
+import { GameService } from './game.service';
+import { UserEntity } from '@modules/user/entity/user.entity';
 import { InventoryModule } from '@modules/inventory/inventory.module';
+import { ItemModule } from '@modules/item/item.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([UserEntity, MapEntity, Inventory]),
     JwtModule.register({}),
-    LoggerModule,
+    InventoryModule,
+    ItemModule,
   ],
-  controllers: [UserController],
-  providers: [UserService],
-  exports: [UserService],
+  controllers: [GameController],
+  providers: [GameService],
+  exports: [GameService],
 })
-export class UserModule {}
+export class GameModule {}

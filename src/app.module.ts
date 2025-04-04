@@ -20,6 +20,7 @@ import { ClsModule } from 'nestjs-cls';
 import { dataSourceOption } from './config/data-source.config';
 import { LogViewerModule } from '@modules/log-viewer/log-viewer.module';
 import { MezonModule } from '@modules/mezon/mezon.module';
+import { GameModule } from '@modules/game/game.module';
 
 @Module({
   imports: [
@@ -41,6 +42,7 @@ import { MezonModule } from '@modules/mezon/mezon.module';
     InterceptorModule,
     GuardModule,
     MezonModule,
+    GameModule,
     ClsModule.forRoot({
       global: true,
       middleware: { mount: true },

@@ -1,10 +1,16 @@
 import { BaseService } from '@libs/base/base.service';
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { plainToInstance } from 'class-transformer';
-import { EntityManager, Repository } from 'typeorm';
+import { EntityManager, In, Not, Repository } from 'typeorm';
 import { ItemDto, ItemDtoRequest } from './dto/item.dto';
 import { ItemEntity } from './entity/item.entity';
+import { Gender } from '@enum';
+import { Inventory } from '@modules/inventory/entity/inventory.entity';
 
 @Injectable()
 export class ItemService extends BaseService<ItemEntity> {
@@ -44,7 +50,7 @@ export class ItemService extends BaseService<ItemEntity> {
     });
 
     if (!existedItem) {
-      throw new NotFoundException(`Item ${itemId} not found`)
+      throw new NotFoundException(`Item ${itemId} not found`);
     }
 
     await this.itemRepository.update(itemId, updateItem);
@@ -59,5 +65,18 @@ export class ItemService extends BaseService<ItemEntity> {
       throw new Error('Item not found');
     }
     return { deleted: true };
+  }
+
+  async getAvailableItems(
+    gender: Gender,
+    ownedItems: Inventory[],
+  ): Promise<ItemEntity[]> {
+    const ownedItemIds = ownedItems.map((inv) => inv.item.id);
+    return this.itemRepository.find({
+      where: {
+        gender: In([gender, Gender.NOT_SPECIFIED]),
+        id: Not(In(ownedItemIds)),
+      },
+    });
   }
 }
