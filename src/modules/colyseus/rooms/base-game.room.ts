@@ -34,7 +34,6 @@ class RoomState extends Schema {
 export class BaseGameRoom extends Room<RoomState> {
   maxClients = 50; // Max players
   logger = new Logger();
-  private aiService: GoogleGenAI;
   constructor(
     @InjectRepository(UserEntity)
     readonly userRepository: Repository<UserEntity>,
@@ -42,9 +41,6 @@ export class BaseGameRoom extends Room<RoomState> {
   ) {
     super();
     this.logger.log(`GameRoom created : ${this.roomName}`);
-    this.aiService = new GoogleGenAI({
-      apiKey: configEnv().GOOGLE_GEN_AI_API_KEY,
-    });
   }
 
   verifyJwt(token: string): JwtPayload {
@@ -212,8 +208,6 @@ export class BaseGameRoom extends Room<RoomState> {
         skin_set: skinArray,
       });
     });
-
-    this.scheduleQuizBroadcast();
   }
 
   onBeforePatch() {
@@ -251,54 +245,5 @@ export class BaseGameRoom extends Room<RoomState> {
       `An error occurred in ${methodName}: ${err}`,
       err.stack || 'No stack trace',
     );
-  }
-
-  async getJSONQuizQuestion() {
-    try {
-      const { QUIZ_PROMPT_RESPONSE_FORMAT, QUIZ_PROMPT_CONTENT } = configEnv();
-      const response = await this.aiService.models.generateContent({
-        model: 'gemini-2.0-flash',
-        contents: QUIZ_PROMPT_CONTENT + QUIZ_PROMPT_RESPONSE_FORMAT,
-      });
-      return cleanAndStringifyJson(response.text ?? '');
-    } catch (error) {
-      this.logger.error('Error fetching trivia question:', error);
-      throw error;
-    }
-  }
-
-  private scheduleQuizBroadcast() {
-    setInterval(async () => {
-      let attempts = 0;
-      const maxAttempts = 3;
-
-      while (attempts < maxAttempts) {
-        try {
-          const quiz = await this.getJSONQuizQuestion();
-
-          // Validate the quiz format
-          if (isValidJsonQuiz(quiz)) {
-            this.broadcast('quizQuestion', quiz);
-            this.logger.log(`Broadcasted quiz: ${JSON.stringify(quiz)}`);
-            return;
-          }
-
-          this.logger.warn(
-            `Invalid quiz format on attempt ${attempts + 1}: ${JSON.stringify(quiz)}`,
-          );
-        } catch (error) {
-          this.logger.error(
-            `Failed to fetch quiz question on attempt ${attempts + 1}`,
-            error,
-          );
-        }
-
-        attempts++;
-      }
-
-      this.logger.error(
-        'Failed to fetch a valid quiz question after 3 attempts.',
-      );
-    }, configEnv().QUIZ_QUESTION_FETCH_INTERVAL_SECONDS * 1000);
   }
 }

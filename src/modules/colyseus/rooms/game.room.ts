@@ -5,15 +5,20 @@ import {
 import { Player } from '@types';
 import { Client } from 'colyseus';
 import { BaseGameRoom } from './base-game.room';
-
+import { configEnv } from '@config/env.config';
+import { cleanAndStringifyJson, isValidJsonQuiz } from '@libs/utils';
+import { GoogleGenAI } from '@google/genai';
 
 @Injectable()
 export class GameRoom extends BaseGameRoom {
+  private aiService = new GoogleGenAI({
+    apiKey: configEnv().GOOGLE_GEN_AI_API_KEY,
+  });
 
   onJoin(client: Client<UserEntity>, options: any, auth: any) {
     const { userData } = client;
     this.logger.log(
-      `Player ${userData?.username} joined room ${this.roomName}`,
+      `Player ${userData?.username} joined GameRoom ${this.roomName}, id: ${this.roomId}`,
     );
 
     // Create player object and set position based on found room or user data
@@ -29,6 +34,8 @@ export class GameRoom extends BaseGameRoom {
     this.logger.log(
       `Player ${userData?.username} has position ${player.x} ${player.y}`,
     );
+    
+    this.scheduleQuizBroadcast();
   }
 
   onLeave(client: Client<UserEntity>) {
@@ -50,5 +57,45 @@ export class GameRoom extends BaseGameRoom {
       this.state.players.delete(client.sessionId);
     }
     this.logger.log(`Player ${userData?.username} left room ${this.roomName}`);
+  }
+
+  async getJSONQuizQuestion() {
+    try {
+      const { QUIZ_PROMPT_RESPONSE_FORMAT, QUIZ_PROMPT_CONTENT } = configEnv();
+      const response = await this.aiService.models.generateContent({
+        model: 'gemini-2.0-flash',
+        contents: QUIZ_PROMPT_CONTENT + QUIZ_PROMPT_RESPONSE_FORMAT,
+      });
+      return cleanAndStringifyJson(response.text ?? '');
+    } catch (error) {
+      this.logger.error('Error fetching trivia question:', error);
+      throw error;
+    }
+  }
+
+  private scheduleQuizBroadcast() {
+    setInterval(async () => {
+      this.broadcastQuizQuestion();
+    }, configEnv().QUIZ_QUESTION_FETCH_INTERVAL_SECONDS * 1000);
+  }
+
+  private async broadcastQuizQuestion(attempts = 1) {
+    if (attempts > 3) return;
+    try {
+      const quiz = await this.getJSONQuizQuestion();
+
+      if (isValidJsonQuiz(quiz)) {
+        this.broadcast('quizQuestion', quiz);
+        return;
+      }
+
+      this.broadcastQuizQuestion(attempts++);
+    } catch (error) {
+      this.logger.error(
+        `Failed to fetch quiz question on attempt ${attempts}`,
+        error,
+      );
+      this.broadcastQuizQuestion(attempts++);
+    }
   }
 }

@@ -12,7 +12,7 @@ export class Shop1Room extends BaseGameRoom {
     const { userData } = client;
 
     this.logger.log(
-      `Player ${userData?.username} joined room ${this.roomName}`,
+      `Player ${userData?.username} joined Shop1Room ${this.roomName}, id: ${this.roomId}`,
     );
 
     const player = new Player();

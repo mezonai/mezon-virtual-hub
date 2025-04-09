@@ -35,44 +35,47 @@ export class GameController {
     examples: {
       success: {
         summary: 'Example response with items and gold',
-        value: [
-          {
-            type: 'item',
-            item: {
-              gender: 'male',
-              id: '744d48f8-5f39-4a8d-8b43-290f54d1bb42',
-              created_at: '2025-03-27T06:39:26.661Z',
-              deleted_at: null,
-              name: 'Tóc đỏ SonGoKu',
-              gold: 1,
-              type: 1,
-              is_equippable: true,
-              is_static: false,
-              is_stackable: false,
+        value: {
+          rewards: [
+            {
+              type: 'item',
+              item: {
+                gender: 'male',
+                id: '744d48f8-5f39-4a8d-8b43-290f54d1bb42',
+                created_at: '2025-03-27T06:39:26.661Z',
+                deleted_at: null,
+                name: 'Tóc đỏ SonGoKu',
+                gold: 1,
+                type: 1,
+                is_equippable: true,
+                is_static: false,
+                is_stackable: false,
+              },
+              quantity: 1,
             },
-            quantity: 1,
-          },
-          {
-            type: 'gold',
-            amount: 10,
-          },
-          {
-            type: 'item',
-            item: {
-              gender: 'male',
-              id: '3decccf1-ce4a-4be5-9842-f92024deb09c',
-              created_at: '2025-03-27T06:39:53.210Z',
-              deleted_at: null,
-              name: 'Tóc xanh tia chớp',
-              gold: 1,
-              type: 1,
-              is_equippable: true,
-              is_static: false,
-              is_stackable: false,
+            {
+              type: 'gold',
+              amount: 10,
             },
-            quantity: 1,
-          },
-        ],
+            {
+              type: 'item',
+              item: {
+                gender: 'male',
+                id: '3decccf1-ce4a-4be5-9842-f92024deb09c',
+                created_at: '2025-03-27T06:39:53.210Z',
+                deleted_at: null,
+                name: 'Tóc xanh tia chớp',
+                gold: 1,
+                type: 1,
+                is_equippable: true,
+                is_static: false,
+                is_stackable: false,
+              },
+              quantity: 1,
+            },
+          ],
+          user_gold: 100,
+        }
       },
       noReward: {
         summary: 'Example response with no rewards',

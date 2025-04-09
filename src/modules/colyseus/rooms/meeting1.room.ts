@@ -9,7 +9,7 @@ export class Meeting1Room extends BaseGameRoom {
   onJoin(client: Client<UserEntity>, options: any, auth: any) {
     const { userData } = client;
     this.logger.log(
-      `Player ${userData?.username} joined room ${this.roomName}`,
+      `Player ${userData?.username} joined Meeting1Room ${this.roomName}, id: ${this.roomId}`,
     );
 
     const player = new Player();

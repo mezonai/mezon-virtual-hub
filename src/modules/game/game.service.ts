@@ -45,9 +45,9 @@ export class GameService {
 
     const rewards = this.generateRandomRewards(availableItems);
 
-    const processRewards = await this.processRewards(user, rewards);
+    const { result, user_gold } = await this.processRewards(user, rewards);
 
-    return plainToInstance(AwardResponseDto, processRewards);
+    return { rewards: result, user_gold };
   }
 
   private generateRandomRewards(
@@ -111,6 +111,6 @@ export class GameService {
     }
 
     await this.userRepository.update(user.id, user);
-    return result;
+    return { result, user_gold: user.gold };
   }
 }
