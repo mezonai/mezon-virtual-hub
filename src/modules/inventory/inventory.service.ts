@@ -52,6 +52,8 @@ export class InventoryService extends BaseService<Inventory> {
         item,
         equipped: false,
       });
+
+      await this.inventoryRepository.save(inventory);
     }
 
     user.gold -= item.gold;
