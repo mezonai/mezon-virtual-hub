@@ -23,6 +23,15 @@ class Item extends Schema {
   @type('number') x: number = 0;
   @type('number') y: number = 0;
   @type('string') type: string = '';
+  @type('string') ownerId: string = '';
+
+  constructor(x: number = 0, y: number = 0, type: string = '', ownerId: string = '') {
+    super();
+    this.x = x;
+    this.y = y;
+    this.type = type;
+    this.ownerId = ownerId;
+  }
 }
 
 class RoomState extends Schema {
@@ -149,8 +158,10 @@ export class BaseGameRoom extends Room<RoomState> {
 
   onCreate() {
     this.setState(new RoomState());
-    this.state.items.set('car1', new Item({ x: 100, y: 200, type: 'gokart' }));
-    this.state.items.set('car2', new Item({ x: 300, y: 400, type: 'gokart' }));
+    if (this.roomName == "sg") {
+      this.state.items.set('car1', new Item(355, -120, 'gokart', ''));
+      this.state.items.set('car2', new Item(235, -120, 'gokart', ''));
+    }
 
     this.onMessage('move', (client, buffer: ArrayBuffer) => {
       try {
@@ -188,6 +199,14 @@ export class BaseGameRoom extends Room<RoomState> {
 
     this.onMessage('chat', (client, buffer) => {
       this.broadcast('chat', buffer);
+    });
+
+    this.onMessage('useItem', (client, message) => {
+      const item = this.state.items.get(message.itemId);
+      if (item) {
+        item.ownerId = message.playerId;
+        this.broadcast('onUseItem', message);
+      }
     });
 
     this.onMessage('playerUpdateSkin', async (client, message) => {
@@ -235,9 +254,24 @@ export class BaseGameRoom extends Room<RoomState> {
   onLeave(client: Client<UserEntity>) {
     const { userData } = client;
     if (this.state.players.has(client.sessionId)) {
+      this.resetMapItem(client, this.state.players.get(client.sessionId));
       this.state.players.delete(client.sessionId);
     }
     this.logger.log(`Player ${userData?.username} left room ${this.roomName}`);
+  }
+
+  resetMapItem(client: Client<UserEntity>, player: Player | undefined) {
+    for (const item of this.state.items) {
+      if (client.sessionId == item[1].ownerId) {
+        item[1].ownerId = "";
+        if (player) {
+          item[1].x = player?.x;
+          item[1].y = player?.y;
+        }
+        this.broadcast('onUseItem', { itemId: item[0], playerId: '' });
+        break;
+      }
+    }
   }
 
   onUncaughtException(err: Error, methodName: string) {
