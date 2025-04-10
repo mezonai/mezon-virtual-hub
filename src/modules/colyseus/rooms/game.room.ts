@@ -54,6 +54,7 @@ export class GameRoom extends BaseGameRoom {
     }
 
     if (this.state.players.has(client.sessionId)) {
+      this.resetMapItem(client, this.state.players.get(client.sessionId));
       this.state.players.delete(client.sessionId);
     }
     this.logger.log(`Player ${userData?.username} left room ${this.roomName}`);
