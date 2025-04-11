@@ -205,6 +205,12 @@ export class BaseGameRoom extends Room<RoomState> {
       const item = this.state.items.get(message.itemId);
       if (item) {
         item.ownerId = message.playerId;
+        if (message.x) {
+          item.x = message.x;
+        }
+        if (message.y) {
+          item.y = message.y;
+        }
         this.broadcast('onUseItem', message);
       }
     });
@@ -268,7 +274,7 @@ export class BaseGameRoom extends Room<RoomState> {
           item[1].x = player?.x;
           item[1].y = player?.y;
         }
-        this.broadcast('onUseItem', { itemId: item[0], playerId: '' });
+        this.broadcast('onUseItem', { itemId: item[0], playerId: ''});
         break;
       }
     }
