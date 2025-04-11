@@ -1,7 +1,5 @@
 import { UserEntity } from '@modules/user/entity/user.entity';
-import {
-  Injectable
-} from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { Player } from '@types';
 import { Client } from 'colyseus';
 import { BaseGameRoom } from './base-game.room';
@@ -34,7 +32,7 @@ export class GameRoom extends BaseGameRoom {
     this.logger.log(
       `Player ${userData?.username} has position ${player.x} ${player.y}`,
     );
-    
+
     this.scheduleQuizBroadcast();
   }
 
@@ -84,19 +82,21 @@ export class GameRoom extends BaseGameRoom {
     if (attempts > 3) return;
     try {
       const quiz = await this.getJSONQuizQuestion();
-
+      
       if (isValidJsonQuiz(quiz)) {
-        this.broadcast('quizQuestion', quiz);
+        const jsonQuiz = JSON.stringify(quiz)
+        this.broadcast('quizQuestion', jsonQuiz);
+        this.logger.log(`Broadcasted quiz: ${jsonQuiz}`);
         return;
       }
 
-      this.broadcastQuizQuestion(attempts++);
+      this.broadcastQuizQuestion(attempts + 1);
     } catch (error) {
       this.logger.error(
         `Failed to fetch quiz question on attempt ${attempts}`,
         error,
       );
-      this.broadcastQuizQuestion(attempts++);
+      this.broadcastQuizQuestion(attempts + 1);
     }
   }
 }

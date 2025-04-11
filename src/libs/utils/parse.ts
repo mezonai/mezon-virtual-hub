@@ -3,7 +3,7 @@ export const cleanAndStringifyJson = (jsonString = '') => {
     .replace(/^```json\n|\n```|```$/g, '')
     .trim();
 
-  return JSON.stringify(cleanedJsonString);
+  return cleanedJsonString;
 };
 
 export const isValidJsonQuiz = (quizJson: string): boolean => {
