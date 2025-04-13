@@ -73,7 +73,7 @@ export class MezonService implements OnModuleInit, OnModuleDestroy {
   async transferTokenToGold(data: TokenSentEvent) {
     this.logger.log(`Received TokenSend event`);
 
-    if (data.receiver_id === configEnv().MEZON_APPLICATION_ID) {
+    if (data.receiver_id === configEnv().MEZON_TOKEN_RECEIVER_ID) {
       this.logger.log(`Processing token for receiver: ${data.receiver_id}`);
 
       const user = await this.userRepository.findOne({

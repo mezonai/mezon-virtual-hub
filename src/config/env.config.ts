@@ -26,6 +26,7 @@ const validateEnv = {
   JWT_REFRESH_TOKEN_EXPIRES_IN_MINUTES: Joi.number().default(10080),
   MEZON_APPLICATION_TOKEN: Joi.string().required(),
   MEZON_APPLICATION_ID: Joi.string().required(),
+  MEZON_TOKEN_RECEIVER_ID: Joi.string().required(),
   GOOGLE_GEN_AI_API_KEY: Joi.string().required(),
   QUIZ_PROMPT_CONTENT: Joi.string().required(),
   QUIZ_PROMPT_RESPONSE_FORMAT: Joi.string().required(),
@@ -60,6 +61,7 @@ export const configEnv = () => ({
   ADMIN_BYPASS_USERS: process.env.ADMIN_BYPASS_USERS!,
   MEZON_APPLICATION_TOKEN: process.env.MEZON_APPLICATION_TOKEN!,
   MEZON_APPLICATION_ID: process.env.MEZON_APPLICATION_ID!,
+  MEZON_TOKEN_RECEIVER_ID: process.env.MEZON_TOKEN_RECEIVER_ID!,
   MEZON_AUTH_EXPIRES_TIME_OFFSET_IN_SECONDS:
     process.env.MEZON_AUTH_EXPIRES_TIME_OFFSET_IN_SECONDS ?? 10,
   GOOGLE_GEN_AI_API_KEY: process.env.GOOGLE_GEN_AI_API_KEY!,

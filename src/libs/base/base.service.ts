@@ -30,7 +30,7 @@ export abstract class BaseService<T extends AuditEntity> {
 
   async findOneNotDeletedById(id: number | string): Promise<T> {
     const entity = await this.repository.findOne({
-      where: { id, deleted_at: null } as any,
+      where: { id } as any,
     });
 
     if (!entity) {
