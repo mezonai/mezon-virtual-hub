@@ -23,3 +23,9 @@ export enum Gender {
   FEMALE = 'female',
   NOT_SPECIFIED = 'not specified'
 }
+
+export enum ActionKey {
+  RPS = 1,
+  Punch = 2,
+  SendCoin = 3
+}
