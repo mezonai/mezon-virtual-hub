@@ -1,18 +1,26 @@
-import { Injectable, OnModuleInit, OnModuleDestroy, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  OnModuleInit,
+  OnModuleDestroy,
+  Logger,
+} from '@nestjs/common';
 import { MezonClient, Events, TokenSentEvent } from 'mezon-sdk';
 import { configEnv } from '@config/env.config';
 import { GenericRepository } from '@libs/repository/genericRepository';
 import { UserEntity } from '@modules/user/entity/user.entity';
-import { EntityManager } from 'typeorm';
+import { EntityManager, Repository } from 'typeorm';
+import { MezonTokenSentEvent } from '@types';
+import { TransactionEntity } from '@modules/transaction/entity/transaction.entity';
+import { InjectRepository } from '@nestjs/typeorm';
 
 @Injectable()
 export class MezonService implements OnModuleInit, OnModuleDestroy {
   private readonly userRepository: GenericRepository<UserEntity>;
+  @InjectRepository(TransactionEntity)
+  private readonly transactionRepository: Repository<TransactionEntity>;
   private readonly logger = new Logger(MezonService.name);
   private client: MezonClient;
-  constructor(
-    private manager: EntityManager,
-  ) {
+  constructor(private manager: EntityManager) {
     this.userRepository = new GenericRepository(UserEntity, manager);
   }
 
@@ -28,8 +36,10 @@ export class MezonService implements OnModuleInit, OnModuleDestroy {
       this.logger.log(`Channel Created successfully!`);
     });
 
-    this.client.on(Events.TokenSend, async (event: TokenSentEvent) => {
-      this.logger.log(`Received TokenSend event mezon service: ${JSON.stringify(event)}`);
+    this.client.on(Events.TokenSend, async (event: MezonTokenSentEvent) => {
+      this.logger.log(
+        `Received TokenSend event mezon service: ${JSON.stringify(event)}`,
+      );
       this.transferTokenToGold(event);
     });
 
@@ -70,28 +80,39 @@ export class MezonService implements OnModuleInit, OnModuleDestroy {
     // Perform cleanup if needed
   }
 
-  async transferTokenToGold(data: TokenSentEvent) {
+  async transferTokenToGold(data: MezonTokenSentEvent) {
     this.logger.log(`Received TokenSend event`);
-
     if (data.receiver_id === configEnv().MEZON_TOKEN_RECEIVER_ID) {
-      this.logger.log(`Processing token for receiver: ${data.receiver_id}`);
-
       const user = await this.userRepository.findOne({
-        where: { mezon_id: data.sender_id }
-      })
+        where: { mezon_id: data.sender_id },
+      });
 
       if (!user) {
-        this.logger.error(`User ${data.sender_name} with Mezon id ${data.sender_id} not found`);
-        return
+        this.logger.error(
+          `User ${data.sender_name} with Mezon id ${data.sender_id} not found`,
+        );
+        return;
       }
 
       const updatedGold = user.gold + data.amount;
 
       await this.userRepository.update(user.id, { gold: updatedGold });
-  
+
       this.logger.log(
-        `Updated user ${user.id} gold from ${user.gold} to ${updatedGold}`
+        `Updated user ${user.id} gold from ${user.gold} to ${updatedGold}`,
       );
+
+      const { amount, extra_attribute, receiver_id, transaction_id } = data;
+
+      const transaction = this.transactionRepository.create({
+        mezon_transaction_id: transaction_id,
+        amount,
+        extra_attribute,
+        receiver_id,
+        sender: user,
+      });
+
+      await this.transactionRepository.save(transaction);
     } else {
       this.logger.log(`Skipping processing for receiver: ${data.receiver_id}`);
     }

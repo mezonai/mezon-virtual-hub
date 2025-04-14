@@ -1,7 +1,7 @@
-import { MigrationInterface, QueryRunner } from "typeorm";
+import { MigrationInterface, QueryRunner } from 'typeorm';
 
 export class CreateGameEventTable1744563634800 implements MigrationInterface {
-  name = 'CreateGameEventTable1744563634800'
+  name = 'CreateGameEventTable1744563634800';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`CREATE EXTENSION IF NOT EXISTS "uuid-ossp"`);
@@ -10,6 +10,7 @@ export class CreateGameEventTable1744563634800 implements MigrationInterface {
       CREATE TABLE "game_event" (
         "id" uuid NOT NULL DEFAULT uuid_generate_v4(),
         "name" varchar(255) NOT NULL,
+        "description" text,
         "start_time" TIMESTAMP NOT NULL,
         "end_time" TIMESTAMP NOT NULL,
         "target_user_id" uuid,

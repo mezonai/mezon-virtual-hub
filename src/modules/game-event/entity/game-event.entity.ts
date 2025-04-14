@@ -6,13 +6,16 @@ import {
   JoinColumn,
   JoinTable,
   ManyToMany,
-  ManyToOne
+  ManyToOne,
 } from 'typeorm';
 
 @Entity({ name: 'game_event' })
 export class GameEventEntity extends AuditEntity {
   @Column({ type: 'varchar', length: 255 })
   name: string;
+
+  @Column({ type: 'text', nullable: true })
+  description?: string;
 
   @Column({ type: 'timestamp' })
   start_time: Date;
@@ -31,7 +34,10 @@ export class GameEventEntity extends AuditEntity {
   @JoinTable({
     name: 'event_completed_users',
     joinColumn: { name: 'event_id', referencedColumnName: 'id' },
-    inverseJoinColumn: { name: 'completed_user_id', referencedColumnName: 'id' },
+    inverseJoinColumn: {
+      name: 'completed_user_id',
+      referencedColumnName: 'id',
+    },
   })
   completed_users: UserEntity[];
 

@@ -22,6 +22,7 @@ import { LogViewerModule } from '@modules/log-viewer/log-viewer.module';
 import { MezonModule } from '@modules/mezon/mezon.module';
 import { GameModule } from '@modules/game/game.module';
 import { GameEventModule } from '@modules/game-event/game-event.module';
+import { TransactionModule } from '@modules/transaction/transaction.module';
 
 @Module({
   imports: [
@@ -45,6 +46,7 @@ import { GameEventModule } from '@modules/game-event/game-event.module';
     MezonModule,
     GameModule,
     GameEventModule,
+    TransactionModule,
     ClsModule.forRoot({
       global: true,
       middleware: { mount: true },

@@ -2,13 +2,22 @@ import { ApiProperty, PartialType } from '@nestjs/swagger';
 import { Expose, Exclude, Type } from 'class-transformer';
 import { IsArray, IsBoolean, IsDateString, IsNumber, IsOptional, IsString, IsUUID } from 'class-validator';
 
-export class CreateEventGameDto {
+export class SaveEventGameDto {
   @ApiProperty({
     description: 'Name of the event',
     example: 'Monster Hunt',
   })
   @IsString()
   name: string;
+
+  @ApiProperty({
+    description: 'Description of the event',
+    example: 'Defeat the monsters and win rewards!',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  description?: string;
 
   @ApiProperty({
     description: 'Start time of the event',
@@ -45,9 +54,7 @@ export class CreateEventGameDto {
   })
   @IsBoolean()
   is_completed?: boolean;
-}
 
-export class UpdateEventGameReqDto extends PartialType(CreateEventGameDto) {
   @ApiProperty({
     description: 'List of user IDs to be added to completed users',
     example: ['a1b2c3d4-e5f6-7890-1234-56789abcdef0'],
@@ -59,7 +66,7 @@ export class UpdateEventGameReqDto extends PartialType(CreateEventGameDto) {
   completed_user_ids?: string[];
 }
 
-export class GameEventUserResDto {
+export class UserEventResDto {
   @Exclude()
   deleted_at: Date | null;
 
@@ -90,12 +97,12 @@ export class GameEventUserResDto {
 
 export class GameEventResDto {
   @Expose()
-  @Type(() => GameEventUserResDto)
-  target_user: GameEventUserResDto
+  @Type(() => UserEventResDto)
+  target_user: UserEventResDto
 
   @Expose()
-  @Type(() => GameEventUserResDto)
-  completed_users: GameEventUserResDto[];
+  @Type(() => UserEventResDto)
+  completed_users: UserEventResDto[];
 
   @Exclude()
   deleted_at: Date | null;
