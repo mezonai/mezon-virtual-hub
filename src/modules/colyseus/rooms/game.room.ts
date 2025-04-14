@@ -23,7 +23,8 @@ export class GameRoom extends BaseGameRoom {
       this.state.items.set('car6', new Item(1645, -120, 'gokart', ''));
   }
 
-  onJoin(client: Client<UserEntity>, options: any, auth: any) {
+  async onJoin(client: Client<UserEntity>, options: any, auth: any) {
+    super.onJoin(client, options, auth);
     const { userData } = client;
     this.logger.log(
       `Player ${userData?.username} joined GameRoom ${this.roomName}, id: ${this.roomId}`,

@@ -3,10 +3,12 @@ import { Injectable } from '@nestjs/common';
 import { Player } from '@types';
 import { Client } from 'colyseus';
 import { BaseGameRoom } from './base-game.room';
+import { any } from 'joi';
 
 @Injectable()
 export class Meeting1Room extends BaseGameRoom {
-  onJoin(client: Client<UserEntity>, options: any, auth: any) {
+  async onJoin(client: Client<UserEntity>, options: any, auth: any) {
+    super.onJoin(client, options, auth);
     const { userData } = client;
     this.logger.log(
       `Player ${userData?.username} joined Meeting1Room ${this.roomName}, id: ${this.roomId}`,
