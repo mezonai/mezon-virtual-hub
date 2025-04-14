@@ -2,7 +2,7 @@ import { UserEntity } from '@modules/user/entity/user.entity';
 import { Injectable } from '@nestjs/common';
 import { Player } from '@types';
 import { Client } from 'colyseus';
-import { BaseGameRoom } from './base-game.room';
+import { BaseGameRoom, Item } from './base-game.room';
 import { configEnv } from '@config/env.config';
 import { cleanAndStringifyJson, isValidJsonQuiz } from '@libs/utils';
 import { GoogleGenAI } from '@google/genai';
@@ -12,6 +12,16 @@ export class GameRoom extends BaseGameRoom {
   private aiService = new GoogleGenAI({
     apiKey: configEnv().GOOGLE_GEN_AI_API_KEY,
   });
+
+  override onCreate(): void {
+      super.onCreate();
+      this.state.items.set('car1', new Item(320, -120, 'gokart', ''));
+      this.state.items.set('car2', new Item(200, -120, 'gokart', ''));
+      this.state.items.set('car3', new Item(-50, -120, 'gokart', ''));
+      this.state.items.set('car4', new Item(-166, -120, 'gokart', ''));
+      this.state.items.set('car5', new Item(1520, -120, 'gokart', ''));
+      this.state.items.set('car6', new Item(1645, -120, 'gokart', ''));
+  }
 
   onJoin(client: Client<UserEntity>, options: any, auth: any) {
     const { userData } = client;
