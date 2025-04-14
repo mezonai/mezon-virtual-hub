@@ -1,9 +1,12 @@
 import { Schema, type } from '@colyseus/schema';
 import { configEnv } from '@config/env.config';
+import { RPS_FEE } from '@constant';
+import { ActionKey } from '@enum';
 import { GoogleGenAI } from '@google/genai';
 import { Logger } from '@libs/logger';
 import { cleanAndStringifyJson, isValidJsonQuiz } from '@libs/utils';
 import { JwtPayload } from '@modules/auth/dtos/response';
+import { GameEventService } from '@modules/game-event/game-event.service';
 import { UserEntity } from '@modules/user/entity/user.entity';
 import {
   ForbiddenException,
@@ -19,7 +22,7 @@ import { Client, Room } from 'colyseus';
 import { IncomingMessage } from 'http';
 import { Repository } from 'typeorm';
 
-class Item extends Schema {
+export class Item extends Schema {
   @type('number') x: number = 0;
   @type('number') y: number = 0;
   @type('string') type: string = '';
@@ -41,12 +44,16 @@ class RoomState extends Schema {
 
 @Injectable()
 export class BaseGameRoom extends Room<RoomState> {
-  maxClients = 50; // Max players
+  private minigameResultDict = new Map();
+  // maxClients = 50; // Max players
   logger = new Logger();
+  static activeRooms: Set<BaseGameRoom> = new Set();
+  static globalTargetClients: Map<string, Client> = new Map();
   constructor(
     @InjectRepository(UserEntity)
     readonly userRepository: Repository<UserEntity>,
     @Inject() private readonly jwtService: JwtService,
+    @Inject() private readonly gameEventService: GameEventService,
   ) {
     super();
     this.logger.log(`GameRoom created : ${this.roomName}`);
@@ -113,6 +120,13 @@ export class BaseGameRoom extends Room<RoomState> {
     return true;
   }
 
+  broadcastToAllRooms(type: string, data: any) {
+    BaseGameRoom.activeRooms.forEach(room => {
+      room.broadcast(type, data);
+      console.log("Room broadcast: ", room.roomId);
+    });
+  }
+
   private decodeMoveData(buffer: Uint8Array) {
     const view = new DataView(
       buffer.buffer,
@@ -156,13 +170,39 @@ export class BaseGameRoom extends Room<RoomState> {
     return uint8Array;
   }
 
+  createKeyForActionDict(gameType, p1, p2) {
+    return gameType + "-" + p1 + "-" + p2;
+  }
+
+  sendMessageToTarget(client: Client, action, message) {
+    client.send("noticeMessage", { action: action, message: message });
+  }
+
+  getRPSWinner(p1, p2, result1, result2) {
+    if (result1 === result2) {
+      return "draw";
+    }
+
+    const winsAgainst = {
+      rock: "scissors",
+      paper: "rock",
+      scissors: "paper"
+    };
+
+    if (winsAgainst[result1] === result2) {
+      return p1;
+    } else {
+      return p2;
+    }
+  }
+
   onCreate() {
     this.setState(new RoomState());
     if (this.roomName == "sg") {
       this.state.items.set('car1', new Item(355, -120, 'gokart', ''));
       this.state.items.set('car2', new Item(235, -120, 'gokart', ''));
     }
-
+    BaseGameRoom.activeRooms.add(this);
     this.onMessage('move', (client, buffer: ArrayBuffer) => {
       try {
         const data = this.decodeMoveData(new Uint8Array(buffer));
@@ -232,6 +272,209 @@ export class BaseGameRoom extends Room<RoomState> {
         sessionId: client.sessionId,
         skin_set: skinArray,
       });
+
+    });
+
+    this.onMessage('arrest', async (client, message) => {
+      const user = client.userData;
+      if (!message?.targetUserId) return;
+
+      // await this.userRepository.update(message.targetUserId, {
+      //   is_captured: true,
+      // });
+
+      this.logger.log(`${user?.username} arrested ${message.targetUserId}`);
+
+      this.broadcastToAllRooms('userCaughtglobal', {
+        by: user?.id,
+        target: message.targetUserId,
+      });
+    });
+
+    this.onMessage('onPlayerUpdateGold', (client, data) => {
+      const { newValue, amountChange } = data;
+      if (client?.userData?.gold != null) {
+        if (newValue >= 0) {
+          client.userData.gold = newValue;
+        }
+
+        let responseData = {
+          sessionId: client.sessionId,
+          amountChange: amountChange
+        }
+        this.broadcast('onPlayerUpdateGold', responseData);
+      }
+    });
+
+    this.onMessage("p2pAction", (sender, data) => {
+      const { targetClientId, action, amount } = data;
+
+      if (action == ActionKey.RPS.toString() && sender.userData?.gold < RPS_FEE) {
+        this.sendMessageToTarget(sender, action, "Không đủ tiền");
+        return;
+      }
+
+      const targetClient = this.clients.find(client => client.sessionId === targetClientId);
+      for (let key of this.minigameResultDict.keys()) {
+        if (key.includes(sender.sessionId) || targetClient?.userData == null) {
+          this.sendMessageToTarget(sender, action, "Không thể mời người chơi này");
+          return;
+        }
+      }
+
+      if (targetClient && action == ActionKey.RPS.toString() && (targetClient.userData.gold < RPS_FEE)) {
+        this.sendMessageToTarget(sender, action, "Người chơi không đủ tiền");
+        return;
+      }
+
+
+      if (action == ActionKey.SendCoin.toString()) {
+        if (amount <= 0 || sender.userData?.gold <= 0 || sender.userData?.gold < amount) {
+          this.sendMessageToTarget(sender, action, "Không đủ tiền");
+          return;
+        }
+
+        if (sender.userData && targetClient?.userData && (sender.userData.id != targetClient?.userData.id)) {
+          sender.userData.gold -= amount;
+          targetClient.userData.gold += amount;
+
+          this.userRepository.update(sender.userData.id, { gold: sender.userData.gold });
+          this.userRepository.update(targetClient.userData.id, { gold: targetClient.userData.gold });
+        }
+        else {
+          this.sendMessageToTarget(sender, action, "Lỗi bất định");
+          return;
+        }
+      }
+
+      let gameKey = this.createKeyForActionDict(action, sender.sessionId, targetClientId);
+      if (targetClient) {
+        targetClient.send("onP2pAction", {
+          action: action,
+          from: sender.sessionId,
+          to: targetClientId,
+          fromName: sender.userData?.username,
+          gameKey: gameKey,
+          amount: amount,
+          currentGold: targetClient.userData.gold
+        });
+
+        sender.send("onP2pActionSended", {
+          action: action,
+          from: sender.sessionId,
+          toName: targetClient.userData?.username,
+          amount: amount,
+          currentGold: sender.userData?.gold
+        });
+      }
+    });
+
+    this.onMessage("p2pActionAccept", (sender, data) => {
+      const { targetClientId, action } = data;
+      const targetClient = this.clients.find(client => client.sessionId === targetClientId);
+      let gameKey = this.createKeyForActionDict(action, targetClientId, sender.sessionId);
+
+      this.minigameResultDict.set(gameKey, {
+        from: targetClientId,
+        to: sender.sessionId,
+        result1: "",
+        result2: ""
+      })
+
+      if (targetClient) {
+        this.broadcast("onP2pActionAccept", {
+          action: action,
+          from: targetClientId,
+          to: sender.sessionId,
+          gameKey: gameKey
+        });
+      }
+    });
+
+    this.onMessage("p2pActionChoosed", (sender, data) => {
+      const { senderAction, gameKey, action, from, to } = data;
+      let fromPlayer = this.clients.find(client => client.sessionId === from);
+      let toPlayer = this.clients.find(client => client.sessionId === to);
+
+      if (this.minigameResultDict.has(gameKey)) {
+        let result = this.minigameResultDict.get(gameKey);
+        if (sender.sessionId == result.from) {
+          result.result1 = senderAction;
+        }
+        else if (sender.sessionId == result.to) {
+          result.result2 = senderAction;
+        }
+
+        if (result.result1 != "" && result.result2 != "") {
+          let winner = this.getRPSWinner(result.from, result.to, result.result1, result.result2);
+
+          if (action == ActionKey.RPS.toString() && winner != "draw" && fromPlayer?.userData?.id != toPlayer?.userData?.id) {
+            if (fromPlayer?.userData) {
+              fromPlayer.userData.gold = winner == fromPlayer.sessionId ? fromPlayer.userData.gold + RPS_FEE : fromPlayer.userData.gold - RPS_FEE;
+              this.userRepository.update(fromPlayer.userData.id, { gold: fromPlayer.userData.gold });
+            }
+            if (toPlayer?.userData) {
+              toPlayer.userData.gold = winner == toPlayer.sessionId ? toPlayer.userData.gold + RPS_FEE : toPlayer.userData.gold - RPS_FEE;
+              this.userRepository.update(toPlayer.userData.id, { gold: toPlayer.userData.gold });
+            }
+          }
+
+          this.broadcast("onP2pActionResult", {
+            action: action + "Done",
+            from: result.from,
+            to: result.to,
+            result1: result.result1,
+            result2: result.result2,
+            fee: RPS_FEE,
+            winner: winner,
+            fromGold: fromPlayer?.userData?.gold,
+            toGold: toPlayer?.userData?.gold,
+          });
+
+          this.minigameResultDict.delete(gameKey);
+        }
+      }
+      else {
+        this.broadcast("onP2pGameError", {
+          message: "Server Error",
+          action: action,
+          from: from,
+          to: to
+        })
+      }
+    });
+
+    this.onMessage("p2pActionReject", (sender, data) => {
+      const { targetClientId, action } = data;
+      const targetClient = this.clients.find(client => client.sessionId === targetClientId);
+
+      if (targetClient) {
+        targetClient.send("onP2pActionReject", {
+          action,
+          from: sender.sessionId,  // Sending client ID
+        });
+      }
+    });
+
+    this.onMessage('useItem', (client, message) => {
+      if (message.playerId != "") {
+        for (const item of this.state.items) {
+          if (item[1].ownerId == message.playerId)
+            return;
+        }
+      }
+
+      const item = this.state.items.get(message.itemId);
+      if (item) {
+        item.ownerId = message.playerId;
+        if (message.x) {
+          item.x = message.x;
+        }
+        if (message.y) {
+          item.y = message.y;
+        }
+        this.broadcast('onUseItem', message);
+      }
     });
   }
 
@@ -259,6 +502,10 @@ export class BaseGameRoom extends Room<RoomState> {
 
   onLeave(client: Client<UserEntity>) {
     const { userData } = client;
+    let userId = userData == null ? "0" : userData?.id;
+    if (BaseGameRoom.globalTargetClients.has(userId)) {
+      BaseGameRoom.globalTargetClients.delete(userId);
+    }
     if (this.state.players.has(client.sessionId)) {
       this.resetMapItem(client, this.state.players.get(client.sessionId));
       this.state.players.delete(client.sessionId);
@@ -274,7 +521,7 @@ export class BaseGameRoom extends Room<RoomState> {
           item[1].x = player?.x;
           item[1].y = player?.y;
         }
-        this.broadcast('onUseItem', { itemId: item[0], playerId: ''});
+        this.broadcast('onUseItem', { itemId: item[0], playerId: '' });
         break;
       }
     }
@@ -285,5 +532,43 @@ export class BaseGameRoom extends Room<RoomState> {
       `An error occurred in ${methodName}: ${err}`,
       err.stack || 'No stack trace',
     );
+  }
+
+  async onJoin(client: Client<UserEntity>, options: any, auth: any) {
+    // const { userData } = client;
+    // let event = await this.gameEventService.findUpcoming();
+    // console.log("Event: ", event?.target_user.username);
+    //let userId =  userData == null ? "0" :  userData?.id;
+    // if (this.isTargetUser(client)) {
+    //   if (!BaseGameRoom.globalTargetClients.has(userId)) {
+    //     BaseGameRoom.globalTargetClients.set(userId, client);
+    //   }
+    //   this.broadcastToAllRooms('userTargetJoined', {
+    //     userId: userData?.id,
+    //     username: userData?.username,
+    //     room: this.roomName,
+    //   });
+    // } else {
+    //   if (BaseGameRoom.globalTargetClients.has("target-session-id")) {
+    //     client.send('userTargetJoined', {
+    //       userId: userData?.id,
+    //     username: userData?.username,
+    //     room: this.roomName,
+    //     });
+    //   }
+    // }    
+    // this.broadcastToAllRooms('userTargetJoined', {
+    //   userId: userData?.id,
+    //   username: userData?.username,
+    //   room: this.roomName,
+    // });
+  }
+
+  onDispose() {
+    BaseGameRoom.activeRooms.delete(this);
+  }
+
+  private isTargetUser(client: Client): boolean {
+    return client.sessionId === "target-session-id";
   }
 }

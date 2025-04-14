@@ -6,7 +6,8 @@ import { Player } from '@types';
 
 @Injectable()
 export class OfficeRoom extends BaseGameRoom {
-  onJoin(client: Client<UserEntity>, options: any, auth: any) {
+  async onJoin(client: Client<UserEntity>, options: any, auth: any) {
+    super.onJoin(client, options, auth);
     const { userData } = client;
 
     this.logger.log(

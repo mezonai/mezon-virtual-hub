@@ -8,7 +8,8 @@ import { BaseGameRoom } from './base-game.room';
 
 @Injectable()
 export class Shop1Room extends BaseGameRoom {
-  onJoin(client: Client<UserEntity>, options: any, auth: any) {
+  async onJoin(client: Client<UserEntity>, options: any, auth: any) {
+    super.onJoin(client, options, auth);
     const { userData } = client;
 
     this.logger.log(
