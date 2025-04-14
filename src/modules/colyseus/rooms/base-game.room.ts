@@ -4,6 +4,7 @@ import { GoogleGenAI } from '@google/genai';
 import { Logger } from '@libs/logger';
 import { cleanAndStringifyJson, isValidJsonQuiz } from '@libs/utils';
 import { JwtPayload } from '@modules/auth/dtos/response';
+import { GameEventService } from '@modules/game-event/game-event.service';
 import { UserEntity } from '@modules/user/entity/user.entity';
 import {
   ForbiddenException,
@@ -43,10 +44,13 @@ class RoomState extends Schema {
 export class BaseGameRoom extends Room<RoomState> {
   maxClients = 50; // Max players
   logger = new Logger();
+  static activeRooms: Set<BaseGameRoom> = new Set();
+  static globalTargetClients: Map<string, Client> = new Map();
   constructor(
     @InjectRepository(UserEntity)
     readonly userRepository: Repository<UserEntity>,
     @Inject() private readonly jwtService: JwtService,
+    @Inject() private readonly gameEventService: GameEventService,
   ) {
     super();
     this.logger.log(`GameRoom created : ${this.roomName}`);
@@ -113,6 +117,13 @@ export class BaseGameRoom extends Room<RoomState> {
     return true;
   }
 
+  broadcastToAllRooms(type: string, data: any) {
+    BaseGameRoom.activeRooms.forEach(room => {
+      room.broadcast(type, data);
+      console.log("Room broadcast: ", room.roomId);
+    });
+  }
+
   private decodeMoveData(buffer: Uint8Array) {
     const view = new DataView(
       buffer.buffer,
@@ -162,7 +173,7 @@ export class BaseGameRoom extends Room<RoomState> {
       this.state.items.set('car1', new Item(355, -120, 'gokart', ''));
       this.state.items.set('car2', new Item(235, -120, 'gokart', ''));
     }
-
+    BaseGameRoom.activeRooms.add(this);
     this.onMessage('move', (client, buffer: ArrayBuffer) => {
       try {
         const data = this.decodeMoveData(new Uint8Array(buffer));
@@ -232,6 +243,23 @@ export class BaseGameRoom extends Room<RoomState> {
         sessionId: client.sessionId,
         skin_set: skinArray,
       });
+      
+    });
+
+    this.onMessage('arrest', async (client, message) => {
+      const user = client.userData;
+      if (!message?.targetUserId) return;
+
+      // await this.userRepository.update(message.targetUserId, {
+      //   is_captured: true,
+      // });
+
+      this.logger.log(`${user?.username} arrested ${message.targetUserId}`);
+
+      this.broadcastToAllRooms('userCaughtglobal', {
+        by: user?.id,
+        target: message.targetUserId,
+      });
     });
   }
 
@@ -259,6 +287,10 @@ export class BaseGameRoom extends Room<RoomState> {
 
   onLeave(client: Client<UserEntity>) {
     const { userData } = client;
+    let userId =  userData == null ? "0" :  userData?.id;
+    if (BaseGameRoom.globalTargetClients.has(userId)) {
+      BaseGameRoom.globalTargetClients.delete(userId);
+    }
     if (this.state.players.has(client.sessionId)) {
       this.resetMapItem(client, this.state.players.get(client.sessionId));
       this.state.players.delete(client.sessionId);
@@ -285,5 +317,43 @@ export class BaseGameRoom extends Room<RoomState> {
       `An error occurred in ${methodName}: ${err}`,
       err.stack || 'No stack trace',
     );
+  }
+
+  async onJoin(client: Client<UserEntity>, options: any, auth: any) {
+    const { userData } = client;
+    let event = await this.gameEventService.findUpcoming();
+    console.log("Event: ", event?.target_user.username);
+    //let userId =  userData == null ? "0" :  userData?.id;
+    // if (this.isTargetUser(client)) {
+    //   if (!BaseGameRoom.globalTargetClients.has(userId)) {
+    //     BaseGameRoom.globalTargetClients.set(userId, client);
+    //   }
+    //   this.broadcastToAllRooms('userTargetJoined', {
+    //     userId: userData?.id,
+    //     username: userData?.username,
+    //     room: this.roomName,
+    //   });
+    // } else {
+    //   if (BaseGameRoom.globalTargetClients.has("target-session-id")) {
+    //     client.send('userTargetJoined', {
+    //       userId: userData?.id,
+    //     username: userData?.username,
+    //     room: this.roomName,
+    //     });
+    //   }
+    // }    
+    // this.broadcastToAllRooms('userTargetJoined', {
+    //   userId: userData?.id,
+    //   username: userData?.username,
+    //   room: this.roomName,
+    // });
+  }
+
+  onDispose() {
+    BaseGameRoom.activeRooms.delete(this);
+  }
+
+  private isTargetUser(client: Client): boolean {
+    return client.sessionId === "target-session-id";
   }
 }

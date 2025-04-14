@@ -13,7 +13,8 @@ export class GameRoom extends BaseGameRoom {
     apiKey: configEnv().GOOGLE_GEN_AI_API_KEY,
   });
 
-  onJoin(client: Client<UserEntity>, options: any, auth: any) {
+  async onJoin(client: Client<UserEntity>, options: any, auth: any) {
+    super.onJoin(client, options, auth);
     const { userData } = client;
     this.logger.log(
       `Player ${userData?.username} joined GameRoom ${this.roomName}, id: ${this.roomId}`,
