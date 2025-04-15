@@ -33,6 +33,7 @@ export class GameRoom extends BaseGameRoom {
     // Create player object and set position based on found room or user data
     const player = new Player();
     player.id = client.sessionId;
+    player.user_id = userData?.id ?? "";
     player.x = userData?.position_x ?? 0;
     player.y = userData?.position_y ?? 0;
 
@@ -62,11 +63,7 @@ export class GameRoom extends BaseGameRoom {
       this.userRepository.update(userData.id, positionUpdate);
     }
 
-    if (this.state.players.has(client.sessionId)) {
-      this.resetMapItem(client, this.state.players.get(client.sessionId));
-      this.state.players.delete(client.sessionId);
-    }
-    this.logger.log(`Player ${userData?.username} left room ${this.roomName}`);
+    super.onLeave(client);
   }
 
   async getJSONQuizQuestion() {

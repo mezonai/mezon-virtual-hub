@@ -16,7 +16,7 @@ export class OfficeRoom extends BaseGameRoom {
 
     const player = new Player();
     player.id = client.sessionId;
-
+    player.user_id = userData?.id ?? "";
     player.x = 912;
     player.y = -261;
     player.display_name = userData?.display_name || userData?.username || '';
