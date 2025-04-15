@@ -44,6 +44,24 @@ export class GameEventController {
     return await this.gameEventService.findAll();
   }
 
+  @Post()
+  @UseGuards(AdminBypassGuard)
+  @ApiOperation({
+    summary: 'Create a new game event',
+  })
+  @ApiBody({ type: SaveEventGameDto })
+  async createItem(@Body() payload: SaveEventGameDto) {
+    return await this.gameEventService.saveEvent(payload);
+  }
+
+  @Get('current')
+  @ApiOperation({
+    summary: 'Get the current game event',
+  })
+  async findCurrentEvent() {
+    return await this.gameEventService.findCurrentEvent();
+  }
+
   @Get(':event_id')
   @ApiParam({
     name: 'event_id',
@@ -54,16 +72,6 @@ export class GameEventController {
   })
   async findOneEvent(@Param('event_id', ParseUUIDPipe) event_id: string) {
     return await this.gameEventService.findOneWithCompletedUsers(event_id);
-  }
-
-  @Post()
-  @UseGuards(AdminBypassGuard)
-  @ApiOperation({
-    summary: 'Create a new game event',
-  })
-  @ApiBody({ type: SaveEventGameDto })
-  async createItem(@Body() payload: SaveEventGameDto) {
-    return await this.gameEventService.saveEvent(payload);
   }
 
   @Put(':event_id')

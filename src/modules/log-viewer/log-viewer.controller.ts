@@ -5,10 +5,13 @@ import { exec } from 'child_process';
 import { existsSync } from 'fs';
 import { Public } from '@libs/decorator';
 import { AdminBypassGuard } from '@libs/guard/admin.guard';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 
+@ApiBearerAuth()
+@ApiTags('Log Viewer')
 @Controller('log-viewer')
+@UseGuards(AdminBypassGuard)
 export class LogViewerController {
-  @Public()
   @Get('logs')
   getLogs(@Res() res: Response) {
     const logFilePath = '/app/logs/output.log';

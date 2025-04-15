@@ -27,19 +27,12 @@ export class MezonService implements OnModuleInit, OnModuleDestroy {
   async onModuleInit() {
     this.logger.log('Initializing Mezon client...');
 
-    this.client = new MezonClient(configEnv().MEZON_APPLICATION_TOKEN);
+    this.client = new MezonClient(configEnv().MEZON_TOKEN_RECEIVER_APP_TOKEN);
     await this.client.authenticate();
 
     this.logger.log('Mezon client authenticated in module init');
 
-    this.client.on(Events.ChannelCreated, async (event: TokenSentEvent) => {
-      this.logger.log(`Channel Created successfully!`);
-    });
-
     this.client.on(Events.TokenSend, async (event: MezonTokenSentEvent) => {
-      this.logger.log(
-        `Received TokenSend event mezon service: ${JSON.stringify(event)}`,
-      );
       this.transferTokenToGold(event);
     });
 
@@ -81,8 +74,7 @@ export class MezonService implements OnModuleInit, OnModuleDestroy {
   }
 
   async transferTokenToGold(data: MezonTokenSentEvent) {
-    this.logger.log(`Received TokenSend event`);
-    if (data.receiver_id === configEnv().MEZON_TOKEN_RECEIVER_ID) {
+    if (data.receiver_id === configEnv().MEZON_TOKEN_RECEIVER_APP_ID) {
       const user = await this.userRepository.findOne({
         where: { mezon_id: data.sender_id },
       });
