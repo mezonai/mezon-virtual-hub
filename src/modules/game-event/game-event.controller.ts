@@ -59,7 +59,7 @@ export class GameEventController {
     summary: 'Get the current game event',
   })
   async findCurrentEvent() {
-    return await this.gameEventService.findCurrentEvent();
+    return await this.gameEventService.findOneCurrentEvent();
   }
 
   @Get(':event_id')
@@ -114,6 +114,6 @@ export class GameEventController {
   })
   async completeEvent(@Param('event_id', ParseUUIDPipe) event_id: string) {
     const user = this.cls.get<UserEntity>(USER_TOKEN);
-    return this.gameEventService.completeEvent(event_id, user);
+    await this.gameEventService.completeEvent(event_id, user);
   }
 }

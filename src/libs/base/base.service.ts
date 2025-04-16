@@ -46,10 +46,10 @@ export abstract class BaseService<T extends AuditEntity> {
     await this.repository.delete(id);
   }
 
-  async softDelete(id: number | string): Promise<T> {
+  async softDelete(id: number | string) {
     const entity = await this.findOneNotDeletedById(id);
 
-    return await this.softDelete(entity.id);
+    await this.repository.softDelete(entity.id);
   }
 
   async queryRaw(sql: string, params?: any[]): Promise<any> {

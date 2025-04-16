@@ -97,7 +97,7 @@ export class GameEventService extends BaseService<GameEventEntity> {
     return plainToInstance(GameEventResDto, event);
   }
 
-  async findCurrentEvent() {
+  async findOneCurrentEvent() {
     const event = await this.gameEventRepository.findOne({
       where: {
         start_time: LessThan(new Date()),

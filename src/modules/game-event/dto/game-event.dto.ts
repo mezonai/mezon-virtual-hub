@@ -108,6 +108,9 @@ export class GameEventResDto {
   deleted_at: Date | null;
 
   @Exclude()
+  external_id: string | null;
+
+  @Exclude()
   updated_at: Date | null;
 
   @Exclude()
