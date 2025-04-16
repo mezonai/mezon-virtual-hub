@@ -16,6 +16,7 @@ export class Meeting1Room extends BaseGameRoom {
 
     const player = new Player();
     player.id = client.sessionId;
+    player.user_id = userData?.id ?? "";
     player.x = userData?.position_x ?? 0;
     player.y = userData?.position_y ?? 0;
 

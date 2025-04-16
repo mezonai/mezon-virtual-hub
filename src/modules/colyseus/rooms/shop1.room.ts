@@ -18,7 +18,7 @@ export class Shop1Room extends BaseGameRoom {
 
     const player = new Player();
     player.id = client.sessionId;
-
+    player.user_id = userData?.id ?? "";
     player.x = 0;
     player.y = -302;
     player.display_name = userData?.display_name || userData?.username || '';
