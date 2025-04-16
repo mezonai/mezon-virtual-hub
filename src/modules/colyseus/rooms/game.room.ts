@@ -9,18 +9,47 @@ import { GoogleGenAI } from '@google/genai';
 
 @Injectable()
 export class GameRoom extends BaseGameRoom {
+  private mathProblemData = {
+    id: "",
+    answer: ""
+  };
+
   private aiService = new GoogleGenAI({
     apiKey: configEnv().GOOGLE_GEN_AI_API_KEY,
   });
 
   override onCreate(): void {
-      super.onCreate();
-      this.state.items.set('car1', new Item(320, -120, 'gokart', ''));
-      this.state.items.set('car2', new Item(200, -120, 'gokart', ''));
-      this.state.items.set('car3', new Item(-50, -120, 'gokart', ''));
-      this.state.items.set('car4', new Item(-166, -120, 'gokart', ''));
-      this.state.items.set('car5', new Item(1520, -120, 'gokart', ''));
-      this.state.items.set('car6', new Item(1645, -120, 'gokart', ''));
+    super.onCreate();
+    this.state.items.set('car1', new Item(320, -120, 'gokart', ''));
+    this.state.items.set('car2', new Item(200, -120, 'gokart', ''));
+    this.state.items.set('car3', new Item(-50, -120, 'gokart', ''));
+    this.state.items.set('car4', new Item(-166, -120, 'gokart', ''));
+    this.state.items.set('car5', new Item(1520, -120, 'gokart', ''));
+    this.state.items.set('car6', new Item(1645, -120, 'gokart', ''));
+
+    this.onMessage('answerMath', (client, message) => {
+      const { id, answer } = message;
+      let response = {
+        correct: false,
+        userGold: client.userData?.gold
+      }
+
+      if (this.mathProblemData.id == id && this.mathProblemData.answer == answer.toString()) {
+        if (client.userData) {
+          client.userData.gold += 1;
+          response.correct = true;
+          response.userGold = client.userData.gold;
+          this.userRepository.update(client.userData.id, { gold: client.userData.gold });
+        }
+        client.send("onAnswerMath", response);
+
+      }
+      else {
+        client.send("onAnswerMath", response);
+      }
+    });
+
+    this.scheduleQuizBroadcast();
   }
 
   async onJoin(client: Client<UserEntity>, options: any, auth: any) {
@@ -44,8 +73,8 @@ export class GameRoom extends BaseGameRoom {
       `Player ${userData?.username} has position ${player.x} ${player.y}`,
     );
 
-    this.scheduleQuizBroadcast();
   }
+
 
   onLeave(client: Client<UserEntity>) {
     const { userData } = client;
@@ -69,6 +98,86 @@ export class GameRoom extends BaseGameRoom {
     this.logger.log(`Player ${userData?.username} left room ${this.roomName}`);
   }
 
+  generateMathProblem(): void {
+    const numOptions: number = Math.floor(Math.random() * 3) + 2; // Randomly decide between 2, 3, or 4 numbers
+    const numbers: number[] = [];
+    let correctAnswer: number;
+    const operators: string[] = ['+', '-', '*', '/'];
+    const operator: string = operators[Math.floor(Math.random() * operators.length)]; // Randomly choose operator
+
+    // Generate the numbers for the math problem
+    for (let i = 0; i < numOptions; i++) {
+      numbers.push(Math.floor(Math.random() * 10) + 1); // Random numbers between 1 and 10
+    }
+
+    // For multiplication and division, only 2 numbers are used
+    if (operator === '*' || operator === '/') {
+      // Only 2 numbers for multiplication and division
+      numbers.length = 2;
+    }
+
+    // Create the math expression and calculate correct answer
+    switch (operator) {
+      case '+':
+        correctAnswer = numbers.reduce((acc: number, num: number) => acc + num, 0);
+        break;
+      case '-':
+        correctAnswer = numbers.reduce((acc: number, num: number) => acc - num);
+        break;
+      case '*':
+        correctAnswer = numbers.reduce((acc: number, num: number) => acc * num, 1);
+        break;
+      case '/':
+        // Ensure division gives an integer result
+        const dividend = numbers[0];
+        let divisor = numbers[1];
+
+        // Ensure divisor is a divisor of dividend
+        while (dividend % divisor !== 0) {
+          divisor = Math.floor(Math.random() * 10) + 1;  // Random number between 1 and 10
+        }
+
+        correctAnswer = dividend / divisor;
+        numbers[1] = divisor; // Update the divisor in the numbers array
+        break;
+      default:
+        correctAnswer = numbers[0];
+        break;
+    }
+
+    let options: Set<number> = new Set();
+    options.add(correctAnswer);
+
+    while (options.size < 4) {
+      options.add(Math.floor(Math.random() * 20) + 1); // Random wrong answers
+    }
+
+    options = new Set([...options].sort(() => Math.random() - 0.5));
+    const question: string = `${numbers.join(` ${operator === '/' ? '÷' : operator === '*' ? 'x' : operator} `)} = ?`;
+
+    let data = {
+      id: this.generateRandomString(),
+      question: question,
+      options: [...options].join(', '),
+    }
+    this.mathProblemData.id = data.id;
+    this.mathProblemData.answer = correctAnswer.toString();
+    this.logger.log(JSON.stringify(data))
+    this.broadcast('mathProblem', data);
+  }
+
+  generateRandomString(length: number = 8): string {
+    const characters: string = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let result: string = '';
+    const charactersLength: number = characters.length;
+
+    for (let i = 0; i < length; i++) {
+      result += characters.charAt(Math.floor(Math.random() * charactersLength));
+    }
+
+    return result;
+  }
+
   async getJSONQuizQuestion() {
     try {
       const { QUIZ_PROMPT_RESPONSE_FORMAT, QUIZ_PROMPT_CONTENT } = configEnv();
@@ -85,7 +194,8 @@ export class GameRoom extends BaseGameRoom {
 
   private scheduleQuizBroadcast() {
     setInterval(async () => {
-      this.broadcastQuizQuestion();
+      this.generateMathProblem();
+      // this.broadcastQuizQuestion();
     }, configEnv().QUIZ_QUESTION_FETCH_INTERVAL_SECONDS * 1000);
   }
 
@@ -93,7 +203,7 @@ export class GameRoom extends BaseGameRoom {
     if (attempts > 3) return;
     try {
       const quiz = await this.getJSONQuizQuestion();
-      
+
       if (isValidJsonQuiz(quiz)) {
         const jsonQuiz = JSON.stringify(quiz)
         this.broadcast('quizQuestion', jsonQuiz);
