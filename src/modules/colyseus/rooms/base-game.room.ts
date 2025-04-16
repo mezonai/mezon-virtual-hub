@@ -49,6 +49,7 @@ export class BaseGameRoom extends Room<RoomState> {
   logger = new Logger();
   static activeRooms: Set<BaseGameRoom> = new Set();
   static globalTargetClients: Map<string, Client> = new Map();
+  static eventData: any;
   constructor(
     @InjectRepository(UserEntity)
     readonly userRepository: Repository<UserEntity>,
@@ -196,13 +197,17 @@ export class BaseGameRoom extends Room<RoomState> {
     }
   }
 
-  onCreate() {
+  async onCreate() {
     this.setState(new RoomState());
     if (this.roomName == "sg") {
       this.state.items.set('car1', new Item(355, -120, 'gokart', ''));
       this.state.items.set('car2', new Item(235, -120, 'gokart', ''));
     }
     BaseGameRoom.activeRooms.add(this);
+    if (!BaseGameRoom.eventData) {
+      BaseGameRoom.eventData = await this.gameEventService.findOneCurrentEvent();
+      console.log("Event: ", BaseGameRoom.eventData);
+    }
     this.onMessage('move', (client, buffer: ArrayBuffer) => {
       try {
         const data = this.decodeMoveData(new Uint8Array(buffer));
@@ -356,7 +361,8 @@ export class BaseGameRoom extends Room<RoomState> {
           fromName: sender.userData?.username,
           gameKey: gameKey,
           amount: amount,
-          currentGold: targetClient.userData.gold
+          currentGold: targetClient.userData.gold,
+          userId: targetClient.userData.id
         });
 
         sender.send("onP2pActionSended", {
@@ -364,7 +370,8 @@ export class BaseGameRoom extends Room<RoomState> {
           from: sender.sessionId,
           toName: targetClient.userData?.username,
           amount: amount,
-          currentGold: sender.userData?.gold
+          currentGold: sender.userData?.gold,
+          userId: sender.userData?.id
         });
       }
     });
@@ -502,13 +509,18 @@ export class BaseGameRoom extends Room<RoomState> {
 
   onLeave(client: Client<UserEntity>) {
     const { userData } = client;
-    let userId = userData == null ? "0" : userData?.id;
-    if (BaseGameRoom.globalTargetClients.has(userId)) {
-      BaseGameRoom.globalTargetClients.delete(userId);
-    }
+    let userId = userData?.id ?? "";
     if (this.state.players.has(client.sessionId)) {
       this.resetMapItem(client, this.state.players.get(client.sessionId));
       this.state.players.delete(client.sessionId);
+    }
+    if (BaseGameRoom.globalTargetClients.has(userId)) {
+      BaseGameRoom.globalTargetClients.delete(userId);
+      this.broadcastToAllRooms('userTargetLeft', {
+        userId: userData?.id,
+        username: userData?.username,
+        room: this.roomName,
+      });
     }
     this.logger.log(`Player ${userData?.username} left room ${this.roomName}`);
   }
@@ -535,40 +547,32 @@ export class BaseGameRoom extends Room<RoomState> {
   }
 
   async onJoin(client: Client<UserEntity>, options: any, auth: any) {
-    // const { userData } = client;
-    // let event = await this.gameEventService.findUpcoming();
-    // console.log("Event: ", event?.target_user.username);
-    //let userId =  userData == null ? "0" :  userData?.id;
-    // if (this.isTargetUser(client)) {
-    //   if (!BaseGameRoom.globalTargetClients.has(userId)) {
-    //     BaseGameRoom.globalTargetClients.set(userId, client);
-    //   }
-    //   this.broadcastToAllRooms('userTargetJoined', {
-    //     userId: userData?.id,
-    //     username: userData?.username,
-    //     room: this.roomName,
-    //   });
-    // } else {
-    //   if (BaseGameRoom.globalTargetClients.has("target-session-id")) {
-    //     client.send('userTargetJoined', {
-    //       userId: userData?.id,
-    //     username: userData?.username,
-    //     room: this.roomName,
-    //     });
-    //   }
-    // }    
-    // this.broadcastToAllRooms('userTargetJoined', {
-    //   userId: userData?.id,
-    //   username: userData?.username,
-    //   room: this.roomName,
-    // });
+    const { userData } = client;
+    if (BaseGameRoom.eventData == null || BaseGameRoom.eventData.target_user == null) return;
+    let targetUserId = BaseGameRoom.eventData.target_user.id;
+    let userId = userData == null ? "0" : userData?.id;
+    if (userId == targetUserId) {
+      if (!BaseGameRoom.globalTargetClients.has(userId)) {
+        BaseGameRoom.globalTargetClients.set(userId, client);
+      }
+      this.broadcastToAllRooms('userTargetJoined', {
+        userId: userData?.id,
+        username: userData?.username,
+        room: this.roomName,
+      });
+    }
+    else {
+      if (BaseGameRoom.globalTargetClients.has(targetUserId)) {
+        client.send('userTargetJoined', {
+          userId: userData?.id,
+          username: userData?.username,
+          room: this.roomName,
+        });
+      }
+    }
   }
 
   onDispose() {
     BaseGameRoom.activeRooms.delete(this);
-  }
-
-  private isTargetUser(client: Client): boolean {
-    return client.sessionId === "target-session-id";
   }
 }

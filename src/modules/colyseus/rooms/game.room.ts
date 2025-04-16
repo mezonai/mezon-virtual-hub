@@ -18,7 +18,7 @@ export class GameRoom extends BaseGameRoom {
     apiKey: configEnv().GOOGLE_GEN_AI_API_KEY,
   });
 
-  override onCreate(): void {
+  override async onCreate() {
     super.onCreate();
     this.state.items.set('car1', new Item(320, -120, 'gokart', ''));
     this.state.items.set('car2', new Item(200, -120, 'gokart', ''));
@@ -62,6 +62,7 @@ export class GameRoom extends BaseGameRoom {
     // Create player object and set position based on found room or user data
     const player = new Player();
     player.id = client.sessionId;
+    player.user_id = userData?.id ?? "";
     player.x = userData?.position_x ?? 0;
     player.y = userData?.position_y ?? 0;
 
@@ -91,11 +92,7 @@ export class GameRoom extends BaseGameRoom {
       this.userRepository.update(userData.id, positionUpdate);
     }
 
-    if (this.state.players.has(client.sessionId)) {
-      this.resetMapItem(client, this.state.players.get(client.sessionId));
-      this.state.players.delete(client.sessionId);
-    }
-    this.logger.log(`Player ${userData?.username} left room ${this.roomName}`);
+    super.onLeave(client);
   }
 
   generateMathProblem(): void {

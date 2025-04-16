@@ -27,5 +27,6 @@ export enum Gender {
 export enum ActionKey {
   RPS = 1,
   Punch = 2,
-  SendCoin = 3
+  SendCoin = 3,
+  CatchUser = 4
 }
