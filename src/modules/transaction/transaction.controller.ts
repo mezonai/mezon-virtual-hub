@@ -4,15 +4,13 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Logger } from '@libs/logger';
 
 import { Public } from '@libs/decorator';
-import { ClsService } from 'nestjs-cls';
-import { UserService } from '../user/user.service';
-import { TransactionService } from './transaction.service';
 import { AdminBypassGuard } from '@libs/guard/admin.guard';
+import { ClsService } from 'nestjs-cls';
+import { TransactionService } from './transaction.service';
 
 @ApiBearerAuth()
 @ApiTags('Transaction')
 @Controller('transaction')
-@UseGuards(AdminBypassGuard)
 export class TransactionController {
   constructor(
     private readonly clsService: ClsService,
@@ -22,8 +20,8 @@ export class TransactionController {
     this.logger.setContext(TransactionController.name);
   }
 
-  @Get('')
-  @Public()
+  @Get()
+  @UseGuards(AdminBypassGuard)
   @ApiOperation({
     summary: 'Get list all transactions information',
   })

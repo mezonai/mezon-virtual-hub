@@ -86,17 +86,19 @@ export class GameEventService extends BaseService<GameEventEntity> {
   }
 
   async findOneUpcoming() {
-    return this.gameEventRepository.findOne({
+    const event = await this.gameEventRepository.findOne({
       where: {
         start_time: MoreThan(new Date()),
         is_completed: false,
       },
       order: { start_time: 'ASC' },
     });
+
+    return plainToInstance(GameEventResDto, event);
   }
 
-  async findCurrentEvent() {
-    return await this.gameEventRepository.findOne({
+  async findOneCurrentEvent() {
+    const event = await this.gameEventRepository.findOne({
       where: {
         start_time: LessThan(new Date()),
         end_time: MoreThan(new Date()),
@@ -104,6 +106,8 @@ export class GameEventService extends BaseService<GameEventEntity> {
       },
       order: { start_time: 'ASC' },
     });
+
+    return plainToInstance(GameEventResDto, event);
   }
 
   async findOneWithCompletedUsers(event_id: string) {
