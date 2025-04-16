@@ -357,6 +357,7 @@ export class BaseGameRoom extends Room<RoomState> {
 
         sender.send("onP2pActionSended", {
           action: action,
+          to: targetClientId,
           from: sender.sessionId,
           toName: targetClient.userData?.username,
           amount: amount,
@@ -538,6 +539,7 @@ export class BaseGameRoom extends Room<RoomState> {
 
   async onJoin(client: Client<UserEntity>, options: any, auth: any) {
     const { userData } = client;
+
     if (BaseGameRoom.eventData == null || BaseGameRoom.eventData.target_user == null) return;
     let targetUserId = BaseGameRoom.eventData.target_user.id;
     let userId = userData == null ? "0" : userData?.id;
@@ -546,17 +548,11 @@ export class BaseGameRoom extends Room<RoomState> {
         BaseGameRoom.globalTargetClients.set(userId, client);
       }
       this.broadcastToAllRooms('userTargetJoined', {
-        userId: userData?.id,
-        username: userData?.username,
-        room: this.roomName,
       });
     }
     else {
       if (BaseGameRoom.globalTargetClients.has(targetUserId)) {
         client.send('userTargetJoined', {
-          userId: userData?.id,
-          username: userData?.username,
-          room: this.roomName,
         });
       }
     }

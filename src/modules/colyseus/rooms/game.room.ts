@@ -65,7 +65,7 @@ export class GameRoom extends BaseGameRoom {
     player.user_id = userData?.id ?? "";
     player.x = userData?.position_x ?? 0;
     player.y = userData?.position_y ?? 0;
-
+    player.is_show_name = BaseGameRoom.eventData == null;
     player.display_name = userData?.display_name || userData?.username || '';
     player.skin_set = userData?.skin_set?.join('/') || '';
 

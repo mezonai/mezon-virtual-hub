@@ -21,6 +21,7 @@ export class Shop1Room extends BaseGameRoom {
     player.user_id = userData?.id ?? "";
     player.x = 0;
     player.y = -302;
+    player.is_show_name = BaseGameRoom.eventData == null;
     player.display_name = userData?.display_name || userData?.username || '';
     player.skin_set = userData?.skin_set?.join('/') || '';
 
