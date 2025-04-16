@@ -280,19 +280,9 @@ export class BaseGameRoom extends Room<RoomState> {
 
     });
 
-    this.onMessage('arrest', async (client, message) => {
-      const user = client.userData;
-      if (!message?.targetUserId) return;
-
-      // await this.userRepository.update(message.targetUserId, {
-      //   is_captured: true,
-      // });
-
-      this.logger.log(`${user?.username} arrested ${message.targetUserId}`);
-
-      this.broadcastToAllRooms('userCaughtglobal', {
-        by: user?.id,
-        target: message.targetUserId,
+    this.onMessage('catchTargetUser', async (client, data) => {
+      this.broadcastToAllRooms('updateProgresCatchTargetUser', {
+        sessionId: client.sessionId
       });
     });
 
