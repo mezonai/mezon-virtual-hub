@@ -10,7 +10,7 @@ export const dataSourceOption: DataSourceOptions = {
   username: configEnv().DB_USERNAME,
   password: configEnv().DB_PASSWORD,
   synchronize: false,
-  logging: true,
+  logging: ['error', 'warn'],
   entities: ['dist/modules/**/entity/*.entity.{js,ts}'],
   migrations: ['dist/migrations/*.{js,ts}'],
   subscribers: [],
