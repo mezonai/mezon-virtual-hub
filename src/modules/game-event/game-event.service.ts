@@ -52,6 +52,16 @@ export class GameEventService extends BaseService<GameEventEntity> {
 
     Object.assign(event, dto);
 
+    if (event.completed_users?.length === event.max_completed_users) {
+      event.is_completed = true;
+    }
+
+    if (event.completed_users?.length > event.max_completed_users) {
+      throw new BadRequestException(
+        `Event has already reached the maximum number of completed users`,
+      );
+    }
+
     await this.gameEventRepository.save(event);
   }
 
@@ -75,6 +85,10 @@ export class GameEventService extends BaseService<GameEventEntity> {
     }
 
     event.completed_users = [...event.completed_users, user];
+
+    if (event.completed_users?.length === event.max_completed_users) {
+      event.is_completed = true;
+    }
 
     if (event.completed_users.length > event.max_completed_users) {
       throw new BadRequestException(
