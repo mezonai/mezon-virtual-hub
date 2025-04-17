@@ -74,4 +74,5 @@ export const configEnv = () => ({
   QUIZ_PROMPT_RESPONSE_FORMAT: process.env.QUIZ_PROMPT_RESPONSE_FORMAT!,
   REWARD_ITEM_PERCENT: Number(process.env.REWARD_ITEM_PERCENT ?? 40),
   REWARD_COIN_PERCENT: Number(process.env.REWARD_ITEM_PERCENT ?? 40),
+  REWARD_HIGH_COIN_PERCENT: Number(process.env.REWARD_HIGH_COIN_PERCENT ?? 70),
 });

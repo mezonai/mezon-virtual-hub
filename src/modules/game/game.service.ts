@@ -13,6 +13,7 @@ import { configEnv } from '@config/env.config';
 export class GameService {
   private readonly ITEM_PERCENT: number;
   private readonly COIN_PERCENT: number;
+  private readonly HIGH_COIN_PERCENT: number;
   constructor(
     private readonly inventoryService: InventoryService,
     private readonly itemService: ItemService,
@@ -21,10 +22,10 @@ export class GameService {
   ) {
     this.ITEM_PERCENT = configEnv().REWARD_ITEM_PERCENT;
     this.COIN_PERCENT = configEnv().REWARD_COIN_PERCENT;
+    this.HIGH_COIN_PERCENT = configEnv().REWARD_HIGH_COIN_PERCENT;
   }
 
   private readonly SLOT_COUNT = 3;
-  private readonly COIN_REWARD = 10;
   private readonly SPIN_COST = 10;
 
   async spinForRewards(user: UserEntity) {
@@ -80,8 +81,16 @@ export class GameService {
 
     for (const reward of rewards) {
       if (reward === 'coin') {
-        user.gold += this.COIN_REWARD;
-        result.push({ type: 'gold', amount: this.COIN_REWARD });
+        const coinRand = Math.random() * 100;
+        let coinReward = 0;
+
+        if (coinRand < this.HIGH_COIN_PERCENT) {
+          coinReward = Math.floor(Math.random() * 10) + 11;
+        } else {
+          coinReward = Math.floor(Math.random() * 10) + 1;
+        }
+
+        result.push({ type: 'gold', amount: coinReward });
       } else if (reward instanceof ItemEntity) {
         let inventoryItem = await this.inventoryService.getUserInventoryItem(
           user.id,
