@@ -29,7 +29,7 @@ export class GameEventService extends BaseService<GameEventEntity> {
     return plainToInstance(GameEventResDto, events);
   }
 
-  async saveEvent(dto: SaveEventGameDto, id?: string) {
+  async saveEvent(payload: SaveEventGameDto, id?: string) {
     let event: GameEventEntity;
 
     if (id) {
@@ -39,18 +39,18 @@ export class GameEventService extends BaseService<GameEventEntity> {
     }
 
     const user = await this.userRepository.findOne({
-      where: { id: dto.target_user_id },
+      where: { username: payload.target_username },
     });
 
     if (!user) {
       throw new NotFoundException(
-        `Target User with ID ${dto.target_user_id} not found`,
+        `Target User ${payload.target_username} not found`,
       );
     }
 
     event.target_user = user;
 
-    Object.assign(event, dto);
+    Object.assign(event, payload);
 
     if (event.completed_users?.length === event.max_completed_users) {
       event.is_completed = true;
