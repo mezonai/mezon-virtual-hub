@@ -90,6 +90,7 @@ export class GameService {
           coinReward = Math.floor(Math.random() * 10) + 1;
         }
 
+        user.gold += coinReward;
         result.push({ type: 'gold', amount: coinReward });
       } else if (reward instanceof ItemEntity) {
         let inventoryItem = await this.inventoryService.getUserInventoryItem(
