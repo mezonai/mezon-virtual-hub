@@ -199,10 +199,6 @@ export class BaseGameRoom extends Room<RoomState> {
 
   async onCreate() {
     this.setState(new RoomState());
-    if (this.roomName == "sg") {
-      this.state.items.set('car1', new Item(355, -120, 'gokart', ''));
-      this.state.items.set('car2', new Item(235, -120, 'gokart', ''));
-    }
     BaseGameRoom.activeRooms.add(this);
     if (!BaseGameRoom.eventData) {
       BaseGameRoom.eventData = await this.gameEventService.findOneCurrentEvent();
@@ -287,9 +283,9 @@ export class BaseGameRoom extends Room<RoomState> {
     });
 
     this.onMessage('onPlayerUpdateGold', (client, data) => {
-      const { newValue, amountChange } = data;
+      const { newValue, amountChange, needUpdate } = data;
       if (client?.userData?.gold != null) {
-        if (newValue >= 0) {
+        if (needUpdate && newValue >= 0) {
           client.userData.gold = newValue;
         }
 
