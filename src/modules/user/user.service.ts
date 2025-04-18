@@ -72,6 +72,11 @@ export class UserService {
       ),
     );
 
+    // Prevent user updates gender second times
+    if (user.gender) {
+      delete dataToUpdate.gender;
+    }
+
     Object.assign(user, dataToUpdate);
 
     await this.userRepository.update(user.id, user);

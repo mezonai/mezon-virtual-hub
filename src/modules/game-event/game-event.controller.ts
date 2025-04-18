@@ -11,6 +11,7 @@ import {
   ParseUUIDPipe,
   Post,
   Put,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import {
@@ -21,7 +22,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { ClsService } from 'nestjs-cls';
-import { SaveEventGameDto } from './dto/game-event.dto';
+import { CreateGameEventDto, SaveEventGameDto } from './dto/game-event.dto';
 import { GameEventService } from './game-event.service';
 
 @ApiBearerAuth()
@@ -49,9 +50,10 @@ export class GameEventController {
   @ApiOperation({
     summary: 'Create a new game event',
   })
-  @ApiBody({ type: SaveEventGameDto })
-  async createItem(@Body() payload: SaveEventGameDto) {
-    return await this.gameEventService.saveEvent(payload);
+  async createItem(
+    @Query() query: CreateGameEventDto,
+  ) {
+    return await this.gameEventService.saveEvent(query);
   }
 
   @Get('current')

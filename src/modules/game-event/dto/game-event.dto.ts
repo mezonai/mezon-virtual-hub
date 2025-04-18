@@ -1,6 +1,16 @@
-import { ApiProperty, PartialType } from '@nestjs/swagger';
-import { Expose, Exclude, Type } from 'class-transformer';
-import { IsArray, IsBoolean, IsDateString, IsNumber, IsOptional, IsString, IsUUID } from 'class-validator';
+import { generateExampleDateTz } from '@libs/utils';
+import { ApiProperty, OmitType } from '@nestjs/swagger';
+import { Exclude, Expose, Transform, Type } from 'class-transformer';
+import {
+  IsArray,
+  IsBoolean,
+  IsDateString,
+  IsNumberString,
+  IsOptional,
+  IsString,
+  IsUUID,
+} from 'class-validator';
+import moment from 'moment-timezone';
 
 export class SaveEventGameDto {
   @ApiProperty({
@@ -21,30 +31,32 @@ export class SaveEventGameDto {
 
   @ApiProperty({
     description: 'Start time of the event',
-    example: '2025-04-13T10:00:00Z',
+    example: generateExampleDateTz(),
   })
   @IsDateString()
+  @Transform(({ value }) => moment(value).utc().toISOString())
   start_time: Date;
 
   @ApiProperty({
     description: 'End time of the event',
-    example: '2025-04-13T12:00:00Z',
+    example: generateExampleDateTz(),
   })
   @IsDateString()
+  @Transform(({ value }) => moment(value).utc().toISOString())
   end_time: Date;
 
   @ApiProperty({
-    description: 'ID of the target user (the one being hunted)',
-    example: 'a1b2c3d4-e5f6-7890-1234-56789abcdef0',
+    description: 'Username of the target user (the one being hunted)',
+    example: 'an.nguyenvan',
   })
-  @IsUUID()
-  target_user_id: string;
+  @IsString()
+  target_username: string;
 
   @ApiProperty({
     description: 'Maximum number of users allowed to complete the event',
     example: 10,
   })
-  @IsNumber()
+  @IsNumberString()
   max_completed_users: number;
 
   @ApiProperty({
@@ -65,6 +77,10 @@ export class SaveEventGameDto {
   @IsUUID('all', { each: true })
   completed_user_ids?: string[];
 }
+
+export class CreateGameEventDto extends OmitType(SaveEventGameDto, [
+  'is_completed',
+]) {}
 
 export class UserEventResDto {
   @Exclude()
@@ -98,7 +114,7 @@ export class UserEventResDto {
 export class GameEventResDto {
   @Expose()
   @Type(() => UserEventResDto)
-  target_user: UserEventResDto
+  target_user: UserEventResDto;
 
   @Expose()
   @Type(() => UserEventResDto)

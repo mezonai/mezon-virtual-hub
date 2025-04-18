@@ -29,7 +29,7 @@ export class GameEventService extends BaseService<GameEventEntity> {
     return plainToInstance(GameEventResDto, events);
   }
 
-  async saveEvent(dto: SaveEventGameDto, id?: string) {
+  async saveEvent(payload: SaveEventGameDto, id?: string) {
     let event: GameEventEntity;
 
     if (id) {
@@ -39,18 +39,28 @@ export class GameEventService extends BaseService<GameEventEntity> {
     }
 
     const user = await this.userRepository.findOne({
-      where: { id: dto.target_user_id },
+      where: { username: payload.target_username },
     });
 
     if (!user) {
       throw new NotFoundException(
-        `Target User with ID ${dto.target_user_id} not found`,
+        `Target User ${payload.target_username} not found`,
       );
     }
 
     event.target_user = user;
 
-    Object.assign(event, dto);
+    Object.assign(event, payload);
+
+    if (event.completed_users?.length === event.max_completed_users) {
+      event.is_completed = true;
+    }
+
+    if (event.completed_users?.length > event.max_completed_users) {
+      throw new BadRequestException(
+        `Event has already reached the maximum number of completed users`,
+      );
+    }
 
     await this.gameEventRepository.save(event);
   }
@@ -76,6 +86,10 @@ export class GameEventService extends BaseService<GameEventEntity> {
 
     event.completed_users = [...event.completed_users, user];
 
+    if (event.completed_users?.length === event.max_completed_users) {
+      event.is_completed = true;
+    }
+
     if (event.completed_users.length > event.max_completed_users) {
       throw new BadRequestException(
         `Event has already reached the maximum number of completed users`,
@@ -98,15 +112,18 @@ export class GameEventService extends BaseService<GameEventEntity> {
   }
 
   async findOneCurrentEvent() {
-    const event = await this.gameEventRepository.findOne({
-      where: {
-        start_time: LessThan(new Date()),
-        end_time: MoreThan(new Date()),
-        is_completed: false,
-      },
-      order: { start_time: 'ASC' },
-    });
+    const now = new Date();
 
+    const event = await this.gameEventRepository
+      .createQueryBuilder('event')
+      .leftJoinAndSelect('event.completed_users', 'completed_users')
+      .leftJoinAndSelect('event.target_user', 'target_user')
+      .where('event.start_time < :now', { now })
+      .andWhere('event.end_time > :now', { now })
+      .orderBy('event.is_completed', 'ASC')
+      .addOrderBy('event.created_at', 'DESC')
+      .getOne();
+  
     return plainToInstance(GameEventResDto, event);
   }
 
