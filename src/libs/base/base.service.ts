@@ -1,8 +1,7 @@
 import { NotFoundException } from '@nestjs/common';
-import { AuditEntity } from '@types';
-import { DeepPartial, FindManyOptions, Repository } from 'typeorm';
+import { DeepPartial, FindManyOptions, ObjectLiteral, Repository } from 'typeorm';
 
-export abstract class BaseService<T extends AuditEntity> {
+export abstract class BaseService<T extends ObjectLiteral> {
   protected constructor(
     protected readonly repository: Repository<T>,
     private readonly entityName: string,

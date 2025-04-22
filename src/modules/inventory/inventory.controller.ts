@@ -1,9 +1,9 @@
-import { Controller, Post, Param, ParseIntPipe, ParseUUIDPipe } from '@nestjs/common';
-import { InventoryService } from './inventory.service';
-import { ClsService } from 'nestjs-cls';
 import { USER_TOKEN } from '@constant';
 import { UserEntity } from '@modules/user/entity/user.entity';
+import { Controller, Param, ParseUUIDPipe, Post } from '@nestjs/common';
 import { ApiBearerAuth, ApiParam, ApiTags } from '@nestjs/swagger';
+import { ClsService } from 'nestjs-cls';
+import { InventoryService } from './inventory.service';
 
 @ApiBearerAuth()
 @Controller('inventory')

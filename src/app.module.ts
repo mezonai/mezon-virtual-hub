@@ -23,6 +23,7 @@ import { MezonModule } from '@modules/mezon/mezon.module';
 import { GameModule } from '@modules/game/game.module';
 import { GameEventModule } from '@modules/game-event/game-event.module';
 import { TransactionModule } from '@modules/transaction/transaction.module';
+import { AnimalModule } from '@modules/animal/animal.module';
 
 @Module({
   imports: [
@@ -47,6 +48,7 @@ import { TransactionModule } from '@modules/transaction/transaction.module';
     GameModule,
     GameEventModule,
     TransactionModule,
+    AnimalModule,
     ClsModule.forRoot({
       global: true,
       middleware: { mount: true },

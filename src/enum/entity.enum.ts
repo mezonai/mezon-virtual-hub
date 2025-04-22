@@ -8,6 +8,12 @@ export enum MapKey {
   SG = 'sg',
 }
 
+export enum SubMap {
+  OFFICE = 'office',
+  OFFICE_MEETING_ROOM1 = 'office-meeting-room1',
+  SHOP1 = 'shop1',
+}
+
 export enum ItemType {
   Hair = 1,
   Hat = 2,
@@ -21,12 +27,12 @@ export enum ItemType {
 export enum Gender {
   MALE = 'male',
   FEMALE = 'female',
-  NOT_SPECIFIED = 'not specified'
+  NOT_SPECIFIED = 'not specified',
 }
 
 export enum ActionKey {
   RPS = 1,
   Punch = 2,
   SendCoin = 3,
-  CatchUser = 4
+  CatchUser = 4,
 }
