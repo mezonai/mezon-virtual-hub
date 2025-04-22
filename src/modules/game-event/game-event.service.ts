@@ -112,15 +112,18 @@ export class GameEventService extends BaseService<GameEventEntity> {
   }
 
   async findOneCurrentEvent() {
-    const event = await this.gameEventRepository.findOne({
-      where: {
-        start_time: LessThan(new Date()),
-        end_time: MoreThan(new Date()),
-        is_completed: false,
-      },
-      order: { start_time: 'ASC' },
-    });
+    const now = new Date();
 
+    const event = await this.gameEventRepository
+      .createQueryBuilder('event')
+      .leftJoinAndSelect('event.completed_users', 'completed_users')
+      .leftJoinAndSelect('event.target_user', 'target_user')
+      .where('event.start_time < :now', { now })
+      .andWhere('event.end_time > :now', { now })
+      .orderBy('event.is_completed', 'ASC')
+      .addOrderBy('event.created_at', 'DESC')
+      .getOne();
+  
     return plainToInstance(GameEventResDto, event);
   }
 
