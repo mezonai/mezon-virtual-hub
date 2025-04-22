@@ -285,8 +285,12 @@ export class BaseGameRoom extends Room<RoomState> {
     this.onMessage('onPlayerUpdateGold', (client, data) => {
       const { newValue, amountChange, needUpdate } = data;
       if (client?.userData?.gold != null) {
-        if (needUpdate && newValue >= 0) {
+        if (newValue >= 0) {
           client.userData.gold = newValue;
+        }
+
+        if (needUpdate && client?.userData) {
+          this.userRepository.update(client.userData.id, { gold: newValue });
         }
 
         let responseData = {
