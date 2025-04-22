@@ -96,7 +96,7 @@ export class GameRoom extends BaseGameRoom {
   }
 
   generateMathProblem(): void {
-    const numOptions: number = Math.floor(Math.random() * 3) + 2; // Randomly decide between 2, 3, or 4 numbers
+    const numOptions: number = Math.floor(Math.random() * 2) + 2; // Randomly decide between 2, 3, or 4 numbers
     const numbers: number[] = [];
     let correctAnswer: number;
     const operators: string[] = ['+', '-', '*', '/'];
@@ -104,7 +104,7 @@ export class GameRoom extends BaseGameRoom {
 
     // Generate the numbers for the math problem
     for (let i = 0; i < numOptions; i++) {
-      numbers.push(Math.floor(Math.random() * 10) + 1); // Random numbers between 1 and 10
+      numbers.push(Math.floor(Math.random() * 100) + 1); // Random numbers between 1 and 10
     }
 
     // For multiplication and division, only 2 numbers are used
@@ -146,7 +146,7 @@ export class GameRoom extends BaseGameRoom {
     options.add(correctAnswer);
 
     while (options.size < 4) {
-      options.add(Math.floor(Math.random() * 20) + 1); // Random wrong answers
+      options.add(Math.floor(Math.random() * 100 * (operator.includes('-') ? (Math.random() < 0.5 ? 1 : -1) : 1)) + 1); // Random wrong answers
     }
 
     options = new Set([...options].sort(() => Math.random() - 0.5));
