@@ -74,39 +74,55 @@ export class MezonService implements OnModuleInit, OnModuleDestroy {
   }
 
   async transferTokenToGold(data: MezonTokenSentEvent) {
-    if (data.receiver_id === configEnv().MEZON_TOKEN_RECEIVER_APP_ID) {
-      const user = await this.userRepository.findOne({
-        where: { mezon_id: data.sender_id },
-      });
+    if (data.receiver_id !== configEnv().MEZON_TOKEN_RECEIVER_APP_ID) return;
 
-      if (!user) {
-        this.logger.error(
-          `User ${data.sender_name} with Mezon id ${data.sender_id} not found`,
-        );
-        return;
-      }
+    const user = await this.userRepository.findOne({
+      where: { mezon_id: data.sender_id },
+    });
 
-      const updatedGold = user.gold + data.amount;
+    if (!user) {
+      this.logger.error(
+        `User ${data.sender_name} with Mezon id ${data.sender_id} not found`,
+      );
+      return;
+    }
 
+    const { amount, extra_attribute, receiver_id, transaction_id } = data;
+
+    const transaction = this.transactionRepository.create({
+      mezon_transaction_id: transaction_id,
+      amount,
+      extra_attribute,
+      receiver_id,
+      sender: user,
+    });
+
+    try {
+      await this.transactionRepository.save(transaction);
+      this.logger.log(
+        `Transaction saved: ${transaction_id} for user ${user.id}`,
+      );
+
+      const updatedGold = user.gold + amount;
       await this.userRepository.update(user.id, { gold: updatedGold });
 
       this.logger.log(
         `Updated user ${user.id} gold from ${user.gold} to ${updatedGold}`,
       );
-
-      const { amount, extra_attribute, receiver_id, transaction_id } = data;
-
-      const transaction = this.transactionRepository.create({
-        mezon_transaction_id: transaction_id,
-        amount,
-        extra_attribute,
-        receiver_id,
-        sender: user,
+    } catch (error) {
+      const existing = await this.transactionRepository.findOne({
+        where: { mezon_transaction_id: transaction_id },
       });
 
-      await this.transactionRepository.save(transaction);
-    } else {
-      this.logger.log(`Skipping processing for receiver: ${data.receiver_id}`);
+      if (existing) {
+        this.logger.warn(
+          `Transaction with ID ${transaction_id} already exists in DB (user: ${user.id}).`,
+        );
+      } else {
+        this.logger.error(
+          `Transaction ${transaction_id} not found after failed save — potential issue.`,
+        );
+      }
     }
   }
 
