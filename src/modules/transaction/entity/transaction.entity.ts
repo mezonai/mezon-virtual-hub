@@ -13,7 +13,12 @@ export class TransactionEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ name: 'mezon_transaction_id', type: 'varchar', nullable: true })
+  @Column({
+    name: 'mezon_transaction_id',
+    type: 'varchar',
+    nullable: true,
+    unique: true,
+  })
   mezon_transaction_id?: string;
 
   @Column({ name: 'amount', type: 'numeric' })
