@@ -79,18 +79,19 @@ export class GameRoom extends BaseGameRoom {
 
   onLeave(client: Client<UserEntity>) {
     const { userData } = client;
-    if (userData) {
-      const positionUpdate = {
-        position_x: Math.floor(
-          this.state.players.get(client.sessionId)?.x || 0,
-        ),
-        position_y: Math.floor(
-          this.state.players.get(client.sessionId)?.y || 0,
-        ),
-      };
+    // User's position is not be saved temporarily
+    // if (userData) {
+    //   const positionUpdate = {
+    //     position_x: Math.floor(
+    //       this.state.players.get(client.sessionId)?.x || 0,
+    //     ),
+    //     position_y: Math.floor(
+    //       this.state.players.get(client.sessionId)?.y || 0,
+    //     ),
+    //   };
 
-      this.userRepository.update(userData.id, positionUpdate);
-    }
+    //   this.userRepository.update(userData.id, positionUpdate);
+    // }
 
     super.onLeave(client);
   }

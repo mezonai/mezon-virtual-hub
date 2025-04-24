@@ -1,4 +1,5 @@
 import { Gender } from '@enum';
+import { AnimalEntity } from '@modules/animal/entity/animal.entity';
 import { Inventory } from '@modules/inventory/entity/inventory.entity';
 import { MapEntity } from '@modules/map/entity/map.entity';
 import { AuditEntity } from '@types';
@@ -48,4 +49,7 @@ export class UserEntity extends AuditEntity {
 
   @OneToMany(() => Inventory, (inventory) => inventory.user)
   inventories: Inventory[];
+
+  @OneToMany(() => AnimalEntity, (animal) => animal.user)
+  animals: AnimalEntity[] | null;
 }
