@@ -10,6 +10,7 @@ import { plainToInstance } from 'class-transformer';
 import { EntityManager, Repository } from 'typeorm';
 import { AnimalDtoRequest, AnimalDtoResponse } from './dto/animal.dto';
 import { AnimalEntity } from './entity/animal.entity';
+import { BaseGameRoom } from '@modules/colyseus/rooms/base-game.room';
 
 @Injectable()
 export class AnimalService extends BaseService<AnimalEntity> {
@@ -94,6 +95,19 @@ export class AnimalService extends BaseService<AnimalEntity> {
       animal.is_caught = true;
       animal.user = user;
       await this.animalRepository.save(animal);
+
+      BaseGameRoom.activeRooms.forEach((room) => {
+        if (room.roomName === animal.room_code) {
+          console.log(room.roomName);
+
+          room.broadcast('animalCaught', {
+            animalId: animal.id,
+            userId: user.id,
+            username: user.username,
+            roomCode: animal.room_code,
+          });
+        }
+      });
     } else {
       throw new BadRequestException('Catch failed. Better luck next time!');
     }

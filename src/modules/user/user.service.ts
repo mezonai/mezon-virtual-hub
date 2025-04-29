@@ -19,6 +19,7 @@ export class UserService {
     const userInfo = await this.userRepository
       .createQueryBuilder('user')
       .leftJoinAndSelect('user.inventories', 'inventory')
+      .leftJoinAndSelect('user.animals', 'animal')
       .leftJoinAndSelect('inventory.item', 'item')
       .leftJoinAndSelect('user.map', 'map')
       .where('user.id = :id', { id: userId })
@@ -28,21 +29,13 @@ export class UserService {
       throw new Error('User not found in the database');
     }
 
+    const { inventories, map, animals, ...user } = userInfo;
+
     return plainToClass(UserInformationDto, {
-      user: {
-        id: userInfo.id,
-        username: userInfo.username,
-        email: userInfo.email,
-        position_x: userInfo.position_x,
-        position_y: userInfo.position_y,
-        avatar_url: userInfo.avatar_url,
-        gold: userInfo.gold,
-        gender: userInfo.gender,
-        display_name: userInfo.display_name,
-        skin_set: userInfo.skin_set,
-      },
-      inventories: userInfo.inventories,
-      map: userInfo.map,
+      user,
+      inventories,
+      map,
+      animals,
     });
   }
 

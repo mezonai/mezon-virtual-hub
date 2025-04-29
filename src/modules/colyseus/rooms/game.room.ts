@@ -13,6 +13,7 @@ export class GameRoom extends BaseGameRoom {
     id: "",
     answer: ""
   };
+  private quizIntervalId: NodeJS.Timeout | null = null;
 
   private aiService = new GoogleGenAI({
     apiKey: configEnv().GOOGLE_GEN_AI_API_KEY,
@@ -79,17 +80,21 @@ export class GameRoom extends BaseGameRoom {
 
   onLeave(client: Client<UserEntity>) {
     const { userData } = client;
-    if (userData) {
-      const positionUpdate = {
-        position_x: Math.floor(
-          this.state.players.get(client.sessionId)?.x || 0,
-        ),
-        position_y: Math.floor(
-          this.state.players.get(client.sessionId)?.y || 0,
-        ),
-      };
+    // User's position is not be saved temporarily
+    // if (userData) {
+    //   const positionUpdate = {
+    //     position_x: Math.floor(
+    //       this.state.players.get(client.sessionId)?.x || 0,
+    //     ),
+    //     position_y: Math.floor(
+    //       this.state.players.get(client.sessionId)?.y || 0,
+    //     ),
+    //   };
 
-      this.userRepository.update(userData.id, positionUpdate);
+    //   this.userRepository.update(userData.id, positionUpdate);
+    // }
+    if (this.quizIntervalId) {
+      clearInterval(this.quizIntervalId);
     }
 
     super.onLeave(client);
@@ -190,7 +195,7 @@ export class GameRoom extends BaseGameRoom {
   }
 
   private scheduleQuizBroadcast() {
-    setInterval(async () => {
+    this.quizIntervalId = setInterval(async () => {
       this.generateMathProblem();
       // this.broadcastQuizQuestion();
     }, configEnv().QUIZ_QUESTION_FETCH_INTERVAL_SECONDS * 1000);

@@ -2,29 +2,35 @@ import { Gender } from '@enum';
 import { InventoryDto } from '@modules/inventory/dto/inventory.dto';
 import { MapDtoResponse } from '@modules/map/dto/map.dto';
 import { ApiProperty } from '@nestjs/swagger';
-import { Expose, Type } from 'class-transformer';
-import { IsArray, IsEnum, IsNumber, IsOptional, IsString, IsUUID } from 'class-validator';
+import { Exclude, Expose, Type } from 'class-transformer';
+import {
+  IsArray,
+  IsEnum,
+  IsNumber,
+  IsOptional,
+  IsString,
+  IsUUID,
+} from 'class-validator';
 import { UUID } from 'typeorm/driver/mongodb/bson.typings';
 
-export class UserInformationDto {
-  @Expose()
-  user: {
-    id: string;
-    username: string;
-    email: string;
-    gold: number;
-    position_x: number | null;
-    position_y: number | null;
-    avatar_url: string | null;
-  };
+export class UserExcludeResponse {
+  @Exclude()
+  deleted_at: Date | null;
 
-  @Type(() => InventoryDto)
-  @Expose()
-  inventories: InventoryDto[];
+  @Exclude()
+  updated_at: Date | null;
 
-  @Type(() => MapDtoResponse)
-  @Expose()
-  map: MapDtoResponse | null;
+  @Exclude()
+  created_at: Date | null;
+
+  @Exclude()
+  external_id: string | null;
+
+  @Exclude()
+  mezon_id: string | null;
+
+  @Exclude()
+  auth_provider: string | null;
 }
 
 export class UpdateInfoDto {
@@ -82,4 +88,19 @@ export class UpdateInfoDto {
   @IsArray()
   @IsString({ each: true })
   skin_set?: string[];
+}
+
+
+export class UserInformationDto {
+  @Expose()
+  @Type(() => UserExcludeResponse)
+  user: UserExcludeResponse;
+
+  @Type(() => InventoryDto)
+  @Expose()
+  inventories: InventoryDto[];
+
+  @Type(() => MapDtoResponse)
+  @Expose()
+  map: MapDtoResponse | null;
 }
