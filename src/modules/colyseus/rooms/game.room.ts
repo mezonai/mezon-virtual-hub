@@ -13,6 +13,7 @@ export class GameRoom extends BaseGameRoom {
     id: "",
     answer: ""
   };
+  private quizIntervalId: NodeJS.Timeout | null = null;
 
   private aiService = new GoogleGenAI({
     apiKey: configEnv().GOOGLE_GEN_AI_API_KEY,
@@ -92,6 +93,9 @@ export class GameRoom extends BaseGameRoom {
 
     //   this.userRepository.update(userData.id, positionUpdate);
     // }
+    if (this.quizIntervalId) {
+      clearInterval(this.quizIntervalId);
+    }
 
     super.onLeave(client);
   }
@@ -191,7 +195,7 @@ export class GameRoom extends BaseGameRoom {
   }
 
   private scheduleQuizBroadcast() {
-    setInterval(async () => {
+    this.quizIntervalId = setInterval(async () => {
       this.generateMathProblem();
       // this.broadcastQuizQuestion();
     }, configEnv().QUIZ_QUESTION_FETCH_INTERVAL_SECONDS * 1000);
