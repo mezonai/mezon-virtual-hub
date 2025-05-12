@@ -53,8 +53,8 @@ export class GameRoom extends BaseGameRoom {
     this.scheduleQuizBroadcast();
   }
 
-  async onJoin(client: Client<UserEntity>, options: any, auth: any) {
-    super.onJoin(client, options, auth);
+  override async onJoin(client: Client<UserEntity>, options: any, auth: any) {
+    await super.onJoin(client, options, auth);
     const { userData } = client;
     this.logger.log(
       `Player ${userData?.username} joined GameRoom ${this.roomName}, id: ${this.roomId}`,

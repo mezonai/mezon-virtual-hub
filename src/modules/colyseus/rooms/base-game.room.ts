@@ -200,10 +200,6 @@ export class BaseGameRoom extends Room<RoomState> {
   async onCreate() {
     this.setState(new RoomState());
     BaseGameRoom.activeRooms.add(this);
-    if (!BaseGameRoom.eventData) {
-      BaseGameRoom.eventData = await this.gameEventService.findOneCurrentEvent();
-      console.log("Event: ", BaseGameRoom.eventData);
-    }
     this.onMessage('move', (client, buffer: ArrayBuffer) => {
       try {
         const data = this.decodeMoveData(new Uint8Array(buffer));
@@ -240,6 +236,10 @@ export class BaseGameRoom extends Room<RoomState> {
 
     this.onMessage('chat', (client, buffer) => {
       this.broadcast('chat', buffer);
+    });
+
+    this.onMessage('globalChat', (client, buffer) => {
+      this.broadcastToAllRooms('onGlobalChat', buffer);
     });
 
     this.onMessage('useItem', (client, message) => {
@@ -287,6 +287,9 @@ export class BaseGameRoom extends Room<RoomState> {
       if (client?.userData?.gold != null) {
         if (newValue >= 0) {
           client.userData.gold = newValue;
+        }
+        else {
+          return;
         }
 
         if (needUpdate && client?.userData) {
@@ -348,7 +351,7 @@ export class BaseGameRoom extends Room<RoomState> {
           action: action,
           from: sender.sessionId,
           to: targetClientId,
-          fromName: sender.userData?.username,
+          fromName: sender.userData?.display_name,
           gameKey: gameKey,
           amount: amount,
           currentGold: targetClient.userData.gold,
@@ -359,7 +362,7 @@ export class BaseGameRoom extends Room<RoomState> {
           action: action,
           to: targetClientId,
           from: sender.sessionId,
-          toName: targetClient.userData?.username,
+          toName: targetClient.userData?.display_name,
           amount: amount,
           currentGold: sender.userData?.gold,
           userId: sender.userData?.id
@@ -509,11 +512,11 @@ export class BaseGameRoom extends Room<RoomState> {
       BaseGameRoom.globalTargetClients.delete(userId);
       this.broadcastToAllRooms('userTargetLeft', {
         userId: userData?.id,
-        username: userData?.username,
+        username: userData?.display_name,
         room: this.roomName,
       });
     }
-    this.logger.log(`Player ${userData?.username} left room ${this.roomName}`);
+    this.logger.log(`Player ${userData?.display_name} left room ${this.roomName}`);
   }
 
   resetMapItem(client: Client<UserEntity>, player: Player | undefined) {
@@ -539,7 +542,9 @@ export class BaseGameRoom extends Room<RoomState> {
 
   async onJoin(client: Client<UserEntity>, options: any, auth: any) {
     const { userData } = client;
-
+    if (!BaseGameRoom.eventData) {
+      BaseGameRoom.eventData = await this.gameEventService.findOneCurrentEvent();
+    }
     if (BaseGameRoom.eventData == null || BaseGameRoom.eventData.target_user == null) return;
     let targetUserId = BaseGameRoom.eventData.target_user.id;
     let userId = userData == null ? "0" : userData?.id;
