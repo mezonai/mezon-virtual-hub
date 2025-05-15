@@ -28,12 +28,12 @@ export class MezonService implements OnModuleInit, OnModuleDestroy {
     this.logger.log('Initializing Mezon client...');
 
     this.client = new MezonClient(configEnv().MEZON_TOKEN_RECEIVER_APP_TOKEN);
-    await this.client.authenticate();
+    await this.client.login();
 
     this.logger.log('Mezon client authenticated in module init');
 
     this.client.on(Events.TokenSend, async (event: MezonTokenSentEvent) => {
-      this.transferTokenToGold(event);
+      this.transferTokenToDiamond(event);
     });
 
     // this.client.on(Events.ChannelMessage, (event) => {
@@ -73,7 +73,7 @@ export class MezonService implements OnModuleInit, OnModuleDestroy {
     // Perform cleanup if needed
   }
 
-  async transferTokenToGold(data: MezonTokenSentEvent) {
+  async transferTokenToDiamond(data: MezonTokenSentEvent) {
     if (data.receiver_id !== configEnv().MEZON_TOKEN_RECEIVER_APP_ID) return;
 
     const user = await this.userRepository.findOne({
@@ -103,11 +103,11 @@ export class MezonService implements OnModuleInit, OnModuleDestroy {
         `Transaction saved: ${transaction_id} for user ${user.id}`,
       );
 
-      const updatedGold = user.gold + amount;
-      await this.userRepository.update(user.id, { gold: updatedGold });
+      const updatedDiamond = user.diamond + amount;
+      await this.userRepository.update(user.id, { diamond: updatedDiamond });
 
       this.logger.log(
-        `Updated user ${user.id} gold from ${user.gold} to ${updatedGold}`,
+        `Updated user ${user.id} diamond from ${user.diamond} to ${updatedDiamond}`,
       );
     } catch (error) {
       const existing = await this.transactionRepository.findOne({
@@ -124,6 +124,10 @@ export class MezonService implements OnModuleInit, OnModuleDestroy {
         );
       }
     }
+  }
+
+  async WithdrawTokenRequest(sendTokenData: TokenSentEvent){
+    this.client.sendToken(sendTokenData);
   }
 
   getClient(): MezonClient {

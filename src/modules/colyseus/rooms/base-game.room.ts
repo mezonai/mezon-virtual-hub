@@ -8,6 +8,7 @@ import { cleanAndStringifyJson, isValidJsonQuiz } from '@libs/utils';
 import { AnimalService } from '@modules/animal/animal.service';
 import { JwtPayload } from '@modules/auth/dtos/response';
 import { GameEventService } from '@modules/game-event/game-event.service';
+import { MezonService } from '@modules/mezon/mezon.service';
 import { UserEntity } from '@modules/user/entity/user.entity';
 import {
   ForbiddenException,
@@ -18,7 +19,7 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Player } from '@types';
+import { Player, WithdrawPayload } from '@types';
 import { Client, Room } from 'colyseus';
 import { IncomingMessage } from 'http';
 import { Repository } from 'typeorm';
@@ -56,6 +57,7 @@ export class BaseGameRoom extends Room<RoomState> {
     @InjectRepository(UserEntity)
     readonly userRepository: Repository<UserEntity>,
     @Inject() private readonly jwtService: JwtService,
+    @Inject() private readonly mezonService: MezonService,
     @Inject() private readonly gameEventService: GameEventService,
     @Inject() private readonly animalService: AnimalService,
   ) {
@@ -309,6 +311,78 @@ export class BaseGameRoom extends Room<RoomState> {
           amountChange: amountChange
         }
         this.broadcast('onPlayerUpdateGold', responseData);
+      }
+    });
+
+    this.onMessage('onPlayerUpdateDiamond', (client, data) => {
+      const { newValue, amountChange, needUpdate } = data;
+      if (client?.userData?.diamond != null) {
+        if (newValue >= 0) {
+          client.userData.diamond = newValue;
+        } else {
+          return;
+        }
+
+        if (needUpdate && client?.userData) {
+          this.userRepository.update(client.userData.id, { diamond: newValue });
+        }
+
+        const responseData = {
+          sessionId: client.sessionId,
+          amountChange: amountChange
+        };
+        this.broadcast('onPlayerUpdateDiamond', responseData);
+      }
+    });
+
+
+    this.onMessage('onWithrawDiamond', async (client: Client<UserEntity>, data: WithdrawPayload) => {
+      const userId = client.userData?.id;
+
+      if (!userId) {
+        return client.send('onWithdrawFailed', {
+          reason: 'Không xác định được người dùng'
+        });
+      }
+
+      const user = await this.userRepository.findOne({ where: { id: userId } });
+
+      if (!user?.mezon_id) {
+        return client.send('onWithdrawFailed', {
+          reason: 'Tài khoản không liên kết với Mezon'
+        });
+      }
+
+      const currentDiamond = client.userData?.diamond;
+      const amountToWithdraw = data.amount;
+
+      if (typeof currentDiamond !== 'number' || currentDiamond < amountToWithdraw) {
+        return client.send('onWithdrawFailed', {
+          reason: 'Số dư kim cương không đủ để rút'
+        });
+      }
+
+      const newDiamond = currentDiamond - amountToWithdraw;
+
+      const responseData = {
+        sessionId: client.sessionId,
+        amountChange: amountToWithdraw
+      };
+
+      this.mezonService.WithdrawTokenRequest({
+        receiver_id: user.mezon_id,
+        sender_id: configEnv().MEZON_TOKEN_RECEIVER_APP_ID,
+        sender_name: "Virtual-Hub",
+        ...data
+      });
+      
+      this.broadcast('onWithrawDiamond', responseData);
+      try {
+        await this.userRepository.update(userId, { diamond: newDiamond });
+      } catch (err) {
+        return client.send('onWithdrawFailed', {
+          reason: 'Cập nhật số dư thất bại. Vui lòng thử lại.'
+        });
       }
     });
 
