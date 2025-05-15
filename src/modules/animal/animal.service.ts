@@ -77,7 +77,7 @@ export class AnimalService extends BaseService<AnimalEntity> {
     return { deleted: true };
   }
 
-  async catchAnimal(animal_id: string, user: UserEntity) {
+  async catchAnimal(animal_id: string, user: UserEntity) : Promise<boolean> {
     const animal = await this.animalRepository.findOne({
       where: {
         id: animal_id,
@@ -86,7 +86,7 @@ export class AnimalService extends BaseService<AnimalEntity> {
     });
 
     if (!animal) {
-      throw new NotFoundException(`Animal ${animal_id} not found or caught`);
+      return false;
     }
 
     const randomValue = Math.random() * 100;
@@ -108,8 +108,8 @@ export class AnimalService extends BaseService<AnimalEntity> {
           });
         }
       });
-    } else {
-      throw new BadRequestException('Catch failed. Better luck next time!');
-    }
+    return true;  
+    } 
+    return false;
   }
 }
