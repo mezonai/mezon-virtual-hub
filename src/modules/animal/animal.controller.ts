@@ -98,16 +98,16 @@ export class AnimalController {
     return await this.animalService.deleteAnimal(animal_id);
   }
 
-  @Post('catch/:animal_id')
-  @ApiParam({
-    name: 'animal_id',
-    example: '91bea29f-0e87-42a5-b851-d9d0386ac32f',
-  })
-  @ApiOperation({
-    summary: 'Catch a specific animal',
-  })
-  async catchAnimal(@Param('animal_id', ParseUUIDPipe) animal_id: string) {
-    const user = this.cls.get<UserEntity>(USER_TOKEN);
-    return await this.animalService.catchAnimal(animal_id, user);
-  }
+  // @Post('catch/:animal_id')
+  // @ApiParam({
+  //   name: 'animal_id',
+  //   example: '91bea29f-0e87-42a5-b851-d9d0386ac32f',
+  // })
+  // @ApiOperation({
+  //   summary: 'Catch a specific animal',
+  // })
+  // async catchAnimal(@Param('animal_id', ParseUUIDPipe) animal_id: string) {
+  //   const user = this.cls.get<UserEntity>(USER_TOKEN);
+  //   return await this.animalService.catchAnimal(animal_id, user);
+  // }
 }

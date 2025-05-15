@@ -5,6 +5,7 @@ import { ActionKey } from '@enum';
 import { GoogleGenAI } from '@google/genai';
 import { Logger } from '@libs/logger';
 import { cleanAndStringifyJson, isValidJsonQuiz } from '@libs/utils';
+import { AnimalService } from '@modules/animal/animal.service';
 import { JwtPayload } from '@modules/auth/dtos/response';
 import { GameEventService } from '@modules/game-event/game-event.service';
 import { UserEntity } from '@modules/user/entity/user.entity';
@@ -21,6 +22,7 @@ import { Player } from '@types';
 import { Client, Room } from 'colyseus';
 import { IncomingMessage } from 'http';
 import { Repository } from 'typeorm';
+import { PetQueueManager } from '../pet/PetQueueManager';
 
 export class Item extends Schema {
   @type('number') x: number = 0;
@@ -55,6 +57,7 @@ export class BaseGameRoom extends Room<RoomState> {
     readonly userRepository: Repository<UserEntity>,
     @Inject() private readonly jwtService: JwtService,
     @Inject() private readonly gameEventService: GameEventService,
+    @Inject() private readonly animalService: AnimalService,
   ) {
     super();
     this.logger.log(`GameRoom created : ${this.roomName}`);
@@ -103,7 +106,7 @@ export class BaseGameRoom extends Room<RoomState> {
 
     const user = await this.userRepository.findOne({
       where: [{ username }, { email }],
-      relations: ['map'],
+      relations: ['map', 'animals'],
     });
 
     if (!user || !user.map) {
@@ -200,6 +203,11 @@ export class BaseGameRoom extends Room<RoomState> {
   async onCreate() {
     this.setState(new RoomState());
     BaseGameRoom.activeRooms.add(this);
+    PetQueueManager.initialize(async (playerId, petId) => {
+      const client = this.clients.find(c => c.sessionId === playerId);
+      if (!client) return false;
+      return await this.animalService.catchAnimal(petId, client.userData);
+    });
     this.onMessage('move', (client, buffer: ArrayBuffer) => {
       try {
         const data = this.decodeMoveData(new Uint8Array(buffer));
@@ -476,6 +484,19 @@ export class BaseGameRoom extends Room<RoomState> {
         }
         this.broadcast('onUseItem', message);
       }
+    });
+    this.onMessage('catchPet', async (client: Client<UserEntity>, message) => {
+      if (client.userData == null) return;
+      PetQueueManager.handleCatchRequest(client, message.petId, this);
+    });
+    this.onMessage('sendOwnedPets', async (client, data) => {
+      const { pets } = data;
+      console.log("pets: ", pets)
+      this.broadcast('onSendOwnedPets', {
+        playerId: client.sessionId,
+        pet: pets,
+        playerCatchId :  client.sessionId
+      });
     });
   }
 

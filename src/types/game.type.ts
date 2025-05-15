@@ -8,4 +8,5 @@ export class Player extends Schema {
   @type('string') skin_set: string = '';
   @type('number') x: number = 0;
   @type('number') y: number = 0;
+  @type('string') animals: string = '';
 }
