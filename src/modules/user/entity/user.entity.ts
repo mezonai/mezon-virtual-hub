@@ -36,6 +36,9 @@ export class UserEntity extends AuditEntity {
 
   @Column({ type: 'int', default: 0 })
   gold: number;
+
+  @Column({ type: 'int', default: 0 })
+  diamond: number;
   
   @Column({ type: 'enum', enum: Gender })
   gender: Gender;
