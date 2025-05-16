@@ -358,7 +358,7 @@ export class BaseGameRoom extends Room<RoomState> {
 
       if (typeof currentDiamond !== 'number' || currentDiamond < amountToWithdraw) {
         return client.send('onWithdrawFailed', {
-          reason: 'Số dư kim cương không đủ để rút'
+          reason: 'Số dư Diamond không đủ để rút'
         });
       }
 
