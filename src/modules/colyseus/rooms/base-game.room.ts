@@ -493,12 +493,12 @@ export class BaseGameRoom extends Room<RoomState> {
 
           if (action == ActionKey.RPS.toString() && winner != "draw" && fromPlayer?.userData?.id != toPlayer?.userData?.id) {
             if (fromPlayer?.userData) {
-              fromPlayer.userData.gold = winner == fromPlayer.sessionId ? fromPlayer.userData.gold + RPS_FEE : fromPlayer.userData.gold - RPS_FEE;
-              this.userRepository.update(fromPlayer.userData.id, { gold: fromPlayer.userData.gold });
+              fromPlayer.userData.diamond = winner == fromPlayer.sessionId ? fromPlayer.userData.diamond + RPS_FEE : fromPlayer.userData.diamond - RPS_FEE;
+              this.userRepository.update(fromPlayer.userData.id, { diamond: fromPlayer.userData.diamond });
             }
             if (toPlayer?.userData) {
-              toPlayer.userData.gold = winner == toPlayer.sessionId ? toPlayer.userData.gold + RPS_FEE : toPlayer.userData.gold - RPS_FEE;
-              this.userRepository.update(toPlayer.userData.id, { gold: toPlayer.userData.gold });
+              toPlayer.userData.diamond = winner == toPlayer.sessionId ? toPlayer.userData.gold + RPS_FEE : toPlayer.userData.gold - RPS_FEE;
+              this.userRepository.update(toPlayer.userData.id, { diamond: toPlayer.userData.diamond });
             }
           }
 
@@ -510,8 +510,8 @@ export class BaseGameRoom extends Room<RoomState> {
             result2: result.result2,
             fee: RPS_FEE,
             winner: winner,
-            fromGold: fromPlayer?.userData?.gold,
-            toGold: toPlayer?.userData?.gold,
+            fromDiamond: fromPlayer?.userData?.diamond,
+            toDiamond: toPlayer?.userData?.diamond,
           });
 
           this.minigameResultDict.delete(gameKey);
