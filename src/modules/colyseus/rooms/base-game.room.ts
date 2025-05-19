@@ -389,7 +389,7 @@ export class BaseGameRoom extends Room<RoomState> {
     this.onMessage("p2pAction", (sender, data) => {
       const { targetClientId, action, amount } = data;
 
-      if (action == ActionKey.RPS.toString() && sender.userData?.gold < RPS_FEE) {
+      if (action == ActionKey.RPS.toString() && sender.userData?.diamond < RPS_FEE) {
         this.sendMessageToTarget(sender, action, "Không đủ tiền");
         return;
       }
@@ -402,26 +402,24 @@ export class BaseGameRoom extends Room<RoomState> {
         }
       }
 
-      if (targetClient && action == ActionKey.RPS.toString() && (targetClient.userData.gold < RPS_FEE)) {
+      if (targetClient && action == ActionKey.RPS.toString() && (targetClient.userData.diamond < RPS_FEE)) {
         this.sendMessageToTarget(sender, action, "Người chơi không đủ tiền");
         return;
       }
 
-
       if (action == ActionKey.SendCoin.toString()) {
-        if (amount <= 0 || sender.userData?.gold <= 0 || sender.userData?.gold < amount) {
+        if (amount <= 0 || sender.userData?.diamond <= 0 || sender.userData?.diamond < amount) {
           this.sendMessageToTarget(sender, action, "Không đủ tiền");
           return;
         }
 
         if (sender.userData && targetClient?.userData && (sender.userData.id != targetClient?.userData.id)) {
-          sender.userData.gold -= amount;
-          targetClient.userData.gold += amount;
+          sender.userData.diamond -= amount;
+          targetClient.userData.diamond += amount;
 
-          this.userRepository.update(sender.userData.id, { gold: sender.userData.gold });
-          this.userRepository.update(targetClient.userData.id, { gold: targetClient.userData.gold });
-        }
-        else {
+          this.userRepository.update(sender.userData.id, { diamond: sender.userData.diamond });
+          this.userRepository.update(targetClient.userData.id, { diamond: targetClient.userData.diamond });
+        } else {
           this.sendMessageToTarget(sender, action, "Lỗi bất định");
           return;
         }
@@ -436,7 +434,7 @@ export class BaseGameRoom extends Room<RoomState> {
           fromName: sender.userData?.display_name,
           gameKey: gameKey,
           amount: amount,
-          currentGold: targetClient.userData.gold,
+          currentDiamond: targetClient.userData.diamond,
           userId: targetClient.userData.id
         });
 
@@ -446,7 +444,7 @@ export class BaseGameRoom extends Room<RoomState> {
           from: sender.sessionId,
           toName: targetClient.userData?.display_name,
           amount: amount,
-          currentGold: sender.userData?.gold,
+          currentDiamond: sender.userData?.diamond,
           userId: sender.userData?.id
         });
       }
@@ -497,7 +495,7 @@ export class BaseGameRoom extends Room<RoomState> {
               this.userRepository.update(fromPlayer.userData.id, { diamond: fromPlayer.userData.diamond });
             }
             if (toPlayer?.userData) {
-              toPlayer.userData.diamond = winner == toPlayer.sessionId ? toPlayer.userData.gold + RPS_FEE : toPlayer.userData.gold - RPS_FEE;
+              toPlayer.userData.diamond = winner == toPlayer.sessionId ? toPlayer.userData.diamond + RPS_FEE : toPlayer.userData.diamond - RPS_FEE;
               this.userRepository.update(toPlayer.userData.id, { diamond: toPlayer.userData.diamond });
             }
           }
