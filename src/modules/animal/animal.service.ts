@@ -10,7 +10,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { plainToInstance } from 'class-transformer';
 import { error } from 'node:console';
 import { EntityManager, In, Repository } from 'typeorm';
-import { AnimalDtoRequest, AnimalDtoResponse, BringPetsDto } from './dto/animal.dto';
+import { AnimalDtoRequest, AnimalDtoResponse, BringPetsDto, BringPetsDtoList } from './dto/animal.dto';
 import { AnimalEntity } from './entity/animal.entity';
 
 @Injectable()
@@ -137,22 +137,46 @@ export class AnimalService extends BaseService<AnimalEntity> {
     return false;
   }
 
-  async bringPets(user: UserEntity, { animal_ids, is_brought }: BringPetsDto) {
-    const pets = await this.animalRepository.find({
-      where: {
-        id: In(animal_ids),
-        user: { id: user.id },
+  async bringPets(user: UserEntity, { pets: petsDto }: BringPetsDtoList) {
+    const allIds = petsDto.map((d) => d.id);
+    const existing = await this.animalRepository.find({
+      where: { 
+        id: In(allIds), 
+        user: { id: user.id } 
       },
+      select: ['id'],
     });
 
-    if (!pets.length) {
-      throw new NotFoundException('No matching pets found or they are not caught.');
+    if (existing.length !== allIds.length) {
+      const foundIds = new Set(existing.map((p) => p.id));
+      const missing = allIds.filter((id) => !foundIds.has(id));
+      throw new NotFoundException(`Pets not found or not owned: ${missing.join(', ')}`);
     }
 
-    for (const pet of pets) {
-      pet.is_brought = is_brought;
-    }
+    const trueIds  = petsDto.filter((d) => d.is_brought).map((d) => d.id);
+    const falseIds = petsDto.filter((d) => !d.is_brought).map((d) => d.id);
 
-    await this.animalRepository.save(pets);
+    await this.manager.transaction(async (em) => {
+      if (trueIds.length) {
+        await em.getRepository(AnimalEntity).update(
+          { id: In(trueIds), user: { id: user.id } },
+          { is_brought: true },
+        );
+      }
+      if (falseIds.length) {
+        await em.getRepository(AnimalEntity).update(
+          { id: In(falseIds), user: { id: user.id } },
+          { is_brought: false },
+        );
+      }
+    });
+
+    return {
+      message: 'Pets bring‐status updated.',
+      updated: {
+        brought:  trueIds,
+        unbrought: falseIds,
+      },
+    };
   }
 }
