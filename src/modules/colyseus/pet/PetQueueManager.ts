@@ -44,6 +44,7 @@ export class PetQueueManager {
         const state = this.queues.get(petId)!;
         // Nếu Pet đã bị bắt rồi
         if (state.caught) {
+            this.notifyPetAlreadyCaught(client, petId);
             return;
         }
         // Nếu người chơi đã trong hàng đợi thì bỏ qua
@@ -81,8 +82,11 @@ export class PetQueueManager {
                         playerCatchId: client.sessionId,
                         catchSucces: true,
                         petId: petId,
-                        remainingUsers: remainingClientIds
                     });
+                    for (const remaining of state.queue) {
+                        this.notifyPetAlreadyCaught(remaining.client, petId);
+                    }
+                    // Dọn hàng đợi
                     state.queue = [];
                     break;
                 } else {
@@ -101,8 +105,11 @@ export class PetQueueManager {
         state.isProcessing = false;
     }
 
-    // Reset toàn bộ (tùy chọn)
-    static reset() {
-        this.queues.clear();
+    static notifyPetAlreadyCaught(client: Client, petId: string) {
+        client.send("onPetAlreadyCaught", {
+            playerCatchId: client.sessionId,
+            catchSucces: false,
+            petId: petId
+        });
     }
 }

@@ -1,4 +1,6 @@
+import { InventoryType, PurchaseMethod } from '@enum';
 import { BaseService } from '@libs/base/base.service';
+import { FoodEntity } from '@modules/food/entity/food.entity';
 import { Inventory } from '@modules/inventory/entity/inventory.entity';
 import { ItemEntity } from '@modules/item/entity/item.entity';
 import { UserEntity } from '@modules/user/entity/user.entity';
@@ -10,6 +12,9 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { plainToInstance } from 'class-transformer';
 import { Repository } from 'typeorm';
+import { FoodInventoryResDto, ItemInventoryResDto } from './dto/inventory.dto';
+import { log } from 'node:console';
+import { FoodService } from '@modules/food/food.service';
 
 @Injectable()
 export class InventoryService extends BaseService<Inventory> {
@@ -20,6 +25,7 @@ export class InventoryService extends BaseService<Inventory> {
     private readonly userRepository: Repository<UserEntity>,
     @InjectRepository(ItemEntity)
     private readonly itemRepository: Repository<ItemEntity>,
+    private readonly foodService: FoodService,
   ) {
     super(inventoryRepository, Inventory.name);
   }
@@ -50,6 +56,7 @@ export class InventoryService extends BaseService<Inventory> {
       inventory = this.inventoryRepository.create({
         user,
         item,
+        inventory_type: InventoryType.ITEM,
         equipped: false,
       });
 
@@ -70,6 +77,44 @@ export class InventoryService extends BaseService<Inventory> {
 
     const response_data = { ...response_inventory_data, user_gold: user.gold };
     return plainToInstance(Inventory, response_data);
+  }
+
+  
+  async buyFood(user: UserEntity, foodId: string) {
+    const food = await this.foodService.findById(foodId);
+  
+    if (!food) {
+      throw new NotFoundException('Food not found');
+    }
+
+    if (food.purchase_method === PurchaseMethod.SLOT) {
+      throw new BadRequestException('This food cannot be purchased (slot only)');
+    }
+
+    const price = food.price;
+
+    if (food.purchase_method === PurchaseMethod.GOLD) {
+      if (user.gold < price) {
+        throw new BadRequestException('Not enough gold');
+      }
+      user.gold -= price;
+    } else if (food.purchase_method === PurchaseMethod.DIAMOND) {
+      if (user.diamond < price) {
+        throw new BadRequestException('Not enough diamond');
+      }
+      user.diamond -= price;
+    }
+
+    await this.addFoodToInventory(user, food);
+    await this.userRepository.save(user);
+
+    return {
+      message: 'Food purchased successfully',
+      user_balance: {
+        gold: user.gold,
+        diamond: user.diamond,
+      },
+    };
   }
 
   async getUserInventory(userId: string): Promise<Inventory[]> {
@@ -98,5 +143,52 @@ export class InventoryService extends BaseService<Inventory> {
       quantity: 1,
     });
     return this.inventoryRepository.save(newInventoryItem);
+  }
+
+  async addFoodToInventory(user: UserEntity, food: FoodEntity): Promise<Inventory> {
+    let inventory = await this.inventoryRepository.findOne({
+      where: { user: { id: user.id }, food: { id: food.id } },
+    });
+
+    if (!inventory) {
+      inventory = this.inventoryRepository.create({
+        user,
+        food,
+        inventory_type: InventoryType.FOOD,
+      });
+    } else {
+      inventory.quantity += 1;
+    }
+
+    return await this.inventoryRepository.save(inventory);
+  }
+
+
+  async getAllFoodsOfUser(user: UserEntity) {
+    const inventory = await this.find({ 
+      where: { 
+        user: { 
+          id: user.id 
+        }, 
+        inventory_type: InventoryType.FOOD
+      },
+      relations: ['food'],
+    });
+
+    return plainToInstance(FoodInventoryResDto, inventory);
+  }
+
+  async getAllItemsOfUser(user: UserEntity) {
+    const inventory = await this.find({ 
+      where: { 
+        user: { 
+          id: user.id 
+        }, 
+        inventory_type: InventoryType.ITEM
+      },
+      relations: ['item'],
+    });
+
+    return plainToInstance(ItemInventoryResDto, inventory);
   }
 }

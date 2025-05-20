@@ -313,7 +313,6 @@ export class BaseGameRoom extends Room<RoomState> {
         this.broadcast('onPlayerUpdateGold', responseData);
       }
     });
-
     this.onMessage('onPlayerUpdateDiamond', (client, data) => {
       const { newValue, amountChange, needUpdate } = data;
       if (client?.userData?.diamond != null) {
@@ -605,11 +604,17 @@ export class BaseGameRoom extends Room<RoomState> {
     });
     this.onMessage('sendOwnedPets', async (client, data) => {
       const { pets } = data;
-      console.log("pets: ", pets)
       this.broadcast('onSendOwnedPets', {
         playerId: client.sessionId,
         pet: pets,
         playerCatchId :  client.sessionId
+      });
+    });
+    this.onMessage('sendPetFollowPlayer', async (client, data) => {
+      const { pets } = data;
+      this.broadcast('onPetFollowPlayer', {
+        playerIdFollowPet: client.sessionId,
+        pet: pets,
       });
     });
   }

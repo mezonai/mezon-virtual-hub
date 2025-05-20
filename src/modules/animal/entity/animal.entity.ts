@@ -27,6 +27,9 @@ export class AnimalEntity {
   @Column({ name: 'room_code', type: 'varchar', length: 255, nullable: true })
   room_code: string | null;
 
+  @Column({ name: 'is_brought', type: 'boolean', default: false })
+  is_brought: boolean;
+
   @ManyToOne(() => UserEntity, { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'user_id' })
   user: UserEntity | null;

@@ -12,6 +12,4 @@ export class Player extends Schema {
   @type('string') animals: string = '';
 }
 
-export interface WithdrawPayload extends Pick<TokenSentEvent, 'amount' | 'note'>{
-
-}
+export interface WithdrawPayload extends Pick<TokenSentEvent, 'amount' | 'note'> {}

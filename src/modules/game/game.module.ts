@@ -9,12 +9,14 @@ import { GameService } from './game.service';
 import { UserEntity } from '@modules/user/entity/user.entity';
 import { InventoryModule } from '@modules/inventory/inventory.module';
 import { ItemModule } from '@modules/item/item.module';
+import { FoodModule } from '@modules/food/food.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([UserEntity, MapEntity, Inventory]),
     JwtModule.register({}),
     InventoryModule,
+    FoodModule,
     ItemModule,
   ],
   controllers: [GameController],
