@@ -1,6 +1,6 @@
 import { Schema, type } from '@colyseus/schema';
 import { configEnv } from '@config/env.config';
-import { RPS_FEE } from '@constant';
+import { EXCHANGERATE, RPS_FEE } from '@constant';
 import { ActionKey } from '@enum';
 import { GoogleGenAI } from '@google/genai';
 import { Logger } from '@libs/logger';
@@ -375,7 +375,7 @@ export class BaseGameRoom extends Room<RoomState> {
         sender_name: "Virtual-Hub",
         ...data
       });
-      
+
       this.broadcast('onWithrawDiamond', responseData);
       try {
         await this.userRepository.update(userId, { diamond: newDiamond });
@@ -385,6 +385,55 @@ export class BaseGameRoom extends Room<RoomState> {
         });
       }
     });
+
+    this.onMessage('onExchangeCoinToDiamond', async (client: Client<UserEntity>, data) => {
+      const { coinAmount } = data;
+      const userId = client.userData?.id;
+
+      if (!userId) {
+        return client.send('onExchangeFailed', { reason: 'Không xác định được người dùng' });
+      }
+
+      const user = await this.userRepository.findOne({ where: { id: userId } });
+
+      if (!user) {
+        return client.send('onExchangeFailed', { reason: 'Không tìm thấy thông tin người dùng' });
+      }
+
+      if (user.gold < coinAmount) {
+        return client.send('onExchangeFailed', { reason: 'Không đủ coin để đổi' });
+      }
+
+      const diamondsToAdd = Math.floor(coinAmount / EXCHANGERATE);
+      if (diamondsToAdd <= 0) {
+        return client.send('onExchangeFailed', { reason: 'Số coin quá nhỏ để quy đổi' });
+      }
+
+      const newGold = user.gold - coinAmount;
+      const newDiamond = user.diamond + diamondsToAdd;
+
+      try {
+        await this.userRepository.update(userId, {
+          gold: newGold,
+          diamond: newDiamond,
+        });
+
+        const responseData = {
+          sessionId: client.sessionId,
+          coinChange: -coinAmount,
+          diamondChange: diamondsToAdd
+        };
+
+        this.broadcast('onExchangeCoinToDiamond', responseData);
+        return client.send('onExchangeSuccess', responseData);
+
+      } catch (err) {
+        return client.send('onExchangeFailed', {
+          reason: 'Lỗi hệ thống khi cập nhật dữ liệu. Vui lòng thử lại.'
+        });
+      }
+    });
+
 
     this.onMessage("p2pAction", (sender, data) => {
       const { targetClientId, action, amount } = data;
