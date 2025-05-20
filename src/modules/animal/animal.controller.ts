@@ -4,27 +4,26 @@ import {
   ParseUUIDPipe,
   Post,
   Query,
-  UseGuards,
+  UseGuards
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiBody,
   ApiOperation,
   ApiParam,
-  ApiTags,
+  ApiTags
 } from '@nestjs/swagger';
 
 import { Logger } from '@libs/logger';
 
+import { USER_TOKEN } from '@constant';
 import { AdminBypassGuard } from '@libs/guard/admin.guard';
+import { UserEntity } from '@modules/user/entity/user.entity';
 import { Body, Delete, Param, Put } from '@nestjs/common';
 import { ClsService } from 'nestjs-cls';
 import { UserService } from '../user/user.service';
-import { AnimalDtoRequest, BringPetsDto } from './dto/animal.dto';
 import { AnimalService } from './animal.service';
-import { Public } from '@libs/decorator';
-import { USER_TOKEN } from '@constant';
-import { UserEntity } from '@modules/user/entity/user.entity';
+import { AnimalDtoRequest, BringPetsDto } from './dto/animal.dto';
 
 @ApiBearerAuth()
 @Controller('animal')

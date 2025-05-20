@@ -16,8 +16,6 @@ import { ClsService } from 'nestjs-cls';
 import { UserService } from '../user/user.service';
 import { FoodDtoRequest } from './dto/food.dto';
 import { FoodService } from './food.service';
-import { USER_TOKEN } from '@constant';
-import { UserEntity } from '@modules/user/entity/user.entity';
 
 @ApiBearerAuth()
 @Controller('food')
@@ -45,7 +43,6 @@ export class FoodController {
   @ApiOperation({
     summary: 'Create a new food',
   })
-  @ApiQuery({ type: FoodDtoRequest })
   async createFood(@Query() food: FoodDtoRequest) {
     return await this.foodService.createFood(food);
   }
@@ -59,7 +56,6 @@ export class FoodController {
   @ApiOperation({
     summary: 'Update a specific food',
   })
-  @ApiQuery({ type: FoodDtoRequest })
   async updateFood(
     @Query() food: FoodDtoRequest,
     @Param('food_id', ParseUUIDPipe) food_id: string,

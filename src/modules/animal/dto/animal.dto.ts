@@ -61,4 +61,12 @@ export class BringPetsDto {
   @ArrayNotEmpty()
   @IsUUID(undefined, { each: true })
   animal_ids: string[];
+
+  @ApiProperty({
+    description: 'Optional flag to indicate whether the pets should be marked as brought (true) or unbrought (false). Defaults to true.',
+    example: true,
+    default: true,
+  })
+  @IsOptional()
+  is_brought: boolean = true;
 }

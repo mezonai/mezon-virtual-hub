@@ -137,12 +137,11 @@ export class AnimalService extends BaseService<AnimalEntity> {
     return false;
   }
 
-  async bringPets(user: UserEntity, { animal_ids }: BringPetsDto) {
+  async bringPets(user: UserEntity, { animal_ids, is_brought }: BringPetsDto) {
     const pets = await this.animalRepository.find({
       where: {
         id: In(animal_ids),
         user: { id: user.id },
-        is_caught: true,
       },
     });
 
@@ -151,7 +150,7 @@ export class AnimalService extends BaseService<AnimalEntity> {
     }
 
     for (const pet of pets) {
-      pet.is_brought = true;
+      pet.is_brought = is_brought;
     }
 
     await this.animalRepository.save(pets);
