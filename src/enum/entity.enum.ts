@@ -36,3 +36,20 @@ export enum ActionKey {
   SendCoin = 3,
   CatchUser = 4,
 }
+
+export enum FoodType {
+  NORMAL = 'normal',
+  PREMIUM = 'premium',
+  ULTRA_PREMIUM = 'ultra-premium',
+}
+
+export enum PurchaseMethod {
+  GOLD = 'gold',
+  DIAMOND = 'diamond',
+  SLOT = 'slot',
+}
+
+export enum InventoryType {
+  ITEM = 'item',
+  FOOD = 'food',
+}

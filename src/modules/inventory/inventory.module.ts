@@ -7,12 +7,15 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ClsModule } from 'nestjs-cls';
 import { InventoryController } from './inventory.controller';
 import { InventoryService } from './inventory.service';
+import { FoodModule } from '@modules/food/food.module';
+import { FoodEntity } from '@modules/food/entity/food.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Inventory, UserEntity, ItemEntity]),
+    TypeOrmModule.forFeature([Inventory, UserEntity, ItemEntity, FoodEntity]),
     ClsModule,
     ItemModule,
+    FoodModule,
   ],
   providers: [InventoryService],
   controllers: [InventoryController],

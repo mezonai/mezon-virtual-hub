@@ -1,7 +1,7 @@
 import { Gender, MapKey, SubMap } from '@enum';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Exclude, Expose } from 'class-transformer';
-import { IsEnum, IsInt, IsNumberString, IsOptional, IsString } from 'class-validator';
+import { ArrayNotEmpty, IsArray, IsEnum, IsInt, IsNumberString, IsOptional, IsString, IsUUID } from 'class-validator';
 
 export class AnimalDtoResponse {
   @Exclude()
@@ -49,4 +49,16 @@ export class AnimalDtoRequest {
   @IsOptional()
   @IsEnum(SubMap)
   sub_map?: SubMap;
+}
+
+export class BringPetsDto {
+  @ApiProperty({
+    description: 'Array of pet IDs to bring with the player (UUID format)',
+    example: ['550e8400-e29b-41d4-a716-446655440000', '123e4567-e89b-12d3-a456-426614174000'],
+    type: [String],
+  })
+  @IsArray()
+  @ArrayNotEmpty()
+  @IsUUID(undefined, { each: true })
+  animal_ids: string[];
 }

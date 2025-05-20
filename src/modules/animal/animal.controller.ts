@@ -20,7 +20,7 @@ import { AdminBypassGuard } from '@libs/guard/admin.guard';
 import { Body, Delete, Param, Put } from '@nestjs/common';
 import { ClsService } from 'nestjs-cls';
 import { UserService } from '../user/user.service';
-import { AnimalDtoRequest } from './dto/animal.dto';
+import { AnimalDtoRequest, BringPetsDto } from './dto/animal.dto';
 import { AnimalService } from './animal.service';
 import { Public } from '@libs/decorator';
 import { USER_TOKEN } from '@constant';
@@ -98,16 +98,14 @@ export class AnimalController {
     return await this.animalService.deleteAnimal(animal_id);
   }
 
-  // @Post('catch/:animal_id')
-  // @ApiParam({
-  //   name: 'animal_id',
-  //   example: '91bea29f-0e87-42a5-b851-d9d0386ac32f',
-  // })
-  // @ApiOperation({
-  //   summary: 'Catch a specific animal',
-  // })
-  // async catchAnimal(@Param('animal_id', ParseUUIDPipe) animal_id: string) {
-  //   const user = this.cls.get<UserEntity>(USER_TOKEN);
-  //   return await this.animalService.catchAnimal(animal_id, user);
-  // }
+  @Post('bring-pets')
+  @ApiOperation({
+    summary: 'Bring multiple pets with the player',
+    description: 'Allows the player to bring a list of pets by specifying their IDs.',
+  })
+  @ApiBody({ type: BringPetsDto })
+  async bringPets(@Body() payload: BringPetsDto) {
+    const user = this.cls.get<UserEntity>(USER_TOKEN);
+    return await this.animalService.bringPets(user, payload);
+  }
 }

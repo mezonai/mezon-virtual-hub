@@ -1,22 +1,25 @@
 import { BaseService } from '@libs/base/base.service';
+import { BaseGameRoom } from '@modules/colyseus/rooms/base-game.room';
+import { Inventory } from '@modules/inventory/entity/inventory.entity';
 import { UserEntity } from '@modules/user/entity/user.entity';
 import {
-  BadRequestException,
   Injectable,
-  NotFoundException,
+  NotFoundException
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { plainToInstance } from 'class-transformer';
-import { EntityManager, Repository } from 'typeorm';
-import { AnimalDtoRequest, AnimalDtoResponse } from './dto/animal.dto';
+import { error } from 'node:console';
+import { EntityManager, In, Repository } from 'typeorm';
+import { AnimalDtoRequest, AnimalDtoResponse, BringPetsDto } from './dto/animal.dto';
 import { AnimalEntity } from './entity/animal.entity';
-import { BaseGameRoom } from '@modules/colyseus/rooms/base-game.room';
 
 @Injectable()
 export class AnimalService extends BaseService<AnimalEntity> {
   constructor(
     @InjectRepository(AnimalEntity)
     private readonly animalRepository: Repository<AnimalEntity>,
+    @InjectRepository(Inventory)
+    private readonly inventoryRepository: Repository<Inventory>,
     private manager: EntityManager,
   ) {
     super(animalRepository, AnimalEntity.name);
@@ -77,7 +80,7 @@ export class AnimalService extends BaseService<AnimalEntity> {
     return { deleted: true };
   }
 
-  async catchAnimal(animal_id: string, user: UserEntity) : Promise<boolean> {
+  async catchAnimal(animal_id: string, user: UserEntity, food_id?: string) : Promise<boolean> {
     const animal = await this.animalRepository.findOne({
       where: {
         id: animal_id,
@@ -89,9 +92,30 @@ export class AnimalService extends BaseService<AnimalEntity> {
       return false;
     }
 
+    let extraPercent = 0;
+
+    if (food_id) {
+      const inventory = await this.inventoryRepository.findOne({
+        where: {
+          food: { id: food_id },
+          user: { id: user.id },
+        }
+      });
+
+      console.log('catchAnimal', inventory);
+
+      if (inventory?.food && (inventory?.quantity > 0)) {
+        extraPercent = inventory.food.catch_rate_bonus
+        inventory.quantity -= 1;
+        this.inventoryRepository.save(inventory);
+      } else {
+        error('Food isnt exsited or not enough to feed!');
+      }
+    }
+
     const randomValue = Math.random() * 100;
 
-    if (randomValue <= animal.catch_percent) {
+    if (randomValue <= (animal.catch_percent + extraPercent)) {
       animal.is_caught = true;
       animal.user = user;
       await this.animalRepository.save(animal);
@@ -111,5 +135,25 @@ export class AnimalService extends BaseService<AnimalEntity> {
     return true;  
     } 
     return false;
+  }
+
+  async bringPets(user: UserEntity, { animal_ids }: BringPetsDto) {
+    const pets = await this.animalRepository.find({
+      where: {
+        id: In(animal_ids),
+        user: { id: user.id },
+        is_caught: true,
+      },
+    });
+
+    if (!pets.length) {
+      throw new NotFoundException('No matching pets found or they are not caught.');
+    }
+
+    for (const pet of pets) {
+      pet.is_brought = true;
+    }
+
+    await this.animalRepository.save(pets);
   }
 }
