@@ -1,6 +1,6 @@
 import { Schema, type } from '@colyseus/schema';
 import { configEnv } from '@config/env.config';
-import { RPS_FEE } from '@constant';
+import { EXCHANGERATE, RPS_FEE } from '@constant';
 import { ActionKey } from '@enum';
 import { GoogleGenAI } from '@google/genai';
 import { Logger } from '@libs/logger';
@@ -357,7 +357,7 @@ export class BaseGameRoom extends Room<RoomState> {
 
       if (typeof currentDiamond !== 'number' || currentDiamond < amountToWithdraw) {
         return client.send('onWithdrawFailed', {
-          reason: 'Số dư Diamond không đủ để rút'
+          reason: 'Không đủ Diamond không đủ để rút'
         });
       }
 
@@ -380,10 +380,53 @@ export class BaseGameRoom extends Room<RoomState> {
         await this.userRepository.update(userId, { diamond: newDiamond });
       } catch (err) {
         return client.send('onWithdrawFailed', {
-          reason: 'Cập nhật số dư thất bại. Vui lòng thử lại.'
+          reason: 'Lỗi hệ thống khi cập nhật dữ liệu. Vui lòng thử lại.'
         });
       }
     });
+
+    this.onMessage('onExchangeDiamondToCoin', async (client: Client<UserEntity>, data) => {
+      const { diamondTransfer } = data;
+      const userId = client.userData?.id;
+
+      if (!userId) {
+        return client.send('onExchangeFailed', { reason: 'Không xác định được người dùng' });
+      }
+
+      const user = await this.userRepository.findOne({ where: { id: userId } });
+
+      if (!user) {
+        return client.send('onExchangeFailed', { reason: 'Không tìm thấy thông tin người dùng' });
+      }
+
+      if (user.diamond < diamondTransfer) {
+        return client.send('onExchangeFailed', { reason: 'Không đủ diamond để đổi' });
+      }
+
+      const coinToAdd = Math.floor(diamondTransfer / EXCHANGERATE);
+      if (coinToAdd <= 0) {
+        return client.send('onExchangeFailed', { reason: 'Không đủ diamond để quy đổi' });
+      }
+
+      const newGold = user.gold + coinToAdd;
+      const newDiamond = user.diamond - diamondTransfer;
+      const responseData = {
+        sessionId: client.sessionId,
+        coinChange: coinToAdd,
+        diamondChange: -diamondTransfer
+      };
+      this.broadcast('onExchangeDiamondToCoin', responseData);
+
+      try {
+        await this.userRepository.update(userId, { gold: newGold,diamond: newDiamond,});
+      } catch (err) {
+        return client.send('onExchangeFailed', {
+          reason: 'Lỗi hệ thống khi cập nhật dữ liệu. Vui lòng thử lại.'
+        });
+      }
+    });
+
+
     this.onMessage("p2pAction", (sender, data) => {
       const { targetClientId, action, amount } = data;
 
