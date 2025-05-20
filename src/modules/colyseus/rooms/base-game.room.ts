@@ -8,7 +8,6 @@ import { cleanAndStringifyJson, isValidJsonQuiz } from '@libs/utils';
 import { AnimalService } from '@modules/animal/animal.service';
 import { JwtPayload } from '@modules/auth/dtos/response';
 import { GameEventService } from '@modules/game-event/game-event.service';
-import { MezonService } from '@modules/mezon/mezon.service';
 import { UserEntity } from '@modules/user/entity/user.entity';
 import {
   ForbiddenException,
@@ -19,7 +18,7 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Player, WithdrawPayload } from '@types';
+import { Player } from '@types';
 import { Client, Room } from 'colyseus';
 import { IncomingMessage } from 'http';
 import { Repository } from 'typeorm';
@@ -57,7 +56,6 @@ export class BaseGameRoom extends Room<RoomState> {
     @InjectRepository(UserEntity)
     readonly userRepository: Repository<UserEntity>,
     @Inject() private readonly jwtService: JwtService,
-    @Inject() private readonly mezonService: MezonService,
     @Inject() private readonly gameEventService: GameEventService,
     @Inject() private readonly animalService: AnimalService,
   ) {
@@ -314,78 +312,6 @@ export class BaseGameRoom extends Room<RoomState> {
       }
     });
 
-    this.onMessage('onPlayerUpdateDiamond', (client, data) => {
-      const { newValue, amountChange, needUpdate } = data;
-      if (client?.userData?.diamond != null) {
-        if (newValue >= 0) {
-          client.userData.diamond = newValue;
-        } else {
-          return;
-        }
-
-        if (needUpdate && client?.userData) {
-          this.userRepository.update(client.userData.id, { diamond: newValue });
-        }
-
-        const responseData = {
-          sessionId: client.sessionId,
-          amountChange: amountChange
-        };
-        this.broadcast('onPlayerUpdateDiamond', responseData);
-      }
-    });
-
-
-    this.onMessage('onWithrawDiamond', async (client: Client<UserEntity>, data: WithdrawPayload) => {
-      const userId = client.userData?.id;
-
-      if (!userId) {
-        return client.send('onWithdrawFailed', {
-          reason: 'Không xác định được người dùng'
-        });
-      }
-
-      const user = await this.userRepository.findOne({ where: { id: userId } });
-
-      if (!user?.mezon_id) {
-        return client.send('onWithdrawFailed', {
-          reason: 'Tài khoản không liên kết với Mezon'
-        });
-      }
-
-      const currentDiamond = client.userData?.diamond;
-      const amountToWithdraw = data.amount;
-
-      if (typeof currentDiamond !== 'number' || currentDiamond < amountToWithdraw) {
-        return client.send('onWithdrawFailed', {
-          reason: 'Số dư Diamond không đủ để rút'
-        });
-      }
-
-      const newDiamond = currentDiamond - amountToWithdraw;
-
-      const responseData = {
-        sessionId: client.sessionId,
-        amountChange: amountToWithdraw
-      };
-
-      this.mezonService.WithdrawTokenRequest({
-        receiver_id: user.mezon_id,
-        sender_id: configEnv().MEZON_TOKEN_RECEIVER_APP_ID,
-        sender_name: "Virtual-Hub",
-        ...data
-      });
-      
-      this.broadcast('onWithrawDiamond', responseData);
-      try {
-        await this.userRepository.update(userId, { diamond: newDiamond });
-      } catch (err) {
-        return client.send('onWithdrawFailed', {
-          reason: 'Cập nhật số dư thất bại. Vui lòng thử lại.'
-        });
-      }
-    });
-
     this.onMessage("p2pAction", (sender, data) => {
       const { targetClientId, action, amount } = data;
 
@@ -493,12 +419,12 @@ export class BaseGameRoom extends Room<RoomState> {
 
           if (action == ActionKey.RPS.toString() && winner != "draw" && fromPlayer?.userData?.id != toPlayer?.userData?.id) {
             if (fromPlayer?.userData) {
-              fromPlayer.userData.diamond = winner == fromPlayer.sessionId ? fromPlayer.userData.diamond + RPS_FEE : fromPlayer.userData.diamond - RPS_FEE;
-              this.userRepository.update(fromPlayer.userData.id, { diamond: fromPlayer.userData.diamond });
+              fromPlayer.userData.gold = winner == fromPlayer.sessionId ? fromPlayer.userData.gold + RPS_FEE : fromPlayer.userData.gold - RPS_FEE;
+              this.userRepository.update(fromPlayer.userData.id, { gold: fromPlayer.userData.gold });
             }
             if (toPlayer?.userData) {
-              toPlayer.userData.diamond = winner == toPlayer.sessionId ? toPlayer.userData.gold + RPS_FEE : toPlayer.userData.gold - RPS_FEE;
-              this.userRepository.update(toPlayer.userData.id, { diamond: toPlayer.userData.diamond });
+              toPlayer.userData.gold = winner == toPlayer.sessionId ? toPlayer.userData.gold + RPS_FEE : toPlayer.userData.gold - RPS_FEE;
+              this.userRepository.update(toPlayer.userData.id, { gold: toPlayer.userData.gold });
             }
           }
 
@@ -510,8 +436,8 @@ export class BaseGameRoom extends Room<RoomState> {
             result2: result.result2,
             fee: RPS_FEE,
             winner: winner,
-            fromDiamond: fromPlayer?.userData?.diamond,
-            toDiamond: toPlayer?.userData?.diamond,
+            fromGold: fromPlayer?.userData?.gold,
+            toGold: toPlayer?.userData?.gold,
           });
 
           this.minigameResultDict.delete(gameKey);
@@ -565,11 +491,17 @@ export class BaseGameRoom extends Room<RoomState> {
     });
     this.onMessage('sendOwnedPets', async (client, data) => {
       const { pets } = data;
-      console.log("pets: ", pets)
       this.broadcast('onSendOwnedPets', {
         playerId: client.sessionId,
         pet: pets,
         playerCatchId :  client.sessionId
+      });
+    });
+    this.onMessage('sendPetFollowPlayer', async (client, data) => {
+      const { pets } = data;
+      this.broadcast('onPetFollowPlayer', {
+        playerIdFollowPet: client.sessionId,
+        pet: pets,
       });
     });
   }
