@@ -358,7 +358,7 @@ export class BaseGameRoom extends Room<RoomState> {
 
       if (typeof currentDiamond !== 'number' || currentDiamond < amountToWithdraw) {
         return client.send('onWithdrawFailed', {
-          reason: 'Số dư Diamond không đủ để rút'
+          reason: 'Không đủ Diamond không đủ để rút'
         });
       }
 
@@ -381,13 +381,13 @@ export class BaseGameRoom extends Room<RoomState> {
         await this.userRepository.update(userId, { diamond: newDiamond });
       } catch (err) {
         return client.send('onWithdrawFailed', {
-          reason: 'Cập nhật số dư thất bại. Vui lòng thử lại.'
+          reason: 'Lỗi hệ thống khi cập nhật dữ liệu. Vui lòng thử lại.'
         });
       }
     });
 
-    this.onMessage('onExchangeCoinToDiamond', async (client: Client<UserEntity>, data) => {
-      const { coinAmount } = data;
+    this.onMessage('onExchangeDiamondToCoin', async (client: Client<UserEntity>, data) => {
+      const { diamondTransfer } = data;
       const userId = client.userData?.id;
 
       if (!userId) {
@@ -400,33 +400,26 @@ export class BaseGameRoom extends Room<RoomState> {
         return client.send('onExchangeFailed', { reason: 'Không tìm thấy thông tin người dùng' });
       }
 
-      if (user.gold < coinAmount) {
-        return client.send('onExchangeFailed', { reason: 'Không đủ coin để đổi' });
+      if (user.diamond < diamondTransfer) {
+        return client.send('onExchangeFailed', { reason: 'Không đủ diamond để đổi' });
       }
 
-      const diamondsToAdd = Math.floor(coinAmount / EXCHANGERATE);
-      if (diamondsToAdd <= 0) {
-        return client.send('onExchangeFailed', { reason: 'Số coin quá nhỏ để quy đổi' });
+      const coinToAdd = Math.floor(diamondTransfer / EXCHANGERATE);
+      if (coinToAdd <= 0) {
+        return client.send('onExchangeFailed', { reason: 'Không đủ diamond để quy đổi' });
       }
 
-      const newGold = user.gold - coinAmount;
-      const newDiamond = user.diamond + diamondsToAdd;
+      const newGold = user.gold + coinToAdd;
+      const newDiamond = user.diamond - diamondTransfer;
+      const responseData = {
+        sessionId: client.sessionId,
+        coinChange: coinToAdd,
+        diamondChange: -diamondTransfer
+      };
+      this.broadcast('onExchangeDiamondToCoin', responseData);
 
       try {
-        await this.userRepository.update(userId, {
-          gold: newGold,
-          diamond: newDiamond,
-        });
-
-        const responseData = {
-          sessionId: client.sessionId,
-          coinChange: -coinAmount,
-          diamondChange: diamondsToAdd
-        };
-
-        this.broadcast('onExchangeCoinToDiamond', responseData);
-        return client.send('onExchangeSuccess', responseData);
-
+        await this.userRepository.update(userId, { gold: newGold,diamond: newDiamond,});
       } catch (err) {
         return client.send('onExchangeFailed', {
           reason: 'Lỗi hệ thống khi cập nhật dữ liệu. Vui lòng thử lại.'
