@@ -27,6 +27,7 @@ player.animals = JSON.stringify(
         name: a.name,
         species: a.species,
         is_caught: a.is_caught,
+        is_brought: a.is_brought,
         catch_percent: a.catch_percent,
         room_code: a.room_code
       })) ?? []
