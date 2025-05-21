@@ -352,7 +352,7 @@ export class BaseGameRoom extends Room<RoomState> {
         });
       }
 
-      const currentDiamond = client.userData?.diamond;
+      const currentDiamond = user.diamond;
       const amountToWithdraw = data.amount;
 
       if (typeof currentDiamond !== 'number' || currentDiamond < amountToWithdraw) {
