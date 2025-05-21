@@ -129,7 +129,11 @@ export class InventoryService extends BaseService<Inventory> {
     itemId: string,
   ): Promise<Inventory | null> {
     return this.inventoryRepository.findOne({
-      where: { user: { id: userId }, item: { id: itemId } },
+      where: { 
+        user: { id: userId }, 
+        item: { id: itemId }, 
+        inventory_type: InventoryType.ITEM
+      },
     });
   }
 
@@ -141,13 +145,18 @@ export class InventoryService extends BaseService<Inventory> {
       user,
       item,
       quantity: 1,
+      inventory_type: InventoryType.ITEM
     });
     return this.inventoryRepository.save(newInventoryItem);
   }
 
   async addFoodToInventory(user: UserEntity, food: FoodEntity): Promise<Inventory> {
     let inventory = await this.inventoryRepository.findOne({
-      where: { user: { id: user.id }, food: { id: food.id } },
+      where: { 
+        user: { id: user.id }, 
+        food: { id: food.id },
+        inventory_type: InventoryType.FOOD
+      },
     });
 
     if (!inventory) {
