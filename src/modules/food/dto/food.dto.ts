@@ -1,7 +1,7 @@
 import { FoodType, PurchaseMethod } from '@enum';
 import { ApiProperty } from '@nestjs/swagger';
 import { Exclude, Type } from 'class-transformer';
-import { IsEnum, IsNumber, IsString, Max } from 'class-validator';
+import { IsEnum, IsNumber, IsOptional, IsString, Max } from 'class-validator';
 
 export class FoodDto {
   @Exclude()
@@ -45,6 +45,15 @@ export class FoodDtoRequest {
   @Type(() => Number)
   @IsNumber()
   price: number;
+
+  @ApiProperty({
+    description: 'Description of the food',
+    example: 'KERA vegetable candy',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  description?: string;
 
   @ApiProperty({
     description: 'Catch rate bonus of the food (max: 100)',

@@ -17,6 +17,9 @@ export class FoodEntity extends AuditEntity {
   @Column({ type: 'int', default: 0 })
   price: number;
 
+  @Column({ type: 'text', nullable: true })
+  description?: string;
+
   @Column({ type: 'float', name: 'catch_rate_bonus' })
   @Max(100)
   catch_rate_bonus: number;
