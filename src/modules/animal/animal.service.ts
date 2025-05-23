@@ -99,10 +99,9 @@ export class AnimalService extends BaseService<AnimalEntity> {
         where: {
           food: { id: food_id },
           user: { id: user.id },
-        }
+        },
+        relations: ['food'],
       });
-
-      console.log('catchAnimal', inventory);
 
       if (inventory?.food && (inventory?.quantity > 0)) {
         extraPercent = inventory.food.catch_rate_bonus
@@ -110,6 +109,7 @@ export class AnimalService extends BaseService<AnimalEntity> {
         this.inventoryRepository.save(inventory);
       } else {
         error('Food isnt exsited or not enough to feed!');
+        return false;
       }
     }
 
@@ -119,21 +119,9 @@ export class AnimalService extends BaseService<AnimalEntity> {
       animal.is_caught = true;
       animal.user = user;
       await this.animalRepository.save(animal);
+      return true;  
+    }
 
-      BaseGameRoom.activeRooms.forEach((room) => {
-        if (room.roomName === animal.room_code) {
-          console.log(room.roomName);
-
-          room.broadcast('animalCaught', {
-            animalId: animal.id,
-            userId: user.id,
-            username: user.username,
-            roomCode: animal.room_code,
-          });
-        }
-      });
-    return true;  
-    } 
     return false;
   }
 
