@@ -205,10 +205,10 @@ export class BaseGameRoom extends Room<RoomState> {
   async onCreate() {
     this.setState(new RoomState());
     BaseGameRoom.activeRooms.add(this);
-    PetQueueManager.initialize(async (playerId, petId) => {
+    PetQueueManager.initialize(async (playerId, petId, foodId) => {
       const client = this.clients.find(c => c.sessionId === playerId);
       if (!client) return false;
-      return await this.animalService.catchAnimal(petId, client.userData);
+      return await this.animalService.catchAnimal(petId, client.userData, foodId);
     });
     this.onMessage('move', (client, buffer: ArrayBuffer) => {
       try {
@@ -600,7 +600,7 @@ export class BaseGameRoom extends Room<RoomState> {
     });
     this.onMessage('catchPet', async (client: Client<UserEntity>, message) => {
       if (client.userData == null) return;
-      PetQueueManager.handleCatchRequest(client, message.petId, this);
+      PetQueueManager.handleCatchRequest(client, message, this);
     });
     this.onMessage('sendOwnedPets', async (client, data) => {
       const { pets } = data;

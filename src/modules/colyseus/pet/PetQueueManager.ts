@@ -1,6 +1,6 @@
 import { Client, Room } from "colyseus";  // Import Room nếu chưa có
 
-type CatchPetAPI = (playerId: string, petId: string) => Promise<boolean>;
+type CatchPetAPI = (playerId: string, petId: string, foodId: string) => Promise<boolean>;
 
 interface PetQueueItem {
     client: Client;
@@ -24,7 +24,7 @@ export class PetQueueManager {
     }
 
     // Gọi khi người chơi nhấn nút bắt Pet
-    static handleCatchRequest(client: Client, petId: string, room: Room) {
+    static handleCatchRequest(client: Client, message: any, room: Room) {
         const playerId = client.sessionId;
 
         if (!this.catchPetAPI) {
@@ -33,18 +33,18 @@ export class PetQueueManager {
         }
 
         // Nếu Pet chưa có hàng đợi thì tạo mới
-        if (!this.queues.has(petId)) {
-            this.queues.set(petId, {
+        if (!this.queues.has(message.petId)) {
+            this.queues.set(message.petId, {
                 caught: false,
                 isProcessing: false,
                 queue: [],
             });
         }
 
-        const state = this.queues.get(petId)!;
+        const state = this.queues.get(message.petId)!;
         // Nếu Pet đã bị bắt rồi
         if (state.caught) {
-            this.notifyPetAlreadyCaught(client, petId);
+            this.notifyPetAlreadyCaught(client, message.petId);
             return;
         }
         // Nếu người chơi đã trong hàng đợi thì bỏ qua
@@ -57,12 +57,12 @@ export class PetQueueManager {
 
         // Bắt đầu xử lý nếu chưa xử lý ai
         if (!state.isProcessing) {
-            this.processQueue(petId, room);
+            this.processQueue(message.petId, message.foodId, room);
         }
     }
 
     // Xử lý từng người chơi trong hàng đợi
-    private static async processQueue(petId: string, room: Room) {
+    private static async processQueue(petId: string, foodId: string ,room: Room) {
         const state = this.queues.get(petId);
         if (!state) return;
 
@@ -73,7 +73,7 @@ export class PetQueueManager {
             const { client, playerId } = state.queue.shift()!;
 
             try {
-                const success = await this.catchPetAPI(playerId, petId);
+                const success = await this.catchPetAPI(playerId, petId, foodId);
                 if (success) {
                     state.caught = true;
                     state.caughtBy = playerId;
