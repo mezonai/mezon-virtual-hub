@@ -1,7 +1,7 @@
 import { Schema, type } from '@colyseus/schema';
 import { configEnv } from '@config/env.config';
 import { EXCHANGERATE, RPS_FEE } from '@constant';
-import { ActionKey } from '@enum';
+import { ActionKey, MapKey, SubMap } from '@enum';
 import { GoogleGenAI } from '@google/genai';
 import { Logger } from '@libs/logger';
 import { cleanAndStringifyJson, isValidJsonQuiz } from '@libs/utils';
@@ -20,10 +20,13 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Player, WithdrawPayload } from '@types';
-import { Client, Room } from 'colyseus';
+import { Client, ClientArray, Room } from 'colyseus';
 import { IncomingMessage } from 'http';
 import { Repository } from 'typeorm';
 import { PetQueueManager } from '../pet/PetQueueManager';
+import { Pet } from '../pet/Pet';
+import { AnimalDtoRequest } from '@modules/animal/dto/animal.dto';
+import { Console } from 'console';
 
 export class Item extends Schema {
   @type('number') x: number = 0;
@@ -43,6 +46,7 @@ export class Item extends Schema {
 class RoomState extends Schema {
   @type({ map: Player }) players = new Map<string, Player>();
   @type({ map: Item }) items = new Map<string, Item>();
+  @type({ map: Pet }) pets = new Map<string, Pet>();
 }
 
 @Injectable()
@@ -50,6 +54,10 @@ export class BaseGameRoom extends Room<RoomState> {
   private minigameResultDict = new Map();
   // maxClients = 50; // Max players
   logger = new Logger();
+  petQueueManager: PetQueueManager;
+  private petMovementInterval: any;
+  private pethangeRoomInterval: any;
+  speciesPetEvent = "DragonIce";
   static activeRooms: Set<BaseGameRoom> = new Set();
   static globalTargetClients: Map<string, Client> = new Map();
   static eventData: any;
@@ -205,11 +213,7 @@ export class BaseGameRoom extends Room<RoomState> {
   async onCreate() {
     this.setState(new RoomState());
     BaseGameRoom.activeRooms.add(this);
-    PetQueueManager.initialize(async (playerId, petId, foodId) => {
-      const client = this.clients.find(c => c.sessionId === playerId);
-      if (!client) return false;
-      return await this.animalService.catchAnimal(petId, client.userData, foodId);
-    });
+    console.log(this.roomName);
     this.onMessage('move', (client, buffer: ArrayBuffer) => {
       try {
         const data = this.decodeMoveData(new Uint8Array(buffer));
@@ -418,7 +422,7 @@ export class BaseGameRoom extends Room<RoomState> {
       this.broadcast('onExchangeDiamondToCoin', responseData);
 
       try {
-        await this.userRepository.update(userId, { gold: newGold,diamond: newDiamond,});
+        await this.userRepository.update(userId, { gold: newGold, diamond: newDiamond, });
       } catch (err) {
         return client.send('onExchangeFailed', {
           reason: 'Lỗi hệ thống khi cập nhật dữ liệu. Vui lòng thử lại.'
@@ -600,14 +604,14 @@ export class BaseGameRoom extends Room<RoomState> {
     });
     this.onMessage('catchPet', async (client: Client<UserEntity>, message) => {
       if (client.userData == null) return;
-      PetQueueManager.handleCatchRequest(client, message, this);
+      this.petQueueManager.handleCatchRequest(client, message, this.removePet.bind(this));
     });
     this.onMessage('sendOwnedPets', async (client, data) => {
       const { pets } = data;
       this.broadcast('onSendOwnedPets', {
         playerId: client.sessionId,
         pet: pets,
-        playerCatchId :  client.sessionId
+        playerCatchId: client.sessionId
       });
     });
     this.onMessage('sendPetFollowPlayer', async (client, data) => {
@@ -617,7 +621,18 @@ export class BaseGameRoom extends Room<RoomState> {
         pet: pets,
       });
     });
+    this.petQueueManager = new PetQueueManager(this, async (playerId, petId, foodId) => {
+      const client = this.clients.find(c => c.sessionId === playerId);
+      if (!client) return false;
+      return await this.animalService.catchAnimal(petId, client.userData, foodId);
+    });
+    this.spawnPetInRoom(this);
+    this.pethangeRoomInterval = setInterval(() => {
+      this.changePetRoom(this)
+    }, 2 * 60 * 1000);
   }
+
+
 
   onBeforePatch() {
     //
@@ -705,5 +720,99 @@ export class BaseGameRoom extends Room<RoomState> {
 
   onDispose() {
     BaseGameRoom.activeRooms.delete(this);
+    this.state.pets.clear();
+    if(this.pethangeRoomInterval) clearInterval(this.pethangeRoomInterval);
+  }
+
+  //Pet
+  async handlePetAsync(room: Room): Promise<void> {
+    const pets = await this.animalService.getAvailableAnimalsWithRoom(room.roomName);
+    const petSpawns = pets.filter(pet => pet.species === this.speciesPetEvent);
+
+    if (!petSpawns || petSpawns.length === 0) {
+      this.stopPetMovementInterval();
+      return;
+    }
+    petSpawns.forEach(petData => {
+      const pet = new Pet();
+      pet.SetDataPet(petData, room.roomName);
+      room.state.pets.set(petData.id, pet);
+    });
+  }
+
+  async changePetRoom(room: Room): Promise<void> {
+    if(room.state.pets.size > 0){
+      for (const pet of room.state.pets.values()) {
+      if (pet == null || pet.species != this.speciesPetEvent) continue;
+      const isUnderFifty = Math.random() < 0.5; // true ~ 50% xác suất
+      const randomMap = this.getRandomMapKey(); // tái sử dụng logic random
+      const roomCode =  isUnderFifty ? randomMap : `${randomMap}-${SubMap.OFFICE}` 
+      if(roomCode ==pet.roomCode){
+        return;
+      }
+      const newAnimal: AnimalDtoRequest = {
+        map: randomMap,
+        ...(isUnderFifty ? {} : { sub_map: SubMap.OFFICE }),
+      };
+      this.removePet(pet.id);
+      let pets = await this.animalService.updateAnimal(newAnimal, pet.id);
+      if (!pets) return;
+      room.clients.forEach(client => {
+        client.send("onPetDisappear", {
+          petId: pet.id
+        });
+      });
+    };
+    }   
+    BaseGameRoom.activeRooms.forEach(room => {
+      this.spawnPetInRoom(room);
+    });
+  }
+
+  private getRandomMapKey(): MapKey {
+    const values = Object.values(MapKey);
+    const randomIndex = Math.floor(Math.random() * values.length);
+    return values[randomIndex];
+  }
+
+  stopPetMovementInterval() {
+    if (this.petMovementInterval) {
+      clearInterval(this.petMovementInterval);
+    }
+  }
+  broadcastPetPositions() {
+    const petList = Array.from(this.state.pets.values()).map(pet => ({
+      id: pet.id,
+      name: pet.name,
+      species: pet.species,
+      position: { x: pet.position.x, y: pet.position.y },
+      angle: pet.angle,
+      moving: pet.moving
+    }));
+
+    this.broadcast("petPositionUpdate", petList);
+  }
+
+  removePet(petId: string) {
+    this.state.pets.delete(petId);
+
+    if (this.state.pets.size === 0) {
+      this.stopPetMovementInterval();
+    }
+  }
+  spawnPetInRoom(room: Room) {
+    this.handlePetAsync(room).then(() => {
+      // Bắt đầu vòng lặp update di chuyển và broadcast vị trí pet
+      this.setSimulationInterval(() => {
+        if (this.state.pets.size === 0) {
+          this.stopPetMovementInterval();
+          return;
+        }
+        for (const pet of this.state.pets.values()) {
+          pet.updateMovement();
+        }
+        this.broadcastPetPositions();
+      }, 100);
+    });
   }
 }
