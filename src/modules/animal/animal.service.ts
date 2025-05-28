@@ -32,7 +32,7 @@ export class AnimalService extends BaseService<AnimalEntity> {
 
   async getAvailableAnimalsWithRoom(room_code: string) {
     const animals = await this.find({ where: { room_code, is_caught: false } });
-    return plainToInstance(AnimalDtoResponse, animals);
+    return animals;
   }
 
   async getAnimalById(id: string) {

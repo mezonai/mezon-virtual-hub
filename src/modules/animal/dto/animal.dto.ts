@@ -2,12 +2,6 @@ import { Gender, MapKey, SubMap } from '@enum';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Exclude, Expose, Type } from 'class-transformer';
 import { ArrayNotEmpty, IsArray, IsEnum, IsInt, IsNumberString, IsOptional, IsString, IsUUID, ValidateNested } from 'class-validator';
-
-export class AnimalDtoResponse {
-  @Exclude()
-  catch_percent: boolean;
-}
-
 export class AnimalDtoRequest {
   @ApiPropertyOptional({
     description: 'Species of the animal to filter by.',
@@ -50,6 +44,10 @@ export class AnimalDtoRequest {
   @IsEnum(SubMap)
   sub_map?: SubMap;
 }
+
+export class AnimalDtoResponse extends AnimalDtoRequest {
+}
+
 
 export class BringPetsDto {
   @ApiProperty({

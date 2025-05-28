@@ -15,16 +15,18 @@ interface PetQueueState {
 }
 
 export class PetQueueManager {
-    private static queues: Map<string, PetQueueState> = new Map();
-    private static catchPetAPI: CatchPetAPI;
+    private queues: Map<string, PetQueueState> = new Map();
+    private catchPetAPI: CatchPetAPI;
+     private room: Room;
 
     // Khởi tạo với hàm API thực tế
-    static initialize(apiFn: CatchPetAPI) {
+    constructor(room: Room, apiFn: CatchPetAPI) {
+        this.room = room;
         this.catchPetAPI = apiFn;
     }
 
     // Gọi khi người chơi nhấn nút bắt Pet
-    static handleCatchRequest(client: Client, message: any, room: Room) {
+    handleCatchRequest(client: Client, message: any, removePetCallback: (petId: string) => void) {
         const playerId = client.sessionId;
 
         if (!this.catchPetAPI) {
@@ -57,12 +59,12 @@ export class PetQueueManager {
 
         // Bắt đầu xử lý nếu chưa xử lý ai
         if (!state.isProcessing) {
-            this.processQueue(message.petId, message.foodId, room);
+            this.processQueue(message.petId, message.foodId, removePetCallback);
         }
     }
 
     // Xử lý từng người chơi trong hàng đợi
-    private static async processQueue(petId: string, foodId: string ,room: Room) {
+    private async processQueue(petId: string, foodId: string ,removePetCallback: (petId: string) => void) {
         const state = this.queues.get(petId);
         if (!state) return;
 
@@ -78,7 +80,7 @@ export class PetQueueManager {
                     state.caught = true;
                     state.caughtBy = playerId;
                     const remainingClientIds = state.queue.map(item => item.client.sessionId);
-                    room.broadcast("onCatchPetSuccess", {
+                    this.room.broadcast("onCatchPetSuccess", {
                         playerCatchId: client.sessionId,
                         catchSucces: true,
                         petId: petId,
@@ -86,6 +88,7 @@ export class PetQueueManager {
                     for (const remaining of state.queue) {
                         this.notifyPetAlreadyCaught(remaining.client, petId);
                     }
+                    removePetCallback(petId);
                     // Dọn hàng đợi
                     state.queue = [];
                     break;
@@ -105,7 +108,7 @@ export class PetQueueManager {
         state.isProcessing = false;
     }
 
-    static notifyPetAlreadyCaught(client: Client, petId: string) {
+    notifyPetAlreadyCaught(client: Client, petId: string) {
         client.send("onPetAlreadyCaught", {
             playerCatchId: client.sessionId,
             catchSucces: false,
