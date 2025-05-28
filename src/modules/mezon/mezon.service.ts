@@ -126,7 +126,7 @@ export class MezonService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  async WithdrawTokenRequest(sendTokenData: TokenSentEvent){
+  async WithdrawTokenRequest(sendTokenData: TokenSentEvent) {
     this.client.sendToken(sendTokenData);
   }
 

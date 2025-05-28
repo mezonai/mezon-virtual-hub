@@ -77,12 +77,12 @@ export class GameService {
         this.coinPercent +
         this.foodNormalPercent +
         this.foodPremiumPercent,
-      ultraFood:
-        this.itemPercent +
-        this.coinPercent +
-        this.foodNormalPercent +
-        this.foodPremiumPercent +
-        this.foodUltraPercent,
+      // ultraFood:
+      //   this.itemPercent +
+      //   this.coinPercent +
+      //   this.foodNormalPercent +
+      //   this.foodPremiumPercent +
+      //   this.foodUltraPercent,
     };
 
     for (let i = 0; i < this.SLOT_COUNT; i++) {
@@ -107,9 +107,9 @@ export class GameService {
           rewards.push(groupedFoods[FoodType.PREMIUM] || null);
           break;
 
-        case rand < thresholds.ultraFood:
-          rewards.push(groupedFoods[FoodType.ULTRA_PREMIUM] || null);
-          break;
+        // case rand < thresholds.ultraFood:
+        //   rewards.push(groupedFoods[FoodType.ULTRA_PREMIUM] || null);
+        //   break;
 
         default:
           rewards.push(null);

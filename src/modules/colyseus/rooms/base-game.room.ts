@@ -361,7 +361,7 @@ export class BaseGameRoom extends Room<RoomState> {
 
       if (typeof currentDiamond !== 'number' || currentDiamond < amountToWithdraw) {
         return client.send('onWithdrawFailed', {
-          reason: 'Không đủ Diamond không đủ để rút'
+          reason: 'Không đủ Diamond để rút'
         });
       }
 
@@ -404,7 +404,7 @@ export class BaseGameRoom extends Room<RoomState> {
       }
 
       if (user.diamond < diamondTransfer) {
-        return client.send('onExchangeFailed', { reason: 'Không đủ diamond để đổi' });
+        return client.send('onExchangeFailed', { reason: 'Không đủ diamond để quy đổi' });
       }
 
       const coinToAdd = Math.floor(diamondTransfer / EXCHANGERATE);
