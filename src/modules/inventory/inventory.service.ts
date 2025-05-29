@@ -53,14 +53,7 @@ export class InventoryService extends BaseService<Inventory> {
       inventory.quantity += 1;
       await this.inventoryRepository.save(inventory);
     } else {
-      inventory = this.inventoryRepository.create({
-        user,
-        item,
-        inventory_type: InventoryType.ITEM,
-        equipped: false,
-      });
-
-      await this.inventoryRepository.save(inventory);
+      inventory = await this.addItemToInventory(user, item);
     }
 
     user.gold -= item.gold;
@@ -147,7 +140,7 @@ export class InventoryService extends BaseService<Inventory> {
       quantity: 1,
       inventory_type: InventoryType.ITEM
     });
-    return this.inventoryRepository.save(newInventoryItem);
+    return await this.inventoryRepository.save(newInventoryItem);
   }
 
   async addFoodToInventory(user: UserEntity, food: FoodEntity): Promise<Inventory> {
