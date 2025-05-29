@@ -629,7 +629,7 @@ export class BaseGameRoom extends Room<RoomState> {
     this.spawnPetInRoom(this);
     this.pethangeRoomInterval = setInterval(() => {
       this.changePetRoom(this)
-    }, 2 * 60 * 1000);
+    }, 60 * 1000);
   }
 
 
@@ -721,7 +721,7 @@ export class BaseGameRoom extends Room<RoomState> {
   onDispose() {
     BaseGameRoom.activeRooms.delete(this);
     this.state.pets.clear();
-    if(this.pethangeRoomInterval) clearInterval(this.pethangeRoomInterval);
+    if (this.pethangeRoomInterval) clearInterval(this.pethangeRoomInterval);
   }
 
   //Pet
@@ -741,38 +741,41 @@ export class BaseGameRoom extends Room<RoomState> {
   }
 
   async changePetRoom(room: Room): Promise<void> {
-    if(room.state.pets.size > 0){
+    if (room.state.pets.size > 0) {
       for (const pet of room.state.pets.values()) {
-      if (pet == null || pet.species != this.speciesPetEvent) continue;
-      const isUnderFifty = Math.random() < 0.5; // true ~ 50% xác suất
-      const randomMap = this.getRandomMapKey(); // tái sử dụng logic random
-      const roomCode =  isUnderFifty ? randomMap : `${randomMap}-${SubMap.OFFICE}` 
-      if(roomCode ==pet.roomCode){
-        return;
-      }
-      const newAnimal: AnimalDtoRequest = {
-        map: randomMap,
-        ...(isUnderFifty ? {} : { sub_map: SubMap.OFFICE }),
-      };
-      this.removePet(pet.id);
-      let pets = await this.animalService.updateAnimal(newAnimal, pet.id);
-      if (!pets) return;
-      room.clients.forEach(client => {
-        client.send("onPetDisappear", {
-          petId: pet.id
+        if (pet == null || pet.species != this.speciesPetEvent) continue;
+        const isUnderFifty = Math.random() < 0.5; // true ~ 50% xác suất
+        const randomMap = this.getRandomMapKey(); // tái sử dụng logic random
+        const roomCode = isUnderFifty ? `${randomMap}-${SubMap.OFFICE}` : randomMap;
+        if (roomCode == pet.roomCode) {
+          return;
+        }
+        const newAnimal: AnimalDtoRequest = {
+          map: randomMap,
+          ...(isUnderFifty ?  { sub_map: SubMap.OFFICE } : {}),
+        };
+        this.removePet(pet.id);
+        let pets = await this.animalService.updateAnimal(newAnimal, pet.id);
+        if (!pets) return;
+        room.clients.forEach(client => {
+          client.send("onPetDisappear", {
+            petId: pet.id
+          });
         });
-      });
-    };
-    }   
-    BaseGameRoom.activeRooms.forEach(room => {
-      this.spawnPetInRoom(room);
-    });
+        for (const room of BaseGameRoom.activeRooms) {
+          if (room.roomName === roomCode) {
+            this.spawnPetInRoom(room);
+            break; // Dừng lại khi tìm thấy
+          }
+        }
+      };
+    }
   }
 
   private getRandomMapKey(): MapKey {
     const values = Object.values(MapKey);
     const randomIndex = Math.floor(Math.random() * values.length);
-    return values[randomIndex];
+    return values[4];
   }
 
   stopPetMovementInterval() {
