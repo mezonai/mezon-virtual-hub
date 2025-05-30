@@ -607,10 +607,9 @@ export class BaseGameRoom extends Room<RoomState> {
       this.petQueueManager.handleCatchRequest(client, message, this.removePet.bind(this));
     });
     this.onMessage('sendOwnedPets', async (client, data) => {
-      const { pets } = data;
+      const { petCaught } = data;
       this.broadcast('onSendOwnedPets', {
-        playerId: client.sessionId,
-        pet: pets,
+        pet: petCaught,
         playerCatchId: client.sessionId
       });
     });
