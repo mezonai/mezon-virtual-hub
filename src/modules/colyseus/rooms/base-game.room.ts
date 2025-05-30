@@ -606,13 +606,6 @@ export class BaseGameRoom extends Room<RoomState> {
       if (client.userData == null) return;
       this.petQueueManager.handleCatchRequest(client, message, this.removePet.bind(this));
     });
-    this.onMessage('sendOwnedPets', async (client, data) => {
-      const { petCaught } = data;
-      this.broadcast('onSendOwnedPets', {
-        pet: petCaught,
-        playerCatchId: client.sessionId
-      });
-    });
     this.onMessage('sendPetFollowPlayer', async (client, data) => {
       const { pets } = data;
       this.broadcast('onPetFollowPlayer', {
@@ -751,7 +744,7 @@ export class BaseGameRoom extends Room<RoomState> {
         }
         const newAnimal: AnimalDtoRequest = {
           map: randomMap,
-          ...(isUnderFifty ?  { sub_map: SubMap.OFFICE } : {}),
+          ...(isUnderFifty ? { sub_map: SubMap.OFFICE } : {}),
         };
         this.removePet(pet.id);
         let pets = await this.animalService.updateAnimal(newAnimal, pet.id);

@@ -70,15 +70,12 @@ export class GameRoom extends BaseGameRoom {
     player.display_name = userData?.display_name || userData?.username || '';
     player.skin_set = userData?.skin_set?.join('/') || '';
     player.animals = JSON.stringify(
-      userData?.animals?.map(a => ({
-        id: a.id,
-        name: a.name,
-        species: a.species,
-        is_caught: a.is_caught,
-        is_brought: a.is_brought,
-        catch_percent: a.catch_percent,
-        room_code: a.room_code
-      })) ?? []
+      (userData?.animals?.filter(a => a.is_brought)
+        .map(a => ({
+          id: a.id,
+          name: a.name,
+          species: a.species,
+        }))) ?? []
     );
     this.state.players.set(client.sessionId, player);
     this.logger.log(
