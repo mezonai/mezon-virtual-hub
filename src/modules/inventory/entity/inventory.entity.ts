@@ -25,15 +25,12 @@ export class Inventory extends AuditEntity {
   })
   inventory_type: InventoryType;
 
-  @Column({ name: 'item_id', type: 'uuid' })
-  item_id: string;
-
   @ManyToOne(() => ItemEntity, { nullable: true })
   @JoinColumn({ name: 'item_id' })
   item?: ItemEntity;
 
   @ManyToOne(() => FoodEntity, { nullable: true })
-  @JoinColumn({ name: 'item_id' })
+  @JoinColumn({ name: 'food_id' })
   food?: FoodEntity;
 
   @Column({ type: 'boolean', default: false })
