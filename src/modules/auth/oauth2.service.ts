@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { configEnv } from '@config/env.config';
+import { configEnv } from '@config/env-config/env.config';
 import { OAuth2Request } from './dtos/request';
 
 @Injectable()

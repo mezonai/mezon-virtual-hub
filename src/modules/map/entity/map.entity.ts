@@ -10,11 +10,11 @@ export class MapEntity extends AuditEntity {
   @Column({ type: 'enum', enum: MapKey, unique: true })
   map_key: MapKey;
 
-  @Column({ type: 'int', default: 0 })
-  default_position_x: number;
+  @Column({ type: 'int', default: 0, nullable: true })
+  default_position_x: number | null;
 
-  @Column({ type: 'int', default: 0 })
-  default_position_y: number;
+  @Column({ type: 'int', default: 0, nullable: true })
+  default_position_y: number | null;
 
   @Column({ type: 'boolean', default: false })
   is_locked: boolean;

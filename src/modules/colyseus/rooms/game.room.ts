@@ -3,7 +3,7 @@ import { Injectable } from '@nestjs/common';
 import { Player } from '@types';
 import { Client } from 'colyseus';
 import { BaseGameRoom, Item } from './base-game.room';
-import { configEnv } from '@config/env.config';
+import { configEnv } from '@config/env-config/env.config';
 import { cleanAndStringifyJson, isValidJsonQuiz } from '@libs/utils';
 import { GoogleGenAI } from '@google/genai';
 

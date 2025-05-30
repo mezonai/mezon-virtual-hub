@@ -7,7 +7,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { AwardResponseDto, RewardDataType } from './dto/game.dto';
 import { plainToInstance } from 'class-transformer';
-import { configEnv } from '@config/env.config';
+import { configEnv } from '@config/env-config/env.config';
 import { FoodService } from '@modules/food/food.service';
 import { FoodEntity } from '@modules/food/entity/food.entity';
 import { FoodType, RewardType } from '@enum';

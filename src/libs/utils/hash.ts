@@ -1,4 +1,4 @@
-import { configEnv } from '@config/env.config';
+import { configEnv } from '@config/env-config/env.config';
 import * as crypto from 'crypto';
 
 function hmacSHA256(secret: string, data: string): Buffer {

@@ -1,4 +1,4 @@
-import { configEnv } from '@config/env.config';
+import { configEnv } from '@config/env-config/env.config';
 import { USER_TOKEN } from '@constant/meta-key.constant';
 import { UserEntity } from '@modules/user/entity/user.entity';
 import {

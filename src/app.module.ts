@@ -2,7 +2,7 @@ import {
   configEnv,
   configValidationSchema,
   envFilePath,
-} from '@config/env.config';
+} from '@config/env-config/env.config';
 import { AuthModule } from '@modules/auth/auth.module';
 import { MapModule } from '@modules/map/map.module';
 import { UserModule } from '@modules/user/user.module';
@@ -25,6 +25,7 @@ import { GameEventModule } from '@modules/game-event/game-event.module';
 import { TransactionModule } from '@modules/transaction/transaction.module';
 import { AnimalModule } from '@modules/animal/animal.module';
 import { FoodModule } from '@modules/food/food.module';
+import { AdminModule } from '@modules/admin/admin.module';
 
 @Module({
   imports: [
@@ -51,6 +52,7 @@ import { FoodModule } from '@modules/food/food.module';
     TransactionModule,
     AnimalModule,
     FoodModule,
+    AdminModule,
     ClsModule.forRoot({
       global: true,
       middleware: { mount: true },

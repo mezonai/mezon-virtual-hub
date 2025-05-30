@@ -1,5 +1,5 @@
 import { DataSource, DataSourceOptions } from 'typeorm';
-import { configEnv } from './env.config';
+import { configEnv } from './env-config/env.config';
 
 export const dataSourceOption: DataSourceOptions = {
   name: 'default',

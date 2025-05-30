@@ -51,8 +51,8 @@ export class UserService {
       }
 
       if (user.id !== updateDto.map_id) {
-        user.position_x = map.default_position_x;
-        user.position_y = map.default_position_y;
+        user.position_x = map.default_position_x ?? 0;
+        user.position_y = map.default_position_y ?? 0;
       }
 
       user.map = map;

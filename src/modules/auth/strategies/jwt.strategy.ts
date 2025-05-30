@@ -8,7 +8,7 @@ import { AuthService } from '../auth.service';
 import { ValidateJwtRequest } from '../dtos/request';
 import { JwtPayload } from '../dtos/response';
 
-import { configEnv } from '@config/env.config';
+import { configEnv } from '@config/env-config/env.config';
 import { Injectable } from '@nestjs/common/decorators/core';
 import { GenericRepository } from '@libs/repository/genericRepository';
 import { UserEntity } from '@modules/user/entity/user.entity';

@@ -1,4 +1,4 @@
-import { configEnv } from '@config/env.config';
+import { configEnv } from '@config/env-config/env.config';
 import { GenericRepository } from '@libs/repository/genericRepository';
 import { TransactionEntity } from '@modules/transaction/entity/transaction.entity';
 import { UserEntity } from '@modules/user/entity/user.entity';

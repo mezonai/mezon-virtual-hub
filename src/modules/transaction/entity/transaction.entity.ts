@@ -24,7 +24,7 @@ export class TransactionEntity {
   @Column({ name: 'amount', type: 'numeric' })
   amount: number;
 
-  @ManyToOne(() => UserEntity, { eager: false })
+  @ManyToOne(() => UserEntity, { eager: false, nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'sender_id' })
   sender: UserEntity;
 
@@ -34,6 +34,6 @@ export class TransactionEntity {
   @Column({ name: 'extra_attribute', type: 'varchar', nullable: true })
   extra_attribute?: string;
 
-  @CreateDateColumn({ name: 'created_at' })
+  @CreateDateColumn({ type: 'timestamp', default: () => 'now()', nullable: true })
   created_at: Date;
 }

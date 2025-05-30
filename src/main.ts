@@ -2,7 +2,7 @@ import { Room, Server } from '@colyseus/core';
 import { monitor } from '@colyseus/monitor';
 import { WebSocketTransport } from '@colyseus/ws-transport';
 import { swaggerConfig } from '@config';
-import { configEnv } from '@config/env.config';
+import { configEnv } from '@config/env-config/env.config';
 import { SUB_GAME_ROOM } from '@constant';
 import { GameRoom } from '@modules/colyseus/rooms/game.room';
 import { INestApplication, Logger, ValidationPipe } from '@nestjs/common';

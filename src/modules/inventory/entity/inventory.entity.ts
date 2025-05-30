@@ -12,9 +12,7 @@ import {
 
 @Entity({ name: 'inventory' })
 export class Inventory extends AuditEntity {
-  @ManyToOne(() => UserEntity, (user) => user.inventories, {
-    onDelete: 'CASCADE',
-  })
+  @ManyToOne(() => UserEntity, { onDelete: 'CASCADE', nullable: false })
   @JoinColumn({ name: 'user_id' })
   user: UserEntity;
 
@@ -22,16 +20,17 @@ export class Inventory extends AuditEntity {
     name: 'inventory_type',
     type: 'enum',
     enum: InventoryType,
+    enumName: 'inventory_type_enum'
   })
   inventory_type: InventoryType;
 
-  @ManyToOne(() => ItemEntity, { nullable: true })
+  @ManyToOne(() => ItemEntity, item => item.inventories, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'item_id' })
-  item?: ItemEntity;
+  item: ItemEntity;
 
-  @ManyToOne(() => FoodEntity, { nullable: true })
+  @ManyToOne(() => FoodEntity, food => food.inventories, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'food_id' })
-  food?: FoodEntity;
+  food: FoodEntity;
 
   @Column({ type: 'boolean', default: false })
   equipped: boolean;

@@ -1,13 +1,14 @@
 import { Gender, ItemType } from '@enum';
+import { Inventory } from '@modules/inventory/entity/inventory.entity';
 import { AuditEntity } from '@types';
-import { Entity, Column } from 'typeorm';
+import { Entity, Column, OneToMany } from 'typeorm';
 
 @Entity({ name: 'item' })
 export class ItemEntity extends AuditEntity {
   @Column({ type: 'varchar' })
   name: string;
 
-  @Column({ type: 'enum', enum: Gender, default: Gender.NOT_SPECIFIED })
+  @Column({ type: 'varchar', default: Gender.NOT_SPECIFIED })
   gender: Gender = Gender.NOT_SPECIFIED;
 
   @Column({ type: 'int', default: 0 })
@@ -24,4 +25,7 @@ export class ItemEntity extends AuditEntity {
 
   @Column({ type: 'boolean', default: false })
   is_stackable: boolean;
+
+  @OneToMany(() => Inventory, inventory => inventory.item)
+  inventories: Inventory[];
 }

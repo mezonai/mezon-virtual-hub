@@ -1,5 +1,5 @@
 import { Schema, type } from '@colyseus/schema';
-import { configEnv } from '@config/env.config';
+import { configEnv } from '@config/env-config/env.config';
 import { EXCHANGERATE, RPS_FEE } from '@constant';
 import { ActionKey, MapKey, SubMap } from '@enum';
 import { GoogleGenAI } from '@google/genai';

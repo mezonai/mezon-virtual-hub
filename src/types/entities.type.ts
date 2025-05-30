@@ -11,12 +11,12 @@ export class AuditEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @CreateDateColumn({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+  @CreateDateColumn({ type: 'timestamp', default: () => 'now()', nullable: true })
   created_at: Date;
 
-  @DeleteDateColumn({ type: 'timestamp',})
+  @DeleteDateColumn({ type: 'timestamp' })
   deleted_at: Date;
 
-  @UpdateDateColumn({ type: 'timestamp', nullable: true })
-  updated_at: Date | null;
+  @UpdateDateColumn({ type: 'timestamp', default: () => 'now()', nullable: true })
+  updated_at: Date;
 }
