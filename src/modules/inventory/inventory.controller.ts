@@ -6,6 +6,7 @@ import { ClsService } from 'nestjs-cls';
 import { InventoryService } from './inventory.service';
 import { FoodService } from '@modules/food/food.service';
 import { InventoryType } from '@enum';
+import { BuyRequestQuery } from './dto/inventory.dto';
 
 @ApiBearerAuth()
 @Controller('inventory')
@@ -32,17 +33,17 @@ export class InventoryController {
     description: 'Type of inventory to buy (item or food)',
     default: InventoryType.ITEM
   })
-  async buyInventory(
+  async buyFoodOrItem(
     @Param('id', ParseUUIDPipe) id: string,
-    @Query('type', new DefaultValuePipe(InventoryType.ITEM), new ParseEnumPipe(InventoryType)) type: InventoryType,
+    @Query() { type, quantity }: BuyRequestQuery,
   ) {
     const user = this.cls.get<UserEntity>(USER_TOKEN);
 
     if (type === InventoryType.FOOD) {
-      return this.inventoryService.buyFood(user, id);
+      return this.inventoryService.buyFood(user, id, quantity);
     }
 
-    return this.inventoryService.buyItem(user, id);
+    return this.inventoryService.buyItem(user, id, quantity);
   }
 
   @Get('food')
