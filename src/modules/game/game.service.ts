@@ -1,3 +1,7 @@
+import { configEnv } from '@config/env.config';
+import { FoodType, RewardType } from '@enum';
+import { FoodEntity } from '@modules/food/entity/food.entity';
+import { FoodService } from '@modules/food/food.service';
 import { InventoryService } from '@modules/inventory/inventory.service';
 import { ItemEntity } from '@modules/item/entity/item.entity';
 import { ItemService } from '@modules/item/item.service';
@@ -6,11 +10,6 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { AwardResponseDto, RewardDataType } from './dto/game.dto';
-import { plainToInstance } from 'class-transformer';
-import { configEnv } from '@config/env.config';
-import { FoodService } from '@modules/food/food.service';
-import { FoodEntity } from '@modules/food/entity/food.entity';
-import { FoodType, RewardType } from '@enum';
 
 @Injectable()
 export class GameService {
@@ -50,6 +49,7 @@ export class GameService {
     const inventoryItems = await this.inventoryService.getUserInventory(
       user.id,
     );
+  
     const availableItems = await this.itemService.getAvailableItems(
       user.gender,
       inventoryItems,
@@ -69,17 +69,14 @@ export class GameService {
     const groupedFoods = await this.foodService.getAllFoodsGroupedByType();
 
     const thresholds = {
-      coin: 
+      coin: this.coinPercent,
+      item: this.coinPercent + this.itemPercent,
+      normalFood: this.coinPercent + this.itemPercent + this.foodNormalPercent,
+      premiumFood: 
         this.coinPercent +
         this.itemPercent +
         this.foodNormalPercent +
         this.foodPremiumPercent,
-      item:
-        this.itemPercent +
-        this.foodNormalPercent +
-        this.foodPremiumPercent,
-      normalFood: this.foodNormalPercent + this.foodPremiumPercent,
-      premiumFood: this.foodPremiumPercent,
       // ultraFood:
       //   this.itemPercent +
       //   this.coinPercent +
@@ -92,14 +89,14 @@ export class GameService {
       const rand = Math.random() * 100;
 
       switch (true) {
+        case rand < thresholds.coin:
+          rewards.push('coin');
+          break;
+
         case rand < thresholds.item && availableItems.length > 0:
           const randomItem =
             availableItems[Math.floor(Math.random() * availableItems.length)];
           rewards.push(randomItem ?? null);
-          break;
-
-        case rand < thresholds.coin:
-          rewards.push('coin');
           break;
 
         case rand < thresholds.normalFood:

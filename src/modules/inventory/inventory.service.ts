@@ -1,6 +1,7 @@
 import { InventoryType, PurchaseMethod } from '@enum';
 import { BaseService } from '@libs/base/base.service';
 import { FoodEntity } from '@modules/food/entity/food.entity';
+import { FoodService } from '@modules/food/food.service';
 import { Inventory } from '@modules/inventory/entity/inventory.entity';
 import { ItemEntity } from '@modules/item/entity/item.entity';
 import { UserEntity } from '@modules/user/entity/user.entity';
@@ -13,7 +14,6 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { plainToInstance } from 'class-transformer';
 import { Repository } from 'typeorm';
 import { FoodInventoryResDto, ItemInventoryResDto } from './dto/inventory.dto';
-import { FoodService } from '@modules/food/food.service';
 
 @Injectable()
 export class InventoryService extends BaseService<Inventory> {
@@ -111,8 +111,8 @@ export class InventoryService extends BaseService<Inventory> {
   }
 
   async getUserInventory(userId: string): Promise<Inventory[]> {
-    return this.inventoryRepository.find({
-      where: { user: { id: userId } },
+    return await this.inventoryRepository.find({
+      where: { user: { id: userId }, inventory_type: InventoryType.ITEM },
       relations: ['item'],
     });
   }

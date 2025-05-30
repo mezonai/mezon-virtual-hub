@@ -1,16 +1,15 @@
+import { Gender } from '@enum';
 import { BaseService } from '@libs/base/base.service';
+import { Inventory } from '@modules/inventory/entity/inventory.entity';
 import {
-  BadRequestException,
   Injectable,
-  NotFoundException,
+  NotFoundException
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { plainToInstance } from 'class-transformer';
 import { EntityManager, In, Not, Repository } from 'typeorm';
 import { ItemDto, ItemDtoRequest } from './dto/item.dto';
 import { ItemEntity } from './entity/item.entity';
-import { Gender } from '@enum';
-import { Inventory } from '@modules/inventory/entity/inventory.entity';
 
 @Injectable()
 export class ItemService extends BaseService<ItemEntity> {
@@ -72,7 +71,7 @@ export class ItemService extends BaseService<ItemEntity> {
     ownedItems: Inventory[],
   ): Promise<ItemEntity[]> {
     const ownedItemIds = ownedItems.map((inv) => inv.item?.id);
-    return this.itemRepository.find({
+    return await this.itemRepository.find({
       where: {
         gender: In([gender, Gender.NOT_SPECIFIED]),
         id: Not(In(ownedItemIds)),
