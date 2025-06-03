@@ -56,8 +56,8 @@ export class FoodDtoRequest {
   description?: string;
 
   @ApiProperty({
-    description: 'Catch rate bonus of the food (max: 100)',
-    example: 15,
+    description: 'Catch rate bonus of the food',
+    example: 1,
   })
   @Type(() => Number)
   @IsNumber()
