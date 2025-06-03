@@ -1,5 +1,5 @@
+import { configEnv } from '@config/env.config';
 import { BaseService } from '@libs/base/base.service';
-import { BaseGameRoom } from '@modules/colyseus/rooms/base-game.room';
 import { Inventory } from '@modules/inventory/entity/inventory.entity';
 import { UserEntity } from '@modules/user/entity/user.entity';
 import {
@@ -10,11 +10,12 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { plainToInstance } from 'class-transformer';
 import { error } from 'node:console';
 import { EntityManager, In, Repository } from 'typeorm';
-import { AnimalDtoRequest, AnimalDtoResponse, BringPetsDto, BringPetsDtoList } from './dto/animal.dto';
+import { AnimalDtoRequest, AnimalDtoResponse, BringPetsDtoList } from './dto/animal.dto';
 import { AnimalEntity } from './entity/animal.entity';
 
 @Injectable()
 export class AnimalService extends BaseService<AnimalEntity> {
+  private readonly catchChanceBase
   constructor(
     @InjectRepository(AnimalEntity)
     private readonly animalRepository: Repository<AnimalEntity>,
@@ -23,6 +24,7 @@ export class AnimalService extends BaseService<AnimalEntity> {
     private manager: EntityManager,
   ) {
     super(animalRepository, AnimalEntity.name);
+    this.catchChanceBase = configEnv().CATCH_CHANCE_BASE;
   }
 
   async getAnimals(user_id: string) {
@@ -92,7 +94,7 @@ export class AnimalService extends BaseService<AnimalEntity> {
       return false;
     }
 
-    let extraPercent = 0;
+    let foodChanceBonus = 0;
 
     if (food_id) {
       const inventory = await this.inventoryRepository.findOne({
@@ -104,7 +106,7 @@ export class AnimalService extends BaseService<AnimalEntity> {
       });
 
       if (inventory?.food && (inventory?.quantity > 0)) {
-        extraPercent = inventory.food.catch_rate_bonus
+        foodChanceBonus = inventory.food.catch_rate_bonus
         inventory.quantity -= 1;
         this.inventoryRepository.save(inventory);
       } else {
@@ -114,8 +116,10 @@ export class AnimalService extends BaseService<AnimalEntity> {
     }
 
     const randomValue = Math.random() * 100;
+    const petCatchChance = animal.catch_chance;
+    const chanceToCatch = this.catchChanceBase * foodChanceBonus / petCatchChance * 100;
 
-    if (randomValue <= (animal.catch_percent + extraPercent)) {
+    if (randomValue <= chanceToCatch) {
       animal.is_caught = true;
       animal.user = user;
       await this.animalRepository.save(animal);

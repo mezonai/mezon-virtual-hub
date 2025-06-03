@@ -53,3 +53,10 @@ export enum InventoryType {
   ITEM = 'item',
   FOOD = 'food',
 }
+
+export enum AnimalRarity {
+  COMMON = 'common',
+  RARE = 'rare',
+  EPIC = 'epic',
+  LEGENDARY = 'legendary',
+}
