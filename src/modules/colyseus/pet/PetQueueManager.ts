@@ -17,7 +17,10 @@ interface PetQueueState {
 export class PetQueueManager {
     private queues: Map<string, PetQueueState> = new Map();
     private catchPetAPI: CatchPetAPI;
-     private room: Room;
+    private room: Room;
+    // Touch Pet
+    private petTouchQueues: Map<number, (() => Promise<void>)[]> = new Map();
+    private processingPetIds: Set<number> = new Set();
 
     // Khởi tạo với hàm API thực tế
     constructor(room: Room, apiFn: CatchPetAPI) {
@@ -64,7 +67,7 @@ export class PetQueueManager {
     }
 
     // Xử lý từng người chơi trong hàng đợi
-    private async processQueue(petId: string, foodId: string ,removePetCallback: (petId: string) => void) {
+    private async processQueue(petId: string, foodId: string, removePetCallback: (petId: string) => void) {
         const state = this.queues.get(petId);
         if (!state) return;
 
@@ -114,5 +117,33 @@ export class PetQueueManager {
             catchSucces: false,
             petId: petId
         });
+    }
+
+    addPetTouch(petId: number, handler: () => Promise<void>) {
+        if (!this.petTouchQueues.has(petId)) {
+            this.petTouchQueues.set(petId, []);
+        }
+
+        this.petTouchQueues.get(petId)!.push(handler);
+
+        // Nếu pet chưa xử lý, bắt đầu xử lý
+        if (!this.processingPetIds.has(petId)) {
+            this.processNextPetTouch(petId);
+        }
+    }
+
+    async processNextPetTouch(petId: number) {
+        this.processingPetIds.add(petId);
+        const queue = this.petTouchQueues.get(petId);
+        if (!queue || queue.length === 0) {
+            this.processingPetIds.delete(petId);
+            return;
+        }
+        const handler = queue.shift();
+        if (handler) {
+            await handler();
+        }
+        // Gọi lại để xử lý task tiếp theo (nếu còn)
+        this.processNextPetTouch(petId);
     }
 }
