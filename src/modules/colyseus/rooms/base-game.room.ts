@@ -618,6 +618,25 @@ export class BaseGameRoom extends Room<RoomState> {
       if (!client) return false;
       return await this.animalService.catchAnimal(petId, client.userData, foodId);
     });
+    this.onMessage('sendTouchPet', async (client, data) => {
+      const { touchPlayerId, targetPetId, lengthCompliment, lengthProvokeLine } = data;
+      const handler = async () => {
+        if (this.clients.length <= 0) return;
+        const isOwnerTouching = client.sessionId === touchPlayerId;
+        const index = isOwnerTouching
+          ? Math.floor(Math.random() * lengthCompliment)
+          : Math.floor(Math.random() * lengthProvokeLine);
+        // Gửi kết quả xuống client
+        this.broadcast("onSendTouchPet", {
+          targetPetId,
+          playerTouchingPetId: isOwnerTouching ? client.sessionId : touchPlayerId,
+          isOwnerTouching,
+          randomIndex: index,
+        });
+      };
+      this.petQueueManager.addPetTouch(targetPetId, handler);
+
+    });
     this.spawnPetInRoom(this);
     this.pethangeRoomInterval = setInterval(() => {
       this.changePetRoom(this)

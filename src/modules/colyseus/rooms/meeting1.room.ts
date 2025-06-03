@@ -28,6 +28,7 @@ export class Meeting1Room extends BaseGameRoom {
           id: a.id,
           name: a.name,
           species: a.species,
+          rarity: a.rarity,
         }))) ?? []
     );
     this.state.players.set(client.sessionId, player);
