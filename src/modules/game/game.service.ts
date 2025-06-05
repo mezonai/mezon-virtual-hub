@@ -69,8 +69,8 @@ export class GameService {
     const groupedFoods = await this.foodService.getAllFoodsGroupedByType();
 
     const thresholds = {
-      coin: this.coinPercent,
-      item: this.coinPercent + this.itemPercent,
+      item: this.coinPercent,
+      coin: this.coinPercent + this.itemPercent,
       normalFood: this.coinPercent + this.itemPercent + this.foodNormalPercent,
       premiumFood: 
         this.coinPercent +
@@ -89,14 +89,14 @@ export class GameService {
       const rand = Math.random() * 100;
 
       switch (true) {
-        case rand < thresholds.coin:
-          rewards.push('coin');
-          break;
-
         case rand < thresholds.item && availableItems.length > 0:
           const randomItem =
             availableItems[Math.floor(Math.random() * availableItems.length)];
           rewards.push(randomItem ?? null);
+          break;
+
+        case rand < thresholds.coin:
+          rewards.push('coin');
           break;
 
         case rand < thresholds.normalFood:
