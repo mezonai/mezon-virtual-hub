@@ -1,25 +1,30 @@
+import { configEnv } from '@config/env.config';
 import { BaseService } from '@libs/base/base.service';
+import { Inventory } from '@modules/inventory/entity/inventory.entity';
 import { UserEntity } from '@modules/user/entity/user.entity';
 import {
-  BadRequestException,
   Injectable,
-  NotFoundException,
+  NotFoundException
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { plainToInstance } from 'class-transformer';
-import { EntityManager, Repository } from 'typeorm';
-import { AnimalDtoRequest, AnimalDtoResponse } from './dto/animal.dto';
+import { error } from 'node:console';
+import { EntityManager, In, Repository } from 'typeorm';
+import { AnimalDtoRequest, AnimalDtoResponse, BringPetsDtoList } from './dto/animal.dto';
 import { AnimalEntity } from './entity/animal.entity';
-import { BaseGameRoom } from '@modules/colyseus/rooms/base-game.room';
 
 @Injectable()
 export class AnimalService extends BaseService<AnimalEntity> {
+  private readonly catchChanceBase
   constructor(
     @InjectRepository(AnimalEntity)
     private readonly animalRepository: Repository<AnimalEntity>,
+    @InjectRepository(Inventory)
+    private readonly inventoryRepository: Repository<Inventory>,
     private manager: EntityManager,
   ) {
     super(animalRepository, AnimalEntity.name);
+    this.catchChanceBase = configEnv().CATCH_CHANCE_BASE;
   }
 
   async getAnimals(user_id: string) {
@@ -29,15 +34,15 @@ export class AnimalService extends BaseService<AnimalEntity> {
 
   async getAvailableAnimalsWithRoom(room_code: string) {
     const animals = await this.find({ where: { room_code, is_caught: false } });
-    return plainToInstance(AnimalDtoResponse, animals);
+    return animals;
   }
 
   async getAnimalById(id: string) {
-    const item = await this.findById(id);
-    if (!item) {
+    const animal = await this.findById(id);
+    if (!animal) {
       throw new Error('Animal not found');
     }
-    return item;
+    return animal;
   }
 
   async createAnimal(payload: AnimalDtoRequest) {
@@ -77,7 +82,7 @@ export class AnimalService extends BaseService<AnimalEntity> {
     return { deleted: true };
   }
 
-  async catchAnimal(animal_id: string, user: UserEntity) {
+  async catchAnimal(animal_id: string, user: UserEntity, food_id?: string) : Promise<boolean> {
     const animal = await this.animalRepository.findOne({
       where: {
         id: animal_id,
@@ -86,30 +91,84 @@ export class AnimalService extends BaseService<AnimalEntity> {
     });
 
     if (!animal) {
-      throw new NotFoundException(`Animal ${animal_id} not found or caught`);
+      return false;
+    }
+
+    let foodChanceBonus = 0;
+
+    if (food_id) {
+      const inventory = await this.inventoryRepository.findOne({
+        where: {
+          food: { id: food_id },
+          user: { id: user.id },
+        },
+        relations: ['food'],
+      });
+
+      if (inventory?.food && (inventory?.quantity > 0)) {
+        foodChanceBonus = inventory.food.catch_rate_bonus
+        inventory.quantity -= 1;
+        this.inventoryRepository.save(inventory);
+      } else {
+        error('Food isnt exsited or not enough to feed!');
+        return false;
+      }
     }
 
     const randomValue = Math.random() * 100;
+    const petCatchChance = animal.catch_chance;
+    const chanceToCatch = this.catchChanceBase * foodChanceBonus / petCatchChance * 100;
 
-    if (randomValue <= animal.catch_percent) {
+    if (randomValue <= chanceToCatch) {
       animal.is_caught = true;
       animal.user = user;
       await this.animalRepository.save(animal);
-
-      BaseGameRoom.activeRooms.forEach((room) => {
-        if (room.roomName === animal.room_code) {
-          console.log(room.roomName);
-
-          room.broadcast('animalCaught', {
-            animalId: animal.id,
-            userId: user.id,
-            username: user.username,
-            roomCode: animal.room_code,
-          });
-        }
-      });
-    } else {
-      throw new BadRequestException('Catch failed. Better luck next time!');
+      return true;  
     }
+
+    return false;
+  }
+
+  async bringPets(user: UserEntity, { pets: petsDto }: BringPetsDtoList) {
+    const allIds = petsDto.map((d) => d.id);
+    const existing = await this.animalRepository.find({
+      where: { 
+        id: In(allIds), 
+        user: { id: user.id } 
+      },
+      select: ['id'],
+    });
+
+    if (existing.length !== allIds.length) {
+      const foundIds = new Set(existing.map((p) => p.id));
+      const missing = allIds.filter((id) => !foundIds.has(id));
+      throw new NotFoundException(`Pets not found or not owned: ${missing.join(', ')}`);
+    }
+
+    const trueIds  = petsDto.filter((d) => d.is_brought).map((d) => d.id);
+    const falseIds = petsDto.filter((d) => !d.is_brought).map((d) => d.id);
+
+    await this.manager.transaction(async (em) => {
+      if (trueIds.length) {
+        await em.getRepository(AnimalEntity).update(
+          { id: In(trueIds), user: { id: user.id } },
+          { is_brought: true },
+        );
+      }
+      if (falseIds.length) {
+        await em.getRepository(AnimalEntity).update(
+          { id: In(falseIds), user: { id: user.id } },
+          { is_brought: false },
+        );
+      }
+    });
+
+    return {
+      message: 'Pets bring‐status updated.',
+      updated: {
+        brought:  trueIds,
+        unbrought: falseIds,
+      },
+    };
   }
 }

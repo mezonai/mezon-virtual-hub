@@ -36,16 +36,19 @@ export class UserEntity extends AuditEntity {
 
   @Column({ type: 'int', default: 0 })
   gold: number;
+
+  @Column({ type: 'int', default: 0 })
+  diamond: number;
   
-  @Column({ type: 'enum', enum: Gender })
+  @Column({ type: 'varchar' })
   gender: Gender;
 
   @Column('text', { array: true, nullable: true })
   skin_set: string[];
 
-  @ManyToOne(() => MapEntity, { nullable: true })
+  @ManyToOne(() => MapEntity, { nullable: false })
   @JoinColumn({ name: 'map_id' })
-  map: MapEntity | null;
+  map: MapEntity;
 
   @OneToMany(() => Inventory, (inventory) => inventory.user)
   inventories: Inventory[];

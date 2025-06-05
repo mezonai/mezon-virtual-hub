@@ -22,7 +22,15 @@ export class OfficeRoom extends BaseGameRoom {
     player.is_show_name = BaseGameRoom.eventData == null;
     player.display_name = userData?.display_name || userData?.username || '';
     player.skin_set = userData?.skin_set?.join('/') || '';
-
+    player.animals = JSON.stringify(
+      (userData?.animals?.filter(a => a.is_brought)
+        .map(a => ({
+          id: a.id,
+          name: a.name,
+          species: a.species,
+          rarity: a.rarity,
+        }))) ?? []
+    );
     this.state.players.set(client.sessionId, player);
     this.logger.log(
       `Player ${userData?.username} has position ${player.x} ${player.y}`,

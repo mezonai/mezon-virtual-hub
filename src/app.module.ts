@@ -24,6 +24,7 @@ import { GameModule } from '@modules/game/game.module';
 import { GameEventModule } from '@modules/game-event/game-event.module';
 import { TransactionModule } from '@modules/transaction/transaction.module';
 import { AnimalModule } from '@modules/animal/animal.module';
+import { FoodModule } from '@modules/food/food.module';
 
 @Module({
   imports: [
@@ -49,6 +50,7 @@ import { AnimalModule } from '@modules/animal/animal.module';
     GameEventModule,
     TransactionModule,
     AnimalModule,
+    FoodModule,
     ClsModule.forRoot({
       global: true,
       middleware: { mount: true },

@@ -190,8 +190,8 @@ export class AuthService {
 
     if (
       !adminBypassUsers.includes(username) &&
-      // (hashGenerate !== hash || !isHashExpired)
-      (!id || !username || !auth_date || !isHashExpired)
+      (hashGenerate !== hash || !isHashExpired)
+      // (!id || !username || !auth_date || !isHashExpired)
     ) {
       throw new BadRequestException('Invalid hash');
     }

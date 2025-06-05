@@ -1,3 +1,5 @@
+import { InventoryType } from '@enum';
+import { FoodEntity } from '@modules/food/entity/food.entity';
 import { ItemEntity } from '@modules/item/entity/item.entity';
 import { UserEntity } from '@modules/user/entity/user.entity';
 import { AuditEntity } from '@types';
@@ -5,7 +7,7 @@ import {
   Column,
   Entity,
   JoinColumn,
-  ManyToOne
+  ManyToOne,
 } from 'typeorm';
 
 @Entity({ name: 'inventory' })
@@ -16,9 +18,20 @@ export class Inventory extends AuditEntity {
   @JoinColumn({ name: 'user_id' })
   user: UserEntity;
 
-  @ManyToOne(() => ItemEntity)
+  @Column({
+    name: 'inventory_type',
+    type: 'enum',
+    enum: InventoryType,
+  })
+  inventory_type: InventoryType;
+
+  @ManyToOne(() => ItemEntity, { nullable: true })
   @JoinColumn({ name: 'item_id' })
-  item: ItemEntity;
+  item?: ItemEntity;
+
+  @ManyToOne(() => FoodEntity, { nullable: true })
+  @JoinColumn({ name: 'food_id' })
+  food?: FoodEntity;
 
   @Column({ type: 'boolean', default: false })
   equipped: boolean;

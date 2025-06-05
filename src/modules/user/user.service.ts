@@ -21,6 +21,7 @@ export class UserService {
       .leftJoinAndSelect('user.inventories', 'inventory')
       .leftJoinAndSelect('user.animals', 'animal')
       .leftJoinAndSelect('inventory.item', 'item')
+      .leftJoinAndSelect('inventory.food', 'food')
       .leftJoinAndSelect('user.map', 'map')
       .where('user.id = :id', { id: userId })
       .getOne();

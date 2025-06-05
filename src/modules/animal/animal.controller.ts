@@ -4,27 +4,26 @@ import {
   ParseUUIDPipe,
   Post,
   Query,
-  UseGuards,
+  UseGuards
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiBody,
   ApiOperation,
   ApiParam,
-  ApiTags,
+  ApiTags
 } from '@nestjs/swagger';
 
 import { Logger } from '@libs/logger';
 
+import { USER_TOKEN } from '@constant';
 import { AdminBypassGuard } from '@libs/guard/admin.guard';
+import { UserEntity } from '@modules/user/entity/user.entity';
 import { Body, Delete, Param, Put } from '@nestjs/common';
 import { ClsService } from 'nestjs-cls';
 import { UserService } from '../user/user.service';
-import { AnimalDtoRequest } from './dto/animal.dto';
 import { AnimalService } from './animal.service';
-import { Public } from '@libs/decorator';
-import { USER_TOKEN } from '@constant';
-import { UserEntity } from '@modules/user/entity/user.entity';
+import { AnimalDtoRequest, BringPetsDtoList } from './dto/animal.dto';
 
 @ApiBearerAuth()
 @Controller('animal')
@@ -98,16 +97,29 @@ export class AnimalController {
     return await this.animalService.deleteAnimal(animal_id);
   }
 
-  @Post('catch/:animal_id')
+  @Post('bring-pets')
+  @ApiOperation({
+    summary: 'Bring multiple pets with the player',
+    description: 'Allows the player to bring a list of pets by specifying their IDs.',
+  })
+  @ApiBody({ type: BringPetsDtoList })
+  async bringPets(@Body() payload: BringPetsDtoList) {
+    const user = this.cls.get<UserEntity>(USER_TOKEN);
+    return await this.animalService.bringPets(user, payload);
+  }
+
+  @Get('find/:animal_id')
+  @UseGuards(AdminBypassGuard)
   @ApiParam({
     name: 'animal_id',
     example: '91bea29f-0e87-42a5-b851-d9d0386ac32f',
   })
   @ApiOperation({
-    summary: 'Catch a specific animal',
+    summary: 'Get a specific animal',
   })
-  async catchAnimal(@Param('animal_id', ParseUUIDPipe) animal_id: string) {
-    const user = this.cls.get<UserEntity>(USER_TOKEN);
-    return await this.animalService.catchAnimal(animal_id, user);
+  async getOneAnimal(
+    @Param('animal_id', ParseUUIDPipe) animal_id: string,
+  ) {
+    return await this.animalService.getAnimalById(animal_id);
   }
 }
