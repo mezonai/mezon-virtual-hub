@@ -38,11 +38,11 @@ export class AnimalService extends BaseService<AnimalEntity> {
   }
 
   async getAnimalById(id: string) {
-    const item = await this.findById(id);
-    if (!item) {
+    const animal = await this.findById(id);
+    if (!animal) {
       throw new Error('Animal not found');
     }
-    return item;
+    return animal;
   }
 
   async createAnimal(payload: AnimalDtoRequest) {

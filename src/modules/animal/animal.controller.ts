@@ -107,4 +107,19 @@ export class AnimalController {
     const user = this.cls.get<UserEntity>(USER_TOKEN);
     return await this.animalService.bringPets(user, payload);
   }
+
+  @Get('find/:animal_id')
+  @UseGuards(AdminBypassGuard)
+  @ApiParam({
+    name: 'animal_id',
+    example: '91bea29f-0e87-42a5-b851-d9d0386ac32f',
+  })
+  @ApiOperation({
+    summary: 'Get a specific animal',
+  })
+  async getOneAnimal(
+    @Param('animal_id', ParseUUIDPipe) animal_id: string,
+  ) {
+    return await this.animalService.getAnimalById(animal_id);
+  }
 }
