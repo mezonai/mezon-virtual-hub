@@ -70,7 +70,10 @@ export class ItemService extends BaseService<ItemEntity> {
     gender: Gender,
     ownedItems: Inventory[],
   ): Promise<ItemEntity[]> {
-    const ownedItemIds = ownedItems.map((inv) => inv.item?.id);
+    const ownedItemIds = ownedItems
+      .map(inv => inv.item?.id)
+      .filter(id => id !== undefined && id !== null);
+
     return await this.itemRepository.find({
       where: {
         gender: In([gender, Gender.NOT_SPECIFIED]),
