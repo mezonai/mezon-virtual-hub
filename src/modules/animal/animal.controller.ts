@@ -52,7 +52,7 @@ export class AnimalController {
   @ApiOperation({
     summary: 'Create an animal',
   })
-  async createAnimal(@Query() item: AnimalDtoRequest) {
+  async createAnimal(@Body() item: AnimalDtoRequest) {
     return await this.animalService.createAnimal(item);
   }
 
