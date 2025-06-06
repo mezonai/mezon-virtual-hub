@@ -145,6 +145,7 @@ export class MezonService implements OnModuleInit, OnModuleDestroy {
   }
 
   async restartMezon() {
+    this.client = new MezonClient(configEnv().MEZON_TOKEN_RECEIVER_APP_TOKEN);
     await this.client.login();
   }
 }
