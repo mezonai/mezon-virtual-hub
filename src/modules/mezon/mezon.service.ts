@@ -143,4 +143,8 @@ export class MezonService implements OnModuleInit, OnModuleDestroy {
   getClient(): MezonClient {
     return this.client;
   }
+
+  async restartMezon() {
+    await this.client.login();
+  }
 }
