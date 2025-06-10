@@ -49,7 +49,7 @@ export class PetQueueManager {
         const state = this.queues.get(message.petId)!;
         // Nếu Pet đã bị bắt rồi
         if (state.caught) {
-            this.notifyPetAlreadyCaught(client, message.petId);
+            this.notifyPetAlreadyCaught(state, client, message.petId);
             return;
         }
         // Nếu người chơi đã trong hàng đợi thì bỏ qua
@@ -89,7 +89,7 @@ export class PetQueueManager {
                         petId: petId,
                     });
                     for (const remaining of state.queue) {
-                        this.notifyPetAlreadyCaught(remaining.client, petId);
+                        this.notifyPetAlreadyCaught(state, remaining.client, petId);
                     }
                     removePetCallback(petId);
                     // Dọn hàng đợi
@@ -111,12 +111,14 @@ export class PetQueueManager {
         state.isProcessing = false;
     }
 
-    notifyPetAlreadyCaught(client: Client, petId: string) {
-        client.send("onPetAlreadyCaught", {
-            playerCatchId: client.sessionId,
-            catchSucces: false,
-            petId: petId
-        });
+    notifyPetAlreadyCaught(state: PetQueueState, client: Client, petId: string) {
+        if (state.caughtBy !== client.id) {
+            client.send("onPetAlreadyCaught", {
+                playerCatchId: client.sessionId,
+                catchSucces: false,
+                petId: petId
+            });
+        }
     }
 
     addPetTouch(petId: number, handler: () => Promise<void>) {
