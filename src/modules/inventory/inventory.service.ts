@@ -1,4 +1,4 @@
-import { InventoryType, PurchaseMethod } from '@enum';
+import { FoodType, InventoryType, PurchaseMethod } from '@enum';
 import { BaseService } from '@libs/base/base.service';
 import { FoodEntity } from '@modules/food/entity/food.entity';
 import { FoodService } from '@modules/food/food.service';
@@ -14,6 +14,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { plainToInstance } from 'class-transformer';
 import { Repository } from 'typeorm';
 import { FoodInventoryResDto, ItemInventoryResDto } from './dto/inventory.dto';
+import { NEW_USER_FOOD_REWARD_QUANTITY } from '@constant';
 
 @Injectable()
 export class InventoryService extends BaseService<Inventory> {
@@ -29,13 +30,17 @@ export class InventoryService extends BaseService<Inventory> {
     super(inventoryRepository, Inventory.name);
   }
 
-  async buyItem(user: UserEntity, itemId: string, quantity = 1): Promise<Inventory> {
+  async buyItem(
+    user: UserEntity,
+    itemId: string,
+    quantity = 1,
+  ): Promise<Inventory> {
     const item = await this.itemRepository.findOne({ where: { id: itemId } });
     if (!item) {
       throw new NotFoundException('Item not found');
     }
 
-    if (user.gold < (item.gold * quantity)) {
+    if (user.gold < item.gold * quantity) {
       throw new BadRequestException('Not enough gold');
     }
 
@@ -48,7 +53,7 @@ export class InventoryService extends BaseService<Inventory> {
         'You already own this item and cannot have more than one.',
       );
     }
-      
+
     if (inventory) {
       inventory.quantity += quantity;
       await this.inventoryRepository.update(inventory.id, inventory);
@@ -72,16 +77,17 @@ export class InventoryService extends BaseService<Inventory> {
     return plainToInstance(Inventory, response_data);
   }
 
-  
   async buyFood(user: UserEntity, foodId: string, quantity = 1) {
     const food = await this.foodService.findById(foodId);
-  
+
     if (!food) {
       throw new NotFoundException('Food not found');
     }
 
     if (food.purchase_method === PurchaseMethod.SLOT) {
-      throw new BadRequestException('This food cannot be purchased (slot only)');
+      throw new BadRequestException(
+        'This food cannot be purchased (slot only)',
+      );
     }
 
     const price = food.price * quantity;
@@ -122,10 +128,10 @@ export class InventoryService extends BaseService<Inventory> {
     itemId: string,
   ): Promise<Inventory | null> {
     return this.inventoryRepository.findOne({
-      where: { 
-        user: { id: userId }, 
-        item: { id: itemId }, 
-        inventory_type: InventoryType.ITEM
+      where: {
+        user: { id: userId },
+        item: { id: itemId },
+        inventory_type: InventoryType.ITEM,
       },
     });
   }
@@ -139,17 +145,21 @@ export class InventoryService extends BaseService<Inventory> {
       user,
       item,
       quantity,
-      inventory_type: InventoryType.ITEM
+      inventory_type: InventoryType.ITEM,
     });
     return await this.inventoryRepository.save(newInventoryItem);
   }
 
-  async addFoodToInventory(user: UserEntity, food: FoodEntity, quantity = 1): Promise<Inventory> {
+  async addFoodToInventory(
+    user: UserEntity,
+    food: FoodEntity,
+    quantity = 1,
+  ): Promise<Inventory> {
     let inventory = await this.inventoryRepository.findOne({
-      where: { 
-        user: { id: user.id }, 
+      where: {
+        user: { id: user.id },
         food: { id: food.id },
-        inventory_type: InventoryType.FOOD
+        inventory_type: InventoryType.FOOD,
       },
     });
 
@@ -167,14 +177,13 @@ export class InventoryService extends BaseService<Inventory> {
     return await this.inventoryRepository.save(inventory);
   }
 
-
   async getAllFoodsOfUser(user: UserEntity) {
-    const inventory = await this.find({ 
-      where: { 
-        user: { 
-          id: user.id 
-        }, 
-        inventory_type: InventoryType.FOOD
+    const inventory = await this.find({
+      where: {
+        user: {
+          id: user.id,
+        },
+        inventory_type: InventoryType.FOOD,
       },
       relations: ['food'],
     });
@@ -183,16 +192,44 @@ export class InventoryService extends BaseService<Inventory> {
   }
 
   async getAllItemsOfUser(user: UserEntity) {
-    const inventory = await this.find({ 
-      where: { 
-        user: { 
-          id: user.id 
-        }, 
-        inventory_type: InventoryType.ITEM
+    const inventory = await this.find({
+      where: {
+        user: {
+          id: user.id,
+        },
+        inventory_type: InventoryType.ITEM,
       },
       relations: ['item'],
     });
 
     return plainToInstance(ItemInventoryResDto, inventory);
+  }
+
+  async giveInitialReward(user: UserEntity) {
+    if (user.has_first_reward) {
+      return {
+        success: false,
+        message: 'Initial reward has already been claimed.',
+      };
+    }
+
+    const foodReward = await this.foodService.findOne({
+      where: {
+        type: FoodType.NORMAL,
+      },
+    });
+
+    if (foodReward) {
+      const inventory = await this.addFoodToInventory(
+        user,
+        foodReward,
+        NEW_USER_FOOD_REWARD_QUANTITY,
+      );
+
+      user.has_first_reward = true;
+      await this.userRepository.save(user);
+
+      return plainToInstance(FoodInventoryResDto, inventory);
+    }
   }
 }
