@@ -20,7 +20,7 @@ export class MezonController {
   @ApiOperation({
     summary: 'Restart mezon bot',
   })
-  async getAllFoodsOfUser() {
-    return await this.mezonService.restartMezon();
+  async restartBot() {
+    return await this.mezonService.loginMezon();
   }
 }
