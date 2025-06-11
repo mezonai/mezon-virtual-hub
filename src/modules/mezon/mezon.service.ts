@@ -31,14 +31,7 @@ export class MezonService implements OnModuleInit, OnModuleDestroy {
 
   async onModuleInit() {
     this.logger.log('Initializing Mezon client...');
-    this.client = new MezonClient(configEnv().MEZON_TOKEN_RECEIVER_APP_TOKEN);
-    await this.client.login();
-
-    this.logger.log('Mezon client authenticated in module init');
-
-    await this.sendWebhookMessage({
-      t: `Mezon client initializes successfully at: ${moment().tz('Asia/Ho_Chi_Minh').format('YYYY-MM-DD HH:mm:ss')} (Asia/Ho_Chi_Minh Time)`,
-    });
+    await this.loginMezon();
 
     this.client.on(Events.TokenSend, async (event: MezonTokenSentEvent) => {
       await this.transferTokenToDiamond(event);
@@ -144,7 +137,21 @@ export class MezonService implements OnModuleInit, OnModuleDestroy {
     return this.client;
   }
 
-  async restartMezon() {
-    await this.client.login();
+  async loginMezon() {
+    try {
+      this.client = new MezonClient(configEnv().MEZON_TOKEN_RECEIVER_APP_TOKEN);
+      await this.client.login();
+      
+      this.logger.log('Mezon client authenticated in module init');
+
+      await this.sendWebhookMessage({
+        t: `Mezon client initializes successfully at: ${moment().tz('Asia/Ho_Chi_Minh').format('YYYY-MM-DD HH:mm:ss')} (Asia/Ho_Chi_Minh Time)`,
+      });
+    } catch (error) {
+      this.logger.error('Mezon client authenticated failed', error);
+      await this.sendWebhookMessage({
+        t: `FAILED: Mezon client initializes failed at: ${moment().tz('Asia/Ho_Chi_Minh').format('YYYY-MM-DD HH:mm:ss')} (Asia/Ho_Chi_Minh Time) ${error}`,
+      });
+    }
   }
 }
