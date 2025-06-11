@@ -1,4 +1,4 @@
-import { FoodType, InventoryType, PurchaseMethod } from '@enum';
+import { InventoryType, PurchaseMethod } from '@enum';
 import { BaseService } from '@libs/base/base.service';
 import { FoodEntity } from '@modules/food/entity/food.entity';
 import { FoodService } from '@modules/food/food.service';
@@ -14,7 +14,6 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { plainToInstance } from 'class-transformer';
 import { Repository } from 'typeorm';
 import { FoodInventoryResDto, ItemInventoryResDto } from './dto/inventory.dto';
-import { NEW_USER_FOOD_REWARD_QUANTITY } from '@constant';
 
 @Injectable()
 export class InventoryService extends BaseService<Inventory> {
@@ -203,33 +202,5 @@ export class InventoryService extends BaseService<Inventory> {
     });
 
     return plainToInstance(ItemInventoryResDto, inventory);
-  }
-
-  async giveInitialReward(user: UserEntity) {
-    if (user.has_first_reward) {
-      return {
-        success: false,
-        message: 'Initial reward has already been claimed.',
-      };
-    }
-
-    const foodReward = await this.foodService.findOne({
-      where: {
-        type: FoodType.NORMAL,
-      },
-    });
-
-    if (foodReward) {
-      const inventory = await this.addFoodToInventory(
-        user,
-        foodReward,
-        NEW_USER_FOOD_REWARD_QUANTITY,
-      );
-
-      user.has_first_reward = true;
-      await this.userRepository.save(user);
-
-      return plainToInstance(FoodInventoryResDto, inventory);
-    }
   }
 }
