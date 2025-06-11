@@ -1,5 +1,11 @@
 import { NotFoundException } from '@nestjs/common';
-import { DeepPartial, FindManyOptions, ObjectLiteral, Repository } from 'typeorm';
+import {
+  DeepPartial,
+  FindManyOptions,
+  FindOneOptions,
+  ObjectLiteral,
+  Repository,
+} from 'typeorm';
 
 export abstract class BaseService<T extends ObjectLiteral> {
   protected constructor(
@@ -53,5 +59,9 @@ export abstract class BaseService<T extends ObjectLiteral> {
 
   async queryRaw(sql: string, params?: any[]): Promise<any> {
     return this.repository.query(sql, params);
+  }
+
+  async findOne(options: FindOneOptions<T>) {
+    return await this.repository.findOne(options);
   }
 }

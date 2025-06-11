@@ -39,7 +39,7 @@ export class FoodService extends BaseService<FoodEntity> {
   async createFood(createFoodDto: FoodDtoRequest) {
     const newFood = this.foodRepository.create(createFoodDto);
     await this.foodRepository.save(newFood);
-
+    
     return plainToInstance(FoodDto, newFood);
   }
 
