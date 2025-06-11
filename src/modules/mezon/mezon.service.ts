@@ -3,8 +3,10 @@ import { GenericRepository } from '@libs/repository/genericRepository';
 import { TransactionEntity } from '@modules/transaction/entity/transaction.entity';
 import { UserEntity } from '@modules/user/entity/user.entity';
 import {
+  BadRequestException,
   Injectable,
   Logger,
+  NotFoundException,
   OnModuleDestroy,
   OnModuleInit,
 } from '@nestjs/common';
@@ -14,6 +16,7 @@ import axios from 'axios';
 import { Events, MezonClient, TokenSentEvent } from 'mezon-sdk';
 import moment from 'moment';
 import { EntityManager, Repository } from 'typeorm';
+import { RefundTokenDto } from './dto/mezon.dto';
 
 @Injectable()
 export class MezonService implements OnModuleInit, OnModuleDestroy {
@@ -153,5 +156,33 @@ export class MezonService implements OnModuleInit, OnModuleDestroy {
         t: `FAILED: Mezon client initializes failed at: ${moment().tz('Asia/Ho_Chi_Minh').format('YYYY-MM-DD HH:mm:ss')} (Asia/Ho_Chi_Minh Time) ${error}`,
       });
     }
+  }
+
+  async refundToken(payload: RefundTokenDto) {
+    const user = await this.userRepository.findOne({
+      where: { username: payload.target_username },
+    });
+
+    if (!user) {
+      throw new NotFoundException(
+        `Target User ${payload.target_username} not found`,
+      );
+    }
+
+    if (!user.mezon_id) {
+      throw new BadRequestException(
+        `User ${payload.target_username} does not have mezon id`,
+      );
+    }
+
+    this.client.sendToken({
+      amount: payload.token,
+      receiver_id: user.mezon_id,
+      note: `Refund ${payload.token} token(s) via VirtualHub`,
+    })
+
+    this.sendWebhookMessage({
+      t: `Refund ${payload.token} token(s) to user ${payload.target_username}`,
+    });
   }
 }
