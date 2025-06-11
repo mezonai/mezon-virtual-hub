@@ -33,6 +33,7 @@ export class MezonService implements OnModuleInit, OnModuleDestroy {
     this.logger.log('Initializing Mezon client...');
     this.client = new MezonClient(configEnv().MEZON_TOKEN_RECEIVER_APP_TOKEN);
     await this.client.login();
+
     this.logger.log('Mezon client authenticated in module init');
 
     await this.sendWebhookMessage({
@@ -141,5 +142,9 @@ export class MezonService implements OnModuleInit, OnModuleDestroy {
 
   getClient(): MezonClient {
     return this.client;
+  }
+
+  async restartMezon() {
+    await this.client.login();
   }
 }
