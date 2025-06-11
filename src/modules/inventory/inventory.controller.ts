@@ -1,15 +1,13 @@
 import { USER_TOKEN } from '@constant';
+import { InventoryType } from '@enum';
 import { UserEntity } from '@modules/user/entity/user.entity';
 import {
-  BadRequestException,
   Controller,
-  DefaultValuePipe,
   Get,
   Param,
-  ParseEnumPipe,
   ParseUUIDPipe,
   Post,
-  Query,
+  Query
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -19,10 +17,8 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { ClsService } from 'nestjs-cls';
-import { InventoryService } from './inventory.service';
-import { FoodService } from '@modules/food/food.service';
-import { InventoryType } from '@enum';
 import { BuyRequestQuery } from './dto/inventory.dto';
+import { InventoryService } from './inventory.service';
 
 @ApiBearerAuth()
 @Controller('inventory')
@@ -78,12 +74,5 @@ export class InventoryController {
   async getAllItemsOfUser() {
     const user = this.cls.get<UserEntity>(USER_TOKEN);
     return await this.inventoryService.getAllItemsOfUser(user);
-  }
-
-  @Post('initial-reward')
-  @ApiOperation({ summary: 'Claim initial reward for new user' })
-  async claimInitialReward() {
-    const user = this.cls.get<UserEntity>(USER_TOKEN);
-    return this.inventoryService.giveInitialReward(user);
   }
 }
