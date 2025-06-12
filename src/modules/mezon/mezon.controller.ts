@@ -1,10 +1,11 @@
 import { USER_TOKEN } from '@constant';
 import { UserEntity } from '@modules/user/entity/user.entity';
-import { Controller, Get, Post, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ClsService } from 'nestjs-cls';
 import { MezonService } from './mezon.service';
 import { AdminBypassGuard } from '@libs/guard/admin.guard';
+import { RefundTokenDto } from './dto/mezon.dto';
 
 @ApiBearerAuth()
 @Controller('mezon')
@@ -22,5 +23,13 @@ export class MezonController {
   })
   async restartBot() {
     return await this.mezonService.loginMezon();
+  }
+
+  @Post('refund-token')
+  @ApiOperation({
+    summary: 'Refund token',
+  })
+  async refundToken(@Query() query: RefundTokenDto) {
+    return await this.mezonService.refundToken(query);
   }
 }
