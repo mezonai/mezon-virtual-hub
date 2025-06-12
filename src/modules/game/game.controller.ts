@@ -88,4 +88,11 @@ export class GameController {
     const user = this.cls.get<UserEntity>(USER_TOKEN);
     return await this.gameService.spinForRewards(user);
   }
+
+  @Post('initial-reward')
+  @ApiOperation({ summary: 'Claim initial reward for new user' })
+  async claimInitialReward() {
+    const user = this.cls.get<UserEntity>(USER_TOKEN);
+    return this.gameService.giveInitialReward(user);
+  }
 }

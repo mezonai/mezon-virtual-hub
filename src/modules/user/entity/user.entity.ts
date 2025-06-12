@@ -39,7 +39,7 @@ export class UserEntity extends AuditEntity {
 
   @Column({ type: 'int', default: 0 })
   diamond: number;
-  
+
   @Column({ type: 'varchar' })
   gender: Gender;
 
@@ -55,4 +55,7 @@ export class UserEntity extends AuditEntity {
 
   @OneToMany(() => AnimalEntity, (animal) => animal.user)
   animals: AnimalEntity[] | null;
+
+  @Column({ type: 'bool', default: false })
+  has_first_reward: boolean;
 }

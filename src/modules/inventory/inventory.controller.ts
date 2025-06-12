@@ -1,12 +1,24 @@
 import { USER_TOKEN } from '@constant';
-import { UserEntity } from '@modules/user/entity/user.entity';
-import { BadRequestException, Controller, DefaultValuePipe, Get, Param, ParseEnumPipe, ParseUUIDPipe, Post, Query } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger';
-import { ClsService } from 'nestjs-cls';
-import { InventoryService } from './inventory.service';
-import { FoodService } from '@modules/food/food.service';
 import { InventoryType } from '@enum';
+import { UserEntity } from '@modules/user/entity/user.entity';
+import {
+  Controller,
+  Get,
+  Param,
+  ParseUUIDPipe,
+  Post,
+  Query
+} from '@nestjs/common';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiParam,
+  ApiQuery,
+  ApiTags,
+} from '@nestjs/swagger';
+import { ClsService } from 'nestjs-cls';
 import { BuyRequestQuery } from './dto/inventory.dto';
+import { InventoryService } from './inventory.service';
 
 @ApiBearerAuth()
 @Controller('inventory')
@@ -31,7 +43,7 @@ export class InventoryController {
     enum: InventoryType,
     required: false,
     description: 'Type of inventory to buy (item or food)',
-    default: InventoryType.ITEM
+    default: InventoryType.ITEM,
   })
   async buyFoodOrItem(
     @Param('id', ParseUUIDPipe) id: string,

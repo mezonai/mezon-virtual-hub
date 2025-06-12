@@ -1,4 +1,5 @@
 import { configEnv } from '@config/env.config';
+import { NEW_USER_FOOD_REWARD_QUANTITY } from '@constant';
 import { FoodType, RewardType } from '@enum';
 import { FoodEntity } from '@modules/food/entity/food.entity';
 import { FoodService } from '@modules/food/food.service';
@@ -49,13 +50,13 @@ export class GameService {
     const inventoryItems = await this.inventoryService.getUserInventory(
       user.id,
     );
-  
+
     const availableItems = await this.itemService.getAvailableItems(
       user.gender,
       inventoryItems,
     );
 
-    const rewards =  await this.generateRandomRewards(availableItems);
+    const rewards = await this.generateRandomRewards(availableItems);
 
     const { result, user_gold } = await this.processRewards(user, rewards);
 
@@ -72,7 +73,7 @@ export class GameService {
       item: this.coinPercent,
       coin: this.coinPercent + this.itemPercent,
       normalFood: this.coinPercent + this.itemPercent + this.foodNormalPercent,
-      premiumFood: 
+      premiumFood:
         this.coinPercent +
         this.itemPercent +
         this.foodNormalPercent +
@@ -120,11 +121,7 @@ export class GameService {
     return rewards;
   }
 
-
-  private async processRewards(
-    user: UserEntity,
-    rewards: RewardDataType,
-  ) {
+  private async processRewards(user: UserEntity, rewards: RewardDataType) {
     const result: (AwardResponseDto | null)[] = [];
 
     for (const reward of rewards) {
@@ -163,7 +160,7 @@ export class GameService {
         } else {
           result.push(null);
         }
-      }  else if (reward instanceof FoodEntity) {
+      } else if (reward instanceof FoodEntity) {
         const inventoryFood = await this.inventoryService.addFoodToInventory(
           user,
           reward,
@@ -181,5 +178,40 @@ export class GameService {
 
     await this.userRepository.update(user.id, user);
     return { result, user_gold: user.gold };
+  }
+
+  async giveInitialReward(user: UserEntity) {
+    if (user.has_first_reward) {
+      return {
+        success: false,
+        message: 'Initial reward has already been claimed.',
+      };
+    }
+
+    const foodReward = await this.foodService.findOne({
+      where: {
+        type: FoodType.NORMAL,
+      },
+    });
+
+    if (foodReward) {
+      await this.inventoryService.addFoodToInventory(
+        user,
+        foodReward,
+        NEW_USER_FOOD_REWARD_QUANTITY,
+      );
+
+      user.has_first_reward = true;
+      await this.userRepository.save(user);
+
+      const rewards: (AwardResponseDto | null)[] = [
+        {
+          type: RewardType.FOOD,
+          quantity: NEW_USER_FOOD_REWARD_QUANTITY,
+          food: foodReward,
+        },
+      ];
+      return { rewards };
+    }
   }
 }

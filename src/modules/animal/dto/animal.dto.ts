@@ -1,7 +1,7 @@
 import { AnimalRarity, MapKey, SubMap } from '@enum';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { ArrayNotEmpty, IsArray, IsEnum, IsNumberString, IsOptional, IsString, IsUUID } from 'class-validator';
+import { ArrayNotEmpty, IsArray, IsEnum, IsNumber, IsNumberString, IsOptional, IsString, IsUUID } from 'class-validator';
 export class AnimalDtoRequest {
   @ApiPropertyOptional({
     description: 'Species of the animal to filter by.',
@@ -24,7 +24,8 @@ export class AnimalDtoRequest {
     example: 1,
   })
   @IsOptional()
-  @IsNumberString()
+  @Type(() => Number)
+  @IsNumber()
   catch_chance?: number;
 
   @ApiProperty({
