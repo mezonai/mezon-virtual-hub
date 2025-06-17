@@ -95,4 +95,10 @@ export class GameController {
     const user = this.cls.get<UserEntity>(USER_TOKEN);
     return this.gameService.giveInitialReward(user);
   }
+
+  @Get('reward-percent')
+  @ApiOperation({ summary: 'Get the percentage of reward slot machine' })
+  async getRewardPercent() {
+    return this.gameService.getRewardPercent();
+  }
 }
