@@ -214,4 +214,22 @@ export class GameService {
       return { rewards };
     }
   }
+
+  getRewardPercent() {
+    const totalRewardPercent =
+      this.itemPercent +
+      this.coinPercent +
+      this.foodNormalPercent +
+      this.foodPremiumPercent +
+      this.foodUltraPercent;
+
+    return {
+      item: this.itemPercent,
+      gold: this.coinPercent,
+      normalFood: this.foodNormalPercent,
+      premiumFood: this.foodPremiumPercent,
+      ultraFood: this.foodUltraPercent,
+      none: 100 - totalRewardPercent,
+    };
+  }
 }

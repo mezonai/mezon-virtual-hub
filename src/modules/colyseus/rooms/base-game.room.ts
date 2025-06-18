@@ -10,6 +10,7 @@ import { JwtPayload } from '@modules/auth/dtos/response';
 import { GameEventService } from '@modules/game-event/game-event.service';
 import { MezonService } from '@modules/mezon/mezon.service';
 import { UserEntity } from '@modules/user/entity/user.entity';
+import { RoomManager } from '../rooms/global-room';
 import {
   ForbiddenException,
   Inject,
@@ -55,7 +56,6 @@ export class BaseGameRoom extends Room<RoomState> {
   // maxClients = 50; // Max players
   logger = new Logger();
   petQueueManager: PetQueueManager;
-  private petMovementInterval: any;
   private pethangeRoomInterval: any;
   speciesPetEvent = "DragonIce";
   static activeRooms: Set<BaseGameRoom> = new Set();
@@ -213,6 +213,7 @@ export class BaseGameRoom extends Room<RoomState> {
   async onCreate() {
     this.setState(new RoomState());
     BaseGameRoom.activeRooms.add(this);
+    RoomManager.addRoom(this);
     console.log(this.roomName);
     this.onMessage('move', (client, buffer: ArrayBuffer) => {
       try {
@@ -637,10 +638,7 @@ export class BaseGameRoom extends Room<RoomState> {
       this.petQueueManager.addPetTouch(targetPetId, handler);
 
     });
-    this.spawnPetInRoom(this);
-    this.pethangeRoomInterval = setInterval(() => {
-      this.changePetRoom(this)
-    }, 60 * 1000);
+    this.spawnPetInRoom();
   }
 
 
@@ -731,101 +729,77 @@ export class BaseGameRoom extends Room<RoomState> {
 
   onDispose() {
     BaseGameRoom.activeRooms.delete(this);
+    RoomManager.removeRoom(this);
     this.state.pets.clear();
     if (this.pethangeRoomInterval) clearInterval(this.pethangeRoomInterval);
   }
 
   //Pet
-  async handlePetAsync(room: Room): Promise<void> {
-    const pets = await this.animalService.getAvailableAnimalsWithRoom(room.roomName);
+  async handlePetAsync(): Promise<void> {
+    const pets = await this.animalService.getAvailableAnimalsWithRoom(this.roomName);
     const petSpawns = pets.filter(pet => pet.species === this.speciesPetEvent);
-
     if (!petSpawns || petSpawns.length === 0) {
-      this.stopPetMovementInterval();
       return;
     }
     petSpawns.forEach(petData => {
       const pet = new Pet();
-      pet.SetDataPet(petData, room.roomName);
-      room.state.pets.set(petData.id, pet);
+      pet.SetDataPet(petData, this.roomName);
+      this.state.pets.set(petData.id, pet);
     });
   }
 
-  async changePetRoom(room: Room): Promise<void> {
-    if (room.state.pets.size > 0) {
-      for (const pet of room.state.pets.values()) {
+  async changePetRoom(): Promise<void> {
+    if (this.state.pets.size > 0) {
+      for (const pet of this.state.pets.values()) {
         if (pet == null || pet.species != this.speciesPetEvent) continue;
-        const isUnderFifty = Math.random() < 0.5; // true ~ 50% xác suất
-        const randomMap = this.getRandomMapKey(); // tái sử dụng logic random
-        const roomCode = isUnderFifty ? `${randomMap}-${SubMap.OFFICE}` : randomMap;
-        if (roomCode == pet.roomCode) {
-          return;
-        }
+        const roomCode = this.getRandomMapKey(pet.roomCode);
         const newAnimal: AnimalDtoRequest = {
-          map: randomMap,
-          ...(isUnderFifty ? { sub_map: SubMap.OFFICE } : {}),
+          map: roomCode,
         };
         this.removePet(pet.id);
         let pets = await this.animalService.updateAnimal(newAnimal, pet.id);
         if (!pets) return;
-        room.clients.forEach(client => {
+        this.clients.forEach(client => {
           client.send("onPetDisappear", {
             petId: pet.id
           });
         });
-        for (const room of BaseGameRoom.activeRooms) {
-          if (room.roomName === roomCode) {
-            this.spawnPetInRoom(room);
-            break; // Dừng lại khi tìm thấy
-          }
-        }
       };
     }
   }
 
-  private getRandomMapKey(): MapKey {
-    const values = Object.values(MapKey);
+  private getRandomMapKey(currentKey: string): MapKey {
+    const values = Object.values(MapKey).filter(k => k !== currentKey as MapKey);
     const randomIndex = Math.floor(Math.random() * values.length);
-    return values[4];
+    return values[randomIndex];
   }
 
-  stopPetMovementInterval() {
-    if (this.petMovementInterval) {
-      clearInterval(this.petMovementInterval);
-    }
-  }
-  broadcastPetPositions() {
-    const petList = Array.from(this.state.pets.values()).map(pet => ({
+  broadcastPetPositions(pet: Pet) {
+    const petData = {
       id: pet.id,
       name: pet.name,
       species: pet.species,
       position: { x: pet.position.x, y: pet.position.y },
       angle: pet.angle,
       moving: pet.moving
-    }));
-
-    this.broadcast("petPositionUpdate", petList);
+    }
+    this.broadcast("petPositionUpdate", petData);
   }
 
   removePet(petId: string) {
     this.state.pets.delete(petId);
-
-    if (this.state.pets.size === 0) {
-      this.stopPetMovementInterval();
-    }
   }
-  spawnPetInRoom(room: Room) {
-    this.handlePetAsync(room).then(() => {
-      // Bắt đầu vòng lặp update di chuyển và broadcast vị trí pet
+  spawnPetInRoom() {
+    this.handlePetAsync().then(() => {
+      if (this.state.pets.size === 0) {
+        return;
+      }
       this.setSimulationInterval(() => {
-        if (this.state.pets.size === 0) {
-          this.stopPetMovementInterval();
-          return;
-        }
+        // Trường hợp không chỉ định ID: duyệt tất cả pet
         for (const pet of this.state.pets.values()) {
           pet.updateMovement();
+          this.broadcastPetPositions(pet);
         }
-        this.broadcastPetPositions();
       }, 100);
     });
   }
