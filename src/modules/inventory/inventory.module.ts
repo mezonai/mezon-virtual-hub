@@ -9,6 +9,7 @@ import { InventoryController } from './inventory.controller';
 import { InventoryService } from './inventory.service';
 import { FoodModule } from '@modules/food/food.module';
 import { FoodEntity } from '@modules/food/entity/food.entity';
+import { UserModule } from '@modules/user/user.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { FoodEntity } from '@modules/food/entity/food.entity';
     ClsModule,
     ItemModule,
     FoodModule,
+    UserModule,
   ],
   providers: [InventoryService],
   controllers: [InventoryController],

@@ -1,9 +1,9 @@
-import { InventoryType, MapKey, SubMap } from '@enum';
+import { InventoryType } from '@enum';
 import { FoodDto } from '@modules/food/dto/food.dto';
 import { ItemDto } from '@modules/item/dto/item.dto';
-import { ApiProperty, ApiPropertyOptional, OmitType } from '@nestjs/swagger';
+import { ApiPropertyOptional, OmitType } from '@nestjs/swagger';
 import { Exclude, Expose, Type } from 'class-transformer';
-import { IsOptional, IsString, IsNumberString, IsEnum, Max, IsInt } from 'class-validator';
+import { IsEnum, IsInt, IsOptional, Max, Min } from 'class-validator';
 
 export class InventoryDto {
   @Expose()
@@ -53,6 +53,7 @@ export class BuyRequestQuery {
   @Type(() => Number)
   @IsInt()
   @Max(100000, { message: 'Quantity must not exceed 100000' })
+  @Min(1)
   quantity: number = 1;
 
   @ApiPropertyOptional({

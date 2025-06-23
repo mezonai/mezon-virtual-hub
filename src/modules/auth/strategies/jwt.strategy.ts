@@ -35,11 +35,14 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     const { email, expireTime, sessionToken, username } = payload;
 
     const user = await this.userRepository.findOne({
-      where: [{ username }, { email }],
+      where: [
+        ...(username ? [{ username }] : []),
+        ...(email ? [{ email }] : []),
+      ],
     });
 
     if (!user) {
-      throw new UnauthorizedException(`User does not found`);
+      throw new UnauthorizedException('Invalid credentials');
     }
 
     const now = new Date().getTime();
