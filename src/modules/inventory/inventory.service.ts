@@ -37,8 +37,7 @@ export class InventoryService extends BaseService<Inventory> {
     quantity = 1,
   ): Promise<Inventory> {
     return this.userService.processUserTransaction(
-      userId,
-      async (manager, user) => {
+      userId, async (user) => {
         const item = await this.itemRepository.findOne({
           where: { id: itemId },
         });
@@ -68,7 +67,7 @@ export class InventoryService extends BaseService<Inventory> {
         }
 
         user.gold -= item.gold;
-        await manager.getRepository(UserEntity).save(user);
+        await this.userRepository.save(user);
 
         const response_inventory_data = {
           inventory_data: {
@@ -90,25 +89,35 @@ export class InventoryService extends BaseService<Inventory> {
 
   async buyFood(userId: string, foodId: string, quantity = 1) {
     return this.userService.processUserTransaction(
-      userId,
-      async (manager, user) => {
+      userId, async (user) => {
         const food = await this.foodService.findById(foodId);
-        if (!food) throw new NotFoundException('Food not found');
+        
+        if (!food) {
+          throw new NotFoundException('Food not found');
+        }
+
+        if (food.purchase_method === PurchaseMethod.SLOT) {
+          throw new BadRequestException(
+            'This food cannot be purchased (slot only)',
+          );
+        }
 
         const price = food.price * quantity;
 
         if (food.purchase_method === PurchaseMethod.GOLD) {
-          if (user.gold < price)
+          if (user.gold < price) {
             throw new BadRequestException('Not enough gold');
+          }
           user.gold -= price;
         } else if (food.purchase_method === PurchaseMethod.DIAMOND) {
-          if (user.diamond < price)
+          if (user.diamond < price) {
             throw new BadRequestException('Not enough diamond');
+          }
           user.diamond -= price;
         }
 
         await this.addFoodToInventory(user, food, quantity);
-        await manager.getRepository(UserEntity).save(user);
+        await this.userRepository.save(user);
 
         return {
           message: 'Food purchased successfully',

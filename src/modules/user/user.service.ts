@@ -105,7 +105,7 @@ export class UserService extends BaseService<UserEntity> {
 
   async processUserTransaction<T>(
     userId: string,
-    fn: (manager: EntityManager, user: UserEntity) => Promise<T>,
+    fn: (user: UserEntity) => Promise<T>,
   ): Promise<T> {
     if (this.userLocks.has(userId)) {
       throw new BadRequestException(
@@ -116,18 +116,15 @@ export class UserService extends BaseService<UserEntity> {
     this.userLocks.add(userId);
 
     try {
-      return await this.dataSource.transaction(async (manager) => {
-        const user = await manager.getRepository(UserEntity).findOne({
-          where: { id: userId },
-          lock: { mode: 'pessimistic_write' },
-        });
-
-        if (!user) {
-          throw new BadRequestException('User not found');
-        }
-
-        return await fn(manager, user);
+      const user = await this.findOne({
+        where: { id: userId },
       });
+
+      if (!user) {
+        throw new BadRequestException('User not found');
+      }
+
+      return await fn(user);
     } finally {
       this.userLocks.delete(userId);
     }
