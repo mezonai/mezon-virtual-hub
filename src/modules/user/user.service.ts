@@ -1,19 +1,33 @@
+import { BaseService } from '@libs/base/base.service';
 import { MapEntity } from '@modules/map/entity/map.entity';
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { plainToClass } from 'class-transformer';
-import { FindOneOptions, Repository } from 'typeorm';
+import {
+  DataSource,
+  EntityManager,
+  FindOneOptions,
+  Repository
+} from 'typeorm';
 import { UpdateInfoDto, UserInformationDto } from './dto/user.dto';
 import { UserEntity } from './entity/user.entity';
 
 @Injectable()
-export class UserService {
+export class UserService extends BaseService<UserEntity> {
+  private readonly userLocks = new Set<string>();
   constructor(
     @InjectRepository(UserEntity)
     private readonly userRepository: Repository<UserEntity>,
     @InjectRepository(MapEntity)
     private readonly mapRepository: Repository<MapEntity>,
-  ) {}
+    private readonly dataSource: DataSource,
+  ) {
+    super(userRepository, UserEntity.name);
+  }
 
   async getUserInformation(userId: string): Promise<UserInformationDto> {
     const userInfo = await this.userRepository
@@ -87,5 +101,32 @@ export class UserService {
 
   async findOne(options: FindOneOptions<UserEntity>) {
     return await this.userRepository.findOne(options);
+  }
+
+  async processUserTransaction<T>(
+    userId: string,
+    fn: (user: UserEntity) => Promise<T>,
+  ): Promise<T> {
+    if (this.userLocks.has(userId)) {
+      throw new BadRequestException(
+        'Another operation is already in progress for this user.',
+      );
+    }
+
+    this.userLocks.add(userId);
+
+    try {
+      const user = await this.findOne({
+        where: { id: userId },
+      });
+
+      if (!user) {
+        throw new BadRequestException('User not found');
+      }
+
+      return await fn(user);
+    } finally {
+      this.userLocks.delete(userId);
+    }
   }
 }

@@ -5,6 +5,7 @@ import { FoodService } from '@modules/food/food.service';
 import { Inventory } from '@modules/inventory/entity/inventory.entity';
 import { ItemEntity } from '@modules/item/entity/item.entity';
 import { UserEntity } from '@modules/user/entity/user.entity';
+import { UserService } from '@modules/user/user.service';
 import {
   BadRequestException,
   Injectable,
@@ -22,6 +23,7 @@ export class InventoryService extends BaseService<Inventory> {
     private readonly inventoryRepository: Repository<Inventory>,
     @InjectRepository(UserEntity)
     private readonly userRepository: Repository<UserEntity>,
+    private readonly userService: UserService,
     @InjectRepository(ItemEntity)
     private readonly itemRepository: Repository<ItemEntity>,
     private readonly foodService: FoodService,
@@ -30,89 +32,102 @@ export class InventoryService extends BaseService<Inventory> {
   }
 
   async buyItem(
-    user: UserEntity,
+    userId: string,
     itemId: string,
     quantity = 1,
   ): Promise<Inventory> {
-    const item = await this.itemRepository.findOne({ where: { id: itemId } });
-    if (!item) {
-      throw new NotFoundException('Item not found');
-    }
+    return this.userService.processUserTransaction(
+      userId, async (user) => {
+        const item = await this.itemRepository.findOne({
+          where: { id: itemId },
+        });
+        if (!item) {
+          throw new NotFoundException('Item not found');
+        }
 
-    if (user.gold < item.gold * quantity) {
-      throw new BadRequestException('Not enough gold');
-    }
+        if (user.gold < item.gold * quantity) {
+          throw new BadRequestException('Not enough gold');
+        }
 
-    let inventory = await this.inventoryRepository.findOne({
-      where: { user: { id: user.id }, item: { id: itemId } },
-    });
+        let inventory = await this.inventoryRepository.findOne({
+          where: { user: { id: user.id }, item: { id: itemId } },
+        });
 
-    if (!item.is_stackable && quantity > 1) {
-      throw new BadRequestException(
-        'You already own this item and cannot have more than one.',
-      );
-    }
+        if (!item.is_stackable && quantity > 1) {
+          throw new BadRequestException(
+            'You already own this item and cannot have more than one.',
+          );
+        }
 
-    if (inventory) {
-      inventory.quantity += quantity;
-      await this.inventoryRepository.update(inventory.id, inventory);
-    } else {
-      inventory = await this.addItemToInventory(user, item, quantity);
-    }
+        if (inventory) {
+          inventory.quantity += quantity;
+          await this.inventoryRepository.update(inventory.id, inventory);
+        } else {
+          inventory = await this.addItemToInventory(user, item, quantity);
+        }
 
-    user.gold -= item.gold;
-    await this.userRepository.save(user);
+        user.gold -= item.gold;
+        await this.userRepository.save(user);
 
-    const response_inventory_data = {
-      inventory_data: {
-        id: inventory.id,
-        equipped: inventory.equipped,
-        quantity: inventory.quantity,
-        item: inventory.item,
+        const response_inventory_data = {
+          inventory_data: {
+            id: inventory.id,
+            equipped: inventory.equipped,
+            quantity: inventory.quantity,
+            item: inventory.item,
+          },
+        };
+
+        const response_data = {
+          ...response_inventory_data,
+          user_gold: user.gold,
+        };
+        return plainToInstance(Inventory, response_data);
       },
-    };
-
-    const response_data = { ...response_inventory_data, user_gold: user.gold };
-    return plainToInstance(Inventory, response_data);
+    );
   }
 
-  async buyFood(user: UserEntity, foodId: string, quantity = 1) {
-    const food = await this.foodService.findById(foodId);
+  async buyFood(userId: string, foodId: string, quantity = 1) {
+    return this.userService.processUserTransaction(
+      userId, async (user) => {
+        const food = await this.foodService.findById(foodId);
+        
+        if (!food) {
+          throw new NotFoundException('Food not found');
+        }
 
-    if (!food) {
-      throw new NotFoundException('Food not found');
-    }
+        if (food.purchase_method === PurchaseMethod.SLOT) {
+          throw new BadRequestException(
+            'This food cannot be purchased (slot only)',
+          );
+        }
 
-    if (food.purchase_method === PurchaseMethod.SLOT) {
-      throw new BadRequestException(
-        'This food cannot be purchased (slot only)',
-      );
-    }
+        const price = food.price * quantity;
 
-    const price = food.price * quantity;
+        if (food.purchase_method === PurchaseMethod.GOLD) {
+          if (user.gold < price) {
+            throw new BadRequestException('Not enough gold');
+          }
+          user.gold -= price;
+        } else if (food.purchase_method === PurchaseMethod.DIAMOND) {
+          if (user.diamond < price) {
+            throw new BadRequestException('Not enough diamond');
+          }
+          user.diamond -= price;
+        }
 
-    if (food.purchase_method === PurchaseMethod.GOLD) {
-      if (user.gold < price) {
-        throw new BadRequestException('Not enough gold');
-      }
-      user.gold -= price;
-    } else if (food.purchase_method === PurchaseMethod.DIAMOND) {
-      if (user.diamond < price) {
-        throw new BadRequestException('Not enough diamond');
-      }
-      user.diamond -= price;
-    }
+        await this.addFoodToInventory(user, food, quantity);
+        await this.userRepository.save(user);
 
-    await this.addFoodToInventory(user, food, quantity);
-    await this.userRepository.save(user);
-
-    return {
-      message: 'Food purchased successfully',
-      user_balance: {
-        gold: user.gold,
-        diamond: user.diamond,
+        return {
+          message: 'Food purchased successfully',
+          user_balance: {
+            gold: user.gold,
+            diamond: user.diamond,
+          },
+        };
       },
-    };
+    );
   }
 
   async getUserInventory(userId: string): Promise<Inventory[]> {

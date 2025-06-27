@@ -52,10 +52,10 @@ export class InventoryController {
     const user = this.cls.get<UserEntity>(USER_TOKEN);
 
     if (type === InventoryType.FOOD) {
-      return this.inventoryService.buyFood(user, id, quantity);
+      return this.inventoryService.buyFood(user.id, id, quantity);
     }
 
-    return this.inventoryService.buyItem(user, id, quantity);
+    return this.inventoryService.buyItem(user.id, id, quantity);
   }
 
   @Get('food')
