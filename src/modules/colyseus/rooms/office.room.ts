@@ -3,6 +3,9 @@ import { Injectable } from '@nestjs/common';
 import { Client } from 'colyseus';
 import { BaseGameRoom } from './base-game.room';
 import { Player } from '@types';
+import { DoorManager } from '../door/DoorManager';
+import { MapKey, SubMap } from '@enum';
+import { MessageTypes } from '../MessageTypes';
 
 @Injectable()
 export class OfficeRoom extends BaseGameRoom {
@@ -35,5 +38,50 @@ export class OfficeRoom extends BaseGameRoom {
     this.logger.log(
       `Player ${userData?.username} has position ${player.x} ${player.y}`,
     );
+  }
+
+  async onCreate() {
+    super.onCreate();
+    this.doorManager = new DoorManager(this.state);
+    switch (this.roomName) {
+      case this.buildRoomName(MapKey.SG, SubMap.OFFICE):
+        this.doorManager.spawnDoors(1);
+        break;
+      case this.buildRoomName(MapKey.HN1, SubMap.OFFICE):
+        this.doorManager.spawnDoors(1);
+        break;
+      case this.buildRoomName(MapKey.HN2, SubMap.OFFICE):
+        this.doorManager.spawnDoors(1);
+        break;
+      default:
+        break;
+    }
+    this.onMessage(MessageTypes.OPEN_DOOR, (client, data) => {
+      const { doorId } = data;
+      const door = this.doorManager.openDoor(doorId);
+      if (door) {
+        const responseData = {
+          sessionId: client.sessionId,
+          doorUpadte: door,
+        };
+        this.broadcast(MessageTypes.ON_OPEN_DOOR, responseData);
+      }
+    });
+
+    this.onMessage(MessageTypes.CLOSE_DOOR, (client, data) => {
+      const { doorId } = data;
+      const door = this.doorManager.closeDoor(doorId);
+      if (door) {
+        const responseData = {
+          sessionId: client.sessionId,
+          doorUpadte: door,
+        };
+        this.broadcast(MessageTypes.ON_CLOSE_DOOR, responseData);
+      }
+    });
+  }
+
+  buildRoomName(mapKey: MapKey, subMap: SubMap): string {
+    return `${mapKey}-${subMap}`;
   }
 }

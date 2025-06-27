@@ -1,4 +1,4 @@
-import { Schema, type } from '@colyseus/schema';
+import { MapSchema, Schema, type } from '@colyseus/schema';
 import { configEnv } from '@config/env.config';
 import { EXCHANGERATE, RPS_FEE } from '@constant';
 import { ActionKey, MapKey, SubMap } from '@enum';
@@ -28,6 +28,8 @@ import { PetQueueManager } from '../pet/PetQueueManager';
 import { Pet } from '../pet/Pet';
 import { AnimalDtoRequest } from '@modules/animal/dto/animal.dto';
 import { Console } from 'console';
+import { Door } from '../door/Door';
+import { DoorManager } from '../door/DoorManager';
 
 export class Item extends Schema {
   @type('number') x: number = 0;
@@ -44,10 +46,11 @@ export class Item extends Schema {
   }
 }
 
-class RoomState extends Schema {
+export class RoomState extends Schema {
   @type({ map: Player }) players = new Map<string, Player>();
   @type({ map: Item }) items = new Map<string, Item>();
   @type({ map: Pet }) pets = new Map<string, Pet>();
+  @type({ map: Door }) doors = new MapSchema<Door>();
 }
 
 @Injectable()
@@ -57,6 +60,7 @@ export class BaseGameRoom extends Room<RoomState> {
   logger = new Logger();
   petQueueManager: PetQueueManager;
   private pethangeRoomInterval: any;
+  protected doorManager: DoorManager;
   speciesPetEvent = "DragonIce";
   static activeRooms: Set<BaseGameRoom> = new Set();
   static globalTargetClients: Map<string, Client> = new Map();
