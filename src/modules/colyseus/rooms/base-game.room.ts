@@ -643,6 +643,74 @@ export class BaseGameRoom extends Room<RoomState> {
 
     });
     this.spawnPetInRoom();
+
+    //combat
+    this.onMessage("p2pCombatActionAccept", (sender, data) => {
+      const { targetClientId, action } = data;
+      const targetClient = this.clients.find(client => client.sessionId === targetClientId);
+      let gameKey = this.createKeyForActionDict(action, targetClientId, sender.sessionId);
+
+      this.minigameResultDict.set(gameKey, {
+        from: targetClientId,
+        to: sender.sessionId,
+      })
+
+      if (targetClient) {
+        this.broadcast("onp2pCombatActionAccept", {
+          action: action,
+          from: targetClientId,
+          to: sender.sessionId,
+          gameKey: gameKey
+        });
+      }
+    });
+
+    this.onMessage("p2pCombatActionEscape", (sender, data) => {
+      const { senderAction, gameKey, action, from, to } = data;
+      let fromPlayer = this.clients.find(client => client.sessionId === from);
+      let toPlayer = this.clients.find(client => client.sessionId === to);
+
+      if (this.minigameResultDict.has(gameKey)) {
+        let result = this.minigameResultDict.get(gameKey);
+        if (sender.sessionId == result.from) {
+          result.result1 = senderAction;
+        }
+        else if (sender.sessionId == result.to) {
+          result.result2 = senderAction;
+        }
+        const isEscape = senderAction === "giveup";
+        if (result.result1 != "" && result.result2 != "" && isEscape) {
+          let winner = (sender.sessionId === result.from) ? result.to : result.from;
+
+          const loserName = sender.sessionId === result.from ? fromPlayer?.userData?.display_name : toPlayer?.userData?.display_name;
+          const winnerName = sender.sessionId === result.from ? toPlayer?.userData?.display_name : fromPlayer?.userData?.display_name;
+
+          const message = `${loserName || "Người chơi"} đã bỏ cuộc. ${winnerName || "Đối thủ"} thắng!`;
+
+          this.broadcast("onp2pCombatActionEscape", {
+            action: action + "Done",
+            from: result.from,
+            to: result.to,
+            result1: result.result1,
+            result2: result.result2,
+            winner: winner,
+            message: message
+          });
+
+          this.minigameResultDict.delete(gameKey);
+        }
+
+      }
+      else {
+        this.broadcast("onP2pGameError", {
+          message: "Server Error",
+          action: action,
+          from: from,
+          to: to
+        })
+      }
+    });
+
   }
 
 
