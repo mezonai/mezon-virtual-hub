@@ -25,6 +25,9 @@ import { GameEventModule } from '@modules/game-event/game-event.module';
 import { TransactionModule } from '@modules/transaction/transaction.module';
 import { AnimalModule } from '@modules/animal/animal.module';
 import { FoodModule } from '@modules/food/food.module';
+import { PetSpeciesModule } from '@modules/pet-species/pet-species.module';
+import { PetPlayerModule } from '@modules/pet-player/pet-player.module';
+import { PetSkillsModule } from '@modules/pet-skills/pet-skills.module';
 
 @Module({
   imports: [
@@ -51,6 +54,9 @@ import { FoodModule } from '@modules/food/food.module';
     TransactionModule,
     AnimalModule,
     FoodModule,
+    PetSpeciesModule,
+    PetPlayerModule,
+    PetSkillsModule,
     ClsModule.forRoot({
       global: true,
       middleware: { mount: true },
