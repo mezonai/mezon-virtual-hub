@@ -20,7 +20,7 @@
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "typeorm": "yarn build && npx typeorm -d dist/config/data-source.config.js",
     "migration:create": "cd src/migrations && npx typeorm migration:create",
-    "db:generate": "sh migration.sh gen local",
+    "db:generate": "bash migration.sh gen local",
     "db:run": "yarn typeorm migration:run",
     "db:revert": "yarn typeorm migration:revert",
     "db:seed": "yarn build && node dist/libs/repository/seed.js",
