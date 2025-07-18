@@ -22,23 +22,23 @@ import { UserEntity } from '@modules/user/entity/user.entity';
 import { Body, Delete, Param, Put } from '@nestjs/common';
 import { ClsService } from 'nestjs-cls';
 import { UserService } from '../user/user.service';
-import { PetPlayerService } from './pet-player.service';
+import { PetPlayerservice } from './pet-players.service';
 import {
-  SpawnPetPlayerDto,
+  SpawnPetPlayersDto,
   BringPetPlayersDtoList,
-} from './dto/pet-player.dto';
+} from './dto/pet-players.dto';
 
 @ApiBearerAuth()
-@Controller('pet-player')
-@ApiTags('Pet Player')
-export class PetPlayerController {
+@Controller('pet-players')
+@ApiTags('Pet Players')
+export class PetPlayersController {
   constructor(
     private readonly cls: ClsService,
-    private readonly petService: PetPlayerService,
+    private readonly petService: PetPlayerservice,
     private readonly userService: UserService,
     private readonly logger: Logger,
   ) {
-    this.logger.setContext(PetPlayerController.name);
+    this.logger.setContext(PetPlayersController.name);
   }
 
   @Get()
@@ -55,8 +55,8 @@ export class PetPlayerController {
   @ApiOperation({
     summary: 'Create (spawn) a pet',
   })
-  async createPetPlayer(@Body() pet: SpawnPetPlayerDto) {
-    return await this.petService.createPetPlayer(pet);
+  async createPetPlayers(@Body() pet: SpawnPetPlayersDto) {
+    return await this.petService.createPetPlayers(pet);
   }
 
   @Get(':room_code')
@@ -65,7 +65,7 @@ export class PetPlayerController {
     example: 'sg-office',
   })
   @ApiOperation({
-    summary: 'Get list available PetPlayers of a specific room',
+    summary: 'Get list available PetPlayer of a specific room',
   })
   async getPetPlayersWithRoom(@Param('room_code') room_code: string) {
     return await this.petService.getAvailablePetPlayersWithRoom(room_code);
@@ -80,11 +80,11 @@ export class PetPlayerController {
   @ApiOperation({
     summary: 'Update a specific item',
   })
-  async updatePetPlayer(
-    @Query() pet: SpawnPetPlayerDto,
+  async updatePetPlayers(
+    @Query() pet: SpawnPetPlayersDto,
     @Param('pet_id', ParseUUIDPipe) pet_id: string,
   ) {
-    return await this.petService.updatePetPlayer(pet, pet_id);
+    return await this.petService.updatePetPlayers(pet, pet_id);
   }
 
   @Delete(':pet_id')
@@ -96,8 +96,8 @@ export class PetPlayerController {
   @ApiOperation({
     summary: 'Soft delete a specific pet',
   })
-  async deletePetPlayer(@Param('pet_id', ParseUUIDPipe) pet_id: string) {
-    return await this.petService.deletePetPlayer(pet_id);
+  async deletePetPlayers(@Param('pet_id', ParseUUIDPipe) pet_id: string) {
+    return await this.petService.deletePetPlayers(pet_id);
   }
 
   @Post('bring-pets')
@@ -121,7 +121,7 @@ export class PetPlayerController {
   @ApiOperation({
     summary: 'Get a specific pet',
   })
-  async getOnePetPlayer(@Param('pet_id', ParseUUIDPipe) pet_id: string) {
-    return await this.petService.getPetPlayerById(pet_id);
+  async getOnePetPlayers(@Param('pet_id', ParseUUIDPipe) pet_id: string) {
+    return await this.petService.getPetPlayersById(pet_id);
   }
 }

@@ -8,26 +8,26 @@ import { plainToInstance } from 'class-transformer';
 import { error } from 'node:console';
 import { EntityManager, In, Repository } from 'typeorm';
 import {
-  SpawnPetPlayerDto,
-  PetPlayerDtoResponse,
+  SpawnPetPlayersDto,
+  PetPlayersDtoResponse,
   BringPetPlayersDtoList,
-} from './dto/pet-player.dto';
-import { PetPlayerEntity } from './entity/pet-player.entity';
+} from './dto/pet-players.dto';
+import { PetPlayersEntity } from './entity/pet-players.entity';
 import { PetSpeciesEntity } from '@modules/pet-species/entity/pet-species.entity';
 
 @Injectable()
-export class PetPlayerService extends BaseService<PetPlayerEntity> {
+export class PetPlayerservice extends BaseService<PetPlayersEntity> {
   private readonly catchChanceBase;
   constructor(
-    @InjectRepository(PetPlayerEntity)
-    private readonly petRepository: Repository<PetPlayerEntity>,
+    @InjectRepository(PetPlayersEntity)
+    private readonly petRepository: Repository<PetPlayersEntity>,
     @InjectRepository(PetSpeciesEntity)
     private readonly petSpeciesRepository: Repository<PetSpeciesEntity>,
     @InjectRepository(Inventory)
     private readonly inventoryRepository: Repository<Inventory>,
     private manager: EntityManager,
   ) {
-    super(petRepository, PetPlayerEntity.name);
+    super(petRepository, PetPlayersEntity.name);
     this.catchChanceBase = configEnv().CATCH_CHANCE_BASE;
   }
 
@@ -35,7 +35,7 @@ export class PetPlayerService extends BaseService<PetPlayerEntity> {
     const pets = await this.find({
       where: { user: { id: user_id } },
     });
-    return plainToInstance(PetPlayerDtoResponse, pets);
+    return plainToInstance(PetPlayersDtoResponse, pets);
   }
 
   async getAvailablePetPlayersWithRoom(room_code: string) {
@@ -43,22 +43,22 @@ export class PetPlayerService extends BaseService<PetPlayerEntity> {
     return pets;
   }
 
-  async getPetPlayerById(id: string) {
+  async getPetPlayersById(id: string) {
     const pet = await this.findById(id);
     if (!pet) {
-      throw new Error('PetPlayer not found');
+      throw new Error('PetPlayers not found');
     }
     return pet;
   }
 
-  async createPetPlayer(payload: SpawnPetPlayerDto) {
+  async createPetPlayers(payload: SpawnPetPlayersDto) {
     const petSpecies = await this.petSpeciesRepository.findOne({
       where: { species: payload.species },
     });
 
     if (!petSpecies) {
       throw new NotFoundException(
-        `PetPlayer Species ${payload.species} not found`,
+        `PetPlayers Species ${payload.species} not found`,
       );
     }
 
@@ -75,35 +75,35 @@ export class PetPlayerService extends BaseService<PetPlayerEntity> {
     return await this.save(pet);
   }
 
-  async updatePetPlayer(updatePetPlayer: SpawnPetPlayerDto, pet_id: string) {
-    const existedPetPlayer = await this.petRepository.findOne({
+  async updatePetPlayers(updatePetPlayers: SpawnPetPlayersDto, pet_id: string) {
+    const existedPetPlayers = await this.petRepository.findOne({
       where: {
         id: pet_id,
       },
     });
 
-    if (!existedPetPlayer) {
-      throw new NotFoundException(`PetPlayer ${pet_id} not found`);
+    if (!existedPetPlayers) {
+      throw new NotFoundException(`PetPlayers ${pet_id} not found`);
     }
 
-    Object.assign(existedPetPlayer, updatePetPlayer);
+    Object.assign(existedPetPlayers, updatePetPlayers);
 
     await this.save({
-      ...existedPetPlayer,
-      room_code: `${updatePetPlayer.map}${updatePetPlayer.sub_map ? `-${updatePetPlayer.sub_map}` : ''}`,
+      ...existedPetPlayers,
+      room_code: `${updatePetPlayers.map}${updatePetPlayers.sub_map ? `-${updatePetPlayers.sub_map}` : ''}`,
     });
-    return plainToInstance(PetPlayerDtoResponse, existedPetPlayer);
+    return plainToInstance(PetPlayersDtoResponse, existedPetPlayers);
   }
 
-  async deletePetPlayer(id: string) {
+  async deletePetPlayers(id: string) {
     const result = await this.petRepository.delete(id);
     if (result.affected === 0) {
-      throw new Error('PetPlayer not found');
+      throw new Error('PetPlayers not found');
     }
     return { deleted: true };
   }
 
-  async catchPetPlayer(
+  async catchPetPlayers(
     pet_id: string,
     user: UserEntity,
     food_id?: string,
@@ -183,7 +183,7 @@ export class PetPlayerService extends BaseService<PetPlayerEntity> {
     await this.manager.transaction(async (em) => {
       if (trueIds.length) {
         await em
-          .getRepository(PetPlayerEntity)
+          .getRepository(PetPlayersEntity)
           .update(
             { id: In(trueIds), user: { id: user.id } },
             { is_brought: true },
@@ -191,7 +191,7 @@ export class PetPlayerService extends BaseService<PetPlayerEntity> {
       }
       if (falseIds.length) {
         await em
-          .getRepository(PetPlayerEntity)
+          .getRepository(PetPlayersEntity)
           .update(
             { id: In(falseIds), user: { id: user.id } },
             { is_brought: false },

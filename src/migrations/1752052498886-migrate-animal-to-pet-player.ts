@@ -5,7 +5,7 @@ export class MigrateAnimalToPetPlayer1752052498886 implements MigrationInterface
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`
-      INSERT INTO pet_player (
+      INSERT INTO pet_players (
         id,
         name,
         level,

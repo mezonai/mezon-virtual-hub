@@ -5,14 +5,14 @@ import { UserModule } from '@modules/user/user.module';
 import { forwardRef, Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ClsModule } from 'nestjs-cls';
-import { PetPlayerEntity } from './entity/pet-player.entity';
-import { PetPlayerController } from './pet-player.controller';
-import { PetPlayerService } from './pet-player.service';
+import { PetPlayersEntity } from './entity/pet-players.entity';
+import { PetPlayersController } from './pet-players.controller';
+import { PetPlayerservice } from './pet-players.service';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([
-      PetPlayerEntity,
+      PetPlayersEntity,
       PetSpeciesEntity,
       FoodEntity,
       Inventory,
@@ -20,8 +20,8 @@ import { PetPlayerService } from './pet-player.service';
     ClsModule,
     forwardRef(() => UserModule),
   ],
-  providers: [PetPlayerService],
-  controllers: [PetPlayerController],
-  exports: [PetPlayerService],
+  providers: [PetPlayerservice],
+  controllers: [PetPlayersController],
+  exports: [PetPlayerservice],
 })
-export class PetPlayerModule {}
+export class PetPlayersModule {}

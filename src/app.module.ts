@@ -26,7 +26,7 @@ import { TransactionModule } from '@modules/transaction/transaction.module';
 import { AnimalModule } from '@modules/animal/animal.module';
 import { FoodModule } from '@modules/food/food.module';
 import { PetSpeciesModule } from '@modules/pet-species/pet-species.module';
-import { PetPlayerModule } from '@modules/pet-player/pet-player.module';
+import { PetPlayersModule } from '@modules/pet-players/pet-players.module';
 import { PetSkillsModule } from '@modules/pet-skills/pet-skills.module';
 
 @Module({
@@ -55,7 +55,7 @@ import { PetSkillsModule } from '@modules/pet-skills/pet-skills.module';
     AnimalModule,
     FoodModule,
     PetSpeciesModule,
-    PetPlayerModule,
+    PetPlayersModule,
     PetSkillsModule,
     ClsModule.forRoot({
       global: true,
