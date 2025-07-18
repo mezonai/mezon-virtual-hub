@@ -14,8 +14,8 @@ import {
 } from 'class-validator';
 import { Column, Entity, JoinColumn, ManyToOne } from 'typeorm';
 
-@Entity('pet_player')
-export class PetPlayerEntity extends AuditEntity {
+@Entity('pet_players')
+export class PetPlayersEntity extends AuditEntity {
   @Column({ type: 'varchar', length: 50, nullable: true })
   @ApiPropertyOptional({
     description: 'Name of the pet to filter by.',

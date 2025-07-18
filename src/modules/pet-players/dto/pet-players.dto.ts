@@ -9,10 +9,10 @@ import {
   IsString,
   IsUUID,
 } from 'class-validator';
-import { PetPlayerEntity } from '../entity/pet-player.entity';
+import { PetPlayersEntity } from '../entity/pet-players.entity';
 import { PetSpeciesEntity } from '@modules/pet-species/entity/pet-species.entity';
 
-export class SpawnPetPlayerDto {
+export class SpawnPetPlayersDto {
   @ApiProperty()
   @IsString()
   @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
@@ -36,7 +36,7 @@ export class SpawnPetPlayerDto {
   sub_map?: SubMap;
 }
 
-export class PetPlayerDtoResponse extends PetPlayerEntity {
+export class PetPlayersDtoResponse extends PetPlayersEntity {
   @Exclude()
   created_at: Date;
 
@@ -44,19 +44,19 @@ export class PetPlayerDtoResponse extends PetPlayerEntity {
   updated_at: Date;
 
   @Transform(
-    ({ obj }: { obj: PetPlayerEntity }) => obj.pet_species?.rarity ?? null,
+    ({ obj }: { obj: PetPlayersEntity }) => obj.pet_species?.rarity ?? null,
   )
   @Expose()
   readonly rarity?: AnimalRarity;
 
   @Transform(
-    ({ obj }: { obj: PetPlayerEntity }) => obj.pet_species?.species ?? null,
+    ({ obj }: { obj: PetPlayersEntity }) => obj.pet_species?.species ?? null,
   )
   @Expose()
   readonly species?: string;
 
   @Transform(
-    ({ obj }: { obj: PetPlayerEntity }) =>
+    ({ obj }: { obj: PetPlayersEntity }) =>
       obj.pet_species?.catch_chance ?? null,
   )
   @Expose()
@@ -65,7 +65,7 @@ export class PetPlayerDtoResponse extends PetPlayerEntity {
 
 export class BringPetPlayersDto {
   @ApiProperty({
-    description: 'PetPlayer Id to bring with the player (UUID format)',
+    description: 'PetPlayers Id to bring with the player (UUID format)',
     example: '550e8400-e29b-41d4-a716-446655440000',
     type: String,
   })
@@ -83,7 +83,7 @@ export class BringPetPlayersDto {
 }
 export class BringPetPlayersDtoList {
   @ApiProperty({
-    description: 'PetPlayer to bring with the player',
+    description: 'PetPlayers to bring with the player',
     type: [BringPetPlayersDto],
   })
   @IsArray()
