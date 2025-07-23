@@ -15,7 +15,7 @@ import {
 import { PetSkillsEntity } from '../entity/pet-skills.entity';
 
 export class CreatePetSkillsDto extends OmitType(PetSkillsEntity, [
-  'pet_species',
+  'pets',
   'skill_code',
 ] as const) {
   @ApiProperty({
@@ -34,7 +34,7 @@ export class CreatePetSkillsDto extends OmitType(PetSkillsEntity, [
 export class PetSkillsDtoResponse extends CreatePetSkillsDto {}
 
 export class UpdatePetSkillsDto extends OmitType(PetSkillsEntity, [
-  'pet_species',
+  'pets',
   'skill_code',
 ] as const) {}
 

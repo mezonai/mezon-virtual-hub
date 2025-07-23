@@ -1,5 +1,5 @@
 import { AnimalRarity, SkillCode } from '@enum';
-import { PetSpeciesEntity } from '@modules/pet-species/entity/pet-species.entity';
+import { PetsEntity } from '@modules/pets/entity/pets.entity';
 import { UserEntity } from '@modules/user/entity/user.entity';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { AuditEntity } from '@types';
@@ -25,11 +25,11 @@ export class PetPlayersEntity extends AuditEntity {
   @IsString()
   name: string | null;
 
-  @Column({ type: 'int', default: 0 })
+  @Column({ type: 'int', default: 1 })
   @ApiProperty()
   @IsInt()
   @Type(() => Number)
-  level: number = 0;
+  level: number = 1;
 
   @Column({ type: 'int', default: 0 })
   @ApiProperty()
@@ -37,11 +37,11 @@ export class PetPlayersEntity extends AuditEntity {
   @Type(() => Number)
   exp: number = 0;
 
-  @Column({ type: 'int', default: 0 })
+  @Column({ type: 'int', default: 1 })
   @ApiProperty()
   @IsInt()
   @Type(() => Number)
-  stars: number = 0;
+  stars: number = 1;
 
   @Column({ type: 'int', default: 0 })
   @ApiProperty()
@@ -77,6 +77,14 @@ export class PetPlayersEntity extends AuditEntity {
   @IsBoolean()
   is_caught: boolean = false;
 
+  @Column({ type: 'boolean', default: false })
+  @ApiProperty({
+    description: 'Indicates whether this pet is selected for battle',
+    example: false,
+  })
+  @IsBoolean()
+  is_selected_battle: boolean = false;
+
   @Column({ type: 'int', default: 0 })
   @ApiProperty()
   @IsInt()
@@ -109,8 +117,8 @@ export class PetPlayersEntity extends AuditEntity {
   @ApiProperty({ type: () => UserEntity })
   user: UserEntity | null;
 
-  @ManyToOne(() => PetSpeciesEntity)
-  @JoinColumn({ name: 'pet_species_id' })
-  @ApiProperty({ type: () => PetSpeciesEntity })
-  pet_species: PetSpeciesEntity | null;
+  @ManyToOne(() => PetsEntity)
+  @JoinColumn({ name: 'pet_id' })
+  @ApiProperty({ type: () => PetsEntity })
+  pet: PetsEntity | null;
 }

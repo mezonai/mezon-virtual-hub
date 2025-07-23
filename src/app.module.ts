@@ -25,7 +25,7 @@ import { GameEventModule } from '@modules/game-event/game-event.module';
 import { TransactionModule } from '@modules/transaction/transaction.module';
 import { AnimalModule } from '@modules/animal/animal.module';
 import { FoodModule } from '@modules/food/food.module';
-import { PetSpeciesModule } from '@modules/pet-species/pet-species.module';
+import { PetsModule } from '@modules/pets/pets.module';
 import { PetPlayersModule } from '@modules/pet-players/pet-players.module';
 import { PetSkillsModule } from '@modules/pet-skills/pet-skills.module';
 
@@ -54,7 +54,7 @@ import { PetSkillsModule } from '@modules/pet-skills/pet-skills.module';
     TransactionModule,
     AnimalModule,
     FoodModule,
-    PetSpeciesModule,
+    PetsModule,
     PetPlayersModule,
     PetSkillsModule,
     ClsModule.forRoot({

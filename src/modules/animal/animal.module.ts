@@ -7,13 +7,13 @@ import { AnimalController } from './animal.controller';
 import { AnimalService } from './animal.service';
 import { FoodEntity } from '@modules/food/entity/food.entity';
 import { Inventory } from '@modules/inventory/entity/inventory.entity';
-import { PetSpeciesEntity } from '@modules/pet-species/entity/pet-species.entity';
+import { PetsEntity } from '@modules/pets/entity/pets.entity';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([
       AnimalEntity,
-      PetSpeciesEntity,
+      PetsEntity,
       FoodEntity,
       Inventory,
     ]),

@@ -1,0 +1,1 @@
+export const MAX_EQUIPPED_PETS_FOR_BATTLE = 3;
