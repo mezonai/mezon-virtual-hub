@@ -1,5 +1,5 @@
 import { PetType, SkillCode } from '@enum';
-import { PetSpeciesEntity } from '@modules/pet-species/entity/pet-species.entity';
+import { PetsEntity } from '@modules/pets/entity/pets.entity';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { TimestampColumns } from '@types';
 import { Transform, Type } from 'class-transformer';
@@ -61,10 +61,13 @@ export class PetSkillsEntity extends TimestampColumns {
   @IsString()
   description: string | null;
 
-  @ManyToMany(() => PetSpeciesEntity, (species) => species.pet_skills)
+  @ManyToMany(() => PetsEntity, (species) => species.pet_skills)
   @ApiProperty({
-    type: () => [PetSpeciesEntity],
+    type: () => [PetsEntity],
     description: 'Species that can learn this skill',
   })
-  pet_species: PetSpeciesEntity[];
+  pets: PetsEntity[];
+
+  // @OneToMany(() => PetSkillUsageEntity, (usage) => usage.skill)
+  // skill_usages: PetSkillUsageEntity[];
 }

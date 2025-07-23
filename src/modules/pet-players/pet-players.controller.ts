@@ -22,10 +22,12 @@ import { UserEntity } from '@modules/user/entity/user.entity';
 import { Body, Delete, Param, Put } from '@nestjs/common';
 import { ClsService } from 'nestjs-cls';
 import { UserService } from '../user/user.service';
-import { PetPlayerservice } from './pet-players.service';
+import { PetPlayersService } from './pet-players.service';
 import {
   SpawnPetPlayersDto,
   BringPetPlayersDtoList,
+  SelectPetPlayersListDto,
+  PetPlayerSkillsDto,
 } from './dto/pet-players.dto';
 
 @ApiBearerAuth()
@@ -34,7 +36,7 @@ import {
 export class PetPlayersController {
   constructor(
     private readonly cls: ClsService,
-    private readonly petService: PetPlayerservice,
+    private readonly petPlayersService: PetPlayersService,
     private readonly userService: UserService,
     private readonly logger: Logger,
   ) {
@@ -47,7 +49,7 @@ export class PetPlayersController {
   })
   async getPetPlayers() {
     const user = this.cls.get<UserEntity>(USER_TOKEN);
-    return await this.petService.getPetPlayers(user.id);
+    return await this.petPlayersService.getPetPlayers(user.id);
   }
 
   @Post()
@@ -56,7 +58,7 @@ export class PetPlayersController {
     summary: 'Create (spawn) a pet',
   })
   async createPetPlayers(@Body() pet: SpawnPetPlayersDto) {
-    return await this.petService.createPetPlayers(pet);
+    return await this.petPlayersService.createPetPlayers(pet);
   }
 
   @Get(':room_code')
@@ -68,13 +70,15 @@ export class PetPlayersController {
     summary: 'Get list available PetPlayer of a specific room',
   })
   async getPetPlayersWithRoom(@Param('room_code') room_code: string) {
-    return await this.petService.getAvailablePetPlayersWithRoom(room_code);
+    return await this.petPlayersService.getAvailablePetPlayersWithRoom(
+      room_code,
+    );
   }
 
-  @Put(':pet_id')
+  @Put(':pet_player_id')
   @UseGuards(AdminBypassGuard)
   @ApiParam({
-    name: 'pet_id',
+    name: 'pet_player_id',
     example: '91bea29f-0e87-42a5-b851-d9d0386ac32f',
   })
   @ApiOperation({
@@ -82,22 +86,24 @@ export class PetPlayersController {
   })
   async updatePetPlayers(
     @Query() pet: SpawnPetPlayersDto,
-    @Param('pet_id', ParseUUIDPipe) pet_id: string,
+    @Param('pet_player_id', ParseUUIDPipe) pet_player_id: string,
   ) {
-    return await this.petService.updatePetPlayers(pet, pet_id);
+    return await this.petPlayersService.updatePetPlayers(pet, pet_player_id);
   }
 
-  @Delete(':pet_id')
+  @Delete(':pet_player_id')
   @UseGuards(AdminBypassGuard)
   @ApiParam({
-    name: 'pet_id',
+    name: 'pet_player_id',
     example: '91bea29f-0e87-42a5-b851-d9d0386ac32f',
   })
   @ApiOperation({
     summary: 'Soft delete a specific pet',
   })
-  async deletePetPlayers(@Param('pet_id', ParseUUIDPipe) pet_id: string) {
-    return await this.petService.deletePetPlayers(pet_id);
+  async deletePetPlayers(
+    @Param('pet_player_id', ParseUUIDPipe) pet_player_id: string,
+  ) {
+    return await this.petPlayersService.deletePetPlayers(pet_player_id);
   }
 
   @Post('bring-pets')
@@ -109,19 +115,55 @@ export class PetPlayersController {
   @ApiBody({ type: BringPetPlayersDtoList })
   async bringPetPlayers(@Body() payload: BringPetPlayersDtoList) {
     const user = this.cls.get<UserEntity>(USER_TOKEN);
-    return await this.petService.bringPetPlayers(user, payload);
+    return await this.petPlayersService.bringPetPlayers(user, payload);
   }
 
-  @Get('find/:pet_id')
+  @Post('select-pets')
+  @ApiOperation({
+    summary: 'Select multiple pets for battle',
+    description:
+      'Allows the player to select a list of pets by specifying their IDs.',
+  })
+  @ApiBody({ type: SelectPetPlayersListDto })
+  async selectPetPlayers(@Body() payload: SelectPetPlayersListDto) {
+    const user = this.cls.get<UserEntity>(USER_TOKEN);
+    return await this.petPlayersService.selectPetPlayers(user, payload);
+  }
+
+  @Put(':pet_player_id/unlock-skills')
+  @ApiParam({
+    name: 'pet_player_id',
+    example: '91bea29f-0e87-42a5-b851-d9d0386ac32f',
+  })
+  @ApiOperation({
+    summary: 'Select skills for pets',
+    description: 'Allows the player to select a list of skills by skill_codes',
+  })
+  @ApiBody({ type: PetPlayerSkillsDto })
+  async unlockSkills(
+    @Param('pet_player_id', ParseUUIDPipe) pet_player_id: string,
+    @Body() payload: PetPlayerSkillsDto,
+  ) {
+    const user = this.cls.get<UserEntity>(USER_TOKEN);
+    return await this.petPlayersService.unlockSkills(
+      user,
+      pet_player_id,
+      payload,
+    );
+  }
+
+  @Get('find/:pet_player_id')
   @UseGuards(AdminBypassGuard)
   @ApiParam({
-    name: 'pet_id',
+    name: 'pet_player_id',
     example: '91bea29f-0e87-42a5-b851-d9d0386ac32f',
   })
   @ApiOperation({
     summary: 'Get a specific pet',
   })
-  async getOnePetPlayers(@Param('pet_id', ParseUUIDPipe) pet_id: string) {
-    return await this.petService.getPetPlayersById(pet_id);
+  async getOnePetPlayers(
+    @Param('pet_player_id', ParseUUIDPipe) pet_player_id: string,
+  ) {
+    return await this.petPlayersService.getPetPlayersById(pet_player_id);
   }
 }

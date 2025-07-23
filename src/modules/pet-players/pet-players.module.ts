@@ -1,27 +1,27 @@
 import { FoodEntity } from '@modules/food/entity/food.entity';
 import { Inventory } from '@modules/inventory/entity/inventory.entity';
-import { PetSpeciesEntity } from '@modules/pet-species/entity/pet-species.entity';
+import { PetsEntity } from '@modules/pets/entity/pets.entity';
 import { UserModule } from '@modules/user/user.module';
 import { forwardRef, Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ClsModule } from 'nestjs-cls';
 import { PetPlayersEntity } from './entity/pet-players.entity';
 import { PetPlayersController } from './pet-players.controller';
-import { PetPlayerservice } from './pet-players.service';
+import { PetPlayersService } from './pet-players.service';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([
       PetPlayersEntity,
-      PetSpeciesEntity,
+      PetsEntity,
       FoodEntity,
       Inventory,
     ]),
     ClsModule,
     forwardRef(() => UserModule),
   ],
-  providers: [PetPlayerservice],
+  providers: [PetPlayersService],
   controllers: [PetPlayersController],
-  exports: [PetPlayerservice],
+  exports: [PetPlayersService],
 })
 export class PetPlayersModule {}

@@ -2,7 +2,11 @@ import { configEnv } from '@config/env.config';
 import { BaseService } from '@libs/base/base.service';
 import { Inventory } from '@modules/inventory/entity/inventory.entity';
 import { UserEntity } from '@modules/user/entity/user.entity';
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { plainToInstance } from 'class-transformer';
 import { error } from 'node:console';
@@ -11,18 +15,24 @@ import {
   SpawnPetPlayersDto,
   PetPlayersDtoResponse,
   BringPetPlayersDtoList,
+  SelectPetPlayersListDto,
+  PetPlayerSkillsDto,
 } from './dto/pet-players.dto';
 import { PetPlayersEntity } from './entity/pet-players.entity';
-import { PetSpeciesEntity } from '@modules/pet-species/entity/pet-species.entity';
+import { PetsEntity } from '@modules/pets/entity/pets.entity';
+import { MAX_EQUIPPED_PETS_FOR_BATTLE } from '@constant';
+import { SkillCode } from '@enum';
+
+const SELECTED_PETS_FOR_BATTLE = 3;
 
 @Injectable()
-export class PetPlayerservice extends BaseService<PetPlayersEntity> {
+export class PetPlayersService extends BaseService<PetPlayersEntity> {
   private readonly catchChanceBase;
   constructor(
     @InjectRepository(PetPlayersEntity)
     private readonly petRepository: Repository<PetPlayersEntity>,
-    @InjectRepository(PetSpeciesEntity)
-    private readonly petSpeciesRepository: Repository<PetSpeciesEntity>,
+    @InjectRepository(PetsEntity)
+    private readonly petsRepository: Repository<PetsEntity>,
     @InjectRepository(Inventory)
     private readonly inventoryRepository: Repository<Inventory>,
     private manager: EntityManager,
@@ -34,6 +44,7 @@ export class PetPlayerservice extends BaseService<PetPlayersEntity> {
   async getPetPlayers(user_id: string) {
     const pets = await this.find({
       where: { user: { id: user_id } },
+      relations: ['pet'],
     });
     return plainToInstance(PetPlayersDtoResponse, pets);
   }
@@ -46,33 +57,33 @@ export class PetPlayerservice extends BaseService<PetPlayersEntity> {
   async getPetPlayersById(id: string) {
     const pet = await this.findById(id);
     if (!pet) {
-      throw new Error('PetPlayers not found');
+      throw new Error('Pet-player not found');
     }
     return pet;
   }
 
   async createPetPlayers(payload: SpawnPetPlayersDto) {
-    const petSpecies = await this.petSpeciesRepository.findOne({
+    const pet = await this.petsRepository.findOne({
       where: { species: payload.species },
     });
 
-    if (!petSpecies) {
+    if (!pet) {
       throw new NotFoundException(
-        `PetPlayers Species ${payload.species} not found`,
+        `Pet-player Species ${payload.species} not found`,
       );
     }
 
-    const pet = this.petRepository.create({
-      pet_species: petSpecies,
+    const petPlayer = this.petRepository.create({
+      pet,
       individual_value: this.generateIndividualValue(),
-      attack: petSpecies.base_attack,
-      defense: petSpecies.base_defense,
-      hp: petSpecies.base_hp,
-      speed: petSpecies.base_speed,
+      attack: pet.base_attack,
+      defense: pet.base_defense,
+      hp: pet.base_hp,
+      speed: pet.base_speed,
       room_code: `${payload.map}${payload.sub_map ? `-${payload.sub_map}` : ''}`,
     });
 
-    return await this.save(pet);
+    return await this.save(petPlayer);
   }
 
   async updatePetPlayers(updatePetPlayers: SpawnPetPlayersDto, pet_id: string) {
@@ -83,7 +94,7 @@ export class PetPlayerservice extends BaseService<PetPlayersEntity> {
     });
 
     if (!existedPetPlayers) {
-      throw new NotFoundException(`PetPlayers ${pet_id} not found`);
+      throw new NotFoundException(`Pet-player ${pet_id} not found`);
     }
 
     Object.assign(existedPetPlayers, updatePetPlayers);
@@ -98,7 +109,7 @@ export class PetPlayerservice extends BaseService<PetPlayersEntity> {
   async deletePetPlayers(id: string) {
     const result = await this.petRepository.delete(id);
     if (result.affected === 0) {
-      throw new Error('PetPlayers not found');
+      throw new Error('Pet-player not found');
     }
     return { deleted: true };
   }
@@ -113,7 +124,7 @@ export class PetPlayerservice extends BaseService<PetPlayersEntity> {
         id: pet_id,
         is_caught: false,
       },
-      relations: ['pet_species'],
+      relations: ['pets'],
     });
 
     if (!pet) {
@@ -142,7 +153,7 @@ export class PetPlayerservice extends BaseService<PetPlayersEntity> {
     }
 
     const randomValue = Math.random() * 100;
-    const petCatchChance = pet.pet_species?.catch_chance ?? 10;
+    const petCatchChance = pet.pet?.catch_chance ?? 10;
     const chanceToCatch =
       ((this.catchChanceBase * foodChanceBonus) / petCatchChance) * 100;
 
@@ -173,7 +184,7 @@ export class PetPlayerservice extends BaseService<PetPlayersEntity> {
       const foundIds = new Set(existing.map((p) => p.id));
       const missing = allIds.filter((id) => !foundIds.has(id));
       throw new NotFoundException(
-        `PetPlayers not found or not owned: ${missing.join(', ')}`,
+        `Pet-player not found or not owned: ${missing.join(', ')}`,
       );
     }
 
@@ -200,11 +211,126 @@ export class PetPlayerservice extends BaseService<PetPlayersEntity> {
     });
 
     return {
-      message: 'PetPlayers bring‐status updated.',
+      message: 'Pet-players bring‐status updated.',
       updated: {
         brought: trueIds,
         unbrought: falseIds,
       },
+    };
+  }
+
+  async selectPetPlayers(
+    user: UserEntity,
+    { pets: petsDto }: SelectPetPlayersListDto,
+  ) {
+    const allIds = petsDto.map((d) => d.id);
+    const existing = await this.petRepository.find({
+      where: {
+        id: In(allIds),
+        user: { id: user.id },
+      },
+      select: ['id'],
+    });
+
+    if (existing.length !== allIds.length) {
+      const foundIds = new Set(existing.map((p) => p.id));
+      const missing = allIds.filter((id) => !foundIds.has(id));
+      throw new NotFoundException(
+        `Pet-player not found or not owned: ${missing.join(', ')}`,
+      );
+    }
+
+    const trueIds = petsDto
+      .filter((d) => d.is_selected_battle)
+      .map((d) => d.id);
+    const falseIds = petsDto
+      .filter((d) => !d.is_selected_battle)
+      .map((d) => d.id);
+
+    if (trueIds.length > MAX_EQUIPPED_PETS_FOR_BATTLE) {
+      throw new BadRequestException(
+        `You can only equip up to ${MAX_EQUIPPED_PETS_FOR_BATTLE} pet-players for battle. You selected ${trueIds.length}.`,
+      );
+    }
+
+    await this.manager.transaction(async (em) => {
+      if (trueIds.length) {
+        await em
+          .getRepository(PetPlayersEntity)
+          .update(
+            { id: In(trueIds), user: { id: user.id } },
+            { is_selected_battle: true },
+          );
+      }
+      if (falseIds.length) {
+        await em
+          .getRepository(PetPlayersEntity)
+          .update(
+            { id: In(falseIds), user: { id: user.id } },
+            { is_selected_battle: false },
+          );
+      }
+    });
+
+    return {
+      message: 'Pet-players selected‐status updated.',
+      updated: {
+        selected: trueIds,
+      },
+    };
+  }
+
+  async unlockSkills(
+    user: UserEntity,
+    pet_player_id: string,
+    { unlocked_skill_codes }: PetPlayerSkillsDto,
+  ) {
+    if (
+      !Array.isArray(unlocked_skill_codes) ||
+      unlocked_skill_codes.length === 0
+    ) {
+      throw new BadRequestException('No skills provided for unlocking.');
+    }
+
+    const petPlayer = await this.findOne({
+      where: {
+        id: pet_player_id,
+        user: { id: user.id },
+      },
+    });
+
+    if (!petPlayer) {
+      throw new NotFoundException('Pet-player not found or not owned by user.');
+    }
+
+    const currentSkills = petPlayer.unlocked_skill_codes ?? [];
+    const maxSkills =
+      2 + (petPlayer.level >= 40 ? 1 : 0) + (petPlayer.level >= 70 ? 1 : 0);
+
+    if (currentSkills.length >= maxSkills) {
+      throw new BadRequestException(
+        `All available skill slots are already used. Level ${petPlayer.level} allows max ${maxSkills} skills.`,
+      );
+    }
+
+    const newSkills = unlocked_skill_codes.filter(
+      (code) => !currentSkills.includes(code),
+    );
+
+    const totalSkills = currentSkills.length + newSkills.length;
+    if (totalSkills > maxSkills) {
+      throw new BadRequestException(
+        `You can only unlock ${maxSkills - currentSkills.length} more skill(s) at level ${petPlayer.level}.`,
+      );
+    }
+
+    petPlayer.unlocked_skill_codes = [...currentSkills, ...newSkills];
+
+    await this.save(petPlayer);
+
+    return {
+      message: 'Skills successfully unlocked.',
+      skills: petPlayer.unlocked_skill_codes,
     };
   }
 
