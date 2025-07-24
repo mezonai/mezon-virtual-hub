@@ -20,8 +20,8 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Player, WithdrawPayload } from '@types';
-import { Client, ClientArray, Room } from 'colyseus';
+import { Player, PlayerBattleInfo, WithdrawPayload } from '@types';
+import { Client, ClientArray, matchMaker, Room } from 'colyseus';
 import { IncomingMessage } from 'http';
 import { Repository } from 'typeorm';
 import { PetQueueManager } from '../pet/PetQueueManager';
@@ -30,7 +30,7 @@ import { AnimalDtoRequest } from '@modules/animal/dto/animal.dto';
 import { Console } from 'console';
 import { Door } from '../door/Door';
 import { DoorManager } from '../door/DoorManager';
-
+import { MessageTypes } from '../MessageTypes';
 export class Item extends Schema {
   @type('number') x: number = 0;
   @type('number') y: number = 0;
@@ -46,11 +46,13 @@ export class Item extends Schema {
   }
 }
 
+
 export class RoomState extends Schema {
   @type({ map: Player }) players = new Map<string, Player>();
   @type({ map: Item }) items = new Map<string, Item>();
   @type({ map: Pet }) pets = new Map<string, Pet>();
   @type({ map: Door }) doors = new MapSchema<Door>();
+  @type({ map: PlayerBattleInfo }) battlePlayers = new MapSchema<PlayerBattleInfo>();
 }
 
 @Injectable()
@@ -123,14 +125,8 @@ export class BaseGameRoom extends Room<RoomState> {
       relations: ['map', 'animals'],
     });
 
-    if (!user || !user.map) {
+    if (!user) {
       throw new NotFoundException('User not found or not assigned to any map');
-    }
-
-    if (!this.roomName.startsWith(user.map.map_key)) {
-      throw new ForbiddenException(
-        `User is not allowed in this room: ${this.roomName}`,
-      );
     }
 
     console.log(`User ${user.username} is allowed in ${this.roomId}`);
@@ -436,7 +432,7 @@ export class BaseGameRoom extends Room<RoomState> {
     });
 
 
-    this.onMessage("p2pAction", (sender, data) => {
+    this.onMessage("p2pAction", async (sender, data) => {
       const { targetClientId, action, amount } = data;
 
       if (action == ActionKey.RPS.toString() && sender.userData?.diamond < RPS_FEE) {
@@ -474,7 +470,6 @@ export class BaseGameRoom extends Room<RoomState> {
           return;
         }
       }
-
       let gameKey = this.createKeyForActionDict(action, sender.sessionId, targetClientId);
       if (targetClient) {
         targetClient.send("onP2pAction", {
@@ -645,7 +640,7 @@ export class BaseGameRoom extends Room<RoomState> {
     this.spawnPetInRoom();
 
     //combat
-    this.onMessage("p2pCombatActionAccept", (sender, data) => {
+    this.onMessage("p2pCombatActionAccept", async (sender, data) => {
       const { targetClientId, action } = data;
       const targetClient = this.clients.find(client => client.sessionId === targetClientId);
       let gameKey = this.createKeyForActionDict(action, targetClientId, sender.sessionId);
@@ -654,14 +649,8 @@ export class BaseGameRoom extends Room<RoomState> {
         from: targetClientId,
         to: sender.sessionId,
       })
-
-      if (targetClient) {
-        this.broadcast("onp2pCombatActionAccept", {
-          action: action,
-          from: targetClientId,
-          to: sender.sessionId,
-          gameKey: gameKey
-        });
+      if (action == ActionKey.Battle.toString()) {
+        this.createBattleRoom(sender, targetClient);;
       }
     });
 
@@ -873,6 +862,26 @@ export class BaseGameRoom extends Room<RoomState> {
           this.broadcastPetPositions(pet);
         }
       }, 100);
+    });
+  }
+
+  async createBattleRoom(sender: Client, targetUser: Client | undefined) {
+    const matchRoomName = `battle-room-${sender.sessionId}-${targetUser?.sessionId}`;
+    // Create the room
+    const room = await matchMaker.createRoom("battle-room", {
+      player1: sender,
+      player2: targetUser,
+    });
+
+    // Send room info to both players
+    sender.send(MessageTypes.BATTE_ROOM_READY, {
+      roomId: room.roomId,
+      roomName: matchRoomName,
+    });
+
+    targetUser?.send(MessageTypes.BATTE_ROOM_READY, {
+      roomId: room.roomId,
+      roomName: matchRoomName,
     });
   }
 }
