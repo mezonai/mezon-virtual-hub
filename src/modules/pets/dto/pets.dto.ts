@@ -12,9 +12,9 @@ import {
   IsString,
   IsUUID,
 } from 'class-validator';
-import { PetSpeciesEntity } from '../entity/pet-species.entity';
+import { PetsEntity } from '../entity/pets.entity';
 
-export class PetSpeciesDtoRequest extends OmitType(PetSpeciesEntity, [
+export class PetsDtoRequest extends OmitType(PetsEntity, [
   'id',
   'pet_skills',
 ] as const) {
@@ -30,7 +30,7 @@ export class PetSpeciesDtoRequest extends OmitType(PetSpeciesEntity, [
   skill_codes: SkillCode[] | null;
 }
 
-export class PetSpeciesDtoResponse extends PetSpeciesEntity {}
+export class PetsDtoResponse extends PetsEntity {}
 
 export class BringPetsDto {
   @ApiProperty({

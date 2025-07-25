@@ -1,0 +1,62 @@
+[
+  {
+    "species": "Bird",
+    "skills": ["NOR01", "NOR06", "NOR10", "NOR11"]
+  },
+  {
+    "species": "Cat",
+    "skills": ["NOR01", "NOR08", "NOR02", "NOR09"]
+  },
+  {
+    "species": "Dog",
+    "skills": ["NOR01", "NOR08", "NOR09", "NOR04"]
+  },
+  {
+    "species": "Rabit",
+    "skills": ["NOR02", "NOR07", "NOR03", "GRASS02"]
+  },
+  {
+    "species": "Sika",
+    "skills": ["GRASS02", "NOR07", "NOR03", "GRASS01"]
+  },
+  {
+    "species": "Pokemon",
+    "skills": ["NOR06", "NOR09", "ELECTRIC01", "ELECTRIC02"]
+  },
+  {
+    "species": "Dragon",
+    "skills": ["NOR07", "FIRE01", "DRAGON01", "FIRE02"]
+  },
+  {
+    "species": "PhoenixIce",
+    "skills": ["NOR10", "ICE01", "ICE01", "NOR12"]
+  },
+  {
+    "species": "DragonIce",
+    "skills": ["DRAGON01", "NOR11", "ICE01", "NOR12"]
+  },
+  {
+    "species": "Snowria",
+    "skills": ["NOR01", "NOR06", "NOR10", "NOR11"]
+  },
+  {
+    "species": "Leafeon",
+    "skills": ["GRASS02", "NOR07", "NOR03", "GRASS01"]
+  },
+  {
+    "species": "Lizard",
+    "skills": ["NOR01", "NOR06", "NOR10", "NOR11"]
+  },
+  {
+    "species": "Duskar",
+    "skills": ["NOR01", "NOR08", "NOR09", "NOR04"]
+  },
+  {
+    "species": "Bubblespark",
+    "skills": ["NOR01", "NOR09", "ELECTRIC02", "ELECTRIC01"]
+  },
+  {
+    "species": "PhoenixFire",
+    "skills": ["NOR10", "ICE01", "ICE01", "NOR12"]
+  }
+]

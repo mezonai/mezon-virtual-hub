@@ -1,21 +1,14 @@
-import {
-  Entity,
-  PrimaryGeneratedColumn,
-  Column,
-  Unique,
-  JoinTable,
-  ManyToMany,
-} from 'typeorm';
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { AnimalRarity, PetType } from '@enum';
-import { IsEnum, IsInt, IsOptional, IsString } from 'class-validator';
-import { Transform, Type } from 'class-transformer';
-import { AuditEntity } from '@types';
 import { PetSkillsEntity } from '@modules/pet-skills/entity/pet-skills.entity';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { AuditEntity } from '@types';
+import { Transform, Type } from 'class-transformer';
+import { IsEnum, IsInt, IsOptional, IsString } from 'class-validator';
+import { Column, Entity, JoinTable, ManyToMany, Unique } from 'typeorm';
 
-@Entity('pet_species')
-@Unique(['species'])
-export class PetSpeciesEntity extends AuditEntity {
+@Entity('pets')
+@Unique(['species', 'rarity'])
+export class PetsEntity extends AuditEntity {
   @Column({ type: 'varchar', length: 50 })
   @ApiProperty()
   @IsString()
@@ -71,11 +64,13 @@ export class PetSpeciesEntity extends AuditEntity {
   @IsEnum(AnimalRarity)
   rarity: AnimalRarity = AnimalRarity.COMMON;
 
-  @ManyToMany(() => PetSkillsEntity, (skill) => skill.pet_species, { eager: false })
+  @ManyToMany(() => PetSkillsEntity, (skill) => skill.pets, {
+    eager: false,
+  })
   @JoinTable({
-    name: 'pet_species_skills',
+    name: 'pet_skill_usages',
     joinColumn: {
-      name: 'pet_species_id',
+      name: 'pet_id',
       referencedColumnName: 'id',
     },
     inverseJoinColumn: {
@@ -88,4 +83,10 @@ export class PetSpeciesEntity extends AuditEntity {
     description: 'List of skills this pet species can learn',
   })
   pet_skills: PetSkillsEntity[];
+
+  // @OneToMany(() => PetSkillUsageEntity, (usage) => usage.pet, {
+  //   cascade: true,
+  //   eager: true,
+  // })
+  // skill_usages: PetSkillUsageEntity[];
 }

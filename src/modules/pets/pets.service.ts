@@ -6,24 +6,24 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { EntityManager, In, Repository } from 'typeorm';
-import { PetSpeciesDtoRequest } from './dto/pet-species.dto';
-import { PetSpeciesEntity } from './entity/pet-species.entity';
+import { PetsDtoRequest } from './dto/pets.dto';
+import { PetsEntity } from './entity/pets.entity';
 import { PetSkillsService } from '@modules/pet-skills/pet-skills.service';
 
 @Injectable()
-export class PetSpeciesService extends BaseService<PetSpeciesEntity> {
+export class PetsService extends BaseService<PetsEntity> {
   constructor(
-    @InjectRepository(PetSpeciesEntity)
-    private readonly petSpeciesRepository: Repository<PetSpeciesEntity>,
+    @InjectRepository(PetsEntity)
+    private readonly petsRepository: Repository<PetsEntity>,
     private readonly petSkillsService: PetSkillsService,
     private manager: EntityManager,
   ) {
-    super(petSpeciesRepository, PetSpeciesEntity.name);
+    super(petsRepository, PetsEntity.name);
   }
 
   async getAll() {
-    const petSpecies = await this.find({ relations: ['pet_skills'] });
-    return petSpecies;
+    const pets = await this.find({ relations: ['pet_skills'] });
+    return pets;
   }
 
   async checkExistedSpecies(species: string) {
@@ -33,12 +33,12 @@ export class PetSpeciesService extends BaseService<PetSpeciesEntity> {
 
     if (existedPet) {
       throw new BadRequestException(
-        `Pet species '${species}' is already existed`,
+        `Pet '${species}' is already existed`,
       );
     }
   }
 
-  async createPetSpecies(payload: PetSpeciesDtoRequest) {
+  async createPets(payload: PetsDtoRequest) {
     await this.checkExistedSpecies(payload.species);
 
     const newSpecies = this.create(payload);
@@ -53,29 +53,29 @@ export class PetSpeciesService extends BaseService<PetSpeciesEntity> {
     return await this.save(newSpecies);
   }
 
-  async updatePetSpecies(id: string, payload: PetSpeciesDtoRequest) {
-    const petSpecies = await this.findOne({
+  async updatePets(id: string, payload: PetsDtoRequest) {
+    const pets = await this.findOne({
       where: { id },
     });
 
-    if (!petSpecies) {
-      throw new NotFoundException(`Pet species not found`);
+    if (!pets) {
+      throw new NotFoundException(`Pet not found`);
     }
 
-    if (payload.species !== petSpecies.species) {
+    if (payload.species !== pets.species) {
       await this.checkExistedSpecies(payload.species);
     }
 
-    await this.petSpeciesRepository.update(id, payload);
+    await this.petsRepository.update(id, payload);
 
-    Object.assign(petSpecies, payload);
-    return petSpecies;
+    Object.assign(pets, payload);
+    return pets;
   }
 
-  async deletePetSpecies(id: string) {
-    const result = await this.petSpeciesRepository.softDelete(id);
+  async deletePets(id: string) {
+    const result = await this.petsRepository.softDelete(id);
     if (result.affected === 0) {
-      throw new Error('Pet species not found');
+      throw new Error('Pet not found');
     }
     return { deleted: true };
   }
