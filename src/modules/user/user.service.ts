@@ -3,16 +3,11 @@ import { MapEntity } from '@modules/map/entity/map.entity';
 import {
   BadRequestException,
   Injectable,
-  NotFoundException
+  NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { plainToClass } from 'class-transformer';
-import {
-  DataSource,
-  EntityManager,
-  FindOneOptions,
-  Repository
-} from 'typeorm';
+import { DataSource, EntityManager, FindOneOptions, Repository } from 'typeorm';
 import { UpdateInfoDto, UserInformationDto } from './dto/user.dto';
 import { UserEntity } from './entity/user.entity';
 
@@ -33,7 +28,6 @@ export class UserService extends BaseService<UserEntity> {
     const userInfo = await this.userRepository
       .createQueryBuilder('user')
       .leftJoinAndSelect('user.inventories', 'inventory')
-      .leftJoinAndSelect('user.animals', 'animal')
       .leftJoinAndSelect('inventory.item', 'item')
       .leftJoinAndSelect('inventory.food', 'food')
       .leftJoinAndSelect('user.map', 'map')
@@ -44,13 +38,12 @@ export class UserService extends BaseService<UserEntity> {
       throw new Error('User not found in the database');
     }
 
-    const { inventories, map, animals, ...user } = userInfo;
+    const { inventories, map, ...user } = userInfo;
 
     return plainToClass(UserInformationDto, {
       user,
       inventories,
       map,
-      animals,
     });
   }
 

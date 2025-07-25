@@ -1,13 +1,10 @@
-import { UserEntity } from '@modules/user/entity/user.entity';
 import { Injectable } from '@nestjs/common';
-import { Player } from '@types';
-import { Client } from 'colyseus';
+import { AuthenticatedClient, Player } from '@types';
 import { BaseGameRoom } from './base-game.room';
-import { any } from 'joi';
 
 @Injectable()
 export class Meeting1Room extends BaseGameRoom {
-  async onJoin(client: Client<UserEntity>, options: any, auth: any) {
+  async onJoin(client: AuthenticatedClient, options: any, auth: any) {
     super.onJoin(client, options, auth);
     const { userData } = client;
     this.logger.log(
@@ -22,13 +19,13 @@ export class Meeting1Room extends BaseGameRoom {
     player.is_show_name = BaseGameRoom.eventData == null;
     player.display_name = userData?.display_name || userData?.username || '';
     player.skin_set = userData?.skin_set?.join('/') || '';
-    player.animals = JSON.stringify(
-      (userData?.animals?.filter(a => a.is_brought)
+    player.pet_players = JSON.stringify(
+      (userData?.pet_players?.filter(a => a.is_brought)
         .map(a => ({
           id: a.id,
           name: a.name,
-          species: a.species,
-          rarity: a.rarity,
+          species: a.pet?.species,
+          rarity: a.pet?.rarity,
         }))) ?? []
     );
     this.state.players.set(client.sessionId, player);

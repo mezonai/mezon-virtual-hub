@@ -11,10 +11,10 @@ export class SeedPetSkillUsageFromJson1753100206081
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     const filePath = path.resolve(__dirname, '../seeds/pet-skill-usages.json');
-
     const fileData = fs.readFileSync(filePath, 'utf-8');
     const petSkills: { species: string; skills: SkillCode[] }[] =
       JSON.parse(fileData);
+
     for (const item of petSkills) {
       const { species, skills } = item;
 
@@ -28,7 +28,10 @@ export class SeedPetSkillUsageFromJson1753100206081
         continue;
       }
 
-      for (const skillCode of skills) {
+      for (let i = 0; i < skills.length; i++) {
+        const skillCode = skills[i];
+        const skillIndex = i + 1;
+
         const skillExists = await queryRunner.query(
           `SELECT skill_code FROM pet_skills WHERE skill_code = $1`,
           [skillCode],
@@ -40,11 +43,11 @@ export class SeedPetSkillUsageFromJson1753100206081
         }
 
         for (const pet of pets) {
-          queryRunner.query(
-            `INSERT INTO pet_skill_usages (pet_id, skill_code)
-             VALUES ($1, $2)
+          await queryRunner.query(
+            `INSERT INTO pet_skill_usages (pet_id, skill_code, skill_index)
+             VALUES ($1, $2, $3)
              ON CONFLICT DO NOTHING`,
-            [pet.id, skillCode],
+            [pet.id, skillCode, skillIndex],
           );
         }
       }
@@ -53,7 +56,6 @@ export class SeedPetSkillUsageFromJson1753100206081
 
   public async down(queryRunner: QueryRunner): Promise<void> {
     const filePath = path.resolve(__dirname, '../seeds/pet-skill-usages.json');
-
     const fileData = fs.readFileSync(filePath, 'utf-8');
     const petSkills: { species: string; skills: SkillCode[] }[] =
       JSON.parse(fileData);

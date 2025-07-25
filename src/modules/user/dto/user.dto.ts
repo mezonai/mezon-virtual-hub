@@ -12,6 +12,8 @@ import {
   IsUUID,
 } from 'class-validator';
 import { UUID } from 'typeorm/driver/mongodb/bson.typings';
+import { UserEntity } from '../entity/user.entity';
+import { PetPlayersWithSpeciesDto } from '@modules/pet-players/dto/pet-players.dto';
 
 export class UserExcludeResponse {
   @Exclude()
@@ -90,7 +92,6 @@ export class UpdateInfoDto {
   skin_set?: string[];
 }
 
-
 export class UserInformationDto {
   @Expose()
   @Type(() => UserExcludeResponse)
@@ -103,4 +104,8 @@ export class UserInformationDto {
   @Type(() => MapDtoResponse)
   @Expose()
   map: MapDtoResponse | null;
+}
+
+export class UserWithPetPlayers extends UserEntity {
+  pet_players: PetPlayersWithSpeciesDto[];
 }

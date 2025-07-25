@@ -1,6 +1,9 @@
 import { configEnv } from '@config/env.config';
+import { MAX_EQUIPPED_PETS_FOR_BATTLE } from '@constant';
 import { BaseService } from '@libs/base/base.service';
 import { Inventory } from '@modules/inventory/entity/inventory.entity';
+import { PetSkillsService } from '@modules/pet-skills/pet-skills.service';
+import { PetsEntity } from '@modules/pets/entity/pets.entity';
 import { UserEntity } from '@modules/user/entity/user.entity';
 import {
   BadRequestException,
@@ -8,20 +11,18 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { plainToInstance } from 'class-transformer';
+import { instanceToPlain, plainToInstance } from 'class-transformer';
 import { error } from 'node:console';
-import { EntityManager, In, Repository } from 'typeorm';
+import { EntityManager, FindOptionsWhere, In, Repository } from 'typeorm';
 import {
-  SpawnPetPlayersDto,
-  PetPlayersDtoResponse,
   BringPetPlayersDtoList,
+  PetPlayersInfoDto,
+  PetPlayersWithSpeciesDto,
   SelectPetPlayersListDto,
-  PetPlayerSkillsDto,
+  SpawnPetPlayersDto,
+  UpdatePetPlayersDto,
 } from './dto/pet-players.dto';
 import { PetPlayersEntity } from './entity/pet-players.entity';
-import { PetsEntity } from '@modules/pets/entity/pets.entity';
-import { MAX_EQUIPPED_PETS_FOR_BATTLE } from '@constant';
-import { SkillCode } from '@enum';
 
 const SELECTED_PETS_FOR_BATTLE = 3;
 
@@ -30,32 +31,51 @@ export class PetPlayersService extends BaseService<PetPlayersEntity> {
   private readonly catchChanceBase;
   constructor(
     @InjectRepository(PetPlayersEntity)
-    private readonly petRepository: Repository<PetPlayersEntity>,
+    private readonly petPlayersRepository: Repository<PetPlayersEntity>,
     @InjectRepository(PetsEntity)
     private readonly petsRepository: Repository<PetsEntity>,
+    private readonly petSkillsService: PetSkillsService,
     @InjectRepository(Inventory)
     private readonly inventoryRepository: Repository<Inventory>,
     private manager: EntityManager,
   ) {
-    super(petRepository, PetPlayersEntity.name);
+    super(petPlayersRepository, PetPlayersEntity.name);
     this.catchChanceBase = configEnv().CATCH_CHANCE_BASE;
   }
 
-  async getPetPlayers(user_id: string) {
+  async findPetPlayersByUserId(user_id: string) {
     const pets = await this.find({
       where: { user: { id: user_id } },
+      relations: [
+        'pet',
+        'skill_slot_1',
+        'skill_slot_2',
+        'skill_slot_3',
+        'skill_slot_4',
+      ],
+    });
+    return plainToInstance(PetPlayersInfoDto, pets, {});
+  }
+
+  async findPetPlayersWithPet(where: FindOptionsWhere<PetPlayersEntity>) {
+    const pets = await this.find({
+      where,
       relations: ['pet'],
     });
-    return plainToInstance(PetPlayersDtoResponse, pets);
+
+    return plainToInstance(PetPlayersInfoDto, pets, {});
   }
 
   async getAvailablePetPlayersWithRoom(room_code: string) {
-    const pets = await this.find({ where: { room_code, is_caught: false } });
+    const pets = await this.findPetPlayersWithPet({
+      room_code,
+      is_caught: false,
+    });
     return pets;
   }
 
   async getPetPlayersById(id: string) {
-    const pet = await this.findById(id);
+    const pet = await this.findPetPlayersWithPet({ id });
     if (!pet) {
       throw new Error('Pet-player not found');
     }
@@ -64,16 +84,16 @@ export class PetPlayersService extends BaseService<PetPlayersEntity> {
 
   async createPetPlayers(payload: SpawnPetPlayersDto) {
     const pet = await this.petsRepository.findOne({
-      where: { species: payload.species },
+      where: { species: payload.species, rarity: payload.rarity },
     });
 
     if (!pet) {
       throw new NotFoundException(
-        `Pet-player Species ${payload.species} not found`,
+        `Pet ${payload.species} with rarity is ${payload.rarity} not found`,
       );
     }
 
-    const petPlayer = this.petRepository.create({
+    const petPlayer = this.petPlayersRepository.create({
       pet,
       individual_value: this.generateIndividualValue(),
       attack: pet.base_attack,
@@ -86,8 +106,11 @@ export class PetPlayersService extends BaseService<PetPlayersEntity> {
     return await this.save(petPlayer);
   }
 
-  async updatePetPlayers(updatePetPlayers: SpawnPetPlayersDto, pet_id: string) {
-    const existedPetPlayers = await this.petRepository.findOne({
+  async updatePetPlayers(
+    updatePetPlayers: UpdatePetPlayersDto,
+    pet_id: string,
+  ) {
+    const existedPetPlayers = await this.petPlayersRepository.findOne({
       where: {
         id: pet_id,
       },
@@ -99,15 +122,15 @@ export class PetPlayersService extends BaseService<PetPlayersEntity> {
 
     Object.assign(existedPetPlayers, updatePetPlayers);
 
-    await this.save({
-      ...existedPetPlayers,
+    await this.petPlayersRepository.update(pet_id, {
+      ...updatePetPlayers,
       room_code: `${updatePetPlayers.map}${updatePetPlayers.sub_map ? `-${updatePetPlayers.sub_map}` : ''}`,
     });
-    return plainToInstance(PetPlayersDtoResponse, existedPetPlayers);
+    return plainToInstance(PetPlayersWithSpeciesDto, existedPetPlayers);
   }
 
   async deletePetPlayers(id: string) {
-    const result = await this.petRepository.delete(id);
+    const result = await this.petPlayersRepository.delete(id);
     if (result.affected === 0) {
       throw new Error('Pet-player not found');
     }
@@ -119,12 +142,12 @@ export class PetPlayersService extends BaseService<PetPlayersEntity> {
     user: UserEntity,
     food_id?: string,
   ): Promise<boolean> {
-    const pet = await this.petRepository.findOne({
+    const pet = await this.petPlayersRepository.findOne({
       where: {
         id: pet_id,
         is_caught: false,
       },
-      relations: ['pets'],
+      relations: ['pet'],
     });
 
     if (!pet) {
@@ -147,7 +170,7 @@ export class PetPlayersService extends BaseService<PetPlayersEntity> {
         inventory.quantity -= 1;
         this.inventoryRepository.save(inventory);
       } else {
-        error('Food isnt exsited or not enough to feed!');
+        error('Food isnt existed or not enough to feed!');
         return false;
       }
     }
@@ -160,7 +183,7 @@ export class PetPlayersService extends BaseService<PetPlayersEntity> {
     if (randomValue <= chanceToCatch) {
       pet.is_caught = true;
       pet.user = user;
-      await this.petRepository.save(pet);
+      await this.petPlayersRepository.save(pet);
       return true;
     }
 
@@ -172,7 +195,7 @@ export class PetPlayersService extends BaseService<PetPlayersEntity> {
     { pets: petsDto }: BringPetPlayersDtoList,
   ) {
     const allIds = petsDto.map((d) => d.id);
-    const existing = await this.petRepository.find({
+    const existing = await this.petPlayersRepository.find({
       where: {
         id: In(allIds),
         user: { id: user.id },
@@ -224,7 +247,7 @@ export class PetPlayersService extends BaseService<PetPlayersEntity> {
     { pets: petsDto }: SelectPetPlayersListDto,
   ) {
     const allIds = petsDto.map((d) => d.id);
-    const existing = await this.petRepository.find({
+    const existing = await this.petPlayersRepository.find({
       where: {
         id: In(allIds),
         user: { id: user.id },
@@ -280,59 +303,80 @@ export class PetPlayersService extends BaseService<PetPlayersEntity> {
     };
   }
 
-  async unlockSkills(
+  async selectOnePetPlayer(
     user: UserEntity,
-    pet_player_id: string,
-    { unlocked_skill_codes }: PetPlayerSkillsDto,
+    petId: string,
+    isSelected: boolean = true,
   ) {
-    if (
-      !Array.isArray(unlocked_skill_codes) ||
-      unlocked_skill_codes.length === 0
-    ) {
-      throw new BadRequestException('No skills provided for unlocking.');
-    }
-
     const petPlayer = await this.findOne({
       where: {
-        id: pet_player_id,
+        id: petId,
         user: { id: user.id },
       },
     });
 
     if (!petPlayer) {
-      throw new NotFoundException('Pet-player not found or not owned by user.');
+      throw new NotFoundException('Pet-player not found');
     }
 
-    const currentSkills = petPlayer.unlocked_skill_codes ?? [];
-    const maxSkills =
-      2 + (petPlayer.level >= 40 ? 1 : 0) + (petPlayer.level >= 70 ? 1 : 0);
-
-    if (currentSkills.length >= maxSkills) {
-      throw new BadRequestException(
-        `All available skill slots are already used. Level ${petPlayer.level} allows max ${maxSkills} skills.`,
-      );
-    }
-
-    const newSkills = unlocked_skill_codes.filter(
-      (code) => !currentSkills.includes(code),
-    );
-
-    const totalSkills = currentSkills.length + newSkills.length;
-    if (totalSkills > maxSkills) {
-      throw new BadRequestException(
-        `You can only unlock ${maxSkills - currentSkills.length} more skill(s) at level ${petPlayer.level}.`,
-      );
-    }
-
-    petPlayer.unlocked_skill_codes = [...currentSkills, ...newSkills];
-
-    await this.save(petPlayer);
-
-    return {
-      message: 'Skills successfully unlocked.',
-      skills: petPlayer.unlocked_skill_codes,
-    };
+    await this.petPlayersRepository.update(petId, {
+      is_selected_battle: isSelected,
+    });
   }
+
+  // async unlockSkills(
+  //   user: UserEntity,
+  //   pet_player_id: string,
+  //   { unlocked_skill_indexes }: PetPlayerSkillsDto,
+  // ) {
+  //   if (
+  //     !Array.isArray(unlocked_skill_indexes) ||
+  //     unlocked_skill_indexes.length === 0
+  //   ) {
+  //     throw new BadRequestException('No skills provided for unlocking.');
+  //   }
+
+  //   const petPlayer = await this.findOne({
+  //     where: {
+  //       id: pet_player_id,
+  //       user: { id: user.id },
+  //     },
+  //   });
+
+  //   if (!petPlayer) {
+  //     throw new NotFoundException('Pet-player not found or not owned by user.');
+  //   }
+
+  //   const currentSkills = petPlayer.unlocked_skill_indexes ?? [];
+  //   const maxSkills =
+  //     2 + (petPlayer.level >= 40 ? 1 : 0) + (petPlayer.level >= 70 ? 1 : 0);
+
+  //   if (currentSkills.length >= maxSkills) {
+  //     throw new BadRequestException(
+  //       `All available skill slots are already used. Level ${petPlayer.level} allows max ${maxSkills} skills.`,
+  //     );
+  //   }
+
+  //   const newSkills = unlocked_skill_indexes.filter(
+  //     (code) => !currentSkills.includes(code),
+  //   );
+
+  //   const totalSkills = currentSkills.length + newSkills.length;
+  //   if (totalSkills > maxSkills) {
+  //     throw new BadRequestException(
+  //       `You can only unlock ${maxSkills - currentSkills.length} more skill(s) at level ${petPlayer.level}.`,
+  //     );
+  //   }
+
+  //   petPlayer.unlocked_skill_indexes = [...currentSkills, ...newSkills];
+
+  //   await this.save(petPlayer);
+
+  //   return {
+  //     message: 'Skills successfully unlocked.',
+  //     skills: petPlayer.unlocked_skill_indexes,
+  //   };
+  // }
 
   generateIndividualValue(): number {
     return Math.floor(Math.random() * 31) + 1;

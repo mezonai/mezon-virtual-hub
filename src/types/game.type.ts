@@ -1,4 +1,6 @@
 import { Schema, type } from '@colyseus/schema';
+import { UserWithPetPlayers } from '@modules/user/dto/user.dto';
+import { Client as ColyseusClient } from 'colyseus';
 import { TokenSentEvent } from 'mezon-sdk/dist/cjs/api/api';
 
 export class Player extends Schema {
@@ -9,7 +11,12 @@ export class Player extends Schema {
   @type('string') skin_set: string = '';
   @type('number') x: number = 0;
   @type('number') y: number = 0;
-  @type('string') animals: string = '';
+  @type('string') pet_players: string = '';
 }
 
-export interface WithdrawPayload extends Pick<TokenSentEvent, 'amount' | 'note'> {}
+export interface WithdrawPayload
+  extends Pick<TokenSentEvent, 'amount' | 'note'> {}
+
+export interface AuthenticatedClient extends ColyseusClient {
+  userData?: UserWithPetPlayers;
+}

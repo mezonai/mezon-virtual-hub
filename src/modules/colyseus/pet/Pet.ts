@@ -1,20 +1,19 @@
-import { Schema, type, MapSchema } from "@colyseus/schema";
-import { AnimalDtoResponse } from "@modules/animal/dto/animal.dto";
-import { AnimalEntity } from "@modules/animal/entity/animal.entity";
+import { Schema, type } from '@colyseus/schema';
+import { PetPlayersWithSpeciesDto } from '@modules/pet-players/dto/pet-players.dto';
 
 export class Vec2 extends Schema {
-  @type("number") x: number = 0;
-  @type("number") y: number = 0;
+  @type('number') x: number = 0;
+  @type('number') y: number = 0;
 }
 
 export class Pet extends Schema {
-  @type("string") id: string = "";
-  @type("string") name: string = "";
-  @type("string") species: string = "";
-  @type("string") roomCode: string = "";
+  @type('string') id: string = '';
+  @type('string') name: string = '';
+  @type('string') species: string = '';
+  @type('string') roomCode: string = '';
   @type(Vec2) position = new Vec2();
   @type(Vec2) angle = new Vec2();
-  @type("boolean") moving: boolean = false;
+  @type('boolean') moving: boolean = false;
 
   areaSizeX: number = 3000;
   areaSizeY: number = 550;
@@ -23,18 +22,17 @@ export class Pet extends Schema {
   speed: number = 50;
   maxSpeed: number = 100;
   minSpeed: number = 40;
-  roomName
+  roomName;
 
   constructor() {
     super();
-
   }
 
-  SetDataPet(dto: AnimalEntity, nameRoom: string) {
+  SetDataPet(dto: PetPlayersWithSpeciesDto, nameRoom: string) {
     this.id = dto.id;
-    this.name = dto.name;
-    this.species = dto.species;
-    this.roomCode = dto.room_code ?? "";
+    this.name = dto.name ?? '';
+    this.species = dto.pet?.species ?? '';
+    this.roomCode = dto.room_code ?? '';
     this.convertAreaSize(nameRoom);
     this.position = this.getRandomPosition();
     this.moveRandomly();
@@ -88,41 +86,42 @@ export class Pet extends Schema {
   }
 
   randomizeSpeed() {
-    this.speed = Math.random() * (this.maxSpeed - this.minSpeed) + this.minSpeed;
+    this.speed =
+      Math.random() * (this.maxSpeed - this.minSpeed) + this.minSpeed;
   }
   convertAreaSize(roomName: string) {
     switch (roomName) {
-      case "hn1":
-      case "hn2":
-      case "hn3":
-      case "vinh":
-      case "qn":
-      case "dn":
-      case "sg":
+      case 'hn1':
+      case 'hn2':
+      case 'hn3':
+      case 'vinh':
+      case 'qn':
+      case 'dn':
+      case 'sg':
         this.areaSizeX = 730;
         this.areaSizeY = 220;
         break;
-      case "sg-office":
+      case 'sg-office':
         this.areaSizeX = 550;
         this.areaSizeY = 100;
         break;
-      case "hn1-office":
+      case 'hn1-office':
         this.areaSizeX = 1450;
         this.areaSizeY = 80;
         break;
-      case "hn2-office":
+      case 'hn2-office':
         this.areaSizeX = 300;
         this.areaSizeY = 100;
         break;
-      case "hn3-office":
+      case 'hn3-office':
         this.areaSizeX = 870;
         this.areaSizeY = 130;
         break;
-        case "vinh-office":
+      case 'vinh-office':
         this.areaSizeX = 225;
         this.areaSizeY = 110;
         break;
-        case "dn-office":
+      case 'dn-office':
         this.areaSizeX = 1780;
         this.areaSizeY = 36;
         break;
@@ -130,7 +129,6 @@ export class Pet extends Schema {
         this.areaSizeX = 100;
         this.areaSizeY = 100;
         break;
-
     }
   }
 }

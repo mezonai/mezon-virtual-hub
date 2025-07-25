@@ -8,6 +8,7 @@ import { ClsModule } from 'nestjs-cls';
 import { PetPlayersEntity } from './entity/pet-players.entity';
 import { PetPlayersController } from './pet-players.controller';
 import { PetPlayersService } from './pet-players.service';
+import { PetSkillsModule } from '@modules/pet-skills/pet-skills.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { PetPlayersService } from './pet-players.service';
       Inventory,
     ]),
     ClsModule,
+    PetSkillsModule,
     forwardRef(() => UserModule),
   ],
   providers: [PetPlayersService],
