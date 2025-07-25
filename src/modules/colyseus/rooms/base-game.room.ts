@@ -125,6 +125,7 @@ export class BaseGameRoom extends Room<RoomState> {
 
     const user = await this.userRepository.findOne({
       where: [{ username }, { email }],
+      relations: ['map'],
     });
 
     if (!user || !user.map) {

@@ -102,30 +102,12 @@ export class PetPlayersInfoDto extends PetPlayersEntity {
   updated_at: Date;
 
   @Expose()
-  pet: PetsDtoResponse;
-
-  @Expose()
-  rarity: AnimalRarity | null;
-
-  @Expose()
-  species: string | null;
-
-  @Expose()
-  catch_chance: number | null;
-
-  @Expose()
-  type: PetType | null;
-
-  constructor(partial: Partial<PetPlayersInfoDto>) {
-    super();
-    Object.assign(this, partial);
-
-    if (partial?.pet) {
-      this.species = partial.pet.species;
-      this.type = partial.pet.type;
-      this.rarity = partial.pet.rarity;
-    }
+  get max_exp(): number {
+    return Math.pow(this.level, 3);
   }
+
+  @Expose()
+  pet: PetsDtoResponse;
 }
 
 export class BringPetPlayersDto {
@@ -187,7 +169,3 @@ export class SelectPetPlayersListDto {
   @Type(() => SelectPetPlayersDto)
   pets: SelectPetPlayersDto[];
 }
-
-// export class PetPlayerSkillsDto extends PickType(PetPlayersEntity, [
-//   'unlocked_skill_indexes',
-// ]) {}
