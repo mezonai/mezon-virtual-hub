@@ -1,4 +1,5 @@
 import { AnimalRarity, SkillCode } from '@enum';
+import { PetSkillsEntity } from '@modules/pet-skills/entity/pet-skills.entity';
 import { PetsEntity } from '@modules/pets/entity/pets.entity';
 import { UserEntity } from '@modules/user/entity/user.entity';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
@@ -97,20 +98,29 @@ export class PetPlayersEntity extends AuditEntity {
   @IsString()
   room_code: string | null;
 
-  @Column('varchar', {
-    array: true,
-    nullable: true,
+  @ManyToOne(() => PetSkillsEntity, (skill) => skill.skill_usages, {
+    eager: true,
   })
-  @ApiProperty({
-    type: [String],
-    enum: SkillCode,
-    description: 'List of unlocked skill codes (max 4)',
-    example: ['FIRE03', 'DRAGON01'],
+  @JoinColumn({ name: 'skill_code_1' })
+  skill_slot_1: PetSkillsEntity;
+
+  @ManyToOne(() => PetSkillsEntity, (skill) => skill.skill_usages, {
+    eager: true,
   })
-  @IsOptional()
-  @IsEnum(SkillCode, { each: true })
-  @ArrayMaxSize(4)
-  unlocked_skill_codes: SkillCode[] | null;
+  @JoinColumn({ name: 'skill_code_2' })
+  skill_slot_2: PetSkillsEntity;
+
+  @ManyToOne(() => PetSkillsEntity, (skill) => skill.skill_usages, {
+    eager: true,
+  })
+  @JoinColumn({ name: 'skill_code_3' })
+  skill_slot_3: PetSkillsEntity | null;
+
+  @ManyToOne(() => PetSkillsEntity, (skill) => skill.skill_usages, {
+    eager: true,
+  })
+  @JoinColumn({ name: 'skill_code_4' })
+  skill_slot_4: PetSkillsEntity | null;
 
   @ManyToOne(() => UserEntity, { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'user_id' })

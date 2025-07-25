@@ -1,10 +1,11 @@
 import { AnimalRarity, PetType } from '@enum';
+import { PetSkillUsageEntity } from '@modules/pet-skill-usages/entity/pet-skill-usages.entity';
 import { PetSkillsEntity } from '@modules/pet-skills/entity/pet-skills.entity';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { AuditEntity } from '@types';
 import { Transform, Type } from 'class-transformer';
 import { IsEnum, IsInt, IsOptional, IsString } from 'class-validator';
-import { Column, Entity, JoinTable, ManyToMany, Unique } from 'typeorm';
+import { Column, Entity, JoinTable, ManyToMany, OneToMany, Unique } from 'typeorm';
 
 @Entity('pets')
 @Unique(['species', 'rarity'])
@@ -84,9 +85,9 @@ export class PetsEntity extends AuditEntity {
   })
   pet_skills: PetSkillsEntity[];
 
-  // @OneToMany(() => PetSkillUsageEntity, (usage) => usage.pet, {
-  //   cascade: true,
-  //   eager: true,
-  // })
-  // skill_usages: PetSkillUsageEntity[];
+  @OneToMany(() => PetSkillUsageEntity, (usage) => usage.pet, {
+    cascade: true,
+    eager: true,
+  })
+  skill_usages: PetSkillUsageEntity[];
 }

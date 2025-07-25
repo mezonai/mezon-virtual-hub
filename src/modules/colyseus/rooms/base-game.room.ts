@@ -1,16 +1,13 @@
 import { MapSchema, Schema, type } from '@colyseus/schema';
 import { configEnv } from '@config/env.config';
 import { EXCHANGERATE, RPS_FEE } from '@constant';
-import { ActionKey, MapKey, SubMap } from '@enum';
-import { GoogleGenAI } from '@google/genai';
+import { ActionKey, MapKey } from '@enum';
 import { Logger } from '@libs/logger';
-import { cleanAndStringifyJson, isValidJsonQuiz } from '@libs/utils';
-import { AnimalService } from '@modules/animal/animal.service';
 import { JwtPayload } from '@modules/auth/dtos/response';
 import { GameEventService } from '@modules/game-event/game-event.service';
 import { MezonService } from '@modules/mezon/mezon.service';
+import { PetPlayersService } from '@modules/pet-players/pet-players.service';
 import { UserEntity } from '@modules/user/entity/user.entity';
-import { RoomManager } from '../rooms/global-room';
 import {
   ForbiddenException,
   Inject,
@@ -20,16 +17,18 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Player, WithdrawPayload } from '@types';
-import { Client, ClientArray, Room } from 'colyseus';
+import { AuthenticatedClient, Player, WithdrawPayload } from '@types';
+import { Client, Room } from 'colyseus';
 import { IncomingMessage } from 'http';
 import { Repository } from 'typeorm';
-import { PetQueueManager } from '../pet/PetQueueManager';
-import { Pet } from '../pet/Pet';
-import { AnimalDtoRequest } from '@modules/animal/dto/animal.dto';
-import { Console } from 'console';
 import { Door } from '../door/Door';
 import { DoorManager } from '../door/DoorManager';
+import { Pet } from '../pet/Pet';
+import { PetQueueManager } from '../pet/PetQueueManager';
+import { RoomManager } from '../rooms/global-room';
+import { UserService } from '@modules/user/user.service';
+import { UserWithPetPlayers } from '@modules/user/dto/user.dto';
+import { plainToInstance } from 'class-transformer';
 
 export class Item extends Schema {
   @type('number') x: number = 0;
@@ -37,7 +36,12 @@ export class Item extends Schema {
   @type('string') type: string = '';
   @type('string') ownerId: string = '';
 
-  constructor(x: number = 0, y: number = 0, type: string = '', ownerId: string = '') {
+  constructor(
+    x: number = 0,
+    y: number = 0,
+    type: string = '',
+    ownerId: string = '',
+  ) {
     super();
     this.x = x;
     this.y = y;
@@ -61,17 +65,18 @@ export class BaseGameRoom extends Room<RoomState> {
   petQueueManager: PetQueueManager;
   private pethangeRoomInterval: any;
   protected doorManager: DoorManager;
-  speciesPetEvent = "DragonIce";
+  speciesPetEvent = 'DragonIce';
   static activeRooms: Set<BaseGameRoom> = new Set();
   static globalTargetClients: Map<string, Client> = new Map();
   static eventData: any;
   constructor(
     @InjectRepository(UserEntity)
     readonly userRepository: Repository<UserEntity>,
+    @Inject() private readonly userService: UserService,
     @Inject() private readonly jwtService: JwtService,
     @Inject() private readonly mezonService: MezonService,
     @Inject() private readonly gameEventService: GameEventService,
-    @Inject() private readonly animalService: AnimalService,
+    @Inject() private readonly petPlayersService: PetPlayersService,
   ) {
     super();
     this.logger.log(`GameRoom created : ${this.roomName}`);
@@ -120,12 +125,23 @@ export class BaseGameRoom extends Room<RoomState> {
 
     const user = await this.userRepository.findOne({
       where: [{ username }, { email }],
-      relations: ['map', 'animals'],
     });
 
     if (!user || !user.map) {
       throw new NotFoundException('User not found or not assigned to any map');
     }
+
+    const petPlayers = await this.petPlayersService.findPetPlayersWithPet({
+      user: { id: user.id },
+    });
+
+    const userWithPets: UserWithPetPlayers = plainToInstance(
+      UserWithPetPlayers,
+      {
+        ...user,
+        pet_players: petPlayers,
+      },
+    );
 
     if (!this.roomName.startsWith(user.map.map_key)) {
       throw new ForbiddenException(
@@ -134,14 +150,14 @@ export class BaseGameRoom extends Room<RoomState> {
     }
 
     console.log(`User ${user.username} is allowed in ${this.roomId}`);
-    client.userData = user;
+    client.userData = userWithPets;
     return true;
   }
 
   broadcastToAllRooms(type: string, data: any) {
-    BaseGameRoom.activeRooms.forEach(room => {
+    BaseGameRoom.activeRooms.forEach((room) => {
       room.broadcast(type, data);
-      console.log("Room broadcast: ", room.roomId);
+      console.log('Room broadcast: ', room.roomId);
     });
   }
 
@@ -189,22 +205,22 @@ export class BaseGameRoom extends Room<RoomState> {
   }
 
   createKeyForActionDict(gameType, p1, p2) {
-    return gameType + "-" + p1 + "-" + p2;
+    return gameType + '-' + p1 + '-' + p2;
   }
 
   sendMessageToTarget(client: Client, action, message) {
-    client.send("noticeMessage", { action: action, message: message });
+    client.send('noticeMessage', { action: action, message: message });
   }
 
   getRPSWinner(p1, p2, result1, result2) {
     if (result1 === result2) {
-      return "draw";
+      return 'draw';
     }
 
     const winsAgainst = {
-      rock: "scissors",
-      paper: "rock",
-      scissors: "paper"
+      rock: 'scissors',
+      paper: 'rock',
+      scissors: 'paper',
     };
 
     if (winsAgainst[result1] === result2) {
@@ -292,12 +308,11 @@ export class BaseGameRoom extends Room<RoomState> {
         sessionId: client.sessionId,
         skin_set: skinArray,
       });
-
     });
 
     this.onMessage('catchTargetUser', async (client, data) => {
       this.broadcastToAllRooms('updateProgresCatchTargetUser', {
-        sessionId: client.sessionId
+        sessionId: client.sessionId,
       });
     });
 
@@ -306,8 +321,7 @@ export class BaseGameRoom extends Room<RoomState> {
       if (client?.userData?.gold != null) {
         if (newValue >= 0) {
           client.userData.gold = newValue;
-        }
-        else {
+        } else {
           return;
         }
 
@@ -317,8 +331,8 @@ export class BaseGameRoom extends Room<RoomState> {
 
         let responseData = {
           sessionId: client.sessionId,
-          amountChange: amountChange
-        }
+          amountChange: amountChange,
+        };
         this.broadcast('onPlayerUpdateGold', responseData);
       }
     });
@@ -337,147 +351,198 @@ export class BaseGameRoom extends Room<RoomState> {
 
         const responseData = {
           sessionId: client.sessionId,
-          amountChange: amountChange
+          amountChange: amountChange,
         };
         this.broadcast('onPlayerUpdateDiamond', responseData);
       }
     });
 
+    this.onMessage(
+      'onWithrawDiamond',
+      async (client: AuthenticatedClient, data: WithdrawPayload) => {
+        const userId = client.userData?.id;
 
-    this.onMessage('onWithrawDiamond', async (client: Client<UserEntity>, data: WithdrawPayload) => {
-      const userId = client.userData?.id;
+        if (!userId) {
+          return client.send('onWithdrawFailed', {
+            reason: 'Không xác định được người dùng',
+          });
+        }
 
-      if (!userId) {
-        return client.send('onWithdrawFailed', {
-          reason: 'Không xác định được người dùng'
+        const user = await this.userRepository.findOne({
+          where: { id: userId },
         });
-      }
 
-      const user = await this.userRepository.findOne({ where: { id: userId } });
+        if (!user?.mezon_id) {
+          return client.send('onWithdrawFailed', {
+            reason: 'Tài khoản không liên kết với Mezon',
+          });
+        }
 
-      if (!user?.mezon_id) {
-        return client.send('onWithdrawFailed', {
-          reason: 'Tài khoản không liên kết với Mezon'
+        const currentDiamond = user.diamond;
+        const amountToWithdraw = data.amount;
+
+        if (
+          typeof currentDiamond !== 'number' ||
+          currentDiamond < amountToWithdraw
+        ) {
+          return client.send('onWithdrawFailed', {
+            reason: 'Không đủ Diamond để rút',
+          });
+        }
+
+        const newDiamond = currentDiamond - amountToWithdraw;
+
+        const responseData = {
+          sessionId: client.sessionId,
+          amountChange: amountToWithdraw,
+        };
+
+        this.mezonService.WithdrawTokenRequest({
+          receiver_id: user.mezon_id,
+          sender_id: configEnv().MEZON_TOKEN_RECEIVER_APP_ID,
+          sender_name: 'Virtual-Hub',
+          ...data,
         });
-      }
 
-      const currentDiamond = user.diamond;
-      const amountToWithdraw = data.amount;
+        this.broadcast('onWithrawDiamond', responseData);
+        try {
+          await this.userRepository.update(userId, { diamond: newDiamond });
+        } catch (err) {
+          return client.send('onWithdrawFailed', {
+            reason: 'Lỗi hệ thống khi cập nhật dữ liệu. Vui lòng thử lại.',
+          });
+        }
+      },
+    );
 
-      if (typeof currentDiamond !== 'number' || currentDiamond < amountToWithdraw) {
-        return client.send('onWithdrawFailed', {
-          reason: 'Không đủ Diamond để rút'
+    this.onMessage(
+      'onExchangeDiamondToCoin',
+      async (client: AuthenticatedClient, data) => {
+        const { diamondTransfer } = data;
+        const userId = client.userData?.id;
+
+        if (!userId) {
+          return client.send('onExchangeFailed', {
+            reason: 'Không xác định được người dùng',
+          });
+        }
+
+        const user = await this.userRepository.findOne({
+          where: { id: userId },
         });
-      }
 
-      const newDiamond = currentDiamond - amountToWithdraw;
+        if (!user) {
+          return client.send('onExchangeFailed', {
+            reason: 'Không tìm thấy thông tin người dùng',
+          });
+        }
 
-      const responseData = {
-        sessionId: client.sessionId,
-        amountChange: amountToWithdraw
-      };
+        if (user.diamond < diamondTransfer) {
+          return client.send('onExchangeFailed', {
+            reason: 'Không đủ diamond để quy đổi',
+          });
+        }
 
-      this.mezonService.WithdrawTokenRequest({
-        receiver_id: user.mezon_id,
-        sender_id: configEnv().MEZON_TOKEN_RECEIVER_APP_ID,
-        sender_name: "Virtual-Hub",
-        ...data
-      });
+        const coinToAdd = Math.floor(diamondTransfer / EXCHANGERATE);
+        if (coinToAdd <= 0) {
+          return client.send('onExchangeFailed', {
+            reason: 'Không đủ diamond để quy đổi',
+          });
+        }
 
-      this.broadcast('onWithrawDiamond', responseData);
-      try {
-        await this.userRepository.update(userId, { diamond: newDiamond });
-      } catch (err) {
-        return client.send('onWithdrawFailed', {
-          reason: 'Lỗi hệ thống khi cập nhật dữ liệu. Vui lòng thử lại.'
-        });
-      }
-    });
+        const newGold = user.gold + coinToAdd;
+        const newDiamond = user.diamond - diamondTransfer;
+        const responseData = {
+          sessionId: client.sessionId,
+          coinChange: coinToAdd,
+          diamondChange: -diamondTransfer,
+        };
+        this.broadcast('onExchangeDiamondToCoin', responseData);
 
-    this.onMessage('onExchangeDiamondToCoin', async (client: Client<UserEntity>, data) => {
-      const { diamondTransfer } = data;
-      const userId = client.userData?.id;
+        try {
+          await this.userRepository.update(userId, {
+            gold: newGold,
+            diamond: newDiamond,
+          });
+        } catch (err) {
+          return client.send('onExchangeFailed', {
+            reason: 'Lỗi hệ thống khi cập nhật dữ liệu. Vui lòng thử lại.',
+          });
+        }
+      },
+    );
 
-      if (!userId) {
-        return client.send('onExchangeFailed', { reason: 'Không xác định được người dùng' });
-      }
-
-      const user = await this.userRepository.findOne({ where: { id: userId } });
-
-      if (!user) {
-        return client.send('onExchangeFailed', { reason: 'Không tìm thấy thông tin người dùng' });
-      }
-
-      if (user.diamond < diamondTransfer) {
-        return client.send('onExchangeFailed', { reason: 'Không đủ diamond để quy đổi' });
-      }
-
-      const coinToAdd = Math.floor(diamondTransfer / EXCHANGERATE);
-      if (coinToAdd <= 0) {
-        return client.send('onExchangeFailed', { reason: 'Không đủ diamond để quy đổi' });
-      }
-
-      const newGold = user.gold + coinToAdd;
-      const newDiamond = user.diamond - diamondTransfer;
-      const responseData = {
-        sessionId: client.sessionId,
-        coinChange: coinToAdd,
-        diamondChange: -diamondTransfer
-      };
-      this.broadcast('onExchangeDiamondToCoin', responseData);
-
-      try {
-        await this.userRepository.update(userId, { gold: newGold, diamond: newDiamond, });
-      } catch (err) {
-        return client.send('onExchangeFailed', {
-          reason: 'Lỗi hệ thống khi cập nhật dữ liệu. Vui lòng thử lại.'
-        });
-      }
-    });
-
-
-    this.onMessage("p2pAction", (sender, data) => {
+    this.onMessage('p2pAction', (sender, data) => {
       const { targetClientId, action, amount } = data;
 
-      if (action == ActionKey.RPS.toString() && sender.userData?.diamond < RPS_FEE) {
-        this.sendMessageToTarget(sender, action, "Không đủ tiền");
+      if (
+        action == ActionKey.RPS.toString() &&
+        sender.userData?.diamond < RPS_FEE
+      ) {
+        this.sendMessageToTarget(sender, action, 'Không đủ tiền');
         return;
       }
 
-      const targetClient = this.clients.find(client => client.sessionId === targetClientId);
+      const targetClient = this.clients.find(
+        (client) => client.sessionId === targetClientId,
+      );
       for (let key of this.minigameResultDict.keys()) {
         if (key.includes(sender.sessionId) || targetClient?.userData == null) {
-          this.sendMessageToTarget(sender, action, "Không thể mời người chơi này");
+          this.sendMessageToTarget(
+            sender,
+            action,
+            'Không thể mời người chơi này',
+          );
           return;
         }
       }
 
-      if (targetClient && action == ActionKey.RPS.toString() && (targetClient.userData.diamond < RPS_FEE)) {
-        this.sendMessageToTarget(sender, action, "Người chơi không đủ tiền");
+      if (
+        targetClient &&
+        action == ActionKey.RPS.toString() &&
+        targetClient.userData.diamond < RPS_FEE
+      ) {
+        this.sendMessageToTarget(sender, action, 'Người chơi không đủ tiền');
         return;
       }
 
       if (action == ActionKey.SendCoin.toString()) {
-        if (amount <= 0 || sender.userData?.diamond <= 0 || sender.userData?.diamond < amount) {
-          this.sendMessageToTarget(sender, action, "Không đủ tiền");
+        if (
+          amount <= 0 ||
+          sender.userData?.diamond <= 0 ||
+          sender.userData?.diamond < amount
+        ) {
+          this.sendMessageToTarget(sender, action, 'Không đủ tiền');
           return;
         }
 
-        if (sender.userData && targetClient?.userData && (sender.userData.id != targetClient?.userData.id)) {
+        if (
+          sender.userData &&
+          targetClient?.userData &&
+          sender.userData.id != targetClient?.userData.id
+        ) {
           sender.userData.diamond -= amount;
           targetClient.userData.diamond += amount;
 
-          this.userRepository.update(sender.userData.id, { diamond: sender.userData.diamond });
-          this.userRepository.update(targetClient.userData.id, { diamond: targetClient.userData.diamond });
+          this.userRepository.update(sender.userData.id, {
+            diamond: sender.userData.diamond,
+          });
+          this.userRepository.update(targetClient.userData.id, {
+            diamond: targetClient.userData.diamond,
+          });
         } else {
-          this.sendMessageToTarget(sender, action, "Lỗi bất định");
+          this.sendMessageToTarget(sender, action, 'Lỗi bất định');
           return;
         }
       }
 
-      let gameKey = this.createKeyForActionDict(action, sender.sessionId, targetClientId);
+      let gameKey = this.createKeyForActionDict(
+        action,
+        sender.sessionId,
+        targetClientId,
+      );
       if (targetClient) {
-        targetClient.send("onP2pAction", {
+        targetClient.send('onP2pAction', {
           action: action,
           from: sender.sessionId,
           to: targetClientId,
@@ -485,73 +550,97 @@ export class BaseGameRoom extends Room<RoomState> {
           gameKey: gameKey,
           amount: amount,
           currentDiamond: targetClient.userData.diamond,
-          userId: targetClient.userData.id
+          userId: targetClient.userData.id,
         });
 
-        sender.send("onP2pActionSended", {
+        sender.send('onP2pActionSended', {
           action: action,
           to: targetClientId,
           from: sender.sessionId,
           toName: targetClient.userData?.display_name,
           amount: amount,
           currentDiamond: sender.userData?.diamond,
-          userId: sender.userData?.id
+          userId: sender.userData?.id,
         });
       }
     });
 
-    this.onMessage("p2pActionAccept", (sender, data) => {
+    this.onMessage('p2pActionAccept', (sender, data) => {
       const { targetClientId, action } = data;
-      const targetClient = this.clients.find(client => client.sessionId === targetClientId);
-      let gameKey = this.createKeyForActionDict(action, targetClientId, sender.sessionId);
+      const targetClient = this.clients.find(
+        (client) => client.sessionId === targetClientId,
+      );
+      let gameKey = this.createKeyForActionDict(
+        action,
+        targetClientId,
+        sender.sessionId,
+      );
 
       this.minigameResultDict.set(gameKey, {
         from: targetClientId,
         to: sender.sessionId,
-        result1: "",
-        result2: ""
-      })
+        result1: '',
+        result2: '',
+      });
 
       if (targetClient) {
-        this.broadcast("onP2pActionAccept", {
+        this.broadcast('onP2pActionAccept', {
           action: action,
           from: targetClientId,
           to: sender.sessionId,
-          gameKey: gameKey
+          gameKey: gameKey,
         });
       }
     });
 
-    this.onMessage("p2pActionChoosed", (sender, data) => {
+    this.onMessage('p2pActionChoosed', (sender, data) => {
       const { senderAction, gameKey, action, from, to } = data;
-      let fromPlayer = this.clients.find(client => client.sessionId === from);
-      let toPlayer = this.clients.find(client => client.sessionId === to);
+      let fromPlayer = this.clients.find((client) => client.sessionId === from);
+      let toPlayer = this.clients.find((client) => client.sessionId === to);
 
       if (this.minigameResultDict.has(gameKey)) {
         let result = this.minigameResultDict.get(gameKey);
         if (sender.sessionId == result.from) {
           result.result1 = senderAction;
-        }
-        else if (sender.sessionId == result.to) {
+        } else if (sender.sessionId == result.to) {
           result.result2 = senderAction;
         }
 
-        if (result.result1 != "" && result.result2 != "") {
-          let winner = this.getRPSWinner(result.from, result.to, result.result1, result.result2);
+        if (result.result1 != '' && result.result2 != '') {
+          let winner = this.getRPSWinner(
+            result.from,
+            result.to,
+            result.result1,
+            result.result2,
+          );
 
-          if (action == ActionKey.RPS.toString() && winner != "draw" && fromPlayer?.userData?.id != toPlayer?.userData?.id) {
+          if (
+            action == ActionKey.RPS.toString() &&
+            winner != 'draw' &&
+            fromPlayer?.userData?.id != toPlayer?.userData?.id
+          ) {
             if (fromPlayer?.userData) {
-              fromPlayer.userData.diamond = winner == fromPlayer.sessionId ? fromPlayer.userData.diamond + RPS_FEE : fromPlayer.userData.diamond - RPS_FEE;
-              this.userRepository.update(fromPlayer.userData.id, { diamond: fromPlayer.userData.diamond });
+              fromPlayer.userData.diamond =
+                winner == fromPlayer.sessionId
+                  ? fromPlayer.userData.diamond + RPS_FEE
+                  : fromPlayer.userData.diamond - RPS_FEE;
+              this.userRepository.update(fromPlayer.userData.id, {
+                diamond: fromPlayer.userData.diamond,
+              });
             }
             if (toPlayer?.userData) {
-              toPlayer.userData.diamond = winner == toPlayer.sessionId ? toPlayer.userData.diamond + RPS_FEE : toPlayer.userData.diamond - RPS_FEE;
-              this.userRepository.update(toPlayer.userData.id, { diamond: toPlayer.userData.diamond });
+              toPlayer.userData.diamond =
+                winner == toPlayer.sessionId
+                  ? toPlayer.userData.diamond + RPS_FEE
+                  : toPlayer.userData.diamond - RPS_FEE;
+              this.userRepository.update(toPlayer.userData.id, {
+                diamond: toPlayer.userData.diamond,
+              });
             }
           }
 
-          this.broadcast("onP2pActionResult", {
-            action: action + "Done",
+          this.broadcast('onP2pActionResult', {
+            action: action + 'Done',
             from: result.from,
             to: result.to,
             result1: result.result1,
@@ -564,34 +653,34 @@ export class BaseGameRoom extends Room<RoomState> {
 
           this.minigameResultDict.delete(gameKey);
         }
-      }
-      else {
-        this.broadcast("onP2pGameError", {
-          message: "Server Error",
+      } else {
+        this.broadcast('onP2pGameError', {
+          message: 'Server Error',
           action: action,
           from: from,
-          to: to
-        })
+          to: to,
+        });
       }
     });
 
-    this.onMessage("p2pActionReject", (sender, data) => {
+    this.onMessage('p2pActionReject', (sender, data) => {
       const { targetClientId, action } = data;
-      const targetClient = this.clients.find(client => client.sessionId === targetClientId);
+      const targetClient = this.clients.find(
+        (client) => client.sessionId === targetClientId,
+      );
 
       if (targetClient) {
-        targetClient.send("onP2pActionReject", {
+        targetClient.send('onP2pActionReject', {
           action,
-          from: sender.sessionId,  // Sending client ID
+          from: sender.sessionId, // Sending client ID
         });
       }
     });
 
     this.onMessage('useItem', (client, message) => {
-      if (message.playerId != "") {
+      if (message.playerId != '') {
         for (const item of this.state.items) {
-          if (item[1].ownerId == message.playerId)
-            return;
+          if (item[1].ownerId == message.playerId) return;
         }
       }
 
@@ -607,9 +696,13 @@ export class BaseGameRoom extends Room<RoomState> {
         this.broadcast('onUseItem', message);
       }
     });
-    this.onMessage('catchPet', async (client: Client<UserEntity>, message) => {
+    this.onMessage('catchPet', async (client: AuthenticatedClient, message) => {
       if (client.userData == null) return;
-      this.petQueueManager.handleCatchRequest(client, message, this.removePet.bind(this));
+      this.petQueueManager.handleCatchRequest(
+        client,
+        message,
+        this.removePet.bind(this),
+      );
     });
     this.onMessage('sendPetFollowPlayer', async (client, data) => {
       const { pets } = data;
@@ -618,13 +711,25 @@ export class BaseGameRoom extends Room<RoomState> {
         pet: pets,
       });
     });
-    this.petQueueManager = new PetQueueManager(this, async (playerId, petId, foodId) => {
-      const client = this.clients.find(c => c.sessionId === playerId);
-      if (!client) return false;
-      return await this.animalService.catchAnimal(petId, client.userData, foodId);
-    });
+    this.petQueueManager = new PetQueueManager(
+      this,
+      async (playerId, petId, foodId) => {
+        const client = this.clients.find((c) => c.sessionId === playerId);
+        if (!client) return false;
+        return await this.petPlayersService.catchPetPlayers(
+          petId,
+          client.userData,
+          foodId,
+        );
+      },
+    );
     this.onMessage('sendTouchPet', async (client, data) => {
-      const { touchPlayerId, targetPetId, lengthCompliment, lengthProvokeLine } = data;
+      const {
+        touchPlayerId,
+        targetPetId,
+        lengthCompliment,
+        lengthProvokeLine,
+      } = data;
       const handler = async () => {
         if (this.clients.length <= 0) return;
         const isOwnerTouching = client.sessionId === touchPlayerId;
@@ -632,88 +737,96 @@ export class BaseGameRoom extends Room<RoomState> {
           ? Math.floor(Math.random() * lengthCompliment)
           : Math.floor(Math.random() * lengthProvokeLine);
         // Gửi kết quả xuống client
-        this.broadcast("onSendTouchPet", {
+        this.broadcast('onSendTouchPet', {
           targetPetId,
-          playerTouchingPetId: isOwnerTouching ? client.sessionId : touchPlayerId,
+          playerTouchingPetId: isOwnerTouching
+            ? client.sessionId
+            : touchPlayerId,
           isOwnerTouching,
           randomIndex: index,
         });
       };
       this.petQueueManager.addPetTouch(targetPetId, handler);
-
     });
     this.spawnPetInRoom();
 
     //combat
-    this.onMessage("p2pCombatActionAccept", (sender, data) => {
+    this.onMessage('p2pCombatActionAccept', (sender, data) => {
       const { targetClientId, action } = data;
-      const targetClient = this.clients.find(client => client.sessionId === targetClientId);
-      let gameKey = this.createKeyForActionDict(action, targetClientId, sender.sessionId);
+      const targetClient = this.clients.find(
+        (client) => client.sessionId === targetClientId,
+      );
+      let gameKey = this.createKeyForActionDict(
+        action,
+        targetClientId,
+        sender.sessionId,
+      );
 
       this.minigameResultDict.set(gameKey, {
         from: targetClientId,
         to: sender.sessionId,
-      })
+      });
 
       if (targetClient) {
-        this.broadcast("onp2pCombatActionAccept", {
+        this.broadcast('onp2pCombatActionAccept', {
           action: action,
           from: targetClientId,
           to: sender.sessionId,
-          gameKey: gameKey
+          gameKey: gameKey,
         });
       }
     });
 
-    this.onMessage("p2pCombatActionEscape", (sender, data) => {
+    this.onMessage('p2pCombatActionEscape', (sender, data) => {
       const { senderAction, gameKey, action, from, to } = data;
-      let fromPlayer = this.clients.find(client => client.sessionId === from);
-      let toPlayer = this.clients.find(client => client.sessionId === to);
+      let fromPlayer = this.clients.find((client) => client.sessionId === from);
+      let toPlayer = this.clients.find((client) => client.sessionId === to);
 
       if (this.minigameResultDict.has(gameKey)) {
         let result = this.minigameResultDict.get(gameKey);
         if (sender.sessionId == result.from) {
           result.result1 = senderAction;
-        }
-        else if (sender.sessionId == result.to) {
+        } else if (sender.sessionId == result.to) {
           result.result2 = senderAction;
         }
-        const isEscape = senderAction === "giveup";
-        if (result.result1 != "" && result.result2 != "" && isEscape) {
-          let winner = (sender.sessionId === result.from) ? result.to : result.from;
+        const isEscape = senderAction === 'giveup';
+        if (result.result1 != '' && result.result2 != '' && isEscape) {
+          let winner =
+            sender.sessionId === result.from ? result.to : result.from;
 
-          const loserName = sender.sessionId === result.from ? fromPlayer?.userData?.display_name : toPlayer?.userData?.display_name;
-          const winnerName = sender.sessionId === result.from ? toPlayer?.userData?.display_name : fromPlayer?.userData?.display_name;
+          const loserName =
+            sender.sessionId === result.from
+              ? fromPlayer?.userData?.display_name
+              : toPlayer?.userData?.display_name;
+          const winnerName =
+            sender.sessionId === result.from
+              ? toPlayer?.userData?.display_name
+              : fromPlayer?.userData?.display_name;
 
-          const message = `${loserName || "Người chơi"} đã bỏ cuộc. ${winnerName || "Đối thủ"} thắng!`;
+          const message = `${loserName || 'Người chơi'} đã bỏ cuộc. ${winnerName || 'Đối thủ'} thắng!`;
 
-          this.broadcast("onp2pCombatActionEscape", {
-            action: action + "Done",
+          this.broadcast('onp2pCombatActionEscape', {
+            action: action + 'Done',
             from: result.from,
             to: result.to,
             result1: result.result1,
             result2: result.result2,
             winner: winner,
-            message: message
+            message: message,
           });
 
           this.minigameResultDict.delete(gameKey);
         }
-
-      }
-      else {
-        this.broadcast("onP2pGameError", {
-          message: "Server Error",
+      } else {
+        this.broadcast('onP2pGameError', {
+          message: 'Server Error',
           action: action,
           from: from,
-          to: to
-        })
+          to: to,
+        });
       }
     });
-
   }
-
-
 
   onBeforePatch() {
     //
@@ -737,9 +850,9 @@ export class BaseGameRoom extends Room<RoomState> {
     this.clock.setTimeout(() => this.disconnect(), 5 * 60 * 1000);
   }
 
-  onLeave(client: Client<UserEntity>) {
+  onLeave(client: AuthenticatedClient) {
     const { userData } = client;
-    let userId = userData?.id ?? "";
+    let userId = userData?.id ?? '';
     if (this.state.players.has(client.sessionId)) {
       this.resetMapItem(client, this.state.players.get(client.sessionId));
       this.state.players.delete(client.sessionId);
@@ -752,13 +865,15 @@ export class BaseGameRoom extends Room<RoomState> {
         room: this.roomName,
       });
     }
-    this.logger.log(`Player ${userData?.display_name} left room ${this.roomName}`);
+    this.logger.log(
+      `Player ${userData?.display_name} left room ${this.roomName}`,
+    );
   }
 
-  resetMapItem(client: Client<UserEntity>, player: Player | undefined) {
+  resetMapItem(client: AuthenticatedClient, player: Player | undefined) {
     for (const item of this.state.items) {
       if (client.sessionId == item[1].ownerId) {
-        item[1].ownerId = "";
+        item[1].ownerId = '';
         if (player) {
           item[1].x = player?.x;
           item[1].y = player?.y;
@@ -776,25 +891,27 @@ export class BaseGameRoom extends Room<RoomState> {
     );
   }
 
-  async onJoin(client: Client<UserEntity>, options: any, auth: any) {
+  async onJoin(client: AuthenticatedClient, options: any, auth: any) {
     const { userData } = client;
     if (!BaseGameRoom.eventData) {
-      BaseGameRoom.eventData = await this.gameEventService.findOneCurrentEvent();
+      BaseGameRoom.eventData =
+        await this.gameEventService.findOneCurrentEvent();
     }
-    if (BaseGameRoom.eventData == null || BaseGameRoom.eventData.target_user == null) return;
+    if (
+      BaseGameRoom.eventData == null ||
+      BaseGameRoom.eventData.target_user == null
+    )
+      return;
     let targetUserId = BaseGameRoom.eventData.target_user.id;
-    let userId = userData == null ? "0" : userData?.id;
+    let userId = userData == null ? '0' : userData?.id;
     if (userId == targetUserId) {
       if (!BaseGameRoom.globalTargetClients.has(userId)) {
         BaseGameRoom.globalTargetClients.set(userId, client);
       }
-      this.broadcastToAllRooms('userTargetJoined', {
-      });
-    }
-    else {
+      this.broadcastToAllRooms('userTargetJoined', {});
+    } else {
       if (BaseGameRoom.globalTargetClients.has(targetUserId)) {
-        client.send('userTargetJoined', {
-        });
+        client.send('userTargetJoined', {});
       }
     }
   }
@@ -808,12 +925,16 @@ export class BaseGameRoom extends Room<RoomState> {
 
   //Pet
   async handlePetAsync(): Promise<void> {
-    const pets = await this.animalService.getAvailableAnimalsWithRoom(this.roomName);
-    const petSpawns = pets.filter(pet => pet.species === this.speciesPetEvent);
+    const pets = await this.petPlayersService.getAvailablePetPlayersWithRoom(
+      this.roomName,
+    );
+    const petSpawns = pets.filter(
+      (pet) => pet.pet.species === this.speciesPetEvent,
+    );
     if (!petSpawns || petSpawns.length === 0) {
       return;
     }
-    petSpawns.forEach(petData => {
+    petSpawns.forEach((petData) => {
       const pet = new Pet();
       pet.SetDataPet(petData, this.roomName);
       this.state.pets.set(petData.id, pet);
@@ -825,23 +946,25 @@ export class BaseGameRoom extends Room<RoomState> {
       for (const pet of this.state.pets.values()) {
         if (pet == null || pet.species != this.speciesPetEvent) continue;
         const roomCode = this.getRandomMapKey(pet.roomCode);
-        const newAnimal: AnimalDtoRequest = {
-          map: roomCode,
-        };
         this.removePet(pet.id);
-        let pets = await this.animalService.updateAnimal(newAnimal, pet.id);
+        let pets = await this.petPlayersService.updatePetPlayers(
+          { map: roomCode },
+          pet.id,
+        );
         if (!pets) return;
-        this.clients.forEach(client => {
-          client.send("onPetDisappear", {
-            petId: pet.id
+        this.clients.forEach((client) => {
+          client.send('onPetDisappear', {
+            petId: pet.id,
           });
         });
-      };
+      }
     }
   }
 
   private getRandomMapKey(currentKey: string): MapKey {
-    const values = Object.values(MapKey).filter(k => k !== currentKey as MapKey);
+    const values = Object.values(MapKey).filter(
+      (k) => k !== (currentKey as MapKey),
+    );
     const randomIndex = Math.floor(Math.random() * values.length);
     return values[randomIndex];
   }
@@ -853,9 +976,9 @@ export class BaseGameRoom extends Room<RoomState> {
       species: pet.species,
       position: { x: pet.position.x, y: pet.position.y },
       angle: pet.angle,
-      moving: pet.moving
-    }
-    this.broadcast("petPositionUpdate", petData);
+      moving: pet.moving,
+    };
+    this.broadcast('petPositionUpdate', petData);
   }
 
   removePet(petId: string) {

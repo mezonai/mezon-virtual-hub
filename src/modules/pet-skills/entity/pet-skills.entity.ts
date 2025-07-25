@@ -1,10 +1,11 @@
 import { PetType, SkillCode } from '@enum';
+import { PetSkillUsageEntity } from '@modules/pet-skill-usages/entity/pet-skill-usages.entity';
 import { PetsEntity } from '@modules/pets/entity/pets.entity';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { TimestampColumns } from '@types';
 import { Transform, Type } from 'class-transformer';
 import { IsEnum, IsInt, IsOptional, IsString, Matches } from 'class-validator';
-import { Column, Entity, ManyToMany, PrimaryColumn } from 'typeorm';
+import { Column, Entity, ManyToMany, OneToMany, PrimaryColumn } from 'typeorm';
 
 @Entity('pet_skills')
 export class PetSkillsEntity extends TimestampColumns {
@@ -68,6 +69,6 @@ export class PetSkillsEntity extends TimestampColumns {
   })
   pets: PetsEntity[];
 
-  // @OneToMany(() => PetSkillUsageEntity, (usage) => usage.skill)
-  // skill_usages: PetSkillUsageEntity[];
+  @OneToMany(() => PetSkillUsageEntity, (usage) => usage.skill)
+  skill_usages: PetSkillUsageEntity[];
 }
