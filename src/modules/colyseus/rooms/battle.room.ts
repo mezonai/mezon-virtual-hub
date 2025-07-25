@@ -37,7 +37,7 @@ export class BattleRoom extends BaseGameRoom {
         petsFromUser.forEach((a, index) => {
             const pet = new PetState();
             pet.id = a.id;
-            pet.name = a.name;
+            pet.name = `${a.name} (${a.rarity})`;
             pet.species = a.species;
             pet.type = AnimalElement.Normal;
             pet.attack = 100;
@@ -52,7 +52,7 @@ export class BattleRoom extends BaseGameRoom {
             // Gán skill mặc định (hoặc từ data của a nếu có)
             for (let j = 0; j < 3; j++) {
                 const skill = new SkillState();
-                skill.id = j == 0 ? "ATTACK01" : index == 0 && j == 1 ? `NOR01` : index == 0 && j == 2 ? `NOR02` : index == 1 && j == 1 ? "GRASS01" : "FIRE01";
+                skill.id = j == 0 ? "ATTACK01" : j == 1 ? "NOR01" : "NOR02";
                 skill.attack = 20 + j * 10;
                 skill.accuracy = 90;
                 skill.powerPoint = 15;
@@ -248,6 +248,7 @@ export class BattleRoom extends BaseGameRoom {
     private serializePet(pet: PetState) {
         return {
             id: pet.id,
+            name: pet.name,
             species: pet.species,
             type: pet.type,
             level: pet.level,
