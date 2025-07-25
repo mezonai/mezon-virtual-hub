@@ -77,6 +77,48 @@ export class PetPlayersController {
     );
   }
 
+  @Put('select-pets')
+  @ApiOperation({
+    summary: 'Select multiple pets for battle',
+    description:
+      'Allows the player to select a list of pets by specifying their IDs.',
+  })
+  @ApiBody({ type: SelectPetPlayersListDto })
+  async selectPetPlayers(@Body() payload: SelectPetPlayersListDto) {
+    const user = this.cls.get<UserEntity>(USER_TOKEN);
+    return await this.petPlayersService.selectPetPlayers(user, payload);
+  }
+
+  @Put('select-pets/:pet_player_id')
+  @ApiParam({
+    name: 'pet_player_id',
+    example: '91bea29f-0e87-42a5-b851-d9d0386ac32f',
+  })
+  @ApiQuery({
+    type: Boolean,
+    name: 'is_selected',
+    required: false,
+    description: 'Selected status',
+    default: true,
+  })
+  @ApiOperation({
+    summary: 'Select a pet for battle',
+    description: 'Allows the player to select a pet by a specifying ID.',
+  })
+  async selectOnePetPlayer(
+    @Query('is_selected', new DefaultValuePipe(false), ParseBoolPipe)
+    isSelected: boolean = true,
+    @Param('pet_player_id', ParseUUIDPipe)
+    petId: string,
+  ) {
+    const user = this.cls.get<UserEntity>(USER_TOKEN);
+    return await this.petPlayersService.selectOnePetPlayer(
+      user,
+      petId,
+      isSelected,
+    );
+  }
+
   @Put(':pet_player_id')
   @UseGuards(AdminBypassGuard)
   @ApiParam({
@@ -118,48 +160,6 @@ export class PetPlayersController {
   async bringPetPlayers(@Body() payload: BringPetPlayersDtoList) {
     const user = this.cls.get<UserEntity>(USER_TOKEN);
     return await this.petPlayersService.bringPetPlayers(user, payload);
-  }
-
-  @Put('select-pets')
-  @ApiOperation({
-    summary: 'Select multiple pets for battle',
-    description:
-      'Allows the player to select a list of pets by specifying their IDs.',
-  })
-  @ApiBody({ type: SelectPetPlayersListDto })
-  async selectPetPlayers(@Body() payload: SelectPetPlayersListDto) {
-    const user = this.cls.get<UserEntity>(USER_TOKEN);
-    return await this.petPlayersService.selectPetPlayers(user, payload);
-  }
-
-  @Put('select-pets/:pet_player_id')
-  @ApiParam({
-    name: 'pet_player_id',
-    example: '91bea29f-0e87-42a5-b851-d9d0386ac32f',
-  })
-  @ApiQuery({
-    type: Boolean,
-    name: 'is_selected',
-    required: false,
-    description: 'Selected status',
-    default: true,
-  })
-  @ApiOperation({
-    summary: 'Select a pet for battle',
-    description: 'Allows the player to select a pet by a specifying ID.',
-  })
-  async selectOnePetPlayer(
-    @Query('is_selected', new DefaultValuePipe(false), ParseBoolPipe)
-    isSelected: boolean = true,
-    @Param('pet_player_id', ParseUUIDPipe)
-    petId: string,
-  ) {
-    const user = this.cls.get<UserEntity>(USER_TOKEN);
-    return await this.petPlayersService.selectOnePetPlayer(
-      user,
-      petId,
-      isSelected,
-    );
   }
 
   // @Put(':pet_player_id/unlock-skills')
