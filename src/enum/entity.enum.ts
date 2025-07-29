@@ -72,6 +72,12 @@ export enum PetType {
   DRAGON = 'dragon',
 }
 
+export enum SkillType {
+  ATTACK = 'attack',
+  DEFENSE = 'defense',
+  DECREASE_ATTACK = 'decrease_attack',
+}
+
 export enum SkillCode {
   GROWL = 'NOR01',
   PROTECT = 'NOR02',

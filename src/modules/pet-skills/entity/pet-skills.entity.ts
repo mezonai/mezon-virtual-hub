@@ -1,4 +1,4 @@
-import { PetType, SkillCode } from '@enum';
+import { PetType, SkillCode, SkillType } from '@enum';
 import { PetSkillUsageEntity } from '@modules/pet-skill-usages/entity/pet-skill-usages.entity';
 import { PetsEntity } from '@modules/pets/entity/pets.entity';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
@@ -32,13 +32,18 @@ export class PetSkillsEntity extends TimestampColumns {
   @Column({ type: 'varchar', length: 50, default: PetType.NORMAL })
   @ApiProperty({ enum: PetType })
   @IsEnum(PetType)
-  type: PetType = PetType.NORMAL;
+  element_type: PetType = PetType.NORMAL;
+
+  @Column({ type: 'varchar', length: 50, default: SkillType.ATTACK })
+  @ApiProperty({ enum: SkillType })
+  @IsEnum(SkillType)
+  skill_type: SkillType = SkillType.ATTACK;
 
   @Column({ type: 'int', default: 0 })
   @ApiProperty()
   @IsInt()
   @Type(() => Number)
-  attack: number;
+  effect_count: number;
 
   @Column({ type: 'int', default: 100 })
   @ApiProperty()
