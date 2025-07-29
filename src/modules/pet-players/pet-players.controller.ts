@@ -1,6 +1,8 @@
 import {
   Controller,
+  DefaultValuePipe,
   Get,
+  ParseBoolPipe,
   ParseUUIDPipe,
   Post,
   Query,
@@ -11,6 +13,7 @@ import {
   ApiBody,
   ApiOperation,
   ApiParam,
+  ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
 
@@ -27,7 +30,6 @@ import {
   SpawnPetPlayersDto,
   BringPetPlayersDtoList,
   SelectPetPlayersListDto,
-  PetPlayerSkillsDto,
 } from './dto/pet-players.dto';
 
 @ApiBearerAuth()
@@ -49,7 +51,7 @@ export class PetPlayersController {
   })
   async getPetPlayers() {
     const user = this.cls.get<UserEntity>(USER_TOKEN);
-    return await this.petPlayersService.getPetPlayers(user.id);
+    return await this.petPlayersService.findPetPlayersByUserId(user.id);
   }
 
   @Post()
@@ -72,6 +74,48 @@ export class PetPlayersController {
   async getPetPlayersWithRoom(@Param('room_code') room_code: string) {
     return await this.petPlayersService.getAvailablePetPlayersWithRoom(
       room_code,
+    );
+  }
+
+  @Put('select-pets')
+  @ApiOperation({
+    summary: 'Select multiple pets for battle',
+    description:
+      'Allows the player to select a list of pets by specifying their IDs.',
+  })
+  @ApiBody({ type: SelectPetPlayersListDto })
+  async selectPetPlayers(@Body() payload: SelectPetPlayersListDto) {
+    const user = this.cls.get<UserEntity>(USER_TOKEN);
+    return await this.petPlayersService.selectPetPlayers(user, payload);
+  }
+
+  @Put('select-pets/:pet_player_id')
+  @ApiParam({
+    name: 'pet_player_id',
+    example: '91bea29f-0e87-42a5-b851-d9d0386ac32f',
+  })
+  @ApiQuery({
+    type: Boolean,
+    name: 'is_selected',
+    required: false,
+    description: 'Selected status',
+    default: true,
+  })
+  @ApiOperation({
+    summary: 'Select a pet for battle',
+    description: 'Allows the player to select a pet by a specifying ID.',
+  })
+  async selectOnePetPlayer(
+    @Query('is_selected', new DefaultValuePipe(false), ParseBoolPipe)
+    isSelected: boolean = true,
+    @Param('pet_player_id', ParseUUIDPipe)
+    petId: string,
+  ) {
+    const user = this.cls.get<UserEntity>(USER_TOKEN);
+    return await this.petPlayersService.selectOnePetPlayer(
+      user,
+      petId,
+      isSelected,
     );
   }
 
@@ -118,39 +162,27 @@ export class PetPlayersController {
     return await this.petPlayersService.bringPetPlayers(user, payload);
   }
 
-  @Post('select-pets')
-  @ApiOperation({
-    summary: 'Select multiple pets for battle',
-    description:
-      'Allows the player to select a list of pets by specifying their IDs.',
-  })
-  @ApiBody({ type: SelectPetPlayersListDto })
-  async selectPetPlayers(@Body() payload: SelectPetPlayersListDto) {
-    const user = this.cls.get<UserEntity>(USER_TOKEN);
-    return await this.petPlayersService.selectPetPlayers(user, payload);
-  }
-
-  @Put(':pet_player_id/unlock-skills')
-  @ApiParam({
-    name: 'pet_player_id',
-    example: '91bea29f-0e87-42a5-b851-d9d0386ac32f',
-  })
-  @ApiOperation({
-    summary: 'Select skills for pets',
-    description: 'Allows the player to select a list of skills by skill_codes',
-  })
-  @ApiBody({ type: PetPlayerSkillsDto })
-  async unlockSkills(
-    @Param('pet_player_id', ParseUUIDPipe) pet_player_id: string,
-    @Body() payload: PetPlayerSkillsDto,
-  ) {
-    const user = this.cls.get<UserEntity>(USER_TOKEN);
-    return await this.petPlayersService.unlockSkills(
-      user,
-      pet_player_id,
-      payload,
-    );
-  }
+  // @Put(':pet_player_id/unlock-skills')
+  // @ApiParam({
+  //   name: 'pet_player_id',
+  //   example: '91bea29f-0e87-42a5-b851-d9d0386ac32f',
+  // })
+  // @ApiOperation({
+  //   summary: 'Select skills for pets',
+  //   description: 'Allows the player to select a list of skills by skill_codes',
+  // })
+  // @ApiBody({ type: PetPlayerSkillsDto })
+  // async unlockSkills(
+  //   @Param('pet_player_id', ParseUUIDPipe) pet_player_id: string,
+  //   @Body() payload: PetPlayerSkillsDto,
+  // ) {
+  //   const user = this.cls.get<UserEntity>(USER_TOKEN);
+  //   return await this.petPlayersService.unlockSkills(
+  //     user,
+  //     pet_player_id,
+  //     payload,
+  //   );
+  // }
 
   @Get('find/:pet_player_id')
   @UseGuards(AdminBypassGuard)

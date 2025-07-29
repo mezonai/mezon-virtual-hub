@@ -1,6 +1,6 @@
 import { UserEntity } from '@modules/user/entity/user.entity';
 import { Injectable } from '@nestjs/common';
-import { Player } from '@types';
+import { AuthenticatedClient, Player } from '@types';
 import { Client } from 'colyseus';
 import { BaseGameRoom, Item } from './base-game.room';
 import { configEnv } from '@config/env.config';
@@ -53,7 +53,7 @@ export class GameRoom extends BaseGameRoom {
     this.scheduleQuizBroadcast();
   }
 
-  override async onJoin(client: Client<UserEntity>, options: any, auth: any) {
+  override async onJoin(client: AuthenticatedClient, options: any, auth: any) {
     await super.onJoin(client, options, auth);
     const { userData } = client;
     this.logger.log(
@@ -69,13 +69,13 @@ export class GameRoom extends BaseGameRoom {
     player.is_show_name = BaseGameRoom.eventData == null;
     player.display_name = userData?.display_name || userData?.username || '';
     player.skin_set = userData?.skin_set?.join('/') || '';
-    player.animals = JSON.stringify(
-      (userData?.animals?.filter(a => a.is_brought)
+    player.pet_players = JSON.stringify(
+      (userData?.pet_players?.filter(a => a.is_brought)
         .map(a => ({
           id: a.id,
           name: a.name,
-          species: a.species,
-          rarity: a.rarity,
+          species: a.pet?.species,
+          rarity: a.pet?.rarity,
         }))) ?? []
     );
     this.state.players.set(client.sessionId, player);
@@ -86,7 +86,7 @@ export class GameRoom extends BaseGameRoom {
   }
 
 
-  onLeave(client: Client<UserEntity>) {
+  onLeave(client: AuthenticatedClient) {
     const { userData } = client;
     // User's position is not be saved temporarily
     // if (userData) {

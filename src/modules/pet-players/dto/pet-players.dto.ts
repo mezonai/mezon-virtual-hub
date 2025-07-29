@@ -1,4 +1,4 @@
-import { AnimalRarity, MapKey, SkillCode, SubMap } from '@enum';
+import { AnimalRarity, MapKey, PetType, SkillCode, SubMap } from '@enum';
 import {
   ApiProperty,
   ApiPropertyOptional,
@@ -15,12 +15,21 @@ import {
   IsUUID,
 } from 'class-validator';
 import { PetPlayersEntity } from '../entity/pet-players.entity';
+import { PetSkillsEntity } from '@modules/pet-skills/entity/pet-skills.entity';
+import { PetsDtoResponse } from '@modules/pets/dto/pets.dto';
 
 export class SpawnPetPlayersDto {
   @ApiProperty()
   @IsString()
-  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
+  @Transform(({ value }) => (typeof value === 'string' ? value?.trim() : value))
   species: string;
+
+  @ApiPropertyOptional({
+    description: 'Rarity of the animal',
+    enum: AnimalRarity,
+  })
+  @IsEnum(AnimalRarity)
+  rarity: AnimalRarity = AnimalRarity.COMMON;
 
   @ApiProperty({
     description: 'Map of the pet.',
@@ -40,26 +49,65 @@ export class SpawnPetPlayersDto {
   sub_map?: SubMap;
 }
 
-export class PetPlayersDtoResponse extends PetPlayersEntity {
+export class UpdatePetPlayersDto {
+  @ApiProperty()
+  @IsString()
+  @IsOptional()
+  @Transform(({ value }) => (typeof value === 'string' ? value?.trim() : value))
+  species?: string;
+
+  @ApiPropertyOptional({
+    description: 'Rarity of the animal',
+    enum: AnimalRarity,
+  })
+  @IsEnum(AnimalRarity)
+  @IsOptional()
+  rarity?: AnimalRarity = AnimalRarity.COMMON;
+
+  @ApiProperty({
+    description: 'Map of the pet.',
+    example: MapKey.HN1,
+    enum: MapKey,
+  })
+  @IsEnum(MapKey)
+  @IsOptional()
+  map?: MapKey;
+
+  @ApiPropertyOptional({
+    description: 'Sub map of the pet.',
+    example: SubMap.OFFICE,
+    enum: SubMap,
+  })
+  @IsOptional()
+  @IsEnum(SubMap)
+  sub_map?: SubMap;
+}
+
+export class PetPlayersWithSpeciesDto extends PetPlayersEntity {
+  @Expose()
+  id: string;
+
+  @Exclude()
+  created_at: Date;
+
+  @Exclude()
+  updated_at: Date;
+}
+
+export class PetPlayersInfoDto extends PetPlayersEntity {
   @Exclude()
   created_at: Date;
 
   @Exclude()
   updated_at: Date;
 
-  @Transform(({ obj }: { obj: PetPlayersEntity }) => obj.pet?.rarity ?? null)
   @Expose()
-  readonly rarity?: AnimalRarity;
+  get max_exp(): number {
+    return Math.pow(this.level, 3);
+  }
 
-  @Transform(({ obj }: { obj: PetPlayersEntity }) => obj.pet?.species ?? null)
   @Expose()
-  readonly species?: string;
-
-  @Transform(
-    ({ obj }: { obj: PetPlayersEntity }) => obj.pet?.catch_chance ?? null,
-  )
-  @Expose()
-  readonly catch_chance?: number;
+  pet: PetsDtoResponse;
 }
 
 export class BringPetPlayersDto {
@@ -121,7 +169,3 @@ export class SelectPetPlayersListDto {
   @Type(() => SelectPetPlayersDto)
   pets: SelectPetPlayersDto[];
 }
-
-export class PetPlayerSkillsDto extends PickType(PetPlayersEntity, [
-  'unlocked_skill_codes',
-]) {}
