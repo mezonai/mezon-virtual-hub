@@ -17,7 +17,7 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
-import { AuthenticatedClient, Player, WithdrawPayload } from '@types';
+import { AuthenticatedClient, Player, PlayerBattleInfo, WithdrawPayload } from '@types';
 import { Client, Room } from 'colyseus';
 import { IncomingMessage } from 'http';
 import { Repository } from 'typeorm';
@@ -55,6 +55,7 @@ export class RoomState extends Schema {
   @type({ map: Item }) items = new Map<string, Item>();
   @type({ map: Pet }) pets = new Map<string, Pet>();
   @type({ map: Door }) doors = new MapSchema<Door>();
+  @type({ map: PlayerBattleInfo }) battlePlayers = new MapSchema<PlayerBattleInfo>();
 }
 
 @Injectable()
@@ -707,10 +708,36 @@ export class BaseGameRoom extends Room<RoomState> {
     });
     this.onMessage('sendPetFollowPlayer', async (client, data) => {
       const { pets } = data;
-      this.broadcast('onPetFollowPlayer', {
-        playerIdFollowPet: client.sessionId,
-        pet: pets,
-      });
+      if (!Array.isArray(pets)) return;
+      const targetPlayerState = Array.from(this.state.players.values()).find(
+        (player) => player.id === client.sessionId
+      );
+      if (!targetPlayerState) return;
+      try {
+        const player = this.clients.getById(client.sessionId);
+        if (player == null) return;
+        const result = await this.petPlayersService.findPetPlayersByUserId(player.userData.id);
+        if (result == null) return;
+        
+        const newPetData = JSON.stringify(result.filter(a => a.is_brought).map(a => ({
+          id: a.id,
+          name: a.name,
+          species: a.pet?.species,
+          rarity: a.pet?.rarity,
+        })));
+
+        if (targetPlayerState.pet_players !== newPetData) {
+          targetPlayerState.pet_players = newPetData;
+        }
+
+        const broadcastData = {
+          playerIdFollowPet: client.sessionId,
+          pet: pets,
+        };
+        this.broadcast('onPetFollowPlayer', broadcastData);
+      } catch (err) {
+        console.error(`[sendPetFollowPlayer] Failed to update DB`, err);
+      }
     });
     this.petQueueManager = new PetQueueManager(
       this,
