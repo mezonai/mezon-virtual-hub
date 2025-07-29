@@ -92,6 +92,11 @@ export class PetPlayersWithSpeciesDto extends PetPlayersEntity {
 
   @Exclude()
   updated_at: Date;
+
+  @Expose()
+  get max_exp(): number {
+    return Math.pow(this.level, 3);
+  }
 }
 
 export class PetPlayersInfoDto extends PetPlayersEntity {
@@ -107,6 +112,7 @@ export class PetPlayersInfoDto extends PetPlayersEntity {
   }
 
   @Expose()
+  @Type(() => PetsDtoResponse)
   pet: PetsDtoResponse;
 }
 

@@ -1,19 +1,16 @@
-import { AnimalRarity, MapKey, SkillCode, SubMap } from '@enum';
-import { ApiProperty, ApiPropertyOptional, OmitType } from '@nestjs/swagger';
-import { Exclude, Expose, Type } from 'class-transformer';
+import { SkillCode } from '@enum';
+import { PetSkillUsageEntity } from '@modules/pet-skill-usages/entity/pet-skill-usages.entity';
+import { ApiProperty, OmitType } from '@nestjs/swagger';
+import { Exclude, Type } from 'class-transformer';
 import {
   ArrayMaxSize,
   ArrayNotEmpty,
   IsArray,
   IsEnum,
-  IsNumber,
-  IsNumberString,
   IsOptional,
-  IsString,
   IsUUID,
 } from 'class-validator';
 import { PetsEntity } from '../entity/pets.entity';
-import { PetSkillsEntity } from '@modules/pet-skills/entity/pet-skills.entity';
 
 export class PetsDtoRequest extends OmitType(PetsEntity, [
   'id',
@@ -50,8 +47,8 @@ export class PetsDtoResponse extends PetsEntity {
   @Exclude()
   updated_at: Date;
 
-  @Expose()
-  skills: PetSkillsEntity[] | null;
+  @Exclude()
+  skill_usages: PetSkillUsageEntity[];
 }
 
 export class BringPetsDto {

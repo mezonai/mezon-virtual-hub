@@ -1,12 +1,8 @@
-import { AnimalRarity, MapKey, SubMap } from '@enum';
-import { ApiProperty, ApiPropertyOptional, OmitType } from '@nestjs/swagger';
-import { Transform, Type } from 'class-transformer';
+import { ApiProperty, OmitType } from '@nestjs/swagger';
+import { Exclude, Transform, Type } from 'class-transformer';
 import {
   ArrayNotEmpty,
   IsArray,
-  IsEnum,
-  IsNumber,
-  IsNumberString,
   IsOptional,
   IsString,
   IsUUID,
@@ -31,7 +27,13 @@ export class CreatePetSkillsDto extends OmitType(PetSkillsEntity, [
   skill_code: string;
 }
 
-export class PetSkillsDtoResponse extends CreatePetSkillsDto {}
+export class PetSkillsResponseDto extends PetSkillsEntity {
+  @Exclude()
+  created_at: Date;
+
+  @Exclude()
+  updated_at: Date;
+}
 
 export class UpdatePetSkillsDto extends OmitType(PetSkillsEntity, [
   'pets',

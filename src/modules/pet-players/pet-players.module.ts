@@ -9,6 +9,7 @@ import { PetPlayersEntity } from './entity/pet-players.entity';
 import { PetPlayersController } from './pet-players.controller';
 import { PetPlayersService } from './pet-players.service';
 import { PetSkillsModule } from '@modules/pet-skills/pet-skills.module';
+import { PetSkillUsageEntity } from '@modules/pet-skill-usages/entity/pet-skill-usages.entity';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { PetSkillsModule } from '@modules/pet-skills/pet-skills.module';
       PetsEntity,
       FoodEntity,
       Inventory,
+      PetSkillUsageEntity,
     ]),
     ClsModule,
     PetSkillsModule,
