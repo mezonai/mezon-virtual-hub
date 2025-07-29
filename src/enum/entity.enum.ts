@@ -76,6 +76,8 @@ export enum SkillType {
   ATTACK = 'attack',
   DEFENSE = 'defense',
   DECREASE_ATTACK = 'decrease_attack',
+  INCREASE_ATTACK = 'increase_attack',
+  HEAL = 'heal',
 }
 
 export enum SkillCode {
