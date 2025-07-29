@@ -708,10 +708,36 @@ export class BaseGameRoom extends Room<RoomState> {
     });
     this.onMessage('sendPetFollowPlayer', async (client, data) => {
       const { pets } = data;
-      this.broadcast('onPetFollowPlayer', {
-        playerIdFollowPet: client.sessionId,
-        pet: pets,
-      });
+      if (!Array.isArray(pets)) return;
+      const targetPlayerState = Array.from(this.state.players.values()).find(
+        (player) => player.id === client.sessionId
+      );
+      if (!targetPlayerState) return;
+      try {
+        const player = this.clients.getById(client.sessionId);
+        if (player == null) return;
+        const result = await this.petPlayersService.findPetPlayersByUserId(player.userData.id);
+        if (result == null) return;
+        
+        const newPetData = JSON.stringify(result.filter(a => a.is_brought).map(a => ({
+          id: a.id,
+          name: a.name,
+          species: a.pet?.species,
+          rarity: a.pet?.rarity,
+        })));
+
+        if (targetPlayerState.pet_players !== newPetData) {
+          targetPlayerState.pet_players = newPetData;
+        }
+
+        const broadcastData = {
+          playerIdFollowPet: client.sessionId,
+          pet: pets,
+        };
+        this.broadcast('onPetFollowPlayer', broadcastData);
+      } catch (err) {
+        console.error(`[sendPetFollowPlayer] Failed to update DB`, err);
+      }
     });
     this.petQueueManager = new PetQueueManager(
       this,
