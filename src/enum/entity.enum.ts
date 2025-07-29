@@ -35,7 +35,7 @@ export enum ActionKey {
   Punch = 2,
   SendCoin = 3,
   CatchUser = 4,
-  PetCombat = 5,
+  Battle = 5,
 }
 
 export enum FoodType {
