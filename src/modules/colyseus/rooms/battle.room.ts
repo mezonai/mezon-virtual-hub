@@ -1,9 +1,10 @@
 import { Client, Room } from "colyseus";
 import { BaseGameRoom, RoomState } from "./base-game.room";
 import { UserEntity } from "@modules/user/entity/user.entity";
-import { AnimalElement, PetState, PlayerBattleInfo as PlayerBattleState, SkillData as SkillState } from "@types";
+import { AuthenticatedClient, PetState, PlayerBattleInfo as PlayerBattleState, SkillData as SkillState } from "@types";
 import { MessageTypes } from "../MessageTypes";
 import { on } from "events";
+import { PetType } from "@enum";
 export type PlayerAction =
     | {
         type: "attack";
@@ -26,28 +27,28 @@ export class BattleRoom extends BaseGameRoom {
         });
     }
 
-    override async onJoin(client: Client<UserEntity>, options: any, auth: any) {
+    override async onJoin(client: AuthenticatedClient, options: any, auth: any) {
         const { userData } = client;
         console.log(`BattleRoom created for ${client.sessionId}`);
         const newPlayer = new PlayerBattleState();
         newPlayer.id = client.sessionId;
         newPlayer.user_id = userData?.id ?? "";
         newPlayer.name = userData?.username ?? "";
-        const petsFromUser = (userData?.animals?.filter(a => a.is_brought) ?? []).slice(0, userData?.animals?.length);
+        const petsFromUser = (userData?.pet_players?.filter(a => a.is_brought) ?? []).slice(0, userData?.pet_players?.length);
         petsFromUser.forEach((a, index) => {
             const pet = new PetState();
             pet.id = a.id;
-            pet.name = `${a.name} (${a.rarity})`;
-            pet.species = a.species;
-            pet.type = AnimalElement.Normal;
-            pet.attack = 100;
-            pet.defense = 50;
-            pet.currentHp = 100;
-            pet.totalHp = 100;
-            pet.level = 2;
-            pet.currentExp = 20;
-            pet.totalExp = 100;
-            pet.speed = 10 + index * 5; // bạn có thể lấy từ a.speed nếu có
+            pet.name = `${a.name} (${a.pet?.rarity})`;
+            pet.species = a.pet?.species ?? "";
+            pet.type = a.pet?.type ?? "";
+            pet.attack = a.attack;
+            pet.defense = a.defense;
+            pet.currentHp = a.hp;
+            pet.totalHp = a.hp;
+            pet.level = a.level;
+            pet.currentExp = a.exp;
+            pet.totalExp = a.exp;
+            pet.speed = a.speed;
 
             // Gán skill mặc định (hoặc từ data của a nếu có)
             for (let j = 0; j < 3; j++) {
@@ -77,9 +78,11 @@ export class BattleRoom extends BaseGameRoom {
 
     public onPlayerAction(client: Client, action: PlayerAction) {
         this.playerActions.set(client.sessionId, action);
-        if (this.playerActions.size === 2) {
-            this.resolveTurn(); // khi đủ 2 người, xử lý lượt
+        if (this.playerActions.size < 2) {
+            client.send(MessageTypes.WAITING_OTHER_USER, { message: "" });
+            return;
         }
+        this.resolveTurn(); // khi đủ 2 người, xử lý lượt
     }
     private async resolveTurn() {
         const [p1Entry, p2Entry] = Array.from(this.state.battlePlayers.entries());
@@ -230,7 +233,7 @@ export class BattleRoom extends BaseGameRoom {
         return Math.max(finalDamage, 1); // Luôn gây ít nhất 1 damage
     }
 
-    getTypeEffectiveness(attackType: AnimalElement, defenseType: AnimalElement): number {
+    getTypeEffectiveness(attackType: PetType | "", defenseType: PetType | ""): number {
         return typeEffectiveness[attackType]?.[defenseType] ?? 1;
     }
 
@@ -273,68 +276,68 @@ export class BattleRoom extends BaseGameRoom {
         };
     }
 }
-const typeEffectiveness: Record<AnimalElement, Record<AnimalElement, number>> = {
-    [AnimalElement.Normal]: {
-        [AnimalElement.Normal]: 1,
-        [AnimalElement.Fire]: 1,
-        [AnimalElement.Ice]: 1,
-        [AnimalElement.Water]: 1,
-        [AnimalElement.Electric]: 1,
-        [AnimalElement.Grass]: 1,
-        [AnimalElement.Dragon]: 1,
+const typeEffectiveness: Record<PetType, Record<PetType, number>> = {
+    [PetType.NORMAL]: {
+        [PetType.NORMAL]: 1,
+        [PetType.FIRE]: 1,
+        [PetType.ICE]: 1,
+        [PetType.WATER]: 1,
+        [PetType.ELECTRIC]: 1,
+        [PetType.GRASS]: 1,
+        [PetType.DRAGON]: 1,
     },
-    [AnimalElement.Fire]: {
-        [AnimalElement.Normal]: 1,
-        [AnimalElement.Fire]: 0.5,
-        [AnimalElement.Ice]: 2,
-        [AnimalElement.Water]: 0.5,
-        [AnimalElement.Electric]: 1,
-        [AnimalElement.Grass]: 2,
-        [AnimalElement.Dragon]: 0.5,
+    [PetType.FIRE]: {
+        [PetType.NORMAL]: 1,
+        [PetType.FIRE]: 0.5,
+        [PetType.ICE]: 2,
+        [PetType.WATER]: 0.5,
+        [PetType.ELECTRIC]: 1,
+        [PetType.GRASS]: 2,
+        [PetType.DRAGON]: 0.5,
     },
-    [AnimalElement.Ice]: {
-        [AnimalElement.Normal]: 1,
-        [AnimalElement.Fire]: 0.5,
-        [AnimalElement.Ice]: 0.5,
-        [AnimalElement.Water]: 1,
-        [AnimalElement.Electric]: 1,
-        [AnimalElement.Grass]: 2,
-        [AnimalElement.Dragon]: 2,
+    [PetType.ICE]: {
+        [PetType.NORMAL]: 1,
+        [PetType.FIRE]: 0.5,
+        [PetType.ICE]: 0.5,
+        [PetType.WATER]: 1,
+        [PetType.ELECTRIC]: 1,
+        [PetType.GRASS]: 2,
+        [PetType.DRAGON]: 2,
     },
-    [AnimalElement.Water]: {
-        [AnimalElement.Normal]: 1,
-        [AnimalElement.Fire]: 2,
-        [AnimalElement.Ice]: 1,
-        [AnimalElement.Water]: 0.5,
-        [AnimalElement.Electric]: 1,
-        [AnimalElement.Grass]: 0.5,
-        [AnimalElement.Dragon]: 0.5,
+    [PetType.WATER]: {
+        [PetType.NORMAL]: 1,
+        [PetType.FIRE]: 2,
+        [PetType.ICE]: 1,
+        [PetType.WATER]: 0.5,
+        [PetType.ELECTRIC]: 1,
+        [PetType.GRASS]: 0.5,
+        [PetType.DRAGON]: 0.5,
     },
-    [AnimalElement.Electric]: {
-        [AnimalElement.Normal]: 1,
-        [AnimalElement.Fire]: 1,
-        [AnimalElement.Ice]: 1,
-        [AnimalElement.Water]: 2,
-        [AnimalElement.Electric]: 0.5,
-        [AnimalElement.Grass]: 0.5,
-        [AnimalElement.Dragon]: 0.5,
+    [PetType.ELECTRIC]: {
+        [PetType.NORMAL]: 1,
+        [PetType.FIRE]: 1,
+        [PetType.ICE]: 1,
+        [PetType.WATER]: 2,
+        [PetType.ELECTRIC]: 0.5,
+        [PetType.GRASS]: 0.5,
+        [PetType.DRAGON]: 0.5,
     },
-    [AnimalElement.Grass]: {
-        [AnimalElement.Normal]: 1,
-        [AnimalElement.Fire]: 0.5,
-        [AnimalElement.Ice]: 1,
-        [AnimalElement.Water]: 2,
-        [AnimalElement.Electric]: 1,
-        [AnimalElement.Grass]: 0.5,
-        [AnimalElement.Dragon]: 0.5,
+    [PetType.GRASS]: {
+        [PetType.NORMAL]: 1,
+        [PetType.FIRE]: 0.5,
+        [PetType.ICE]: 1,
+        [PetType.WATER]: 2,
+        [PetType.ELECTRIC]: 1,
+        [PetType.GRASS]: 0.5,
+        [PetType.DRAGON]: 0.5,
     },
-    [AnimalElement.Dragon]: {
-        [AnimalElement.Normal]: 1,
-        [AnimalElement.Fire]: 1,
-        [AnimalElement.Ice]: 1,
-        [AnimalElement.Water]: 1,
-        [AnimalElement.Electric]: 1,
-        [AnimalElement.Grass]: 1,
-        [AnimalElement.Dragon]: 2,
+    [PetType.DRAGON]: {
+        [PetType.NORMAL]: 1,
+        [PetType.FIRE]: 1,
+        [PetType.ICE]: 1,
+        [PetType.WATER]: 1,
+        [PetType.ELECTRIC]: 1,
+        [PetType.GRASS]: 1,
+        [PetType.DRAGON]: 2,
     }
 };

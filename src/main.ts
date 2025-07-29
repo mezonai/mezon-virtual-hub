@@ -10,6 +10,7 @@ import { NestFactory } from '@nestjs/core';
 import { createServer } from 'http';
 import { AppModule } from './app.module';
 import { MapKey } from './enum/entity.enum';
+import { BattleRoom } from '@modules/colyseus/rooms/battle.room';
 
 const logger = new Logger('Bootstrap');
 
@@ -53,8 +54,12 @@ function defineRoomWithPaths(
         defineRoomWithPaths(gameServer, app, baseKey, { [childKey]: childConfig }, `${parentPath}/${subPath}`);
       });
     }
+
   });
+
+  gameServer.define('battle-room', injectDeps(app, BattleRoom));
 }
+
 async function setupColyseusServer(app: INestApplication<any>) {
   const httpServer = createServer();
   const gameServer = new Server({
@@ -72,7 +77,7 @@ async function setupColyseusServer(app: INestApplication<any>) {
   return { gameServer, httpServer };
 }
 
-function injectDeps<T extends { new (...args: any[]): Room }>(
+function injectDeps<T extends { new(...args: any[]): Room }>(
   app: INestApplication,
   target: T,
 ): T {
