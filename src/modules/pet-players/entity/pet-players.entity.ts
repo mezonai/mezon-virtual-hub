@@ -1,4 +1,5 @@
 import { AnimalRarity, SkillCode } from '@enum';
+import { PetSkillsResponseDto } from '@modules/pet-skills/dto/pet-skills.dto';
 import { PetSkillsEntity } from '@modules/pet-skills/entity/pet-skills.entity';
 import { PetsEntity } from '@modules/pets/entity/pets.entity';
 import { UserEntity } from '@modules/user/entity/user.entity';
@@ -102,25 +103,29 @@ export class PetPlayersEntity extends AuditEntity {
     eager: true,
   })
   @JoinColumn({ name: 'skill_code_1' })
-  skill_slot_1: PetSkillsEntity;
+  @Type(() => PetSkillsResponseDto)
+  skill_slot_1: PetSkillsResponseDto;
 
   @ManyToOne(() => PetSkillsEntity, (skill) => skill.skill_usages, {
     eager: true,
   })
   @JoinColumn({ name: 'skill_code_2' })
-  skill_slot_2: PetSkillsEntity;
+  @Type(() => PetSkillsResponseDto)
+  skill_slot_2: PetSkillsResponseDto;
 
   @ManyToOne(() => PetSkillsEntity, (skill) => skill.skill_usages, {
     eager: true,
   })
   @JoinColumn({ name: 'skill_code_3' })
-  skill_slot_3: PetSkillsEntity | null;
+  @Type(() => PetSkillsResponseDto)
+  skill_slot_3: PetSkillsResponseDto | null;
 
   @ManyToOne(() => PetSkillsEntity, (skill) => skill.skill_usages, {
     eager: true,
   })
   @JoinColumn({ name: 'skill_code_4' })
-  skill_slot_4: PetSkillsEntity | null;
+  @Type(() => PetSkillsResponseDto)
+  skill_slot_4: PetSkillsResponseDto | null;
 
   @ManyToOne(() => UserEntity, { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'user_id' })

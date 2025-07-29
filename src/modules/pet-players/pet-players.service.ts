@@ -11,7 +11,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { instanceToPlain, plainToInstance } from 'class-transformer';
+import { plainToInstance } from 'class-transformer';
 import { error } from 'node:console';
 import { EntityManager, FindOptionsWhere, In, Repository } from 'typeorm';
 import {
@@ -23,6 +23,7 @@ import {
   UpdatePetPlayersDto,
 } from './dto/pet-players.dto';
 import { PetPlayersEntity } from './entity/pet-players.entity';
+import { PetSkillUsageEntity } from '@modules/pet-skill-usages/entity/pet-skill-usages.entity';
 
 const SELECTED_PETS_FOR_BATTLE = 3;
 
@@ -34,7 +35,8 @@ export class PetPlayersService extends BaseService<PetPlayersEntity> {
     private readonly petPlayersRepository: Repository<PetPlayersEntity>,
     @InjectRepository(PetsEntity)
     private readonly petsRepository: Repository<PetsEntity>,
-    private readonly petSkillsService: PetSkillsService,
+    @InjectRepository(PetSkillUsageEntity)
+    private readonly skillUsagesRepository: Repository<PetSkillUsageEntity>,
     @InjectRepository(Inventory)
     private readonly inventoryRepository: Repository<Inventory>,
     private manager: EntityManager,
@@ -54,7 +56,8 @@ export class PetPlayersService extends BaseService<PetPlayersEntity> {
         'skill_slot_4',
       ],
     });
-    return plainToInstance(PetPlayersInfoDto, pets, {});
+
+    return plainToInstance(PetPlayersInfoDto, pets);
   }
 
   async findPetPlayersWithPet(where: FindOptionsWhere<PetPlayersEntity>) {
@@ -95,6 +98,7 @@ export class PetPlayersService extends BaseService<PetPlayersEntity> {
 
     const petPlayer = this.petPlayersRepository.create({
       pet,
+      // skill_slot_1,skill_slot_2
       individual_value: this.generateIndividualValue(),
       attack: pet.base_attack,
       defense: pet.base_defense,
