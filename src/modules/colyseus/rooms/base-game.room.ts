@@ -78,7 +78,7 @@ export class BaseGameRoom extends Room<RoomState> {
     @Inject() private readonly jwtService: JwtService,
     @Inject() private readonly mezonService: MezonService,
     @Inject() private readonly gameEventService: GameEventService,
-    @Inject() private readonly petPlayersService: PetPlayersService,
+    @Inject() readonly petPlayersService: PetPlayersService,
   ) {
     super();
     this.logger.log(`GameRoom created : ${this.roomName}`);
