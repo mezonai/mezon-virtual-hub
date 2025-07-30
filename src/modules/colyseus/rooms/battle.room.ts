@@ -53,7 +53,7 @@ export class BattleRoom extends BaseGameRoom {
             // Gán skill mặc định (hoặc từ data của a nếu có)
             for (let j = 0; j < 3; j++) {
                 const skill = new SkillState();
-                skill.id = j == 0 ? "ATTACK01" : j == 1 ? "NOR01" : "NOR02";
+                skill.id = j == 0 ? "ATTACK01" : j == 1 ? "FIRE01" : "ICE01";
                 skill.attack = 20 + j * 10;
                 skill.accuracy = 90;
                 skill.powerPoint = 15;
@@ -159,7 +159,6 @@ export class BattleRoom extends BaseGameRoom {
         const damage = this.calculateDamage(attacker.pet, defender.pet, skill);
         defender.pet.currentHp -= damage;
         if (defender.pet.currentHp <= 0) {
-            console.log("User defend:", defender.clientId)
             defender.pet.currentHp = 0;
             defender.pet.isDead = true;
         }
@@ -227,7 +226,7 @@ export class BattleRoom extends BaseGameRoom {
         );
 
         const effectiveness = this.getTypeEffectiveness(attacker.type, defender.type);
-        // const finalDamage = Math.floor(baseDamage * effectiveness);
+        //const finalDamage = Math.floor(baseDamage * effectiveness);
         const finalDamage = 100;
 
         return Math.max(finalDamage, 1); // Luôn gây ít nhất 1 damage
