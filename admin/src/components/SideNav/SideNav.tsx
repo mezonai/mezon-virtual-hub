@@ -79,6 +79,7 @@ function renderNavItems({
   const children = items.reduce(
     (acc: React.ReactNode[], curr: NavItemConfig): React.ReactNode[] => {
       const { key, ...item } = curr;
+      console.log(item);
 
       acc.push(<NavItem key={key} pathname={pathname} {...item} />);
 
@@ -125,7 +126,7 @@ function NavItem({
           ? {
               role: 'button',
               onClick: () => {
-                navigate(`${href}`);
+                if (!disabled) navigate(`${href}`);
               },
             }
           : { role: 'button' })}

@@ -9,6 +9,9 @@ import { LoginPage } from './pages/LoginPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { UsersPage } from './pages/UsersPage';
 import { paths } from './utils/paths';
+import { NotFoundPage } from './pages/NotFoundPage';
+import { SettingPage } from './pages/SettingPage';
+import { AccountPage } from './pages/AccountPage';
 
 const App = () => {
   return (
@@ -23,8 +26,11 @@ const App = () => {
                 element={<DashboardPage />}
               />
               <Route path={paths.dashboard.users} element={<UsersPage />} />
-              <Route path={paths.dashboard.settings} element={<></>} />
-              <Route path={paths.dashboard.account} element={<></>} />
+              <Route
+                path={paths.dashboard.settings}
+                element={<SettingPage />}
+              />
+              <Route path={paths.dashboard.account} element={<AccountPage />} />
             </Route>
 
             <Route path="/unauthorized" element={<></>} />
@@ -33,6 +39,7 @@ const App = () => {
 
           <Route path="/about" element={<></>} />
           <Route path={paths.auth.login} element={<LoginPage />} />
+          <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </BrowserRouter>
     </ThemeProvider>
