@@ -1,12 +1,12 @@
 import axios from 'axios';
 
-const http = axios.create({
+const httpClient = axios.create({
   baseURL: process.env.REACT_APP_API_BASE_URL || 'https://fallback.example.com',
   timeout: 10000,
 });
 
 // Attach token from localStorage before each request
-http.interceptors.request.use(
+httpClient.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('authToken');
     if (token) {
@@ -17,4 +17,4 @@ http.interceptors.request.use(
   (error) => Promise.reject(error),
 );
 
-export default http;
+export default httpClient;
