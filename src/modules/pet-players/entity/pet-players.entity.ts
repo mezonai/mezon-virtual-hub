@@ -1,4 +1,4 @@
-import { AnimalRarity, SkillCode } from '@enum';
+import { SkillCode, SkillType } from '@enum';
 import { PetSkillsResponseDto } from '@modules/pet-skills/dto/pet-skills.dto';
 import { PetSkillsEntity } from '@modules/pet-skills/entity/pet-skills.entity';
 import { PetsEntity } from '@modules/pets/entity/pets.entity';
@@ -8,6 +8,9 @@ import { AuditEntity } from '@types';
 import { Type } from 'class-transformer';
 import {
   ArrayMaxSize,
+  ArrayMinSize,
+  ArrayNotEmpty,
+  IsArray,
   IsBoolean,
   IsEnum,
   IsInt,
@@ -126,6 +129,17 @@ export class PetPlayersEntity extends AuditEntity {
   @JoinColumn({ name: 'skill_code_4' })
   @Type(() => PetSkillsResponseDto)
   skill_slot_4: PetSkillsResponseDto | null;
+
+  @Column({ type: 'text', array: true, default: () => `'{}'` })
+  @ApiProperty({
+    isArray: true,
+    enum: SkillCode,
+    description: 'Skill codes selected for battle from pet’s available skills',
+  })
+  @IsEnum(SkillCode, { each: true })
+  @ArrayNotEmpty()
+  @ArrayMaxSize(2)
+  equipped_skill_codes: SkillCode[];
 
   @ManyToOne(() => UserEntity, { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'user_id' })

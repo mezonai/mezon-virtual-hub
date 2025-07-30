@@ -3,6 +3,7 @@ import {
   Delete,
   Get,
   Param,
+  ParseEnumPipe,
   ParseUUIDPipe,
   Post,
   Put,
@@ -24,6 +25,7 @@ import { ClsService } from 'nestjs-cls';
 import { UserService } from '../user/user.service';
 import { CreatePetSkillsDto, UpdatePetSkillsDto } from './dto/pet-skills.dto';
 import { PetSkillsService } from './pet-skills.service';
+import { SkillCode } from '@enum';
 
 @ApiBearerAuth()
 @Controller('pet-skills')
@@ -58,14 +60,15 @@ export class PetSkillsController {
   @Put(':skill_code')
   @ApiParam({
     name: 'skill_code',
-    example: 'NOR00',
+    enum: SkillCode,
+    example: SkillCode.GROWL,
   })
   @ApiOperation({
     summary: 'Update a pet-skills with skills',
   })
   async updatePetSkills(
+    @Param('skill_code', new ParseEnumPipe(SkillCode)) skill_code: SkillCode,
     @Query() skill: UpdatePetSkillsDto,
-    @Param('skill_code') skill_code: string,
   ) {
     return await this.petSkillsService.updatePetSkills(skill_code, skill);
   }

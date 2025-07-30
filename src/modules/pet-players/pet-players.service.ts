@@ -15,15 +15,18 @@ import { plainToInstance } from 'class-transformer';
 import { error } from 'node:console';
 import { EntityManager, FindOptionsWhere, In, Repository } from 'typeorm';
 import {
+  BattlePetPlayersDto,
   BringPetPlayersDtoList,
   PetPlayersInfoDto,
   PetPlayersWithSpeciesDto,
   SelectPetPlayersListDto,
   SpawnPetPlayersDto,
+  UpdateBattleSkillsDto,
   UpdatePetPlayersDto,
 } from './dto/pet-players.dto';
 import { PetPlayersEntity } from './entity/pet-players.entity';
 import { PetSkillUsageEntity } from '@modules/pet-skill-usages/entity/pet-skill-usages.entity';
+import { PetSkillsResponseDto } from '@modules/pet-skills/dto/pet-skills.dto';
 
 const SELECTED_PETS_FOR_BATTLE = 3;
 
@@ -328,59 +331,82 @@ export class PetPlayersService extends BaseService<PetPlayersEntity> {
     });
   }
 
-  // async unlockSkills(
-  //   user: UserEntity,
-  //   pet_player_id: string,
-  //   { unlocked_skill_indexes }: PetPlayerSkillsDto,
-  // ) {
-  //   if (
-  //     !Array.isArray(unlocked_skill_indexes) ||
-  //     unlocked_skill_indexes.length === 0
-  //   ) {
-  //     throw new BadRequestException('No skills provided for unlocking.');
-  //   }
+  async updateSelectedBattleSkills(
+    user: UserEntity,
+    { equipped_skill_codes }: UpdateBattleSkillsDto,
+    petId: string,
+  ) {
+    const petPlayer = await this.findOne({
+      where: {
+        id: petId,
+        user: { id: user.id },
+      },
+      relations: [
+        'skill_slot_1',
+        'skill_slot_2',
+        'skill_slot_3',
+        'skill_slot_4',
+      ],
+    });
 
-  //   const petPlayer = await this.findOne({
-  //     where: {
-  //       id: pet_player_id,
-  //       user: { id: user.id },
-  //     },
-  //   });
+    if (!petPlayer) {
+      throw new NotFoundException('Pet-player not found');
+    }
 
-  //   if (!petPlayer) {
-  //     throw new NotFoundException('Pet-player not found or not owned by user.');
-  //   }
+    const allowedCodes = [
+      petPlayer.skill_slot_1?.skill_code,
+      petPlayer.skill_slot_2?.skill_code,
+      petPlayer.skill_slot_3?.skill_code,
+      petPlayer.skill_slot_4?.skill_code,
+    ].filter(Boolean);
 
-  //   const currentSkills = petPlayer.unlocked_skill_indexes ?? [];
-  //   const maxSkills =
-  //     2 + (petPlayer.level >= 40 ? 1 : 0) + (petPlayer.level >= 70 ? 1 : 0);
+    for (const skillCode of equipped_skill_codes) {
+      if (!allowedCodes.includes(skillCode)) {
+        throw new BadRequestException(
+          `Skill code ${skillCode} is not assigned to this pet`,
+        );
+      }
+    }
 
-  //   if (currentSkills.length >= maxSkills) {
-  //     throw new BadRequestException(
-  //       `All available skill slots are already used. Level ${petPlayer.level} allows max ${maxSkills} skills.`,
-  //     );
-  //   }
+    return await this.save({ ...petPlayer, equipped_skill_codes });
+  }
 
-  //   const newSkills = unlocked_skill_indexes.filter(
-  //     (code) => !currentSkills.includes(code),
-  //   );
+  async getPetsForBattle(userId: string) {
+    const petPlayers = await this.find({
+      where: {
+        user: { id: userId },
+        is_selected_battle: true,
+      },
+      relations: [
+        'skill_slot_1',
+        'skill_slot_2',
+        'skill_slot_3',
+        'skill_slot_4',
+      ],
+    });
 
-  //   const totalSkills = currentSkills.length + newSkills.length;
-  //   if (totalSkills > maxSkills) {
-  //     throw new BadRequestException(
-  //       `You can only unlock ${maxSkills - currentSkills.length} more skill(s) at level ${petPlayer.level}.`,
-  //     );
-  //   }
+    const battlePets = petPlayers.map((pet) => {
+      const equippedCodes = pet.equipped_skill_codes || [];
 
-  //   petPlayer.unlocked_skill_indexes = [...currentSkills, ...newSkills];
+      const allSkills = [
+        pet.skill_slot_1,
+        pet.skill_slot_2,
+        pet.skill_slot_3,
+        pet.skill_slot_4,
+      ].filter(Boolean) as PetSkillsResponseDto[];
 
-  //   await this.save(petPlayer);
+      const equippedSkills = allSkills.filter((skill) =>
+        equippedCodes.includes(skill?.skill_code),
+      );
 
-  //   return {
-  //     message: 'Skills successfully unlocked.',
-  //     skills: petPlayer.unlocked_skill_indexes,
-  //   };
-  // }
+      return {
+        ...pet,
+        equipped_skills: equippedSkills,
+      };
+    });
+
+    return plainToInstance(BattlePetPlayersDto, battlePets);
+  }
 
   generateIndividualValue(): number {
     return Math.floor(Math.random() * 31) + 1;

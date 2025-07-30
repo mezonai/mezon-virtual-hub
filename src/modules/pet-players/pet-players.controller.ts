@@ -30,6 +30,7 @@ import {
   SpawnPetPlayersDto,
   BringPetPlayersDtoList,
   SelectPetPlayersListDto,
+  UpdateBattleSkillsDto,
 } from './dto/pet-players.dto';
 
 @ApiBearerAuth()
@@ -63,6 +64,15 @@ export class PetPlayersController {
     return await this.petPlayersService.createPetPlayers(pet);
   }
 
+  @Get('battle')
+  @ApiOperation({
+    summary: 'Get all pets and their skills is chosen for battle',
+  })
+  async getPetsForBattle() {
+    const user = this.cls.get<UserEntity>(USER_TOKEN);
+    return await this.petPlayersService.getPetsForBattle(user.id);
+  }
+
   @Get(':room_code')
   @ApiParam({
     name: 'room_code',
@@ -87,36 +97,6 @@ export class PetPlayersController {
   async selectPetPlayers(@Body() payload: SelectPetPlayersListDto) {
     const user = this.cls.get<UserEntity>(USER_TOKEN);
     return await this.petPlayersService.selectPetPlayers(user, payload);
-  }
-
-  @Put('select-pets/:pet_player_id')
-  @ApiParam({
-    name: 'pet_player_id',
-    example: '91bea29f-0e87-42a5-b851-d9d0386ac32f',
-  })
-  @ApiQuery({
-    type: Boolean,
-    name: 'is_selected',
-    required: false,
-    description: 'Selected status',
-    default: true,
-  })
-  @ApiOperation({
-    summary: 'Select a pet for battle',
-    description: 'Allows the player to select a pet by a specifying ID.',
-  })
-  async selectOnePetPlayer(
-    @Query('is_selected', new DefaultValuePipe(false), ParseBoolPipe)
-    isSelected: boolean = true,
-    @Param('pet_player_id', ParseUUIDPipe)
-    petId: string,
-  ) {
-    const user = this.cls.get<UserEntity>(USER_TOKEN);
-    return await this.petPlayersService.selectOnePetPlayer(
-      user,
-      petId,
-      isSelected,
-    );
   }
 
   @Put(':pet_player_id')
@@ -148,6 +128,58 @@ export class PetPlayersController {
     @Param('pet_player_id', ParseUUIDPipe) pet_player_id: string,
   ) {
     return await this.petPlayersService.deletePetPlayers(pet_player_id);
+  }
+
+  @Put(':pet_player_id/battle-skills')
+  @ApiParam({
+    name: 'pet_player_id',
+    example: '91bea29f-0e87-42a5-b851-d9d0386ac32f',
+  })
+  @ApiBody({ type: UpdateBattleSkillsDto })
+  @ApiOperation({
+    summary: 'Select skills for battle',
+    description: 'Allows the player to select skills by array skill_code.',
+  })
+  async updateSelectedBattleSkills(
+    @Body() payload: UpdateBattleSkillsDto,
+    @Param('pet_player_id', ParseUUIDPipe) pet_player_id: string,
+  ) {
+    const user = this.cls.get<UserEntity>(USER_TOKEN);
+    return await this.petPlayersService.updateSelectedBattleSkills(
+      user,
+      payload,
+      pet_player_id,
+    );
+  }
+
+  @Put(':pet_player_id/select-pets')
+  @ApiParam({
+    name: 'pet_player_id',
+    example: '91bea29f-0e87-42a5-b851-d9d0386ac32f',
+  })
+  @ApiQuery({
+    type: Boolean,
+    name: 'is_selected',
+    required: false,
+    description: 'Selected status',
+    default: true,
+  })
+  @ApiOperation({
+    summary: 'Select a pet for battle',
+    description: 'Allows the player to select a pet by a specifying ID.',
+  })
+  async selectOnePetPlayer(
+    @Query('is_selected', new DefaultValuePipe(false), ParseBoolPipe)
+    isSelected: boolean = true,
+    @Param('pet_player_id', ParseUUIDPipe)
+    petId: string,
+  ) {
+    const user = this.cls.get<UserEntity>(USER_TOKEN);
+    return await this.petPlayersService.selectOnePetPlayer(
+      user,
+      petId,
+      isSelected,
+    );
   }
 
   @Post('bring-pets')

@@ -9,6 +9,7 @@ import {
   Matches,
 } from 'class-validator';
 import { PetSkillsEntity } from '../entity/pet-skills.entity';
+import { SkillCode } from '@enum';
 
 export class CreatePetSkillsDto extends OmitType(PetSkillsEntity, [
   'pets',
@@ -24,7 +25,7 @@ export class CreatePetSkillsDto extends OmitType(PetSkillsEntity, [
   @Matches(/^\S+$/, {
     message: 'skill_code must not contain spaces',
   })
-  skill_code: string;
+  skill_code: SkillCode;
 }
 
 export class PetSkillsResponseDto extends PetSkillsEntity {

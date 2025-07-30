@@ -9,6 +9,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { EntityManager, Repository } from 'typeorm';
 import { PetSkillsEntity } from './entity/pet-skills.entity';
 import { CreatePetSkillsDto, UpdatePetSkillsDto } from './dto/pet-skills.dto';
+import { SkillCode } from '@enum';
 
 @Injectable()
 export class PetSkillsService extends BaseService<PetSkillsEntity> {
@@ -25,7 +26,7 @@ export class PetSkillsService extends BaseService<PetSkillsEntity> {
     return petSkills;
   }
 
-  async checkExistedSkills(skill: string) {
+  async checkExistedSkills(skill: SkillCode) {
     const existedPet = await this.findOne({
       where: { skill_code: skill },
     });
@@ -43,7 +44,7 @@ export class PetSkillsService extends BaseService<PetSkillsEntity> {
     return await this.save(newSkills);
   }
 
-  async updatePetSkills(skill_code: string, payload: UpdatePetSkillsDto) {
+  async updatePetSkills(skill_code: SkillCode, payload: UpdatePetSkillsDto) {
     const petSkills = await this.findOne({
       where: { skill_code },
     });

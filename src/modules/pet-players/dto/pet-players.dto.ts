@@ -1,10 +1,6 @@
-import { AnimalRarity, MapKey, PetType, SkillCode, SubMap } from '@enum';
-import {
-  ApiProperty,
-  ApiPropertyOptional,
-  OmitType,
-  PickType,
-} from '@nestjs/swagger';
+import { AnimalRarity, MapKey, SkillCode, SubMap } from '@enum';
+import { PetsDtoResponse } from '@modules/pets/dto/pets.dto';
+import { ApiProperty, ApiPropertyOptional, PickType } from '@nestjs/swagger';
 import { Exclude, Expose, Transform, Type } from 'class-transformer';
 import {
   ArrayNotEmpty,
@@ -15,8 +11,7 @@ import {
   IsUUID,
 } from 'class-validator';
 import { PetPlayersEntity } from '../entity/pet-players.entity';
-import { PetSkillsEntity } from '@modules/pet-skills/entity/pet-skills.entity';
-import { PetsDtoResponse } from '@modules/pets/dto/pets.dto';
+import { PetSkillsResponseDto } from '@modules/pet-skills/dto/pet-skills.dto';
 
 export class SpawnPetPlayersDto {
   @ApiProperty()
@@ -174,4 +169,39 @@ export class SelectPetPlayersListDto {
   @ArrayNotEmpty()
   @Type(() => SelectPetPlayersDto)
   pets: SelectPetPlayersDto[];
+}
+
+export class UpdateBattleSkillsDto extends PickType(PetPlayersEntity, [
+  'equipped_skill_codes',
+]) {}
+
+export class BattlePetPlayersDto extends PetPlayersEntity {
+  @Exclude()
+  created_at: Date;
+
+  @Exclude()
+  updated_at: Date;
+
+  @Expose()
+  @Type(() => PetsDtoResponse)
+  pet: PetsDtoResponse;
+
+  @Exclude()
+  skill_slot_1: PetSkillsResponseDto;
+
+  @Exclude()
+  skill_slot_2: PetSkillsResponseDto;
+
+  @Exclude()
+  skill_slot_3: PetSkillsResponseDto;
+
+  @Exclude()
+  skill_slot_4: PetSkillsResponseDto;
+
+  @Exclude()
+  equipped_skill_codes: SkillCode[];
+
+  @Expose()
+  @Type(() => PetSkillsResponseDto)
+  equipped_skills: PetSkillsResponseDto[];
 }

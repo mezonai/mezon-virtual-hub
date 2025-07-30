@@ -5,6 +5,9 @@ import { AuthenticatedClient, PetState, PlayerBattleInfo as PlayerBattleState, S
 import { MessageTypes } from "../MessageTypes";
 import { on } from "events";
 import { PetType } from "@enum";
+import { UserService } from "@modules/user/user.service";
+import { Inject } from "@nestjs/common";
+import { PetPlayersService } from "@modules/pet-players/pet-players.service";
 export type PlayerAction =
     | {
         type: "attack";
@@ -16,6 +19,7 @@ export type PlayerAction =
     };
 export class BattleRoom extends BaseGameRoom {
     private playerActions: Map<string, PlayerAction> = new Map();
+    // @Inject() private readonly petPlayersService: PetPlayersService;
     override async onCreate() {
         this.setState(new RoomState());
         this.onMessage(MessageTypes.PLAYER_ACION, async (client, data: PlayerAction) => {
@@ -34,7 +38,11 @@ export class BattleRoom extends BaseGameRoom {
         newPlayer.id = client.sessionId;
         newPlayer.user_id = userData?.id ?? "";
         newPlayer.name = userData?.username ?? "";
-        const petsFromUser = (userData?.pet_players?.filter(a => a.is_brought) ?? []).slice(0, userData?.pet_players?.length);
+
+        if (!userData?.id) return;
+        
+        const petsFromUser = await this.petPlayersService.getPetsForBattle(userData?.id)
+
         petsFromUser.forEach((a, index) => {
             const pet = new PetState();
             pet.id = a.id;

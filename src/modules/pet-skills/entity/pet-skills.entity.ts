@@ -21,7 +21,7 @@ export class PetSkillsEntity extends TimestampColumns {
   @Matches(/^\S+$/, {
     message: 'skill_code must not contain spaces',
   })
-  skill_code: string;
+  skill_code: SkillCode;
 
   @Column({ name: 'name', type: 'varchar', length: 50 })
   @ApiProperty({ example: 'Growl' })
