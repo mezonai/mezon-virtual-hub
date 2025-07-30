@@ -1,10 +1,19 @@
 import React from 'react';
-import { Box, Paper, Container } from '@mui/material';
+import { Box, Paper, Container, styled } from '@mui/material';
 import { LoginForm } from '../../components/LoginForm';
 import { useLogin } from '../../components/LoginForm/hooks/useLogin';
 
+const LoginBox = styled(Box)(() => ({
+  width: '100%',
+  height: '100vh',
+  backgroundImage: `url('https://images.pexels.com/photos/176851/pexels-photo-176851.jpeg?w=1260&h=750&auto=compress&cs=tinysrgb')`,
+  backgroundSize: 'cover',
+  backgroundPosition: 'center',
+  transition: '0.4s linear',
+}));
+
 export const LoginPage: React.FC = () => {
-  const { login, isLoading, error } = useLogin({
+  const { login } = useLogin({
     onError: (err) => {
       console.warn('Login failed:', err);
     },
@@ -15,12 +24,11 @@ export const LoginPage: React.FC = () => {
   };
 
   return (
-    <Box
+    <LoginBox
       sx={{
         minHeight: '100vh',
         display: 'flex',
         alignItems: 'center',
-        bgcolor: 'background.default',
       }}
     >
       <Container maxWidth="xs">
@@ -28,6 +36,6 @@ export const LoginPage: React.FC = () => {
           <LoginForm onSubmit={handleLogin} />
         </Paper>
       </Container>
-    </Box>
+    </LoginBox>
   );
 };
