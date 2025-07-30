@@ -5,17 +5,25 @@ import Typography from '@mui/material/Typography';
 import { DownloadIcon } from '@phosphor-icons/react/dist/ssr/Download';
 import { PlusIcon } from '@phosphor-icons/react/dist/ssr/Plus';
 import { UploadIcon } from '@phosphor-icons/react/dist/ssr/Upload';
-import { CustomersFilters } from './internal/UsersFilter';
+import { UsersFilter } from './internal/UsersFilter';
 import { UsersTable } from './internal/UsersTable';
-import { User } from '../../models/user';
 import { useUserList } from './hooks/useUserList';
 
 export function UserList(): React.JSX.Element {
-  const { users } = useUserList();
-  const page = 0;
-  const rowsPerPage = 5;
-
-  const paginatedCustomers = applyPagination(users, page, rowsPerPage);
+  const {
+    users,
+    page,
+    limit: rowsPerPage,
+    totalPages,
+    sortBy,
+    order,
+    search,
+    setPage,
+    setLimit,
+    setSearch,
+    setSortBy,
+    setOrder,
+  } = useUserList();
 
   return (
     <Stack spacing={3}>
@@ -46,21 +54,22 @@ export function UserList(): React.JSX.Element {
           </Button>
         </div>
       </Stack>
-      <CustomersFilters />
+      <UsersFilter
+        sortBy={sortBy}
+        search={search}
+        order={order}
+        setSearch={setSearch}
+        setSortBy={setSortBy}
+        setOrder={setOrder}
+      />
       <UsersTable
-        count={paginatedCustomers.length}
+        count={totalPages}
         page={page}
-        rows={paginatedCustomers}
+        rows={users}
         rowsPerPage={rowsPerPage}
+        setPage={setPage}
+        setLimit={setLimit}
       />
     </Stack>
   );
-}
-
-function applyPagination(
-  rows: User[],
-  page: number,
-  rowsPerPage: number,
-): User[] {
-  return rows.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
 }

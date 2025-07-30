@@ -14,24 +14,28 @@ export enum Gender {
   NOT_SPECIFIED = 'not specified',
 }
 
-export interface MapEntity {
-  name: string;
-  map_key: MapKey;
-  default_position_x: number;
-  default_position_y: number;
-  is_locked: boolean;
-}
-
 export interface User {
   id: string;
-  created_at: Date;
-  updated_at: Date;
-  mezon_id: string | null;
+  mezon_id: string;
   username: string;
   email: string;
+  display_name: string;
   gold: number;
   diamond: number;
   gender: Gender;
-  map: MapEntity;
   has_first_reward: boolean;
+  created_at: string;
+  updated_at: string;
+  map: MapData;
+}
+
+export interface MapData {
+  id: string;
+  name: string;
+  map_key: string;
+  default_position_x: number;
+  default_position_y: number;
+  is_locked: boolean;
+  created_at: string;
+  updated_at: string;
 }

@@ -1,6 +1,3 @@
-'use client';
-
-import * as React from 'react';
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
 import Checkbox from '@mui/material/Checkbox';
@@ -15,15 +12,14 @@ import Typography from '@mui/material/Typography';
 import dayjs from 'dayjs';
 import { useSelection } from '../../../hooks/useSelection';
 import { User } from '../../../models/user';
-
-function noop(): void {
-  // do nothing
-}
+import React from 'react';
 interface UsersTableProps {
   count?: number;
   page?: number;
   rows?: User[];
   rowsPerPage?: number;
+  setPage: React.Dispatch<React.SetStateAction<any>>;
+  setLimit: React.Dispatch<React.SetStateAction<any>>;
 }
 
 export function UsersTable({
@@ -31,6 +27,8 @@ export function UsersTable({
   rows = [],
   page = 0,
   rowsPerPage = 0,
+  setPage,
+  setLimit,
 }: UsersTableProps): React.JSX.Element {
   const rowIds = React.useMemo(() => {
     return rows.map((customer) => customer.id);
@@ -116,8 +114,12 @@ export function UsersTable({
       <TablePagination
         component="div"
         count={count}
-        onPageChange={noop}
-        onRowsPerPageChange={noop}
+        onPageChange={(_, page: number) => {
+          setPage(page);
+        }}
+        onRowsPerPageChange={(event) => {
+          setLimit(event.target.value);
+        }}
         page={page}
         rowsPerPage={rowsPerPage}
         rowsPerPageOptions={[5, 10, 25]}

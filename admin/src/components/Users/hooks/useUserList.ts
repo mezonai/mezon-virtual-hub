@@ -1,15 +1,35 @@
 import { useEffect, useState } from 'react';
-import { User } from '../../../models/user';
 import httpClient from '../../../services/httpServices';
+import { User } from '../../../models/user';
+
+interface UserListResponse {
+  result: User[];
+  page: number;
+  size: number;
+  total: number;
+  total_page: number;
+  has_previous_page: boolean;
+  has_next_page: boolean;
+}
+
+interface APIResponse {
+  data: UserListResponse;
+}
 
 export const useUserList = () => {
   const [users, setUsers] = useState<User[]>([]);
-  const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(10);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [totalPages, setTotalPages] = useState<number | null>(null); // placeholder
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<Error | null>(null);
+
+  // Pagination & Query params
+  const [page, setPage] = useState<number>(1);
+  const [limit, setLimit] = useState<number>(5);
+  const [totalPages, setTotalPages] = useState<number>(0);
+  const [totalItems, setTotalItems] = useState<number>(0);
+
+  const [search, setSearch] = useState<string>('');
+  const [sortBy, setSortBy] = useState<keyof User>('created_at');
+  const [order, setOrder] = useState<'ASC' | 'DESC'>('DESC');
 
   useEffect(() => {
     let active = true;
@@ -17,15 +37,20 @@ export const useUserList = () => {
     const fetchUsers = async () => {
       setLoading(true);
       try {
-        const res = await httpClient.get('/admin/users', {
+        const res = await httpClient.get<APIResponse>('/admin/users', {
           params: {
-            page,
+            search: search ?? undefined,
+            page: page ? page + 1 : 1,
             limit,
+            sort_by: sortBy,
+            order,
           },
         });
+
         if (active) {
-          setUsers(res.data.data.data);
-          // future: setTotalPages(res.totalPages);
+          setUsers(res.data.data.result);
+          setTotalPages(res.data.data.total_page);
+          setTotalItems(res.data.data.total);
         }
       } catch (err: any) {
         if (active) setError(err);
@@ -38,7 +63,7 @@ export const useUserList = () => {
     return () => {
       active = false;
     };
-  }, []);
+  }, [page, limit, search, sortBy, order]);
 
   return {
     users,
@@ -47,7 +72,16 @@ export const useUserList = () => {
     page,
     limit,
     totalPages,
+    totalItems,
+    hasNextPage: page < totalPages,
+    hasPreviousPage: page > 1,
+    sortBy,
+    order,
+    search,
     setPage,
     setLimit,
+    setSearch,
+    setSortBy,
+    setOrder,
   };
 };
