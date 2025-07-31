@@ -1,7 +1,7 @@
-import { Gender } from '@enum';
+import { Gender, SortOrder } from '@enum';
 import { InventoryDto } from '@modules/inventory/dto/inventory.dto';
 import { MapDtoResponse } from '@modules/map/dto/map.dto';
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Exclude, Expose, Type } from 'class-transformer';
 import {
   IsArray,
@@ -109,3 +109,4 @@ export class UserInformationDto {
 export class UserWithPetPlayers extends UserEntity {
   pet_players: PetPlayersWithSpeciesDto[];
 }
+
