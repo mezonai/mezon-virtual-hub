@@ -1,32 +1,32 @@
 import { configEnv } from '@config/env.config';
-import { MAX_EQUIPPED_PETS_FOR_BATTLE } from '@constant';
 import { BaseService } from '@libs/base/base.service';
 import { Inventory } from '@modules/inventory/entity/inventory.entity';
-import { PetSkillsService } from '@modules/pet-skills/pet-skills.service';
+import { PetSkillUsageEntity } from '@modules/pet-skill-usages/entity/pet-skill-usages.entity';
+import { PetSkillsResponseDto } from '@modules/pet-skills/dto/pet-skills.dto';
 import { PetsEntity } from '@modules/pets/entity/pets.entity';
 import { UserEntity } from '@modules/user/entity/user.entity';
 import {
   BadRequestException,
+  ConflictException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { plainToInstance } from 'class-transformer';
 import { error } from 'node:console';
-import { EntityManager, FindOptionsWhere, In, Repository } from 'typeorm';
+import { EntityManager, FindOptionsWhere, In, Not, Repository } from 'typeorm';
 import {
   BattlePetPlayersDto,
   BringPetPlayersDtoList,
   PetPlayersInfoDto,
   PetPlayersWithSpeciesDto,
-  SelectPetPlayersListDto,
   SpawnPetPlayersDto,
   UpdateBattleSkillsDto,
+  UpdatePetBattleSlotDto,
   UpdatePetPlayersDto,
 } from './dto/pet-players.dto';
 import { PetPlayersEntity } from './entity/pet-players.entity';
-import { PetSkillUsageEntity } from '@modules/pet-skill-usages/entity/pet-skill-usages.entity';
-import { PetSkillsResponseDto } from '@modules/pet-skills/dto/pet-skills.dto';
 
 const SELECTED_PETS_FOR_BATTLE = 3;
 
@@ -249,71 +249,63 @@ export class PetPlayersService extends BaseService<PetPlayersEntity> {
     };
   }
 
-  async selectPetPlayers(
-    user: UserEntity,
-    { pets: petsDto }: SelectPetPlayersListDto,
+  async bulkUpdateBattleSlots(
+    userId: string,
+    petsToUpdate: UpdatePetBattleSlotDto[],
   ) {
-    const allIds = petsDto.map((d) => d.id);
-    const existing = await this.petPlayersRepository.find({
+    const assignedSlots = new Map<number, string>();
+
+    for (const { id, battle_slot } of petsToUpdate) {
+      if (battle_slot > 0) {
+        if (assignedSlots.has(battle_slot)) {
+          throw new ConflictException(
+            `Duplicate battle_slot ${battle_slot} in request for pets ${assignedSlots.get(
+              battle_slot,
+            )} and ${id}`,
+          );
+        }
+        assignedSlots.set(battle_slot, id);
+      }
+    }
+
+    const petIds = petsToUpdate.map((p) => p.id);
+
+    const userPets = await this.find({
       where: {
-        id: In(allIds),
-        user: { id: user.id },
+        id: In(petIds),
+        user: { id: userId },
       },
-      select: ['id'],
     });
 
-    if (existing.length !== allIds.length) {
-      const foundIds = new Set(existing.map((p) => p.id));
-      const missing = allIds.filter((id) => !foundIds.has(id));
-      throw new NotFoundException(
-        `Pet-player not found or not owned: ${missing.join(', ')}`,
-      );
+    if (userPets.length !== petsToUpdate.length) {
+      throw new NotFoundException(`Pet-player not found or not owned`);
     }
 
-    const trueIds = petsDto
-      .filter((d) => d.is_selected_battle)
-      .map((d) => d.id);
-    const falseIds = petsDto
-      .filter((d) => !d.is_selected_battle)
-      .map((d) => d.id);
-
-    if (trueIds.length > MAX_EQUIPPED_PETS_FOR_BATTLE) {
-      throw new BadRequestException(
-        `You can only equip up to ${MAX_EQUIPPED_PETS_FOR_BATTLE} pet-players for battle. You selected ${trueIds.length}.`,
-      );
-    }
-
-    await this.manager.transaction(async (em) => {
-      if (trueIds.length) {
-        await em
-          .getRepository(PetPlayersEntity)
-          .update(
-            { id: In(trueIds), user: { id: user.id } },
-            { is_selected_battle: true },
-          );
-      }
-      if (falseIds.length) {
-        await em
-          .getRepository(PetPlayersEntity)
-          .update(
-            { id: In(falseIds), user: { id: user.id } },
-            { is_selected_battle: false },
-          );
-      }
+    const dbConflicts = await this.find({
+      where: {
+        user: { id: userId },
+        battle_slot: In([...assignedSlots.keys()]),
+        id: Not(In(petIds)),
+      },
     });
 
-    return {
-      message: 'Pet-players selected‐status updated.',
-      updated: {
-        selected: trueIds,
-      },
-    };
+    if (dbConflicts.length > 0) {
+      const used = dbConflicts.map((c) => c.battle_slot).join(', ');
+      throw new ConflictException(`Battle slot(s) ${used} already assigned`);
+    }
+
+    const updateMap = new Map(petsToUpdate.map((p) => [p.id, p.battle_slot]));
+    for (const pet of userPets) {
+      pet.battle_slot = updateMap.get(pet.id) ?? 0;
+    }
+
+    return await this.saveAll(userPets);
   }
 
   async selectOnePetPlayer(
     user: UserEntity,
     petId: string,
-    isSelected: boolean = true,
+    battleSlot: number = 0,
   ) {
     const petPlayer = await this.findOne({
       where: {
@@ -326,8 +318,20 @@ export class PetPlayersService extends BaseService<PetPlayersEntity> {
       throw new NotFoundException('Pet-player not found');
     }
 
+    const dbConflicts = await this.find({
+      where: {
+        user: { id: user.id },
+        battle_slot: battleSlot,
+      },
+    });
+
+    if (dbConflicts.length > 0) {
+      const used = dbConflicts.map((c) => c.battle_slot).join(', ');
+      throw new ConflictException(`Battle slot(s) ${used} already assigned`);
+    }
+
     await this.petPlayersRepository.update(petId, {
-      is_selected_battle: isSelected,
+      battle_slot: battleSlot,
     });
   }
 
@@ -375,7 +379,7 @@ export class PetPlayersService extends BaseService<PetPlayersEntity> {
     const petPlayers = await this.find({
       where: {
         user: { id: userId },
-        is_selected_battle: true,
+        battle_slot: Not(0),
       },
       relations: [
         'skill_slot_1',

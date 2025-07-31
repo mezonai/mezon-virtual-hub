@@ -3,7 +3,9 @@ import {
   DefaultValuePipe,
   Get,
   ParseBoolPipe,
+  ParseIntPipe,
   ParseUUIDPipe,
+  Patch,
   Post,
   Query,
   UseGuards,
@@ -29,7 +31,7 @@ import { PetPlayersService } from './pet-players.service';
 import {
   SpawnPetPlayersDto,
   BringPetPlayersDtoList,
-  SelectPetPlayersListDto,
+  BulkUpdateBattleSlotsDto,
   UpdateBattleSkillsDto,
 } from './dto/pet-players.dto';
 
@@ -87,16 +89,16 @@ export class PetPlayersController {
     );
   }
 
-  @Put('select-pets')
+  @Patch('battle-slots')
   @ApiOperation({
     summary: 'Select multiple pets for battle',
     description:
       'Allows the player to select a list of pets by specifying their IDs.',
   })
-  @ApiBody({ type: SelectPetPlayersListDto })
-  async selectPetPlayers(@Body() payload: SelectPetPlayersListDto) {
+  @ApiBody({ type: BulkUpdateBattleSlotsDto })
+  async bulkUpdateBattleSlots(@Body() { pets }: BulkUpdateBattleSlotsDto) {
     const user = this.cls.get<UserEntity>(USER_TOKEN);
-    return await this.petPlayersService.selectPetPlayers(user, payload);
+    return await this.petPlayersService.bulkUpdateBattleSlots(user.id, pets);
   }
 
   @Put(':pet_player_id')
@@ -152,25 +154,26 @@ export class PetPlayersController {
     );
   }
 
-  @Put(':pet_player_id/select-pets')
+  @Put(':pet_player_id/battle-slot')
   @ApiParam({
     name: 'pet_player_id',
     example: '91bea29f-0e87-42a5-b851-d9d0386ac32f',
   })
   @ApiQuery({
-    type: Boolean,
-    name: 'is_selected',
+    type: Number,
+    name: 'battle_slot',
     required: false,
-    description: 'Selected status',
-    default: true,
+    description: 'Selected slot',
+    default: 0,
   })
   @ApiOperation({
-    summary: 'Select a pet for battle',
-    description: 'Allows the player to select a pet by a specifying ID.',
+    summary: 'Set battle slot for a pet',
+    description:
+      'Allows the player to set battle slot a pet by a specifying ID.',
   })
   async selectOnePetPlayer(
-    @Query('is_selected', new DefaultValuePipe(false), ParseBoolPipe)
-    isSelected: boolean = true,
+    @Query('battle_slot', new DefaultValuePipe(0), ParseIntPipe)
+    battleSlot: number = 0,
     @Param('pet_player_id', ParseUUIDPipe)
     petId: string,
   ) {
@@ -178,7 +181,7 @@ export class PetPlayersController {
     return await this.petPlayersService.selectOnePetPlayer(
       user,
       petId,
-      isSelected,
+      battleSlot,
     );
   }
 

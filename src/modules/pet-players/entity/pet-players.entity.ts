@@ -1,4 +1,4 @@
-import { SkillCode, SkillType } from '@enum';
+import { SkillCode } from '@enum';
 import { PetSkillsResponseDto } from '@modules/pet-skills/dto/pet-skills.dto';
 import { PetSkillsEntity } from '@modules/pet-skills/entity/pet-skills.entity';
 import { PetsEntity } from '@modules/pets/entity/pets.entity';
@@ -8,14 +8,14 @@ import { AuditEntity } from '@types';
 import { Type } from 'class-transformer';
 import {
   ArrayMaxSize,
-  ArrayMinSize,
   ArrayNotEmpty,
-  IsArray,
   IsBoolean,
   IsEnum,
   IsInt,
   IsOptional,
   IsString,
+  Max,
+  Min,
 } from 'class-validator';
 import { Column, Entity, JoinColumn, ManyToOne } from 'typeorm';
 
@@ -82,13 +82,19 @@ export class PetPlayersEntity extends AuditEntity {
   @IsBoolean()
   is_caught: boolean = false;
 
-  @Column({ type: 'boolean', default: false })
+  @Column({ type: 'int', default: 0 })
   @ApiProperty({
-    description: 'Indicates whether this pet is selected for battle',
-    example: false,
+    description:
+      'The battle slot this pet is assigned to (1–3). 0 means not selected.',
+    example: 0,
+    minimum: 0,
+    maximum: 3,
   })
-  @IsBoolean()
-  is_selected_battle: boolean = false;
+  @IsInt()
+  @Min(0)
+  @Max(3)
+  @Type(() => Number)
+  battle_slot: number = 0;
 
   @Column({ type: 'int', default: 0 })
   @ApiProperty()
