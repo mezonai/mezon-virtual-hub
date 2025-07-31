@@ -15,9 +15,10 @@ export class Player extends Schema {
   @type('string') pet_players: string = '';
 }
 
-export class SkillData extends Schema {
+export class SkillState extends Schema {
   @type("string") id: string = "";
-  @type("number") attack: number = 0;
+  @type("number") effectValue: number = 0;
+  @type("string") skillType: string = "";
   @type("number") accuracy: number = 0;
   @type("number") powerPoint: number = 0;
 }
@@ -35,7 +36,7 @@ export class PetState extends Schema {
   @type("number") currentExp: number = 20;
   @type("number") totalExp: number = 100;
   @type("number") speed: number = 10;
-  @type([SkillData]) skills: SkillData[] = [];
+  @type([SkillState]) skills: SkillState[] = [];
   @type("boolean") isDead: boolean = false;
 }
 export class PlayerBattleInfo extends Schema {

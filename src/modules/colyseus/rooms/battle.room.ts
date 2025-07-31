@@ -1,22 +1,15 @@
 import { Client, Room } from "colyseus";
 import { BaseGameRoom, RoomState } from "./base-game.room";
 import { UserEntity } from "@modules/user/entity/user.entity";
-import { AuthenticatedClient, PetState, PlayerBattleInfo as PlayerBattleState, SkillData as SkillState } from "@types";
+import { AuthenticatedClient, PetState, PlayerBattleInfo as PlayerBattleState, SkillState as SkillState } from "@types";
 import { MessageTypes } from "../MessageTypes";
 import { on } from "events";
-import { PetType } from "@enum";
+import { PetType, SkillType } from "@enum";
 import { UserService } from "@modules/user/user.service";
 import { Inject } from "@nestjs/common";
 import { PetPlayersService } from "@modules/pet-players/pet-players.service";
-export type PlayerAction =
-    | {
-        type: "attack";
-        skillIndex: number; // index trong mảng skills
-    }
-    | {
-        type: "switch";
-        newPetIndex: number; // index của pet mới muốn đưa ra
-    };
+import { isAttackAction, PlayerAction } from "../battle/PlayerAction";
+import { SkillHandlerFactory } from "../battle/SkillHandlerFactory";
 export class BattleRoom extends BaseGameRoom {
     private playerActions: Map<string, PlayerAction> = new Map();
     // @Inject() private readonly petPlayersService: PetPlayersService;
@@ -38,11 +31,9 @@ export class BattleRoom extends BaseGameRoom {
         newPlayer.id = client.sessionId;
         newPlayer.user_id = userData?.id ?? "";
         newPlayer.name = userData?.username ?? "";
-
         if (!userData?.id) return;
-        
         const petsFromUser = await this.petPlayersService.getPetsForBattle(userData?.id)
-
+        if (petsFromUser == null) return;
         petsFromUser.forEach((a, index) => {
             const pet = new PetState();
             pet.id = a.id;
@@ -57,14 +48,20 @@ export class BattleRoom extends BaseGameRoom {
             pet.currentExp = a.exp;
             pet.totalExp = a.exp;
             pet.speed = a.speed;
-
+            const skill = new SkillState();
+            skill.id = "ATTACK01";
+            skill.effectValue = 30;
+            skill.accuracy = 100;
+            skill.powerPoint = 100;
+            pet.skills.push(skill);
             // Gán skill mặc định (hoặc từ data của a nếu có)
-            for (let j = 0; j < 3; j++) {
+            for (let j = 0; j < a.equipped_skills.length; j++) {
                 const skill = new SkillState();
-                skill.id = j == 0 ? "ATTACK01" : j == 1 ? "FIRE01" : "ICE01";
-                skill.attack = 20 + j * 10;
-                skill.accuracy = 90;
-                skill.powerPoint = 15;
+                skill.id = a.equipped_skills[j].skill_code;
+                skill.effectValue = a.equipped_skills[j].effect_count;
+                skill.skillType = a.equipped_skills[j].skill_type;
+                skill.accuracy = a.equipped_skills[j].accuracy;
+                skill.powerPoint = a.equipped_skills[j].power_points;
                 pet.skills.push(skill);
             }
             newPlayer.pets[index] = pet;
@@ -105,8 +102,6 @@ export class BattleRoom extends BaseGameRoom {
             return;
         }
 
-        console.log("p1.activePetIndex", p1.activePetIndex);
-        console.log("p2.activePetIndex", p2.activePetIndex);
         const pet1 = p1.pets[p1.activePetIndex];
         const pet2 = p2.pets[p2.activePetIndex];
 
@@ -114,11 +109,24 @@ export class BattleRoom extends BaseGameRoom {
             { clientId: p1Id, player: p1, action: a1, pet: pet1 },
             { clientId: p2Id, player: p2, action: a2, pet: pet2 }
         ].sort((a, b) => {
-            if (b.pet.speed !== a.pet.speed) {
-                return b.pet.speed - a.pet.speed; // Speed cao hơn đi trước
-            } else {
-                return Math.random() < 0.5 ? -1 : 1; // Speed bằng nhau → random
+            const skillA = a.action.type === "attack" ? a.pet.skills[a.action.skillIndex] : undefined;
+            const skillB = b.action.type === "attack" ? b.pet.skills[b.action.skillIndex] : undefined;
+
+            // Ưu tiên DEFENSE
+            const isA_Defense = skillA?.skillType === SkillType.DEFENSE ? 1 : 0;
+            const isB_Defense = skillB?.skillType === SkillType.DEFENSE ? 1 : 0;
+
+            if (isB_Defense !== isA_Defense) {
+                return isB_Defense - isA_Defense; // DEFENSE đi trước
             }
+
+            // Sau đó xét speed
+            if (b.pet.speed !== a.pet.speed) {
+                return b.pet.speed - a.pet.speed;
+            }
+
+            // Nếu bằng nhau hết thì random
+            return Math.random() < 0.5 ? -1 : 1;
         });
 
         const first = turnOrder[0];
@@ -148,28 +156,36 @@ export class BattleRoom extends BaseGameRoom {
         this.playerActions.clear();
     }
 
-    private async executeAttack(
-        attacker: { clientId: string, action: PlayerAction, pet: PetState },
-        defender: { clientId: string, pet: PetState }
-    ): Promise<{ skill: SkillState | null, damage: number }> {
-        if (
-            attacker.action.type !== "attack" ||
-            attacker.pet.isDead ||
-            defender.pet.isDead
-        ) {
+    async executeAttack(
+        attacker: { pet: PetState; action: PlayerAction },
+        defender: { pet: PetState; action: PlayerAction }
+    ): Promise<{ skill: SkillState | null; damage: number }> {
+        if (attacker.pet.isDead || defender.pet.isDead) {
             return { skill: null, damage: 0 };
         }
-        const skill = attacker.pet.skills[attacker.action.skillIndex];
-        if (skill.powerPoint > 0) {
-            skill.powerPoint -= 1;
+
+        if (!isAttackAction(attacker.action)) {
+            return { skill: null, damage: 0 };
         }
 
-        const damage = this.calculateDamage(attacker.pet, defender.pet, skill);
-        defender.pet.currentHp -= damage;
-        if (defender.pet.currentHp <= 0) {
-            defender.pet.currentHp = 0;
-            defender.pet.isDead = true;
+        const skill = attacker.pet.skills[attacker.action.skillIndex];
+        if (!skill || skill.powerPoint <= 0) {
+            return { skill, damage: 0 };
         }
+
+        // Trừ PowerPoint
+        skill.powerPoint--;
+
+        const skillType = skill.skillType as SkillType;
+        const handler = SkillHandlerFactory.create(skillType, this.calculateDamage);
+
+        const { damage } = handler.handle(
+            attacker.pet,
+            defender.pet,
+            attacker.action,
+            defender.action,
+            skill
+        );
 
         return { skill, damage };
     }
@@ -230,7 +246,7 @@ export class BattleRoom extends BaseGameRoom {
         const attack = attacker.attack;
         const defense = defender.defense;
         const baseDamage = Math.floor(
-            (((2 * attacker.level) / 5 + 2) * skill.attack * (attack / (defense + 1))) / 50 + 2
+            (((2 * attacker.level) / 5 + 2) * skill.effectValue * (attack / (defense + 1))) / 50 + 2
         );
 
         const effectiveness = this.getTypeEffectiveness(attacker.type, defender.type);
@@ -277,9 +293,10 @@ export class BattleRoom extends BaseGameRoom {
     private serializeSkill(skill: SkillState) {
         return {
             id: skill.id,
-            attack: skill.attack,
+            attack: skill.effectValue,
             accuracy: skill.accuracy,
-            powerPoint: skill.powerPoint
+            powerPoint: skill.powerPoint,
+            skillType: skill.skillType,
         };
     }
 }
@@ -348,3 +365,5 @@ const typeEffectiveness: Record<PetType, Record<PetType, number>> = {
         [PetType.DRAGON]: 2,
     }
 };
+export { PlayerAction };
+
