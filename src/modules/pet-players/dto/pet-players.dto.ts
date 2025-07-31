@@ -141,7 +141,9 @@ export class BringPetPlayersDtoList {
   pets: BringPetPlayersDto[];
 }
 
-export class SelectPetPlayersDto {
+export class UpdatePetBattleSlotDto extends PickType(PetPlayersEntity, [
+  'battle_slot',
+]) {
   @ApiProperty({
     description: 'PetPlayers Id to select for battle (UUID format)',
     example: '550e8400-e29b-41d4-a716-446655440000',
@@ -149,26 +151,17 @@ export class SelectPetPlayersDto {
   })
   @IsUUID()
   id: string;
-
-  @ApiProperty({
-    description:
-      'Optional flag to indicate whether the pets should be marked as selected (true) or not (false). Defaults to true.',
-    example: true,
-    default: true,
-  })
-  @IsOptional()
-  is_selected_battle: boolean = true;
 }
 
-export class SelectPetPlayersListDto {
+export class BulkUpdateBattleSlotsDto {
   @ApiProperty({
     description: 'PetPlayers to selected for battle',
-    type: [SelectPetPlayersDto],
+    type: [UpdatePetBattleSlotDto],
   })
   @IsArray()
   @ArrayNotEmpty()
-  @Type(() => SelectPetPlayersDto)
-  pets: SelectPetPlayersDto[];
+  @Type(() => UpdatePetBattleSlotDto)
+  pets: UpdatePetBattleSlotDto[];
 }
 
 export class UpdateBattleSkillsDto extends PickType(PetPlayersEntity, [
