@@ -12,7 +12,6 @@ export class UserEntity extends AuditEntity {
   external_id: string | null;
 
   @Column({ type: 'varchar', unique: true, nullable: true })
-  @Exclude()
   mezon_id: string | null;
 
   @Column({ type: 'varchar', nullable: true })

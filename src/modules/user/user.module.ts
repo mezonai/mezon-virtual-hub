@@ -5,9 +5,10 @@ import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { UserEntity } from './entity/user.entity';
+import { UserManagementController } from './user-management.controller';
+import { UserManagementService } from './user-management.service';
 import { UserController } from './user.controller';
 import { UserService } from './user.service';
-import { InventoryModule } from '@modules/inventory/inventory.module';
 
 @Module({
   imports: [
@@ -15,8 +16,8 @@ import { InventoryModule } from '@modules/inventory/inventory.module';
     JwtModule.register({}),
     LoggerModule,
   ],
-  controllers: [UserController],
-  providers: [UserService],
+  controllers: [UserController, UserManagementController],
+  providers: [UserService, UserManagementService],
   exports: [UserService],
 })
 export class UserModule {}
