@@ -1,0 +1,16 @@
+version: '3.8'
+name: mezon-virtual-hub
+
+services:
+  admin:
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    container_name: admin_virtual_hub
+    ports:
+      - 8444:80
+    networks:
+      - main_net
+
+networks:
+  main_net:
