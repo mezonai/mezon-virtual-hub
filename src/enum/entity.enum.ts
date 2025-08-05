@@ -110,3 +110,8 @@ export enum SkillCode {
   ICE_FANG = 'ICE03',
   DRAGON_CLAW = 'DRAGON01',
 }
+
+export enum Role {
+  USER,
+  ADMIN,
+}

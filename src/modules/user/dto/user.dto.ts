@@ -33,6 +33,9 @@ export class UserExcludeResponse {
 
   @Exclude()
   auth_provider: string | null;
+
+  @Exclude()
+  role: number;
 }
 
 export class UpdateInfoDto {

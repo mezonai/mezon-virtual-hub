@@ -1,11 +1,12 @@
 import { BaseService } from '@libs/base/base.service';
 import { MapEntity } from '@modules/map/entity/map.entity';
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Pageable } from '@types';
 import { plainToInstance } from 'class-transformer';
-import { DataSource, FindOptionsWhere, ILike, Repository } from 'typeorm';
+import { DataSource, FindOptionsWhere, ILike, Not, Repository } from 'typeorm';
 import {
+  UpdateUserDto,
   UsersManagementQueryDto,
   UsersManagementResDto,
 } from './dto/user-managment.dto';
@@ -59,5 +60,26 @@ export class UserManagementService extends BaseService<UserEntity> {
       page,
       total,
     });
+  }
+
+  async updateUserInfo(userId: string, payload: UpdateUserDto) {
+    const user = await this.findOneNotDeletedById(userId);
+
+    if (payload.mezon_id && !user.mezon_id) {
+      const existedUser = await this.findOne({
+        where: { mezon_id: payload.mezon_id },
+      });
+
+      if (existedUser) {
+        throw new BadRequestException(
+          `Mezon ID: ${payload.mezon_id} is already existed`,
+        );
+      }
+    }
+
+    await this.userRepository.update(userId, payload);
+
+    Object.assign(user, payload);
+    return user;
   }
 }
