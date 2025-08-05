@@ -43,7 +43,7 @@ export class PetSkillsEntity extends TimestampColumns {
   @ApiProperty()
   @IsInt()
   @Type(() => Number)
-  effect_count: number;
+  damage: number;
 
   @Column({ type: 'int', default: 100 })
   @ApiProperty()
