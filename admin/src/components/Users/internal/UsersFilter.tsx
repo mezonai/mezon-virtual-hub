@@ -4,7 +4,7 @@ import InputAdornment from '@mui/material/InputAdornment';
 import OutlinedInput from '@mui/material/OutlinedInput';
 import { MagnifyingGlassIcon } from '@phosphor-icons/react/dist/ssr/MagnifyingGlass';
 import { Select, MenuItem, Grid } from '@mui/material';
-import { User } from '../../../models/user';
+import { SortOrder, User } from '../../../models/user';
 
 interface UsersFilterProps {
   sortBy: keyof User;
@@ -15,20 +15,6 @@ interface UsersFilterProps {
   setOrder: React.Dispatch<React.SetStateAction<'ASC' | 'DESC'>>;
   setConfirmSearch: React.Dispatch<React.SetStateAction<string>>
 }
-
-const userFieldOptions = [
-  'id',
-  'mezon_id',
-  'username',
-  'email',
-  'display_name',
-  'gold',
-  'diamond',
-  'gender',
-  'has_first_reward',
-  'created_at',
-  'updated_at',
-] as const;
 
 const userFieldChange: Record<string, string> = {
   'id': 'ID',
@@ -86,9 +72,9 @@ export function UsersFilter({
           displayEmpty
           sx={{ minWidth: 120 }}
         >
-          {userFieldOptions.map((field) => (
-            <MenuItem key={field} value={field}>
-              {userFieldChange[field] ?? field}
+          {Object.entries(userFieldChange).map(([key, label]) => (
+            <MenuItem key={key} value={key}>
+              {label}
             </MenuItem>
           ))}
         </Select>
@@ -99,8 +85,8 @@ export function UsersFilter({
           }}
           displayEmpty
           sx={{ minWidth: 120 }}
-        >
-          {['ASC', 'DESC'].map((field) => (
+        >          
+          {[SortOrder.ASC, SortOrder.DESC].map((field) => (
             <MenuItem key={field} value={field}>
               {field}
             </MenuItem>
