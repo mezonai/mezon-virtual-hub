@@ -74,8 +74,15 @@ export class UserEntity extends AuditEntity {
   @Type(() => Number)
   diamond: number;
 
-  @Column({ type: 'varchar' })
-  gender: Gender;
+  @Column({ type: 'varchar', nullable: true })
+  @ApiProperty({
+    description: 'The gender of the user',
+    enum: Gender,
+    required: false,
+  })
+  @IsOptional()
+  @IsEnum(Gender)
+  gender: Gender | null;
 
   @Column('text', { array: true, nullable: true })
   skin_set: string[];
