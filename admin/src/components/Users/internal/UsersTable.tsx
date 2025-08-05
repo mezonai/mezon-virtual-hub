@@ -38,7 +38,7 @@ export function UsersTable({
           <TableHead >
             <TableRow>          
               <TableCell>Mezon ID</TableCell>
-              <TableCell>Name</TableCell>
+              <TableCell>Username</TableCell>
               <TableCell>Email</TableCell>
               <TableCell>Gender</TableCell>
               <TableCell>Map</TableCell>

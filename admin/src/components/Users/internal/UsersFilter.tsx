@@ -69,7 +69,7 @@ export function UsersFilter({
           onChange={(e) => {
             setSortBy(e.target.value);
           }}
-          displayEmpty
+          displyEmpty
           sx={{ minWidth: 120 }}
         >
           {Object.entries(userFieldChange).map(([key, label]) => (
