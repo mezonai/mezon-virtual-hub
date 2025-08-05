@@ -26,8 +26,8 @@ export const useUserList = () => {
   const [limit, setLimit] = useState<number>(5);
   const [totalPages, setTotalPages] = useState<number>(0);
   const [totalItems, setTotalItems] = useState<number>(0);
-
   const [search, setSearch] = useState<string>('');
+  const [confirmSearch, setConfirmSearch] = useState<string>('')
   const [sortBy, setSortBy] = useState<keyof User>('created_at');
   const [order, setOrder] = useState<'ASC' | 'DESC'>('DESC');
 
@@ -39,7 +39,7 @@ export const useUserList = () => {
       try {
         const res = await httpClient.get<APIResponse>('/admin/users', {
           params: {
-            search: search ?? undefined,
+            search: confirmSearch ?? undefined,
             page: page ? page + 1 : 1,
             limit,
             sort_by: sortBy,
@@ -63,7 +63,7 @@ export const useUserList = () => {
     return () => {
       active = false;
     };
-  }, [page, limit, search, sortBy, order]);
+  }, [page, limit, sortBy, order, confirmSearch]);
 
   return {
     users,
@@ -81,6 +81,7 @@ export const useUserList = () => {
     setPage,
     setLimit,
     setSearch,
+    setConfirmSearch,
     setSortBy,
     setOrder,
   };

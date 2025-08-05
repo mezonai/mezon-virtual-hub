@@ -14,6 +14,16 @@ export enum Gender {
   NOT_SPECIFIED = 'not specified',
 }
 
+export enum Role{
+  ADMIN,
+  USER,
+}
+
+export enum SortOrder{
+  ASC = 'ASC',
+  DESC = 'DESC'
+}
+
 export interface User {
   id: string;
   mezon_id: string;
@@ -27,6 +37,7 @@ export interface User {
   created_at: string;
   updated_at: string;
   map: MapData;
+  role: number
 }
 
 export interface MapData {

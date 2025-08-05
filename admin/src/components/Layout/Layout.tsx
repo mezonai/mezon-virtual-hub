@@ -42,7 +42,7 @@ const Layout = ({ children }: LayoutProps) => {
         >
           <MainNav />
           <main>
-            <Container maxWidth="xl" sx={{ py: '64px' }}>
+            <Container maxWidth="xl" sx={{ pb: '64px', pt: '10px' }}>
               {children}
             </Container>
           </main>
