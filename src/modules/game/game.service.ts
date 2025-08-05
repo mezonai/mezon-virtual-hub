@@ -1,6 +1,6 @@
 import { configEnv } from '@config/env.config';
 import { NEW_USER_FOOD_REWARD_QUANTITY } from '@constant';
-import { FoodType, RewardType } from '@enum';
+import { FoodType, Gender, RewardType } from '@enum';
 import { FoodEntity } from '@modules/food/entity/food.entity';
 import { FoodService } from '@modules/food/food.service';
 import { InventoryService } from '@modules/inventory/inventory.service';
@@ -52,7 +52,7 @@ export class GameService {
     );
 
     const availableItems = await this.itemService.getAvailableItems(
-      user.gender,
+      user.gender ?? Gender.MALE,
       inventoryItems,
     );
 
