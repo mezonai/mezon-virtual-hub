@@ -30,6 +30,8 @@ const userFieldChange: Record<string, string> = {
   'updated_at': 'Updated At'
 } as const
 
+
+
 export function UsersFilter({
   search,
   sortBy,
@@ -45,7 +47,7 @@ export function UsersFilter({
       setConfirmSearch(search)
     }
   }
-  
+
   return (
     <Card sx={{ p: 2 }}>
       <Grid container spacing={4}>
@@ -69,7 +71,7 @@ export function UsersFilter({
           onChange={(e) => {
             setSortBy(e.target.value);
           }}
-          displyEmpty
+          displayEmpty
           sx={{ minWidth: 120 }}
         >
           {Object.entries(userFieldChange).map(([key, label]) => (
