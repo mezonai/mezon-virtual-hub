@@ -13,6 +13,7 @@ interface UsersFilterProps {
   setSearch: React.Dispatch<React.SetStateAction<string>>;
   setSortBy: React.Dispatch<React.SetStateAction<keyof User>>;
   setOrder: React.Dispatch<React.SetStateAction<'ASC' | 'DESC'>>;
+  setConfirmSearch: React.Dispatch<React.SetStateAction<string>>
 }
 
 const userFieldOptions = [
@@ -29,6 +30,20 @@ const userFieldOptions = [
   'updated_at',
 ] as const;
 
+const userFieldChange: Record<string, string> = {
+  'id': 'ID',
+  'mezon_id': 'Mezon ID',
+  'username': 'Username',
+  'email': 'Email',
+  'display_name': 'Display Name',
+  'gold': 'Gold',
+  'diamond': 'Diamond',
+  'gender': 'Gender',
+  'has_first_reward': 'Has First Reward',
+  'created_at': 'Created At',
+  'updated_at': 'Updated At'
+} as const
+
 export function UsersFilter({
   search,
   sortBy,
@@ -36,7 +51,15 @@ export function UsersFilter({
   setSearch,
   setSortBy,
   setOrder,
+  setConfirmSearch
 }: UsersFilterProps): React.JSX.Element {
+
+  const handleSearchKeyDown = (e:React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      setConfirmSearch(search)
+    }
+  }
+  
   return (
     <Card sx={{ p: 2 }}>
       <Grid container spacing={4}>
@@ -47,6 +70,7 @@ export function UsersFilter({
           onChange={(event) => {
             setSearch(event.target.value);
           }}
+          onKeyDown={handleSearchKeyDown}
           startAdornment={
             <InputAdornment position="start">
               <MagnifyingGlassIcon fontSize="var(--icon-fontSize-md)" />
@@ -64,7 +88,7 @@ export function UsersFilter({
         >
           {userFieldOptions.map((field) => (
             <MenuItem key={field} value={field}>
-              {field}
+              {userFieldChange[field] ?? field}
             </MenuItem>
           ))}
         </Select>

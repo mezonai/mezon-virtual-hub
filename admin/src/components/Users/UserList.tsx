@@ -23,27 +23,14 @@ export function UserList(): React.JSX.Element {
     setSearch,
     setSortBy,
     setOrder,
+    setConfirmSearch
   } = useUserList();
 
   return (
     <Stack spacing={3}>
       <Stack direction="row" spacing={3}>
         <Stack spacing={1} sx={{ flex: '1 1 auto' }}>
-          <Typography variant="h4">Customers</Typography>
-          <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
-            <Button
-              color="inherit"
-              startIcon={<UploadIcon fontSize="var(--icon-fontSize-md)" />}
-            >
-              Import
-            </Button>
-            <Button
-              color="inherit"
-              startIcon={<DownloadIcon fontSize="var(--icon-fontSize-md)" />}
-            >
-              Export
-            </Button>
-          </Stack>
+          <Typography variant="h4">Users</Typography>       
         </Stack>
         <div>
           <Button
@@ -61,6 +48,7 @@ export function UserList(): React.JSX.Element {
         setSearch={setSearch}
         setSortBy={setSortBy}
         setOrder={setOrder}
+        setConfirmSearch={setConfirmSearch}
       />
       <UsersTable
         count={totalPages}
