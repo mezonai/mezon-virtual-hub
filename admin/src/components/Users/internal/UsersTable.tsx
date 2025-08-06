@@ -9,8 +9,8 @@ import TablePagination from '@mui/material/TablePagination';
 import TableRow from '@mui/material/TableRow';
 import Typography from '@mui/material/Typography';
 import dayjs from 'dayjs';
-import { User } from '../../../models/user';
-import React from 'react';
+import { ActionFormType, User } from '../../../models/user';
+import React, { RefObject } from 'react';
 import { Button, Stack } from '@mui/material';
 import { PencilIcon, TrashIcon } from '@phosphor-icons/react';
 interface UsersTableProps {
@@ -20,6 +20,9 @@ interface UsersTableProps {
   rowsPerPage?: number;
   setPage: React.Dispatch<React.SetStateAction<any>>;
   setLimit: React.Dispatch<React.SetStateAction<any>>;
+  setOpenFormModal: React.Dispatch<React.SetStateAction<boolean>>;
+  setSelectedUser: React.Dispatch<React.SetStateAction<User | undefined>>;
+  setActionForm: (action: ActionFormType) => void;
 }
 
 export function UsersTable({
@@ -27,16 +30,24 @@ export function UsersTable({
   rows = [],
   page = 0,
   rowsPerPage = 0,
+  setSelectedUser,
   setPage,
   setLimit,
+  setOpenFormModal,
+  setActionForm,
 }: UsersTableProps): React.JSX.Element {
+  const handleOpenFormModalEdit = (user: User, action: ActionFormType) => {
+    setOpenFormModal(true);
+    setSelectedUser(user);
+    setActionForm(action);
+  };
 
   return (
     <Card>
-      <Box sx={{ overflowX: 'auto', overflowY: "scroll", maxHeight: 400}}>
+      <Box sx={{ overflowX: 'auto', overflowY: 'scroll', maxHeight: 400 }}>
         <Table sx={{ minWidth: '800px' }} stickyHeader>
-          <TableHead >
-            <TableRow>          
+          <TableHead>
+            <TableRow>
               <TableCell>Mezon ID</TableCell>
               <TableCell>Username</TableCell>
               <TableCell>Email</TableCell>
@@ -64,7 +75,7 @@ export function UsersTable({
                   <TableCell>{row.email}</TableCell>{' '}
                   <TableCell>{row.gender}</TableCell>
                   <TableCell>{row.map?.name ?? '-'}</TableCell>
-                  <TableCell>{ row.display_name}</TableCell>
+                  <TableCell>{row.display_name}</TableCell>
                   <TableCell>{row.gold}</TableCell>
                   <TableCell>{row.diamond}</TableCell>
                   <TableCell>
@@ -72,19 +83,30 @@ export function UsersTable({
                   </TableCell>
                   <TableCell>
                     <Stack direction="column" spacing={1}>
-                      <Button variant='contained' color='success' sx={{
-                        justifyContent: 'flex-center',
-                        gap: 1.5,                    
-                        paddingLeft: 2,   
-                      }}>
+                      <Button
+                        onClick={() =>
+                          handleOpenFormModalEdit(row, ActionFormType.EDIT)
+                        }
+                        variant="contained"
+                        color="success"
+                        sx={{
+                          justifyContent: 'flex-center',
+                          gap: 1.5,
+                          paddingLeft: 2,
+                        }}
+                      >
                         <PencilIcon width="20px" height="20px" />
                       </Button>
-                      <Button variant='contained' color='error' sx={{
-                        justifyContent: 'flex-center',
-                        gap: 1.5,                    
-                        paddingLeft: 2,                  
-                      }}>
-                        <TrashIcon width="20px" height="20px"/>
+                      <Button
+                        variant="contained"
+                        color="error"
+                        sx={{
+                          justifyContent: 'flex-center',
+                          gap: 1.5,
+                          paddingLeft: 2,
+                        }}
+                      >
+                        <TrashIcon width="20px" height="20px" />
                       </Button>
                     </Stack>
                   </TableCell>

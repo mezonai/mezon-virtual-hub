@@ -14,14 +14,19 @@ export enum Gender {
   NOT_SPECIFIED = 'not specified',
 }
 
-export enum Role{
+export enum Role {
   ADMIN,
   USER,
 }
 
-export enum SortOrder{
+export enum SortOrder {
   ASC = 'ASC',
-  DESC = 'DESC'
+  DESC = 'DESC',
+}
+
+export enum ActionFormType {
+  ADD = 'add',
+  EDIT = 'edit',
 }
 
 export interface User {
@@ -37,7 +42,7 @@ export interface User {
   created_at: string;
   updated_at: string;
   map: MapData;
-  role: number
+  role: number;
 }
 
 export interface MapData {

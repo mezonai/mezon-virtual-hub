@@ -13,24 +13,27 @@ interface UsersFilterProps {
   setSearch: React.Dispatch<React.SetStateAction<string>>;
   setSortBy: React.Dispatch<React.SetStateAction<keyof User>>;
   setOrder: React.Dispatch<React.SetStateAction<'ASC' | 'DESC'>>;
-  setConfirmSearch: React.Dispatch<React.SetStateAction<string>>
+  setConfirmSearch: React.Dispatch<React.SetStateAction<string>>;
 }
 
 const userFieldChange: Record<string, string> = {
-  'id': 'ID',
-  'mezon_id': 'Mezon ID',
-  'username': 'Username',
-  'email': 'Email',
-  'display_name': 'Display Name',
-  'gold': 'Gold',
-  'diamond': 'Diamond',
-  'gender': 'Gender',
-  'has_first_reward': 'Has First Reward',
-  'created_at': 'Created At',
-  'updated_at': 'Updated At'
-} as const
+  id: 'ID',
+  mezon_id: 'Mezon ID',
+  username: 'Username',
+  email: 'Email',
+  display_name: 'Display Name',
+  gold: 'Gold',
+  diamond: 'Diamond',
+  gender: 'Gender',
+  has_first_reward: 'Has First Reward',
+  created_at: 'Created At',
+  updated_at: 'Updated At',
+} as const;
 
-
+const sortDataItem: Record<string, string> = {
+  [SortOrder.ASC]: 'ASC',
+  [SortOrder.DESC]: 'DESC',
+};
 
 export function UsersFilter({
   search,
@@ -39,14 +42,13 @@ export function UsersFilter({
   setSearch,
   setSortBy,
   setOrder,
-  setConfirmSearch
+  setConfirmSearch,
 }: UsersFilterProps): React.JSX.Element {
-
-  const handleSearchKeyDown = (e:React.KeyboardEvent<HTMLInputElement>) => {
+  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
-      setConfirmSearch(search)
+      setConfirmSearch(search);
     }
-  }
+  };
 
   return (
     <Card sx={{ p: 2 }}>
@@ -87,10 +89,10 @@ export function UsersFilter({
           }}
           displayEmpty
           sx={{ minWidth: 120 }}
-        >          
-          {[SortOrder.ASC, SortOrder.DESC].map((field) => (
-            <MenuItem key={field} value={field}>
-              {field}
+        >
+          {Object.entries(sortDataItem).map(([key, value]) => (
+            <MenuItem key={key} value={key}>
+              {value}
             </MenuItem>
           ))}
         </Select>

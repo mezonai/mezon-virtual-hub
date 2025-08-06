@@ -16,3 +16,5 @@ export const navItems = [
     icon: 'users',
   },
 ] satisfies NavItemConfig[];
+
+export const UPDATE_USER = '/admin/users';
