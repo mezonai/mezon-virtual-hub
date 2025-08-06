@@ -14,7 +14,7 @@ import { Controller, useForm } from 'react-hook-form';
 import { UserInfo, userSchema } from '../../../lib/schema/user/user';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ActionFormType, Gender, Role, User } from '../../../models/user';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { updateUser } from '../../../services/users/updateUser';
 import { toast } from 'react-toastify';
 
@@ -23,6 +23,8 @@ interface UserFormModalProps {
   onClose: () => void;
   selectedUser: User | undefined;
   action: ActionFormType | null;
+  isDisableBtnSave: boolean;
+  setIsDisableBtnSave: (isDisableBtnSave: boolean) => void;
 }
 
 export const UserFormModal = ({
@@ -30,65 +32,81 @@ export const UserFormModal = ({
   onClose,
   selectedUser,
   action,
+  isDisableBtnSave,
+  setIsDisableBtnSave,
 }: UserFormModalProps) => {
-  const { control, handleSubmit, reset, formState } = useForm<UserInfo>({
+  const { control, handleSubmit, reset, formState, watch } = useForm<UserInfo>({
     resolver: zodResolver(userSchema),
     mode: 'onSubmit',
     defaultValues: selectedUser,
   });
-
+  const watchValue = watch();
   useEffect(() => {
     if (selectedUser) {
-      reset({
-        ...selectedUser,
-        email: selectedUser.email ?? '',
-      });
+      reset(selectedUser);
     }
   }, [selectedUser, reset]);
 
+  useEffect(() => {
+    const originValue = {
+      display_name: selectedUser?.display_name,
+      mezon_id: selectedUser?.mezon_id,
+      gold: selectedUser?.gold,
+      gender: selectedUser?.gender,
+      has_first_reward: selectedUser?.has_first_reward,
+      role: selectedUser?.role,
+      diamond: selectedUser?.diamond,
+    };
+    const currentValue = {
+      display_name: watchValue.display_name,
+      mezon_id: watchValue.mezon_id,
+      gold: watchValue.gold,
+      gender: watchValue.gender,
+      has_first_reward: watchValue.has_first_reward,
+      role: watchValue.role,
+      diamond: watchValue.diamond,
+    };
+    const isChanged =
+      JSON.stringify(currentValue) === JSON.stringify(originValue);
+    setIsDisableBtnSave(!isChanged);
+  }, [watchValue, selectedUser]);
+
   const onSubmit = (data: UserInfo) => {
-    if (action === ActionFormType.EDIT) {
-      data.position_x = selectedUser?.map?.default_position_x;
-      data.position_y = selectedUser?.map?.default_position_y;
-    }
-    updateUser(data).then((res) => {
+    const user_id = selectedUser?.id;
+    updateUser(data, user_id).then((res) => {
       if (res) {
-        onClose?.();
         toast.success('Update User Successfully', {
           position: 'top-right',
         });
+        setIsDisableBtnSave(true);
+        onClose?.();
       }
     });
   };
   return (
     <ModalForm
       open={open}
-      onSubmit={handleSubmit(onSubmit, (err) => console.log(err))}
+      setIsDisableBtnSave={setIsDisableBtnSave}
+      onSubmit={handleSubmit(onSubmit)}
       onClose={onClose}
       title={action === ActionFormType.EDIT ? 'Update User' : 'Add User'}
       cancelLabel="Cancel"
       submitLabel="Save"
+      isDisableBtnSave={isDisableBtnSave}
     >
       <Grid container size={12} spacing={3}>
         <Grid size={6}>
-          <Controller
-            control={control}
-            name="id"
-            render={({ field }) => (
-              <TextField
-                fullWidth
-                label="ID"
-                value={field?.value}
-                onChange={field.onChange}
-                margin="normal"
-                disabled
-                slotProps={{
-                  inputLabel: {
-                    shrink: field?.value ? true : false,
-                  },
-                }}
-              />
-            )}
+          <TextField
+            fullWidth
+            label="ID"
+            value={selectedUser?.id}
+            margin="normal"
+            disabled
+            slotProps={{
+              inputLabel: {
+                shrink: true,
+              },
+            }}
           />
         </Grid>
         <Grid size={6}>
@@ -116,46 +134,32 @@ export const UserFormModal = ({
       </Grid>
       <Grid container size={12} spacing={3}>
         <Grid size={6}>
-          <Controller
-            control={control}
-            name="username"
-            render={({ field }) => (
-              <TextField
-                fullWidth
-                label="Username"
-                margin="normal"
-                disabled
-                value={field?.value}
-                onChange={field.onChange}
-                slotProps={{
-                  inputLabel: {
-                    shrink: field?.value ? true : false,
-                  },
-                }}
-              />
-            )}
+          <TextField
+            fullWidth
+            label="Username"
+            margin="normal"
+            disabled
+            value={selectedUser?.username}
+            slotProps={{
+              inputLabel: {
+                shrink: true,
+              },
+            }}
           />
         </Grid>
         <Grid size={6}>
-          <Controller
-            control={control}
-            name="email"
-            render={({ field }) => (
-              <TextField
-                fullWidth
-                label="Email"
-                type="email"
-                margin="normal"
-                disabled
-                value={field?.value}
-                onChange={field.onChange}
-                slotProps={{
-                  inputLabel: {
-                    shrink: field?.value ? true : false,
-                  },
-                }}
-              />
-            )}
+          <TextField
+            fullWidth
+            label="Email"
+            type="email"
+            margin="normal"
+            disabled
+            value={selectedUser?.email}
+            slotProps={{
+              inputLabel: {
+                shrink: true,
+              },
+            }}
           />
         </Grid>
       </Grid>
@@ -250,7 +254,7 @@ export const UserFormModal = ({
                   <MenuItem value={Gender.MALE}>Male</MenuItem>
                   <MenuItem value={Gender.FEMALE}>Female</MenuItem>
                   <MenuItem value={Gender.NOT_SPECIFIED}>
-                    NOT SPECIFIED
+                    Not Specified
                   </MenuItem>
                 </Select>
                 {formState?.errors?.gender && (

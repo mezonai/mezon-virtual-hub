@@ -20,6 +20,8 @@ export function UserList(): React.JSX.Element {
     openFormModal,
     selectedUser,
     actionType,
+    isDisableBtnSave,
+    setIsDisableBtnSave,
     setActionType,
     setSelectedUser,
     setOpenFormModal,
@@ -32,6 +34,7 @@ export function UserList(): React.JSX.Element {
   } = useUserList();
   const handleClose = () => {
     setOpenFormModal(false);
+    setIsDisableBtnSave(false);
   };
   return (
     <Stack spacing={3}>
@@ -73,6 +76,8 @@ export function UserList(): React.JSX.Element {
         onClose={handleClose}
         selectedUser={selectedUser}
         action={actionType}
+        isDisableBtnSave={isDisableBtnSave}
+        setIsDisableBtnSave={setIsDisableBtnSave}
       />
     </Stack>
   );

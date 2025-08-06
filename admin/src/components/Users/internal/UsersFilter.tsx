@@ -30,11 +30,6 @@ const userFieldChange: Record<string, string> = {
   updated_at: 'Updated At',
 } as const;
 
-const sortDataItem: Record<string, string> = {
-  [SortOrder.ASC]: 'ASC',
-  [SortOrder.DESC]: 'DESC',
-};
-
 export function UsersFilter({
   search,
   sortBy,
@@ -56,7 +51,7 @@ export function UsersFilter({
         <OutlinedInput
           value={search}
           fullWidth
-          placeholder="Search customer"
+          placeholder="Search user"
           onChange={(event) => {
             setSearch(event.target.value);
           }}
@@ -90,7 +85,7 @@ export function UsersFilter({
           displayEmpty
           sx={{ minWidth: 120 }}
         >
-          {Object.entries(sortDataItem).map(([key, value]) => (
+          {Object.entries(SortOrder).map(([key, value]) => (
             <MenuItem key={key} value={key}>
               {value}
             </MenuItem>

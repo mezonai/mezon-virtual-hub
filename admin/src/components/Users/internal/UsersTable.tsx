@@ -10,7 +10,7 @@ import TableRow from '@mui/material/TableRow';
 import Typography from '@mui/material/Typography';
 import dayjs from 'dayjs';
 import { ActionFormType, User } from '../../../models/user';
-import React, { RefObject } from 'react';
+import React from 'react';
 import { Button, Stack } from '@mui/material';
 import { PencilIcon, TrashIcon } from '@phosphor-icons/react';
 interface UsersTableProps {
@@ -82,7 +82,7 @@ export function UsersTable({
                     {dayjs(row.created_at).format('MMM D, YYYY')}
                   </TableCell>
                   <TableCell>
-                    <Stack direction="column" spacing={1}>
+                    <Stack direction="row" spacing={1}>
                       <Button
                         onClick={() =>
                           handleOpenFormModalEdit(row, ActionFormType.EDIT)

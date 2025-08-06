@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import httpClient from '../../../services/httpService/httpServices';
 import { ActionFormType, User } from '../../../models/user';
 
@@ -33,6 +33,8 @@ export const useUserList = () => {
   const [openFormModal, setOpenFormModal] = useState<boolean>(false);
   const [selectedUser, setSelectedUser] = useState<User | undefined>(undefined);
   const [actionType, setActionType] = useState<ActionFormType | null>(null);
+  const [isDisableBtnSave, setIsDisableBtnSave] = useState<boolean>(false);
+
   useEffect(() => {
     let active = true;
 
@@ -92,5 +94,7 @@ export const useUserList = () => {
     setConfirmSearch,
     setSortBy,
     setOrder,
+    isDisableBtnSave,
+    setIsDisableBtnSave,
   };
 };
