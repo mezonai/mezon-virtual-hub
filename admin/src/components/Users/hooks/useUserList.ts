@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
-import httpClient from '../../../services/httpServices';
+import httpClient from '../../../services/httpService/httpServices';
 import { User } from '../../../models/user';
+import { SortOrder } from '../../../types/user';
+
 
 interface UserListResponse {
   result: User[];
@@ -27,9 +29,11 @@ export const useUserList = () => {
   const [totalPages, setTotalPages] = useState<number>(0);
   const [totalItems, setTotalItems] = useState<number>(0);
   const [search, setSearch] = useState<string>('');
-  const [confirmSearch, setConfirmSearch] = useState<string>('')
+  const [confirmSearch, setConfirmSearch] = useState<string>('');
   const [sortBy, setSortBy] = useState<keyof User>('created_at');
-  const [order, setOrder] = useState<'ASC' | 'DESC'>('DESC');
+
+  const [order, setOrder] = useState<SortOrder>(SortOrder.DESC);
+
 
   useEffect(() => {
     let active = true;

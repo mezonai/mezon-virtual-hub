@@ -4,33 +4,33 @@ import InputAdornment from '@mui/material/InputAdornment';
 import OutlinedInput from '@mui/material/OutlinedInput';
 import { MagnifyingGlassIcon } from '@phosphor-icons/react/dist/ssr/MagnifyingGlass';
 import { Select, MenuItem, Grid } from '@mui/material';
-import { SortOrder, User } from '../../../models/user';
+import { User } from '../../../models/user';
+import { SortOrder } from '../../../types/user';
+
 
 interface UsersFilterProps {
   sortBy: keyof User;
   search: string;
-  order: 'ASC' | 'DESC';
+  order: SortOrder;
   setSearch: React.Dispatch<React.SetStateAction<string>>;
   setSortBy: React.Dispatch<React.SetStateAction<keyof User>>;
-  setOrder: React.Dispatch<React.SetStateAction<'ASC' | 'DESC'>>;
-  setConfirmSearch: React.Dispatch<React.SetStateAction<string>>
+  setOrder: React.Dispatch<React.SetStateAction<SortOrder>>;
+  setConfirmSearch: React.Dispatch<React.SetStateAction<string>>;
 }
 
 const userFieldChange: Record<string, string> = {
-  'id': 'ID',
-  'mezon_id': 'Mezon ID',
-  'username': 'Username',
-  'email': 'Email',
-  'display_name': 'Display Name',
-  'gold': 'Gold',
-  'diamond': 'Diamond',
-  'gender': 'Gender',
-  'has_first_reward': 'Has First Reward',
-  'created_at': 'Created At',
-  'updated_at': 'Updated At'
-} as const
-
-
+  id: 'ID',
+  mezon_id: 'Mezon ID',
+  username: 'Username',
+  email: 'Email',
+  display_name: 'Display Name',
+  gold: 'Gold',
+  diamond: 'Diamond',
+  gender: 'Gender',
+  has_first_reward: 'Has First Reward',
+  created_at: 'Created At',
+  updated_at: 'Updated At',
+} as const;
 
 export function UsersFilter({
   search,
@@ -39,14 +39,13 @@ export function UsersFilter({
   setSearch,
   setSortBy,
   setOrder,
-  setConfirmSearch
+  setConfirmSearch,
 }: UsersFilterProps): React.JSX.Element {
-
-  const handleSearchKeyDown = (e:React.KeyboardEvent<HTMLInputElement>) => {
+  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
-      setConfirmSearch(search)
+      setConfirmSearch(search);
     }
-  }
+  };
 
   return (
     <Card sx={{ p: 2 }}>
@@ -54,7 +53,7 @@ export function UsersFilter({
         <OutlinedInput
           value={search}
           fullWidth
-          placeholder="Search customer"
+          placeholder="Search user"
           onChange={(event) => {
             setSearch(event.target.value);
           }}
@@ -87,10 +86,10 @@ export function UsersFilter({
           }}
           displayEmpty
           sx={{ minWidth: 120 }}
-        >          
-          {[SortOrder.ASC, SortOrder.DESC].map((field) => (
-            <MenuItem key={field} value={field}>
-              {field}
+        >
+          {Object.entries(SortOrder).map(([key, value]) => (
+            <MenuItem key={key} value={key}>
+              {value}
             </MenuItem>
           ))}
         </Select>
