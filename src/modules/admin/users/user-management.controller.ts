@@ -1,4 +1,13 @@
-import { Body, Controller, Get, Param, ParseUUIDPipe, Put, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  ParseUUIDPipe,
+  Put,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiOperation,
@@ -11,12 +20,15 @@ import { Logger } from '@libs/logger';
 
 import { AdminBypassGuard } from '@libs/guard/admin.guard';
 import { ClsService } from 'nestjs-cls';
-import { UpdateUserDto, UsersManagementQueryDto } from './dto/user-managment.dto';
 import { UserManagementService } from './user-management.service';
+import {
+  UsersManagementQueryDto,
+  UpdateUserDto,
+} from './dto/user-managment.dto';
 
 @ApiBearerAuth()
-@Controller('admin/users')
-@ApiTags('Users Management')
+@Controller('users')
+@ApiTags('Admin - Users')
 @UseGuards(AdminBypassGuard)
 export class UserManagementController {
   constructor(

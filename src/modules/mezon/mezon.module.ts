@@ -1,5 +1,5 @@
 import { LoggerModule } from '@libs/logger';
-import { TransactionEntity } from '@modules/transaction/entity/transaction.entity';
+import { TransactionsEntity } from '@modules/transactions/entity/transactions.entity';
 import { UserEntity } from '@modules/user/entity/user.entity';
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -7,7 +7,7 @@ import { MezonService } from './mezon.service';
 import { MezonController } from './mezon.controller';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([UserEntity, TransactionEntity]), LoggerModule],
+  imports: [TypeOrmModule.forFeature([UserEntity, TransactionsEntity]), LoggerModule],
   controllers: [MezonController],
   providers: [MezonService],
   exports: [MezonService],
