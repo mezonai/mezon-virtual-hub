@@ -9,6 +9,7 @@ import { UserFormModal } from './internal/UserFormModal';
 import { User } from '../../models/user';
 import { useState } from 'react';
 import { ActionFormType } from '../../types/user';
+import { Spinner } from '../../theme/components/spinner/Spinner';
 
 export function UserList(): React.JSX.Element {
   const {
@@ -19,6 +20,7 @@ export function UserList(): React.JSX.Element {
     sortBy,
     order,
     search,
+    loading,
     setPage,
     setLimit,
     setSearch,
@@ -29,6 +31,8 @@ export function UserList(): React.JSX.Element {
   const [openFormModal, setOpenFormModal] = useState<boolean>(false);
   const [selectedUser, setSelectedUser] = useState<User | undefined>(undefined);
   const [actionType, setActionType] = useState<ActionFormType | null>(null);
+
+  if (loading) return <Spinner />;
   return (
     <Stack spacing={3}>
       <Stack direction="row" spacing={3}>

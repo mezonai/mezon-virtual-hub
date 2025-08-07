@@ -77,18 +77,6 @@ export const UserFormModal = ({
     >
       <Grid container size={12} spacing={3}>
         <Grid size={6}>
-          {/* <TextField
-            fullWidth
-            label="ID"
-            value={selectedUser?.id}
-            margin="normal"
-            disabled
-            slotProps={{
-              inputLabel: {
-                shrink: true,
-              },
-            }}
-          /> */}
           <SharedTextField
             fullWidth
             label="ID"
