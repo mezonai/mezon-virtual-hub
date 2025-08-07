@@ -1,24 +1,21 @@
 import { BaseService } from '@libs/base/base.service';
-import { MapEntity } from '@modules/map/entity/map.entity';
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Pageable } from '@types';
 import { plainToInstance } from 'class-transformer';
-import { DataSource, FindOptionsWhere, ILike, Not, Repository } from 'typeorm';
+import { DataSource, FindOptionsWhere, ILike, Repository } from 'typeorm';
+import { UserEntity } from '../../user/entity/user.entity';
 import {
-  UpdateUserDto,
   UsersManagementQueryDto,
   UsersManagementResDto,
+  UpdateUserDto,
 } from './dto/user-managment.dto';
-import { UserEntity } from './entity/user.entity';
 
 @Injectable()
 export class UserManagementService extends BaseService<UserEntity> {
   constructor(
     @InjectRepository(UserEntity)
     private readonly userRepository: Repository<UserEntity>,
-    @InjectRepository(MapEntity)
-    private readonly mapRepository: Repository<MapEntity>,
     private readonly dataSource: DataSource,
   ) {
     super(userRepository, UserEntity.name);

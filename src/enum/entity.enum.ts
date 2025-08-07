@@ -115,3 +115,15 @@ export enum Role {
   USER,
   ADMIN,
 }
+
+export enum TransactionType {
+  BUY = 'buy',
+  WITHDRAW = 'withdraw',
+  DEPOSIT = 'deposit',
+}
+
+export enum TransactionCurrency {
+  TOKEN = 'token',
+  GOLD = 'gold',
+  DIAMOND = 'diamond',
+}

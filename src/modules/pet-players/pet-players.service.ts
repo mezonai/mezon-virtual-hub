@@ -365,7 +365,7 @@ export class PetPlayersService extends BaseService<PetPlayersEntity> {
     ].filter(Boolean);
 
     for (const skillCode of equipped_skill_codes) {
-      if (!allowedCodes.includes(skillCode)) {
+      if (skillCode && !allowedCodes.includes(skillCode)) {
         throw new BadRequestException(
           `Skill code ${skillCode} is not assigned to this pet`,
         );
