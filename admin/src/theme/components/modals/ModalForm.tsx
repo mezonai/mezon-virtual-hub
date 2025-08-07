@@ -1,5 +1,5 @@
 import { Box, Button, Modal, ModalProps, Typography } from '@mui/material';
-import React, { useEffect } from 'react';
+import React from 'react';
 
 interface ModalFormProps extends Pick<ModalProps, 'open'> {
   title?: string;
@@ -9,7 +9,6 @@ interface ModalFormProps extends Pick<ModalProps, 'open'> {
   onClose?: () => void;
   onSubmit?: () => void;
   isDisableBtnSave?: boolean;
-  setIsDisableBtnSave: (isDisableBtnSave: boolean) => void;
 }
 
 export const ModalForm = ({
@@ -21,17 +20,10 @@ export const ModalForm = ({
   submitLabel,
   cancelLabel,
   isDisableBtnSave,
-  setIsDisableBtnSave,
 }: ModalFormProps) => {
   const handleCancel = () => {
     onClose?.();
   };
-
-  useEffect(() => {
-    if (open == false) {
-      setIsDisableBtnSave(true);
-    }
-  }, [open]);
 
   return (
     <Modal keepMounted open={open} onClose={onClose}>
@@ -61,11 +53,7 @@ export const ModalForm = ({
           <Button onClick={handleCancel} variant="outlined">
             {cancelLabel}
           </Button>
-          <Button
-            type="submit"
-            disabled={!isDisableBtnSave}
-            variant="contained"
-          >
+          <Button type="submit" disabled={isDisableBtnSave} variant="contained">
             {submitLabel}
           </Button>
         </Box>

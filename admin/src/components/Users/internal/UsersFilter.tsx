@@ -4,15 +4,17 @@ import InputAdornment from '@mui/material/InputAdornment';
 import OutlinedInput from '@mui/material/OutlinedInput';
 import { MagnifyingGlassIcon } from '@phosphor-icons/react/dist/ssr/MagnifyingGlass';
 import { Select, MenuItem, Grid } from '@mui/material';
-import { SortOrder, User } from '../../../models/user';
+import { User } from '../../../models/user';
+import { SortOrder } from '../../../types/user';
+
 
 interface UsersFilterProps {
   sortBy: keyof User;
   search: string;
-  order: 'ASC' | 'DESC';
+  order: SortOrder;
   setSearch: React.Dispatch<React.SetStateAction<string>>;
   setSortBy: React.Dispatch<React.SetStateAction<keyof User>>;
-  setOrder: React.Dispatch<React.SetStateAction<'ASC' | 'DESC'>>;
+  setOrder: React.Dispatch<React.SetStateAction<SortOrder>>;
   setConfirmSearch: React.Dispatch<React.SetStateAction<string>>;
 }
 

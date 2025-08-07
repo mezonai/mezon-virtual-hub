@@ -9,10 +9,12 @@ import TablePagination from '@mui/material/TablePagination';
 import TableRow from '@mui/material/TableRow';
 import Typography from '@mui/material/Typography';
 import dayjs from 'dayjs';
-import { ActionFormType, User } from '../../../models/user';
+import { User } from '../../../models/user';
 import React from 'react';
 import { Button, Stack } from '@mui/material';
 import { PencilIcon, TrashIcon } from '@phosphor-icons/react';
+import { ActionFormType } from '../../../types/user';
+
 interface UsersTableProps {
   count?: number;
   page?: number;

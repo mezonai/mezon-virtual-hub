@@ -1,4 +1,3 @@
-import * as React from 'react';
 import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
@@ -7,6 +6,9 @@ import { UsersFilter } from './internal/UsersFilter';
 import { UsersTable } from './internal/UsersTable';
 import { useUserList } from './hooks/useUserList';
 import { UserFormModal } from './internal/UserFormModal';
+import { User } from '../../models/user';
+import { useState } from 'react';
+import { ActionFormType } from '../../types/user';
 
 export function UserList(): React.JSX.Element {
   const {
@@ -17,14 +19,6 @@ export function UserList(): React.JSX.Element {
     sortBy,
     order,
     search,
-    openFormModal,
-    selectedUser,
-    actionType,
-    isDisableBtnSave,
-    setIsDisableBtnSave,
-    setActionType,
-    setSelectedUser,
-    setOpenFormModal,
     setPage,
     setLimit,
     setSearch,
@@ -34,8 +28,10 @@ export function UserList(): React.JSX.Element {
   } = useUserList();
   const handleClose = () => {
     setOpenFormModal(false);
-    setIsDisableBtnSave(false);
   };
+  const [openFormModal, setOpenFormModal] = useState<boolean>(false);
+  const [selectedUser, setSelectedUser] = useState<User | undefined>(undefined);
+  const [actionType, setActionType] = useState<ActionFormType | null>(null);
   return (
     <Stack spacing={3}>
       <Stack direction="row" spacing={3}>
@@ -76,8 +72,6 @@ export function UserList(): React.JSX.Element {
         onClose={handleClose}
         selectedUser={selectedUser}
         action={actionType}
-        isDisableBtnSave={isDisableBtnSave}
-        setIsDisableBtnSave={setIsDisableBtnSave}
       />
     </Stack>
   );

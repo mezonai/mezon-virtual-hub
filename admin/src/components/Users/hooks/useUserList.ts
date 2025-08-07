@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import httpClient from '../../../services/httpService/httpServices';
-import { ActionFormType, User } from '../../../models/user';
+import { User } from '../../../models/user';
+import { SortOrder } from '../../../types/user';
+
 
 interface UserListResponse {
   result: User[];
@@ -29,11 +31,9 @@ export const useUserList = () => {
   const [search, setSearch] = useState<string>('');
   const [confirmSearch, setConfirmSearch] = useState<string>('');
   const [sortBy, setSortBy] = useState<keyof User>('created_at');
-  const [order, setOrder] = useState<'ASC' | 'DESC'>('DESC');
-  const [openFormModal, setOpenFormModal] = useState<boolean>(false);
-  const [selectedUser, setSelectedUser] = useState<User | undefined>(undefined);
-  const [actionType, setActionType] = useState<ActionFormType | null>(null);
-  const [isDisableBtnSave, setIsDisableBtnSave] = useState<boolean>(false);
+
+  const [order, setOrder] = useState<SortOrder>(SortOrder.DESC);
+
 
   useEffect(() => {
     let active = true;
@@ -82,19 +82,11 @@ export const useUserList = () => {
     sortBy,
     order,
     search,
-    openFormModal,
-    selectedUser,
-    actionType,
-    setSelectedUser,
-    setActionType,
-    setOpenFormModal,
     setPage,
     setLimit,
     setSearch,
     setConfirmSearch,
     setSortBy,
     setOrder,
-    isDisableBtnSave,
-    setIsDisableBtnSave,
   };
 };

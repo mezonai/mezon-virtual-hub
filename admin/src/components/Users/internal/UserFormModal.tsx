@@ -13,18 +13,19 @@ import { ModalForm } from '../../../theme/components/modals/ModalForm';
 import { Controller, useForm } from 'react-hook-form';
 import { UserInfo, userSchema } from '../../../lib/schema/user/user';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { ActionFormType, Gender, Role, User } from '../../../models/user';
-import { useEffect, useState } from 'react';
+import { User } from '../../../models/user';
+import { useEffect } from 'react';
 import { updateUser } from '../../../services/users/updateUser';
-import { toast } from 'react-toastify';
+import { ActionFormType, Gender, Role } from '../../../types/user';
+import { Toast } from '../../../theme/components/toast/Toast';
+import { ToastType } from '../../../types/toast/toast';
+import { CheckFatIcon } from '@phosphor-icons/react';
 
 interface UserFormModalProps {
   open: boolean;
   onClose: () => void;
   selectedUser: User | undefined;
   action: ActionFormType | null;
-  isDisableBtnSave: boolean;
-  setIsDisableBtnSave: (isDisableBtnSave: boolean) => void;
 }
 
 export const UserFormModal = ({
@@ -32,67 +33,43 @@ export const UserFormModal = ({
   onClose,
   selectedUser,
   action,
-  isDisableBtnSave,
-  setIsDisableBtnSave,
 }: UserFormModalProps) => {
-  const { control, handleSubmit, reset, formState, watch } = useForm<UserInfo>({
+  const { control, handleSubmit, reset, formState } = useForm<UserInfo>({
     resolver: zodResolver(userSchema),
-    mode: 'onSubmit',
+    mode: 'onTouched',
     defaultValues: selectedUser,
   });
-  const watchValue = watch();
+
   useEffect(() => {
     if (selectedUser) {
       reset(selectedUser);
     }
   }, [selectedUser, reset]);
 
-  useEffect(() => {
-    const originValue = {
-      display_name: selectedUser?.display_name,
-      mezon_id: selectedUser?.mezon_id,
-      gold: selectedUser?.gold,
-      gender: selectedUser?.gender,
-      has_first_reward: selectedUser?.has_first_reward,
-      role: selectedUser?.role,
-      diamond: selectedUser?.diamond,
-    };
-    const currentValue = {
-      display_name: watchValue.display_name,
-      mezon_id: watchValue.mezon_id,
-      gold: watchValue.gold,
-      gender: watchValue.gender,
-      has_first_reward: watchValue.has_first_reward,
-      role: watchValue.role,
-      diamond: watchValue.diamond,
-    };
-    const isChanged =
-      JSON.stringify(currentValue) === JSON.stringify(originValue);
-    setIsDisableBtnSave(!isChanged);
-  }, [watchValue, selectedUser]);
-
   const onSubmit = (data: UserInfo) => {
     const user_id = selectedUser?.id;
     updateUser(data, user_id).then((res) => {
       if (res) {
-        toast.success('Update User Successfully', {
-          position: 'top-right',
+        Toast({
+          message: 'Update User Successfully',
+          type: ToastType.SUCCESS,
+          icon: <CheckFatIcon width="24px" height="24px" fill="#fff" />,
         });
-        setIsDisableBtnSave(true);
+        reset(data);
         onClose?.();
       }
     });
   };
+
   return (
     <ModalForm
       open={open}
-      setIsDisableBtnSave={setIsDisableBtnSave}
       onSubmit={handleSubmit(onSubmit)}
       onClose={onClose}
       title={action === ActionFormType.EDIT ? 'Update User' : 'Add User'}
       cancelLabel="Cancel"
       submitLabel="Save"
-      isDisableBtnSave={isDisableBtnSave}
+      isDisableBtnSave={!formState.isDirty || !formState.isValid}
     >
       <Grid container size={12} spacing={3}>
         <Grid size={6}>
@@ -118,8 +95,7 @@ export const UserFormModal = ({
                 fullWidth
                 label="Mezon ID"
                 margin="normal"
-                value={field?.value}
-                onChange={field.onChange}
+                {...field}
                 error={!!formState.errors.mezon_id}
                 helperText={formState.errors.mezon_id?.message}
                 slotProps={{
@@ -173,8 +149,7 @@ export const UserFormModal = ({
                 fullWidth
                 label="Display Name"
                 margin="normal"
-                value={field?.value}
-                onChange={field.onChange}
+                {...field}
                 error={!!formState.errors.display_name}
                 helperText={formState.errors.display_name?.message}
                 slotProps={{
@@ -196,7 +171,7 @@ export const UserFormModal = ({
                 label="Gold"
                 margin="normal"
                 type="number"
-                value={field?.value}
+                {...field}
                 onChange={(e) => field.onChange(Number(e.target.value))}
                 error={!!formState.errors.gold}
                 helperText={formState.errors.gold?.message}
@@ -221,7 +196,7 @@ export const UserFormModal = ({
                 label="Diamond"
                 margin="normal"
                 type="number"
-                value={field?.value}
+                {...field}
                 onChange={(e) => field.onChange(Number(e.target.value))}
                 error={!!formState.errors.diamond}
                 helperText={formState.errors.diamond?.message}
@@ -247,8 +222,7 @@ export const UserFormModal = ({
                 <InputLabel>Gender</InputLabel>
                 <Select
                   label="Gender"
-                  value={field?.value ?? ''}
-                  onChange={field.onChange}
+                  {...field}
                   error={!!formState.errors.gender}
                 >
                   <MenuItem value={Gender.MALE}>Male</MenuItem>
@@ -279,11 +253,7 @@ export const UserFormModal = ({
                 error={!!formState.errors.role}
               >
                 <InputLabel>Role</InputLabel>
-                <Select
-                  label="Role"
-                  value={field?.value ?? ''}
-                  onChange={field.onChange}
-                >
+                <Select label="Role" {...field}>
                   <MenuItem value={Role.ADMIN}>Admin</MenuItem>
                   <MenuItem value={Role.USER}>User</MenuItem>
                 </Select>
