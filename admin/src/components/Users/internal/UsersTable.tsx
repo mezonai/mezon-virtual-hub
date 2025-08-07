@@ -22,9 +22,9 @@ interface UsersTableProps {
   rowsPerPage?: number;
   setPage: React.Dispatch<React.SetStateAction<any>>;
   setLimit: React.Dispatch<React.SetStateAction<any>>;
-  setOpenFormModal: React.Dispatch<React.SetStateAction<boolean>>;
   setSelectedUser: React.Dispatch<React.SetStateAction<User | undefined>>;
   setActionForm: (action: ActionFormType) => void;
+  openFormModal: () => void;
 }
 
 export function UsersTable({
@@ -35,11 +35,11 @@ export function UsersTable({
   setSelectedUser,
   setPage,
   setLimit,
-  setOpenFormModal,
+  openFormModal,
   setActionForm,
 }: UsersTableProps): React.JSX.Element {
   const handleOpenFormModalEdit = (user: User, action: ActionFormType) => {
-    setOpenFormModal(true);
+    openFormModal?.();
     setSelectedUser(user);
     setActionForm(action);
   };

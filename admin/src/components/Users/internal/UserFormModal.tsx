@@ -25,14 +25,14 @@ interface UserFormModalProps {
   open: boolean;
   selectedUser: User | undefined;
   action: ActionFormType | null;
-  setOpenFormModal: (open: boolean) => void;
+  closeFormModal: () => void;
 }
 
 export const UserFormModal = ({
   open,
   selectedUser,
   action,
-  setOpenFormModal,
+  closeFormModal,
 }: UserFormModalProps) => {
   const { control, handleSubmit, reset, formState } = useForm<UserInfo>({
     resolver: zodResolver(userSchema),
@@ -47,9 +47,10 @@ export const UserFormModal = ({
   }, [selectedUser, reset]);
 
   const handleClose = () => {
-    setOpenFormModal(false);
+    closeFormModal?.();
     reset(selectedUser);
   };
+
   const onSubmit = (data: UserInfo) => {
     const user_id = selectedUser?.id;
     updateUser(data, user_id).then((res) => {
@@ -60,7 +61,7 @@ export const UserFormModal = ({
           icon: <CheckFatIcon width="24px" height="24px" fill="#fff" />,
         });
         reset(data);
-        handleClose?.();
+        closeFormModal?.();
       }
     });
   };

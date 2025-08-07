@@ -10,6 +10,7 @@ import { User } from '../../models/user';
 import { useState } from 'react';
 import { ActionFormType } from '../../types/user';
 import { Spinner } from '../../theme/components/spinner/Spinner';
+import { useUserModalForm } from './hooks/useUserModalForm';
 
 export function UserList(): React.JSX.Element {
   const {
@@ -28,7 +29,9 @@ export function UserList(): React.JSX.Element {
     setOrder,
     setConfirmSearch,
   } = useUserList();
-  const [openFormModal, setOpenFormModal] = useState<boolean>(false);
+
+  const { openModalForm, open, close } = useUserModalForm();
+
   const [selectedUser, setSelectedUser] = useState<User | undefined>(undefined);
   const [actionType, setActionType] = useState<ActionFormType | null>(null);
 
@@ -65,14 +68,14 @@ export function UserList(): React.JSX.Element {
         setSelectedUser={setSelectedUser}
         setPage={setPage}
         setLimit={setLimit}
-        setOpenFormModal={setOpenFormModal}
+        openFormModal={open}
         setActionForm={setActionType}
       />
       <UserFormModal
-        open={openFormModal}
+        open={openModalForm}
         selectedUser={selectedUser}
         action={actionType}
-        setOpenFormModal={setOpenFormModal}
+        closeFormModal={close}
       />
     </Stack>
   );
