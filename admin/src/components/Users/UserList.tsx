@@ -10,7 +10,7 @@ import { User } from '../../models/user';
 import { useState } from 'react';
 import { ActionFormType } from '../../types/user';
 import { Spinner } from '../../theme/components/spinner/Spinner';
-import { useUserModalForm } from './hooks/useUserModalForm';
+import { useModal } from '../../theme/components/modals/hook/useModal';
 
 export function UserList(): React.JSX.Element {
   const {
@@ -30,7 +30,7 @@ export function UserList(): React.JSX.Element {
     setConfirmSearch,
   } = useUserList();
 
-  const { openModalForm, open, close } = useUserModalForm();
+  const { isOpenModal, open, close } = useModal();
 
   const [selectedUser, setSelectedUser] = useState<User | undefined>(undefined);
   const [actionType, setActionType] = useState<ActionFormType | null>(null);
@@ -72,7 +72,7 @@ export function UserList(): React.JSX.Element {
         setActionForm={setActionType}
       />
       <UserFormModal
-        open={openModalForm}
+        open={isOpenModal}
         selectedUser={selectedUser}
         action={actionType}
         closeFormModal={close}
