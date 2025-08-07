@@ -7,7 +7,6 @@ import {
   InputLabel,
   MenuItem,
   Select,
-  TextField,
 } from '@mui/material';
 import { ModalForm } from '../../../theme/components/modals/ModalForm';
 import { Controller, useForm } from 'react-hook-form';
@@ -20,19 +19,20 @@ import { ActionFormType, Gender, Role } from '../../../types/user';
 import { Toast } from '../../../theme/components/toast/Toast';
 import { ToastType } from '../../../types/toast/toast';
 import { CheckFatIcon } from '@phosphor-icons/react';
+import { SharedTextField } from '../../../theme/components/sharedTextField/SharedTextField';
 
 interface UserFormModalProps {
   open: boolean;
-  onClose: () => void;
   selectedUser: User | undefined;
   action: ActionFormType | null;
+  setOpenFormModal: (open: boolean) => void;
 }
 
 export const UserFormModal = ({
   open,
-  onClose,
   selectedUser,
   action,
+  setOpenFormModal,
 }: UserFormModalProps) => {
   const { control, handleSubmit, reset, formState } = useForm<UserInfo>({
     resolver: zodResolver(userSchema),
@@ -46,6 +46,10 @@ export const UserFormModal = ({
     }
   }, [selectedUser, reset]);
 
+  const handleClose = () => {
+    setOpenFormModal(false);
+    reset(selectedUser);
+  };
   const onSubmit = (data: UserInfo) => {
     const user_id = selectedUser?.id;
     updateUser(data, user_id).then((res) => {
@@ -56,7 +60,7 @@ export const UserFormModal = ({
           icon: <CheckFatIcon width="24px" height="24px" fill="#fff" />,
         });
         reset(data);
-        onClose?.();
+        handleClose?.();
       }
     });
   };
@@ -65,7 +69,7 @@ export const UserFormModal = ({
     <ModalForm
       open={open}
       onSubmit={handleSubmit(onSubmit)}
-      onClose={onClose}
+      onClose={handleClose}
       title={action === ActionFormType.EDIT ? 'Update User' : 'Add User'}
       cancelLabel="Cancel"
       submitLabel="Save"
@@ -73,7 +77,7 @@ export const UserFormModal = ({
     >
       <Grid container size={12} spacing={3}>
         <Grid size={6}>
-          <TextField
+          {/* <TextField
             fullWidth
             label="ID"
             value={selectedUser?.id}
@@ -84,6 +88,14 @@ export const UserFormModal = ({
                 shrink: true,
               },
             }}
+          /> */}
+          <SharedTextField
+            fullWidth
+            label="ID"
+            value={selectedUser?.id}
+            margin="normal"
+            disabled
+            shrinkMode={true}
           />
         </Grid>
         <Grid size={6}>
@@ -91,18 +103,14 @@ export const UserFormModal = ({
             control={control}
             name="mezon_id"
             render={({ field }) => (
-              <TextField
+              <SharedTextField
                 fullWidth
                 label="Mezon ID"
                 margin="normal"
                 {...field}
                 error={!!formState.errors.mezon_id}
                 helperText={formState.errors.mezon_id?.message}
-                slotProps={{
-                  inputLabel: {
-                    shrink: field?.value ? true : false,
-                  },
-                }}
+                shrinkMode="auto"
               />
             )}
           />
@@ -110,32 +118,24 @@ export const UserFormModal = ({
       </Grid>
       <Grid container size={12} spacing={3}>
         <Grid size={6}>
-          <TextField
+          <SharedTextField
             fullWidth
             label="Username"
             margin="normal"
             disabled
             value={selectedUser?.username}
-            slotProps={{
-              inputLabel: {
-                shrink: true,
-              },
-            }}
+            shrinkMode={true}
           />
         </Grid>
         <Grid size={6}>
-          <TextField
+          <SharedTextField
             fullWidth
             label="Email"
             type="email"
             margin="normal"
             disabled
             value={selectedUser?.email}
-            slotProps={{
-              inputLabel: {
-                shrink: true,
-              },
-            }}
+            shrinkMode={true}
           />
         </Grid>
       </Grid>
@@ -145,18 +145,14 @@ export const UserFormModal = ({
             control={control}
             name="display_name"
             render={({ field }) => (
-              <TextField
+              <SharedTextField
                 fullWidth
                 label="Display Name"
-                margin="normal"
                 {...field}
+                margin="normal"
                 error={!!formState.errors.display_name}
                 helperText={formState.errors.display_name?.message}
-                slotProps={{
-                  inputLabel: {
-                    shrink: field?.value ? true : false,
-                  },
-                }}
+                shrinkMode="auto"
               />
             )}
           />
@@ -166,20 +162,16 @@ export const UserFormModal = ({
             control={control}
             name="gold"
             render={({ field }) => (
-              <TextField
+              <SharedTextField
+                {...field}
                 fullWidth
                 label="Gold"
-                margin="normal"
                 type="number"
-                {...field}
+                margin="normal"
                 onChange={(e) => field.onChange(Number(e.target.value))}
                 error={!!formState.errors.gold}
                 helperText={formState.errors.gold?.message}
-                slotProps={{
-                  inputLabel: {
-                    shrink: field?.value !== undefined,
-                  },
-                }}
+                shrinkMode="auto"
               />
             )}
           />
@@ -191,7 +183,7 @@ export const UserFormModal = ({
             control={control}
             name="diamond"
             render={({ field }) => (
-              <TextField
+              <SharedTextField
                 fullWidth
                 label="Diamond"
                 margin="normal"
@@ -200,11 +192,7 @@ export const UserFormModal = ({
                 onChange={(e) => field.onChange(Number(e.target.value))}
                 error={!!formState.errors.diamond}
                 helperText={formState.errors.diamond?.message}
-                slotProps={{
-                  inputLabel: {
-                    shrink: field?.value !== undefined,
-                  },
-                }}
+                shrinkMode="auto"
               />
             )}
           />
@@ -222,7 +210,8 @@ export const UserFormModal = ({
                 <InputLabel>Gender</InputLabel>
                 <Select
                   label="Gender"
-                  {...field}
+                  value={String(field.value)}
+                  onChange={(e) => field.onChange(String(e.target.value))}
                   error={!!formState.errors.gender}
                 >
                   <MenuItem value={Gender.MALE}>Male</MenuItem>
@@ -246,26 +235,33 @@ export const UserFormModal = ({
           <Controller
             control={control}
             name="role"
-            render={({ field }) => (
-              <FormControl
-                fullWidth
-                margin="normal"
-                error={!!formState.errors.role}
-              >
-                <InputLabel>Role</InputLabel>
-                <Select label="Role" {...field}>
-                  <MenuItem value={Role.ADMIN}>Admin</MenuItem>
-                  <MenuItem value={Role.USER}>User</MenuItem>
-                </Select>
-                {formState?.errors?.role && (
-                  <FormHelperText>
-                    {formState.errors.role.message}
-                  </FormHelperText>
-                )}
-              </FormControl>
-            )}
+            render={({ field }) => {
+              return (
+                <FormControl
+                  fullWidth
+                  margin="normal"
+                  error={!!formState.errors.role}
+                >
+                  <InputLabel>Role</InputLabel>
+                  <Select
+                    label="Role"
+                    value={Number(field.value)}
+                    onChange={(e) => field.onChange(Number(e.target.value))}
+                  >
+                    <MenuItem value={Role.ADMIN}>Admin</MenuItem>
+                    <MenuItem value={Role.USER}>User</MenuItem>
+                  </Select>
+                  {formState?.errors?.role && (
+                    <FormHelperText>
+                      {formState.errors.role.message}
+                    </FormHelperText>
+                  )}
+                </FormControl>
+              );
+            }}
           />
         </Grid>
+
         <Grid size={6} sx={{ display: 'flex', alignItems: 'center' }}>
           <Controller
             control={control}

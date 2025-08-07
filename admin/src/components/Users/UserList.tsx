@@ -26,9 +26,6 @@ export function UserList(): React.JSX.Element {
     setOrder,
     setConfirmSearch,
   } = useUserList();
-  const handleClose = () => {
-    setOpenFormModal(false);
-  };
   const [openFormModal, setOpenFormModal] = useState<boolean>(false);
   const [selectedUser, setSelectedUser] = useState<User | undefined>(undefined);
   const [actionType, setActionType] = useState<ActionFormType | null>(null);
@@ -69,9 +66,9 @@ export function UserList(): React.JSX.Element {
       />
       <UserFormModal
         open={openFormModal}
-        onClose={handleClose}
         selectedUser={selectedUser}
         action={actionType}
+        setOpenFormModal={setOpenFormModal}
       />
     </Stack>
   );
