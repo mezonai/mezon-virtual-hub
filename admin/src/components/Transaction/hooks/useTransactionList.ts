@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useTransactionStore } from '../../../store/transaction/store';
-import { Transaction } from '../../../models/transaction/transaction';
 import { SortOrder } from '../../../types/user';
+import { Transaction } from '../../../types/transaction/transaction';
 
 export const useTransactionList = () => {
   const [loading, setLoading] = useState<boolean>(false);
@@ -11,7 +11,7 @@ export const useTransactionList = () => {
   const [confirmSearch, setConfirmSearch] = useState<string>('');
   const [searchParam, setSearchParam] = useSearchParams();
 
-  const toatalItem = transactions.total;
+  const totalItem = transactions.total;
   const totalPage = transactions.total_page;
   const transactionData = transactions.result;
 
@@ -58,7 +58,7 @@ export const useTransactionList = () => {
 
   return {
     transactionData,
-    toatalItem,
+    totalItem,
     totalPage,
     hasNextPage: queryParam.page < totalPage,
     hasPreviousPage: queryParam.page + 1,

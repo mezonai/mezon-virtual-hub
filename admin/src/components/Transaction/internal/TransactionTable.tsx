@@ -1,4 +1,5 @@
 import {
+  Box,
   Card,
   Divider,
   Table,
@@ -10,11 +11,15 @@ import {
   TableRow,
   Typography,
 } from '@mui/material';
-import { Transaction } from '../../../models/transaction/transaction';
-import dayjs from 'dayjs';
-import { transactionParams } from './TransactionFilter';
+import {
+  Transaction,
+  transactionParams,
+} from '../../../types/transaction/transaction';
+import { Spinner } from '../../../theme/components/spinner/Spinner';
+import { formatDate } from '../../../utils/fortmat/formateDate';
 
 interface TransactionProps {
+  loading?: boolean;
   rows?: Transaction[];
   rowsPerPage?: number;
   count?: number;
@@ -27,12 +32,20 @@ export const TransactionTable = ({
   rowsPerPage = 0,
   count = 0,
   page = 0,
+  loading,
   onParamsChange,
 }: TransactionProps) => {
+  if (loading) return <Spinner />;
   return (
     <Card>
-      <TableContainer>
-        <Table>
+      <TableContainer
+        sx={{
+          overflowX: 'auto',
+          overflowY: 'auto',
+          maxHeight: 400,
+        }}
+      >
+        <Table sx={{ minWidth: '800px' }} stickyHeader>
           <TableHead>
             <TableRow>
               <TableCell>Mezon Transaction ID</TableCell>
@@ -41,7 +54,6 @@ export const TransactionTable = ({
               <TableCell>Currency</TableCell>
               <TableCell>Receiver ID</TableCell>
               <TableCell>User</TableCell>
-              <TableCell>Extra Attribute</TableCell>
               <TableCell>Created At</TableCell>
             </TableRow>
           </TableHead>
@@ -67,11 +79,8 @@ export const TransactionTable = ({
                 </TableCell>
                 <TableCell>{row.user?.username}</TableCell>
                 <TableCell>
-                  <Typography>{row.extra_attribute}</Typography>
-                </TableCell>
-                <TableCell>
                   <Typography>
-                    {dayjs(row.created_at).format('MMM D, YYYY')}
+                    {formatDate({ date: row.created_at })}
                   </Typography>
                 </TableCell>
               </TableRow>

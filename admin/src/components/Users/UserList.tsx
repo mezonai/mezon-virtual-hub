@@ -9,7 +9,6 @@ import { UserFormModal } from './internal/UserFormModal';
 import { User } from '../../models/user';
 import { useState } from 'react';
 import { ActionFormType } from '../../types/user';
-import { Spinner } from '../../theme/components/spinner/Spinner';
 import { useModal } from '../../theme/components/modals/hook/useModal';
 
 export function UserList(): React.JSX.Element {
@@ -22,12 +21,9 @@ export function UserList(): React.JSX.Element {
     order,
     search,
     loading,
-    setPage,
-    setLimit,
-    setSearch,
-    setSortBy,
-    setOrder,
+    confirmSearch,
     setConfirmSearch,
+    handleParamsChange,
   } = useUserList();
 
   const { isOpenModal, open, close } = useModal();
@@ -35,7 +31,6 @@ export function UserList(): React.JSX.Element {
   const [selectedUser, setSelectedUser] = useState<User | undefined>(undefined);
   const [actionType, setActionType] = useState<ActionFormType | null>(null);
 
-  if (loading) return <Spinner />;
   return (
     <Stack spacing={3}>
       <Stack direction="row" spacing={3}>
@@ -55,10 +50,9 @@ export function UserList(): React.JSX.Element {
         sortBy={sortBy}
         search={search}
         order={order}
-        setSearch={setSearch}
-        setSortBy={setSortBy}
-        setOrder={setOrder}
+        confirmSearch={confirmSearch}
         setConfirmSearch={setConfirmSearch}
+        onParamsChange={handleParamsChange}
       />
       <UsersTable
         count={totalItems}
@@ -66,10 +60,10 @@ export function UserList(): React.JSX.Element {
         rows={users}
         rowsPerPage={rowsPerPage}
         setSelectedUser={setSelectedUser}
-        setPage={setPage}
-        setLimit={setLimit}
         openFormModal={open}
         setActionForm={setActionType}
+        onParamsChange={handleParamsChange}
+        loading={loading}
       />
       <UserFormModal
         open={isOpenModal}

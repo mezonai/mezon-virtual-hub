@@ -4,7 +4,8 @@ import {
   getTransaction,
   getTransactionParams,
 } from '../../services/transaction/getTransaction';
-import { TransactionResponseAPI } from '../../models/transaction/transaction';
+import { TransactionResponseAPI } from '../../types/transaction/transaction';
+
 
 export const useTransactionStore = create<TransactionStore>((set, get) => ({
   transactions: {} as TransactionResponseAPI,

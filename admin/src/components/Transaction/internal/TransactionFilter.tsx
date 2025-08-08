@@ -8,7 +8,10 @@ import {
 } from '@mui/material';
 import { MagnifyingGlassIcon } from '@phosphor-icons/react';
 import { SortOrder } from '../../../types/user';
-import { Transaction } from '../../../models/transaction/transaction';
+import {
+  Transaction,
+  transactionParams,
+} from '../../../types/transaction/transaction';
 
 const transactionFieldChange: Record<string, string> = {
   id: 'ID',
@@ -20,14 +23,6 @@ const transactionFieldChange: Record<string, string> = {
   extra_attribute: 'Extra Attribute',
   created_at: 'Created At',
 } as const;
-
-export type transactionParams = {
-  page: number;
-  limit: number;
-  search: string;
-  sort_by: keyof Transaction;
-  order: SortOrder;
-};
 
 interface TransactionFilterProps {
   sortBy: string;

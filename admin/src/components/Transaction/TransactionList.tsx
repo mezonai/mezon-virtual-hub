@@ -2,7 +2,6 @@ import { Stack, Typography } from '@mui/material';
 import { TransactionFilter } from './internal/TransactionFilter';
 import { TransactionTable } from './internal/TransactionTable';
 import { useTransactionList } from './hooks/useTransactionList';
-import { Spinner } from '../../theme/components/spinner/Spinner';
 
 export const TransactionList = () => {
   const {
@@ -12,13 +11,12 @@ export const TransactionList = () => {
     sortBy,
     transactionData,
     order,
-    toatalItem,
+    totalItem,
     confirmSearch,
     setConfirmSearch,
     handleParamsChange,
   } = useTransactionList();
 
-  if (loading) return <Spinner />;
   return (
     <Stack spacing={3}>
       <Typography variant="h4">Transactions</Typography>
@@ -32,9 +30,10 @@ export const TransactionList = () => {
       <TransactionTable
         rows={transactionData}
         rowsPerPage={rowsPerPage}
-        count={toatalItem}
+        count={totalItem}
         page={page}
         onParamsChange={handleParamsChange}
+        loading={loading}
       />
     </Stack>
   );

@@ -1,4 +1,4 @@
-import { TransactionResponseAPI } from '../../models/transaction/transaction';
+import { TransactionResponseAPI } from '../../types/transaction/transaction';
 import { GET_TRANSACTION } from '../../utils/config';
 import httpClient from '../httpService/httpServices';
 
