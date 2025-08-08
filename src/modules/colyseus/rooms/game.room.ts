@@ -19,8 +19,8 @@ export class GameRoom extends BaseGameRoom {
     apiKey: configEnv().GOOGLE_GEN_AI_API_KEY,
   });
 
-  override async onCreate() {
-    super.onCreate();
+  override async onCreate(options: any) {
+    super.onCreate(options);
     this.state.items.set('car1', new Item(320, -120, 'gokart', ''));
     this.state.items.set('car2', new Item(200, -120, 'gokart', ''));
     this.state.items.set('car3', new Item(-50, -120, 'gokart', ''));

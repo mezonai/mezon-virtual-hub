@@ -18,7 +18,7 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { AuthenticatedClient, Player, PlayerBattleInfo, WithdrawPayload } from '@types';
-import { Client, Room } from 'colyseus';
+import { Client, matchMaker, Room } from 'colyseus';
 import { IncomingMessage } from 'http';
 import { Repository } from 'typeorm';
 import { Door } from '../door/Door';
@@ -29,6 +29,7 @@ import { RoomManager } from '../rooms/global-room';
 import { UserService } from '@modules/user/user.service';
 import { UserWithPetPlayers } from '@modules/user/dto/user.dto';
 import { plainToInstance } from 'class-transformer';
+import { MessageTypes } from '../MessageTypes';
 
 export class Item extends Schema {
   @type('number') x: number = 0;
@@ -129,7 +130,7 @@ export class BaseGameRoom extends Room<RoomState> {
       relations: ['map'],
     });
 
-    if (!user || !user.map) {
+    if (!user) {
       throw new NotFoundException('User not found or not assigned to any map');
     }
 
@@ -144,12 +145,6 @@ export class BaseGameRoom extends Room<RoomState> {
         pet_players: petPlayers,
       },
     );
-
-    if (!this.roomName.startsWith(user.map.map_key)) {
-      throw new ForbiddenException(
-        `User is not allowed in this room: ${this.roomName}`,
-      );
-    }
 
     console.log(`User ${user.username} is allowed in ${this.roomId}`);
     client.userData = userWithPets;
@@ -232,11 +227,10 @@ export class BaseGameRoom extends Room<RoomState> {
     }
   }
 
-  async onCreate() {
+  async onCreate(options: any) {
     this.setState(new RoomState());
     BaseGameRoom.activeRooms.add(this);
     RoomManager.addRoom(this);
-    console.log(this.roomName);
     this.onMessage('move', (client, buffer: ArrayBuffer) => {
       try {
         const data = this.decodeMoveData(new Uint8Array(buffer));
@@ -718,7 +712,7 @@ export class BaseGameRoom extends Room<RoomState> {
         if (player == null) return;
         const result = await this.petPlayersService.findPetPlayersByUserId(player.userData.id);
         if (result == null) return;
-        
+
         const newPetData = JSON.stringify(result.filter(a => a.is_brought).map(a => ({
           id: a.id,
           name: a.name,
@@ -784,24 +778,8 @@ export class BaseGameRoom extends Room<RoomState> {
       const targetClient = this.clients.find(
         (client) => client.sessionId === targetClientId,
       );
-      let gameKey = this.createKeyForActionDict(
-        action,
-        targetClientId,
-        sender.sessionId,
-      );
-
-      this.minigameResultDict.set(gameKey, {
-        from: targetClientId,
-        to: sender.sessionId,
-      });
-
-      if (targetClient) {
-        this.broadcast('onp2pCombatActionAccept', {
-          action: action,
-          from: targetClientId,
-          to: sender.sessionId,
-          gameKey: gameKey,
-        });
+      if (action == ActionKey.Battle.toString()) {
+        this.createBattleRoom(sender, targetClient);;
       }
     });
 
@@ -1024,6 +1002,24 @@ export class BaseGameRoom extends Room<RoomState> {
           this.broadcastPetPositions(pet);
         }
       }, 100);
+    });
+  }
+  async createBattleRoom(sender: Client, targetUser: Client | undefined) {
+    const matchRoomName = `battle-room-${sender.sessionId}-${targetUser?.sessionId}`;
+    // Create the room
+    const room = await matchMaker.createRoom("battle-room", {
+      roomName: this.roomName
+    });
+
+    // Send room info to both players
+    sender.send(MessageTypes.BATTE_ROOM_READY, {
+      roomId: room.roomId,
+      roomName: matchRoomName,
+    });
+
+    targetUser?.send(MessageTypes.BATTE_ROOM_READY, {
+      roomId: room.roomId,
+      roomName: matchRoomName,
     });
   }
 }

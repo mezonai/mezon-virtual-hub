@@ -110,6 +110,13 @@ export enum SkillCode {
   ICICLE_CRASH = 'ICE02',
   ICE_FANG = 'ICE03',
   DRAGON_CLAW = 'DRAGON01',
+  ATTACK = 'ATTACK01',
+}
+
+export enum EviromentType {
+  ICE = 'ice',
+  WATER = 'water',
+  GRASS = 'grass',
 }
 
 export enum Role {
