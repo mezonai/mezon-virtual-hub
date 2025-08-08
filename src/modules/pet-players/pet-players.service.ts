@@ -117,6 +117,7 @@ export class PetPlayersService extends BaseService<PetPlayersEntity> {
     updatePetPlayers: UpdatePetPlayersDto,
     pet_id: string,
   ) {
+    const { map, sub_map, ...restUpdate } = updatePetPlayers;
     const existedPetPlayers = await this.petPlayersRepository.findOne({
       where: {
         id: pet_id,
@@ -129,11 +130,13 @@ export class PetPlayersService extends BaseService<PetPlayersEntity> {
 
     Object.assign(existedPetPlayers, updatePetPlayers);
 
-    await this.petPlayersRepository.update(pet_id, {
-      ...updatePetPlayers,
-      room_code: `${updatePetPlayers.map}${updatePetPlayers.sub_map ? `-${updatePetPlayers.sub_map}` : ''}`,
+    const updatedPet = await this.petPlayersRepository.save({
+      ...existedPetPlayers,
+      ...restUpdate,
+      room_code: `${map}${sub_map ? `-${sub_map}` : ''}`,
     });
-    return plainToInstance(PetPlayersWithSpeciesDto, existedPetPlayers);
+
+    return plainToInstance(PetPlayersWithSpeciesDto, updatedPet);
   }
 
   async deletePetPlayers(id: string) {
