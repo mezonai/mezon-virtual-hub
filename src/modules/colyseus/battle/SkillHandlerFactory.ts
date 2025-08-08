@@ -20,7 +20,7 @@ export class SkillHandlerFactory {
             case SkillType.HEAL:
                 return new HealHandler();
             case SkillType.INCREASE_ATTACK:
-                return new BuffAttackHandler();
+                return new BuffAttackHandler(calculateDamage);
             case SkillType.DECREASE_ATTACK:
                 return new DebuffAttackHandler(calculateDamage);
             default:

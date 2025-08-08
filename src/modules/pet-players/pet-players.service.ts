@@ -386,6 +386,7 @@ export class PetPlayersService extends BaseService<PetPlayersEntity> {
         'skill_slot_2',
         'skill_slot_3',
         'skill_slot_4',
+        'pet'
       ],
     });
 

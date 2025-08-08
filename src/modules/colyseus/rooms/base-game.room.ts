@@ -227,11 +227,10 @@ export class BaseGameRoom extends Room<RoomState> {
     }
   }
 
-  async onCreate() {
+  async onCreate(options: any) {
     this.setState(new RoomState());
     BaseGameRoom.activeRooms.add(this);
     RoomManager.addRoom(this);
-    console.log(this.roomName);
     this.onMessage('move', (client, buffer: ArrayBuffer) => {
       try {
         const data = this.decodeMoveData(new Uint8Array(buffer));
@@ -1009,8 +1008,7 @@ export class BaseGameRoom extends Room<RoomState> {
     const matchRoomName = `battle-room-${sender.sessionId}-${targetUser?.sessionId}`;
     // Create the room
     const room = await matchMaker.createRoom("battle-room", {
-      player1: sender,
-      player2: targetUser,
+      roomName: this.roomName
     });
 
     // Send room info to both players

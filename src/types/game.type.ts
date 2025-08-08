@@ -17,10 +17,12 @@ export class Player extends Schema {
 
 export class SkillState extends Schema {
   @type("string") id: string = "";
-  @type("number") effectValue: number = 0;
+  @type("number") damage: number = 0;
   @type("string") skillType: string = "";
+  @type("string") type: string = "";
   @type("number") accuracy: number = 0;
-  @type("number") powerPoint: number = 0;
+  @type("number") totalPowerPoint: number = 0;
+  @type("number") currentPowerPoint: number = 0;
 }
 
 export class PetState extends Schema {
@@ -36,8 +38,10 @@ export class PetState extends Schema {
   @type("number") currentExp: number = 20;
   @type("number") totalExp: number = 100;
   @type("number") speed: number = 10;
+  @type("number") sleepTurns: number = 0;
   @type([SkillState]) skills: SkillState[] = [];
   @type("boolean") isDead: boolean = false;
+  @type("boolean") isSleeping: boolean = false;
 }
 export class PlayerBattleInfo extends Schema {
   @type("string") id: string = "";

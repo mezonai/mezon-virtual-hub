@@ -8,5 +8,8 @@ export interface ISkillHandler {
     attackerAction: PlayerAction,
     defenderAction: PlayerAction,
     skill: SkillState
-  ): { damage: number };
+  ): {
+    damage: number;
+    effectValue: number;
+  };
 }

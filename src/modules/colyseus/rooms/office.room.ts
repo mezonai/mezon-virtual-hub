@@ -40,8 +40,8 @@ export class OfficeRoom extends BaseGameRoom {
     );
   }
 
-  async onCreate() {
-    super.onCreate();
+  async onCreate(options: any) {
+    super.onCreate(options);
     this.doorManager = new DoorManager(this.state);
     switch (this.roomName) {
       case this.buildRoomName(MapKey.SG, SubMap.OFFICE):
