@@ -10,6 +10,7 @@ import { UsersPage } from './pages/UsersPage';
 import { paths } from './utils/paths';
 import { NotFoundPage } from './pages/NotFoundPage';
 import { ToastContainer, Zoom } from 'react-toastify';
+import { TransactionPage } from './pages/TransactionPage';
 const App = () => {
   return (
     <ThemeProvider theme={theme}>
@@ -23,6 +24,10 @@ const App = () => {
                 element={<DashboardPage />}
               />
               <Route path={paths.dashboard.users} element={<UsersPage />} />
+              <Route
+                path={paths.dashboard.transaction}
+                element={<TransactionPage />}
+              />
             </Route>
 
             <Route path="/unauthorized" element={<></>} />

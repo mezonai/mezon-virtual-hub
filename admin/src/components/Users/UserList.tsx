@@ -17,7 +17,7 @@ export function UserList(): React.JSX.Element {
     users,
     page,
     limit: rowsPerPage,
-    totalPages,
+    totalItems,
     sortBy,
     order,
     search,
@@ -61,7 +61,7 @@ export function UserList(): React.JSX.Element {
         setConfirmSearch={setConfirmSearch}
       />
       <UsersTable
-        count={totalPages}
+        count={totalItems}
         page={page}
         rows={users}
         rowsPerPage={rowsPerPage}
