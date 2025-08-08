@@ -25,7 +25,8 @@ export class UpdatePetPlayersSkills1754636937623 implements MigrationInterface {
       UPDATE pet_players
       SET
         skill_code_1 = fs.skill_code_1,
-        skill_code_2 = fs.skill_code_2
+        skill_code_2 = fs.skill_code_2,
+      equipped_skill_codes = ARRAY[fs.skill_code_1, fs.skill_code_2]
       FROM first_skills fs
       WHERE pet_players.id = fs.pet_player_id;
     `);
