@@ -1,4 +1,5 @@
 import { SkillCode } from '@enum';
+import { IsNullableEnumArray } from '@libs/decorator';
 import { PetSkillsResponseDto } from '@modules/pet-skills/dto/pet-skills.dto';
 import { PetSkillsEntity } from '@modules/pet-skills/entity/pet-skills.entity';
 import { PetsEntity } from '@modules/pets/entity/pets.entity';
@@ -142,10 +143,12 @@ export class PetPlayersEntity extends AuditEntity {
     enum: SkillCode,
     description: 'Skill codes selected for battle from pet’s available skills',
   })
-  @IsEnum(SkillCode, { each: true })
+  @IsNullableEnumArray(SkillCode, {
+    message: 'Each element must be a SkillCode or null',
+  })
   @ArrayNotEmpty()
   @ArrayMaxSize(2)
-  equipped_skill_codes: SkillCode[];
+  equipped_skill_codes: (SkillCode | null)[];
 
   @ManyToOne(() => UserEntity, { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'user_id' })

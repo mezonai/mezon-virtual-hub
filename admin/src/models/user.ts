@@ -1,18 +1,4 @@
-export enum MapKey {
-  HN1 = 'hn1',
-  HN2 = 'hn2',
-  HN3 = 'hn3',
-  VINH = 'vinh',
-  DN = 'dn',
-  QN = 'qn',
-  SG = 'sg',
-}
-
-export enum Gender {
-  MALE = 'male',
-  FEMALE = 'female',
-  NOT_SPECIFIED = 'not specified',
-}
+import { Gender } from '../types/user';
 
 export interface User {
   id: string;
@@ -27,6 +13,7 @@ export interface User {
   created_at: string;
   updated_at: string;
   map: MapData;
+  role: number;
 }
 
 export interface MapData {

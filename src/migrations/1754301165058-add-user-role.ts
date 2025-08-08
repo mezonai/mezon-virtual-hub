@@ -35,15 +35,9 @@ export class AddUserRole1754301165058 implements MigrationInterface {
     await queryRunner.query(
       `ALTER TABLE "user" ALTER COLUMN "position_y" SET NOT NULL`,
     );
-    await queryRunner.query(
-      `ALTER TABLE "user" ALTER COLUMN "gender" SET NOT NULL`,
-    );
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(
-      `ALTER TABLE "user" ALTER COLUMN "gender" DROP NOT NULL`,
-    );
     await queryRunner.query(
       `ALTER TABLE "user" ALTER COLUMN "position_y" DROP NOT NULL`,
     );

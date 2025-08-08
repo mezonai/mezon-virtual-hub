@@ -5,29 +5,32 @@ import OutlinedInput from '@mui/material/OutlinedInput';
 import { MagnifyingGlassIcon } from '@phosphor-icons/react/dist/ssr/MagnifyingGlass';
 import { Select, MenuItem, Grid } from '@mui/material';
 import { User } from '../../../models/user';
+import { SortOrder } from '../../../types/user';
+
 
 interface UsersFilterProps {
   sortBy: keyof User;
   search: string;
-  order: 'ASC' | 'DESC';
+  order: SortOrder;
   setSearch: React.Dispatch<React.SetStateAction<string>>;
   setSortBy: React.Dispatch<React.SetStateAction<keyof User>>;
-  setOrder: React.Dispatch<React.SetStateAction<'ASC' | 'DESC'>>;
+  setOrder: React.Dispatch<React.SetStateAction<SortOrder>>;
+  setConfirmSearch: React.Dispatch<React.SetStateAction<string>>;
 }
 
-const userFieldOptions = [
-  'id',
-  'mezon_id',
-  'username',
-  'email',
-  'display_name',
-  'gold',
-  'diamond',
-  'gender',
-  'has_first_reward',
-  'created_at',
-  'updated_at',
-] as const;
+const userFieldChange: Record<string, string> = {
+  id: 'ID',
+  mezon_id: 'Mezon ID',
+  username: 'Username',
+  email: 'Email',
+  display_name: 'Display Name',
+  gold: 'Gold',
+  diamond: 'Diamond',
+  gender: 'Gender',
+  has_first_reward: 'Has First Reward',
+  created_at: 'Created At',
+  updated_at: 'Updated At',
+} as const;
 
 export function UsersFilter({
   search,
@@ -36,17 +39,25 @@ export function UsersFilter({
   setSearch,
   setSortBy,
   setOrder,
+  setConfirmSearch,
 }: UsersFilterProps): React.JSX.Element {
+  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      setConfirmSearch(search);
+    }
+  };
+
   return (
     <Card sx={{ p: 2 }}>
       <Grid container spacing={4}>
         <OutlinedInput
           value={search}
           fullWidth
-          placeholder="Search customer"
+          placeholder="Search user"
           onChange={(event) => {
             setSearch(event.target.value);
           }}
+          onKeyDown={handleSearchKeyDown}
           startAdornment={
             <InputAdornment position="start">
               <MagnifyingGlassIcon fontSize="var(--icon-fontSize-md)" />
@@ -62,9 +73,9 @@ export function UsersFilter({
           displayEmpty
           sx={{ minWidth: 120 }}
         >
-          {userFieldOptions.map((field) => (
-            <MenuItem key={field} value={field}>
-              {field}
+          {Object.entries(userFieldChange).map(([key, label]) => (
+            <MenuItem key={key} value={key}>
+              {label}
             </MenuItem>
           ))}
         </Select>
@@ -76,9 +87,9 @@ export function UsersFilter({
           displayEmpty
           sx={{ minWidth: 120 }}
         >
-          {['ASC', 'DESC'].map((field) => (
-            <MenuItem key={field} value={field}>
-              {field}
+          {Object.entries(SortOrder).map(([key, value]) => (
+            <MenuItem key={key} value={key}>
+              {value}
             </MenuItem>
           ))}
         </Select>

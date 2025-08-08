@@ -1,4 +1,3 @@
-import React from 'react';
 import './App.css';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { RequiredAdmin } from './components/Auth/RequiredAdmin';
@@ -10,9 +9,7 @@ import { DashboardPage } from './pages/DashboardPage';
 import { UsersPage } from './pages/UsersPage';
 import { paths } from './utils/paths';
 import { NotFoundPage } from './pages/NotFoundPage';
-import { SettingPage } from './pages/SettingPage';
-import { AccountPage } from './pages/AccountPage';
-
+import { ToastContainer, Zoom } from 'react-toastify';
 const App = () => {
   return (
     <ThemeProvider theme={theme}>
@@ -26,11 +23,6 @@ const App = () => {
                 element={<DashboardPage />}
               />
               <Route path={paths.dashboard.users} element={<UsersPage />} />
-              <Route
-                path={paths.dashboard.settings}
-                element={<SettingPage />}
-              />
-              <Route path={paths.dashboard.account} element={<AccountPage />} />
             </Route>
 
             <Route path="/unauthorized" element={<></>} />
@@ -42,6 +34,16 @@ const App = () => {
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </BrowserRouter>
+      <ToastContainer
+        position="top-right"
+        autoClose={2000}
+        closeButton={true}
+        closeOnClick
+        pauseOnHover
+        pauseOnFocusLoss={false}
+        transition={Zoom}
+        toastClassName={() => 'min-w-[600px] h-full mb-[20px] cursor-pointer'}
+      />
     </ThemeProvider>
   );
 };

@@ -1,13 +1,16 @@
-import * as React from 'react';
 import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
-import { DownloadIcon } from '@phosphor-icons/react/dist/ssr/Download';
 import { PlusIcon } from '@phosphor-icons/react/dist/ssr/Plus';
-import { UploadIcon } from '@phosphor-icons/react/dist/ssr/Upload';
 import { UsersFilter } from './internal/UsersFilter';
 import { UsersTable } from './internal/UsersTable';
 import { useUserList } from './hooks/useUserList';
+import { UserFormModal } from './internal/UserFormModal';
+import { User } from '../../models/user';
+import { useState } from 'react';
+import { ActionFormType } from '../../types/user';
+import { Spinner } from '../../theme/components/spinner/Spinner';
+import { useModal } from '../../theme/components/modals/hook/useModal';
 
 export function UserList(): React.JSX.Element {
   const {
@@ -18,32 +21,26 @@ export function UserList(): React.JSX.Element {
     sortBy,
     order,
     search,
+    loading,
     setPage,
     setLimit,
     setSearch,
     setSortBy,
     setOrder,
+    setConfirmSearch,
   } = useUserList();
 
+  const { isOpenModal, open, close } = useModal();
+
+  const [selectedUser, setSelectedUser] = useState<User | undefined>(undefined);
+  const [actionType, setActionType] = useState<ActionFormType | null>(null);
+
+  if (loading) return <Spinner />;
   return (
     <Stack spacing={3}>
       <Stack direction="row" spacing={3}>
         <Stack spacing={1} sx={{ flex: '1 1 auto' }}>
-          <Typography variant="h4">Customers</Typography>
-          <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
-            <Button
-              color="inherit"
-              startIcon={<UploadIcon fontSize="var(--icon-fontSize-md)" />}
-            >
-              Import
-            </Button>
-            <Button
-              color="inherit"
-              startIcon={<DownloadIcon fontSize="var(--icon-fontSize-md)" />}
-            >
-              Export
-            </Button>
-          </Stack>
+          <Typography variant="h4">Users</Typography>
         </Stack>
         <div>
           <Button
@@ -61,14 +58,24 @@ export function UserList(): React.JSX.Element {
         setSearch={setSearch}
         setSortBy={setSortBy}
         setOrder={setOrder}
+        setConfirmSearch={setConfirmSearch}
       />
       <UsersTable
         count={totalPages}
         page={page}
         rows={users}
         rowsPerPage={rowsPerPage}
+        setSelectedUser={setSelectedUser}
         setPage={setPage}
         setLimit={setLimit}
+        openFormModal={open}
+        setActionForm={setActionType}
+      />
+      <UserFormModal
+        open={isOpenModal}
+        selectedUser={selectedUser}
+        action={actionType}
+        closeFormModal={close}
       />
     </Stack>
   );

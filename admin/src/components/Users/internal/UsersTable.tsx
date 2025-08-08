@@ -1,6 +1,5 @@
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
-import Checkbox from '@mui/material/Checkbox';
 import Divider from '@mui/material/Divider';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
@@ -10,9 +9,12 @@ import TablePagination from '@mui/material/TablePagination';
 import TableRow from '@mui/material/TableRow';
 import Typography from '@mui/material/Typography';
 import dayjs from 'dayjs';
-import { useSelection } from '../../../hooks/useSelection';
 import { User } from '../../../models/user';
 import React from 'react';
+import { Button, Stack } from '@mui/material';
+import { PencilIcon, TrashIcon } from '@phosphor-icons/react';
+import { ActionFormType } from '../../../types/user';
+
 interface UsersTableProps {
   count?: number;
   page?: number;
@@ -20,6 +22,9 @@ interface UsersTableProps {
   rowsPerPage?: number;
   setPage: React.Dispatch<React.SetStateAction<any>>;
   setLimit: React.Dispatch<React.SetStateAction<any>>;
+  setSelectedUser: React.Dispatch<React.SetStateAction<User | undefined>>;
+  setActionForm: (action: ActionFormType) => void;
+  openFormModal: () => void;
 }
 
 export function UsersTable({
@@ -27,67 +32,40 @@ export function UsersTable({
   rows = [],
   page = 0,
   rowsPerPage = 0,
+  setSelectedUser,
   setPage,
   setLimit,
+  openFormModal,
+  setActionForm,
 }: UsersTableProps): React.JSX.Element {
-  const rowIds = React.useMemo(() => {
-    return rows.map((customer) => customer.id);
-  }, [rows]);
-
-  const { selectAll, deselectAll, selectOne, deselectOne, selected } =
-    useSelection(rowIds);
-
-  const selectedSome =
-    (selected?.size ?? 0) > 0 && (selected?.size ?? 0) < rows.length;
-  const selectedAll = rows.length > 0 && selected?.size === rows.length;
+  const handleOpenFormModalEdit = (user: User, action: ActionFormType) => {
+    openFormModal?.();
+    setSelectedUser(user);
+    setActionForm(action);
+  };
 
   return (
     <Card>
-      <Box sx={{ overflowX: 'auto' }}>
-        <Table sx={{ minWidth: '800px' }}>
+      <Box sx={{ overflowX: 'auto', overflowY: 'scroll', maxHeight: 400 }}>
+        <Table sx={{ minWidth: '800px' }} stickyHeader>
           <TableHead>
             <TableRow>
-              <TableCell padding="checkbox">
-                <Checkbox
-                  checked={selectedAll}
-                  indeterminate={selectedSome}
-                  onChange={(event) => {
-                    if (event.target.checked) {
-                      selectAll();
-                    } else {
-                      deselectAll();
-                    }
-                  }}
-                />
-              </TableCell>
               <TableCell>Mezon ID</TableCell>
-              <TableCell>Name</TableCell>
+              <TableCell>Username</TableCell>
               <TableCell>Email</TableCell>
               <TableCell>Gender</TableCell>
               <TableCell>Map</TableCell>
+              <TableCell>Display Name</TableCell>
               <TableCell>Gold</TableCell>
               <TableCell>Diamond</TableCell>
               <TableCell>Created At</TableCell>
+              <TableCell>Action</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {rows.map((row) => {
-              const isSelected = selected.has(row.id);
-
               return (
-                <TableRow hover key={row.id} selected={isSelected}>
-                  <TableCell padding="checkbox">
-                    <Checkbox
-                      checked={isSelected}
-                      onChange={(event) => {
-                        if (event.target.checked) {
-                          selectOne(row.id);
-                        } else {
-                          deselectOne(row.id);
-                        }
-                      }}
-                    />
-                  </TableCell>
+                <TableRow hover key={row.id}>
                   <TableCell>
                     <Typography variant="subtitle2">
                       {row.mezon_id ?? '-'}
@@ -99,10 +77,40 @@ export function UsersTable({
                   <TableCell>{row.email}</TableCell>{' '}
                   <TableCell>{row.gender}</TableCell>
                   <TableCell>{row.map?.name ?? '-'}</TableCell>
+                  <TableCell>{row.display_name}</TableCell>
                   <TableCell>{row.gold}</TableCell>
                   <TableCell>{row.diamond}</TableCell>
                   <TableCell>
                     {dayjs(row.created_at).format('MMM D, YYYY')}
+                  </TableCell>
+                  <TableCell>
+                    <Stack direction="row" spacing={1}>
+                      <Button
+                        onClick={() =>
+                          handleOpenFormModalEdit(row, ActionFormType.EDIT)
+                        }
+                        variant="contained"
+                        color="success"
+                        sx={{
+                          justifyContent: 'flex-center',
+                          gap: 1.5,
+                          paddingLeft: 2,
+                        }}
+                      >
+                        <PencilIcon width="20px" height="20px" />
+                      </Button>
+                      <Button
+                        variant="contained"
+                        color="error"
+                        sx={{
+                          justifyContent: 'flex-center',
+                          gap: 1.5,
+                          paddingLeft: 2,
+                        }}
+                      >
+                        <TrashIcon width="20px" height="20px" />
+                      </Button>
+                    </Stack>
                   </TableCell>
                 </TableRow>
               );
