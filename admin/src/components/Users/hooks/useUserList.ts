@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import httpClient from '../../../services/httpService/httpServices';
 import { User } from '../../../models/user';
 import { SortOrder } from '../../../types/user';
-
+import { useSearchParams } from 'react-router-dom';
 
 interface UserListResponse {
   result: User[];
@@ -23,17 +23,21 @@ export const useUserList = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<Error | null>(null);
 
-  // Pagination & Query params
-  const [page, setPage] = useState<number>(1);
-  const [limit, setLimit] = useState<number>(5);
   const [totalPages, setTotalPages] = useState<number>(0);
   const [totalItems, setTotalItems] = useState<number>(0);
-  const [search, setSearch] = useState<string>('');
+
+  const [searchParam, setSearchParam] = useSearchParams();
   const [confirmSearch, setConfirmSearch] = useState<string>('');
-  const [sortBy, setSortBy] = useState<keyof User>('created_at');
 
-  const [order, setOrder] = useState<SortOrder>(SortOrder.DESC);
-
+  const queryParam = useMemo(() => {
+    return {
+      page: Number(searchParam.get('page') || '1'),
+      limit: Number(searchParam.get('limit') || '5'),
+      search: searchParam.get('search') || '',
+      sort_by: (searchParam.get('sort_by') as keyof User) || 'created_at',
+      order: (searchParam.get('order') as SortOrder) || SortOrder.DESC,
+    };
+  }, [searchParam]);
 
   useEffect(() => {
     let active = true;
@@ -43,11 +47,11 @@ export const useUserList = () => {
       try {
         const res = await httpClient.get<APIResponse>('/admin/users', {
           params: {
-            search: confirmSearch ?? undefined,
-            page: page ? page + 1 : 1,
-            limit,
-            sort_by: sortBy,
-            order,
+            search: queryParam.search ?? undefined,
+            page: queryParam.page ? queryParam.page + 1 : 1,
+            limit: queryParam.limit,
+            sort_by: queryParam.sort_by,
+            order: queryParam.order,
           },
         });
 
@@ -67,26 +71,46 @@ export const useUserList = () => {
     return () => {
       active = false;
     };
-  }, [page, limit, sortBy, order, confirmSearch]);
+  }, [
+    queryParam.page,
+    queryParam.limit,
+    queryParam.sort_by,
+    queryParam.order,
+    queryParam.search,
+  ]);
+
+  const handleParamsChange = useCallback(
+    (params: Partial<typeof queryParam>) => {
+      const urlSearchParam = new URLSearchParams(searchParam);
+      Object.entries(params).forEach(([key, value]) => {
+        if (key === 'page') {
+          const pageNumber = Number(value);
+          if (pageNumber < 1) {
+            return;
+          }
+        }
+        urlSearchParam.set(key, String(value));
+      });
+      setSearchParam(urlSearchParam);
+    },
+    [searchParam, setSearchParam],
+  );
 
   return {
     users,
     loading,
     error,
-    page,
-    limit,
+    page: queryParam.page,
+    limit: queryParam.limit,
     totalPages,
     totalItems,
-    hasNextPage: page < totalPages,
-    hasPreviousPage: page > 1,
-    sortBy,
-    order,
-    search,
-    setPage,
-    setLimit,
-    setSearch,
+    hasNextPage: queryParam.page < totalPages,
+    hasPreviousPage: queryParam.page > 1,
+    sortBy: queryParam.sort_by,
+    order: queryParam.order,
+    search: queryParam.search,
     setConfirmSearch,
-    setSortBy,
-    setOrder,
+    confirmSearch,
+    handleParamsChange,
   };
 };

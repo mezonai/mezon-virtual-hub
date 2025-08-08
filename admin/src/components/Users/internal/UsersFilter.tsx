@@ -6,15 +6,14 @@ import { MagnifyingGlassIcon } from '@phosphor-icons/react/dist/ssr/MagnifyingGl
 import { Select, MenuItem, Grid } from '@mui/material';
 import { User } from '../../../models/user';
 import { SortOrder } from '../../../types/user';
-
+import { userParams } from '../../../types/user/user';
 
 interface UsersFilterProps {
   sortBy: keyof User;
   search: string;
   order: SortOrder;
-  setSearch: React.Dispatch<React.SetStateAction<string>>;
-  setSortBy: React.Dispatch<React.SetStateAction<keyof User>>;
-  setOrder: React.Dispatch<React.SetStateAction<SortOrder>>;
+  confirmSearch: string;
+  onParamsChange: (params: Partial<userParams>) => void;
   setConfirmSearch: React.Dispatch<React.SetStateAction<string>>;
 }
 
@@ -33,31 +32,27 @@ const userFieldChange: Record<string, string> = {
 } as const;
 
 export function UsersFilter({
-  search,
   sortBy,
   order,
-  setSearch,
-  setSortBy,
-  setOrder,
+  onParamsChange,
+  confirmSearch,
   setConfirmSearch,
 }: UsersFilterProps): React.JSX.Element {
-  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      setConfirmSearch(search);
-    }
-  };
-
   return (
     <Card sx={{ p: 2 }}>
       <Grid container spacing={4}>
         <OutlinedInput
-          value={search}
+          value={confirmSearch}
           fullWidth
           placeholder="Search user"
           onChange={(event) => {
-            setSearch(event.target.value);
+            setConfirmSearch(event.target.value);
           }}
-          onKeyDown={handleSearchKeyDown}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              onParamsChange({ search: confirmSearch });
+            }
+          }}
           startAdornment={
             <InputAdornment position="start">
               <MagnifyingGlassIcon fontSize="var(--icon-fontSize-md)" />
@@ -68,7 +63,7 @@ export function UsersFilter({
         <Select
           value={sortBy}
           onChange={(e) => {
-            setSortBy(e.target.value);
+            onParamsChange({ sort_by: e.target.value });
           }}
           displayEmpty
           sx={{ minWidth: 120 }}
@@ -82,7 +77,7 @@ export function UsersFilter({
         <Select
           value={order}
           onChange={(e) => {
-            setOrder(e.target.value);
+            onParamsChange({ order: e.target.value });
           }}
           displayEmpty
           sx={{ minWidth: 120 }}
