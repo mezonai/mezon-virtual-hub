@@ -65,8 +65,6 @@ export class BattleRoom extends BaseGameRoom {
 
     override async onJoin(client: AuthenticatedClient, options: any, auth: any) {
         const { userData } = client;
-        console.log(`BattleRoom created for ${client.sessionId}`);
-
         if (!userData?.id) return;
 
         const petsFromUser = await this.petPlayersService.getPetsForBattle(userData.id);
@@ -356,12 +354,10 @@ export class BattleRoom extends BaseGameRoom {
         const attack = attacker.attack;
         const defense = defender.defense;
         const baseDamage = Math.floor(
-            (((2 * attacker.level) / 5 + 2) * skill.damage * (attack / (defense + 1))) / 50 + 2
+            (((2 * attacker.level) / 5 + 2) * skill.damage * (attack / (defense + 1))) / 20 + 2
         );
-
         const effectiveness = this.getTypeEffectiveness(attacker.type, defender.type);
         const finalDamage = Math.floor(baseDamage * effectiveness);
-
         return Math.max(finalDamage, 1); // Luôn gây ít nhất 1 damage
     }
 

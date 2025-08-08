@@ -389,7 +389,7 @@ export class PetPlayersService extends BaseService<PetPlayersEntity> {
         'pet',
       ],
       order: {
-        battle_slot: 'DESC',
+        battle_slot: 'ASC',
       },
     });
 
