@@ -8,23 +8,25 @@ import TableHead from '@mui/material/TableHead';
 import TablePagination from '@mui/material/TablePagination';
 import TableRow from '@mui/material/TableRow';
 import Typography from '@mui/material/Typography';
-import dayjs from 'dayjs';
 import { User } from '../../../models/user';
 import React from 'react';
 import { Button, Stack } from '@mui/material';
 import { PencilIcon, TrashIcon } from '@phosphor-icons/react';
 import { ActionFormType } from '../../../types/user';
+import { userParams } from '../../../types/user/user';
+import { Spinner } from '../../../theme/components/spinner/Spinner';
+import { formatDate } from '../../../utils/fortmat/formateDate';
 
 interface UsersTableProps {
   count?: number;
   page?: number;
   rows?: User[];
   rowsPerPage?: number;
-  setPage: React.Dispatch<React.SetStateAction<any>>;
-  setLimit: React.Dispatch<React.SetStateAction<any>>;
+  loading?: boolean;
   setSelectedUser: React.Dispatch<React.SetStateAction<User | undefined>>;
   setActionForm: (action: ActionFormType) => void;
   openFormModal: () => void;
+  onParamsChange: (params: Partial<userParams>) => void;
 }
 
 export function UsersTable({
@@ -32,9 +34,9 @@ export function UsersTable({
   rows = [],
   page = 0,
   rowsPerPage = 0,
+  loading,
+  onParamsChange,
   setSelectedUser,
-  setPage,
-  setLimit,
   openFormModal,
   setActionForm,
 }: UsersTableProps): React.JSX.Element {
@@ -43,10 +45,10 @@ export function UsersTable({
     setSelectedUser(user);
     setActionForm(action);
   };
-
+  if (loading) return <Spinner />;
   return (
     <Card>
-      <Box sx={{ overflowX: 'auto', overflowY: 'scroll', maxHeight: 400 }}>
+      <Box sx={{ overflowX: 'auto', overflowY: 'auto', maxHeight: 400 }}>
         <Table sx={{ minWidth: '800px' }} stickyHeader>
           <TableHead>
             <TableRow>
@@ -80,9 +82,7 @@ export function UsersTable({
                   <TableCell>{row.display_name}</TableCell>
                   <TableCell>{row.gold}</TableCell>
                   <TableCell>{row.diamond}</TableCell>
-                  <TableCell>
-                    {dayjs(row.created_at).format('MMM D, YYYY')}
-                  </TableCell>
+                  <TableCell>{formatDate({ date: row.created_at })}</TableCell>
                   <TableCell>
                     <Stack direction="row" spacing={1}>
                       <Button
@@ -123,10 +123,10 @@ export function UsersTable({
         component="div"
         count={count}
         onPageChange={(_, page: number) => {
-          setPage(page);
+          onParamsChange({ page: page });
         }}
         onRowsPerPageChange={(event) => {
-          setLimit(event.target.value);
+          onParamsChange({ limit: Number(event.target.value) });
         }}
         page={page}
         rowsPerPage={rowsPerPage}
