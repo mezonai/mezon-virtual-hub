@@ -16,11 +16,10 @@ import { User } from '../../../models/user';
 import { useEffect } from 'react';
 import { updateUser } from '../../../services/users/updateUser';
 import { ActionFormType, Gender, Role } from '../../../types/user';
-import { Toast } from '../../../theme/components/toast/Toast';
+import { Toast } from '../../../theme/components/Toast/Toast';
 import { ToastType } from '../../../types/toast/toast';
 import { CheckFatIcon } from '@phosphor-icons/react';
-import { SharedTextField } from '../../../theme/components/sharedTextField/SharedTextField';
-
+import { SharedTextField } from '../../../theme/components/SharedTextField/SharedTextField';
 interface UserFormModalProps {
   open: boolean;
   selectedUser: User | undefined;
