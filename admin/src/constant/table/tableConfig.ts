@@ -1,8 +1,8 @@
 import React from 'react';
 import { User } from '../../models/user';
-import { formatDate } from '../../utils/format/formateDate';
+import { formatDate } from '../../utils/format/formatDate';
 import { Transaction } from '../../types/transaction/transaction';
-import { PencilIcon, TrashIcon } from '@phosphor-icons/react';
+
 export const USER_TABLE_CONFIG: {
   key: keyof User | string;
   headerName: string;
