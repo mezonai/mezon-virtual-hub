@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import httpClient from '../../../services/httpService/httpServices';
 import { User } from '../../../models/user';
-import { useParams } from '../../../hooks/useParams';
+import { useTableQueryParams } from '../../../hooks/useTableQueryParams';
 
 interface UserListResponse {
   result: User[];
@@ -26,7 +26,7 @@ export const useUserList = () => {
   const [confirmSearch, setConfirmSearch] = useState<string>('');
 
   const { queryParam, handleParamsChange, limit, page, sortBy, search, order } =
-    useParams<User>();
+    useTableQueryParams<User>();
 
   useEffect(() => {
     let active = true;

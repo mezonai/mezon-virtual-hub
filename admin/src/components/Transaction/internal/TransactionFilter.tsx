@@ -6,17 +6,7 @@ import {
 } from '../../../types/transaction/transaction';
 import { SearchInput } from '../../../theme/components/SearchInput/SearchInput';
 import { SortSelect } from '../../../theme/components/Select/SortSelect';
-
-const transactionFieldChange: Record<string, string> = {
-  id: 'ID',
-  mezon_transaction_id: 'Mezon Transaction ID',
-  amount: 'Amount',
-  type: 'Type',
-  currency: 'Currentcy',
-  receiver_id: 'Receiver ID',
-  extra_attribute: 'Extra Attribute',
-  created_at: 'Created At',
-} as const;
+import { TRANSACTION_FIELDS } from '../../../constant/table/tableConfig';
 
 interface TransactionFilterProps {
   sortBy: string;
@@ -45,7 +35,7 @@ export const TransactionFilter = ({
           sortBy={sortBy}
           order={order}
           onParamsChange={onParamsChange}
-          items={transactionFieldChange}
+          items={TRANSACTION_FIELDS}
         />
       </Grid>
     </Card>

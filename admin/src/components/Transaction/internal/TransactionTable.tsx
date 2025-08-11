@@ -4,8 +4,8 @@ import {
   transactionParams,
 } from '../../../types/transaction/transaction';
 import { Spinner } from '../../../theme/components/Spinner/Spinner';
-import { formatDate } from '../../../utils/fortmat/formateDate';
 import { AbstractTable } from '../../../theme/components/Table/AbstractTable';
+import { TRANSACTION_TABLE_CONFIG } from '../../../constant/table/tableConfig';
 
 interface TransactionProps {
   loading?: boolean;
@@ -28,38 +28,7 @@ export const TransactionTable = ({
   return (
     <Card>
       <AbstractTable<Transaction, transactionParams>
-        columns={[
-          {
-            key: 'mezon_transaction_id',
-            headerName: 'Mezon Transaction ID',
-          },
-          {
-            key: 'amount',
-            headerName: 'Amount',
-          },
-          {
-            key: 'type',
-            headerName: 'Type',
-          },
-          {
-            key: 'currency',
-            headerName: 'Currency',
-          },
-          {
-            key: 'receiver_id',
-            headerName: 'Receiver ID',
-          },
-          {
-            key: 'user',
-            headerName: 'User',
-            render: (row) => row?.user?.username ?? '',
-          },
-          {
-            key: 'created_at',
-            headerName: 'Created At',
-            render: (row) => formatDate({ date: row.created_at }),
-          },
-        ]}
+        columns={TRANSACTION_TABLE_CONFIG}
         rows={rows}
         count={count}
         page={page}

@@ -2,7 +2,7 @@ import { useCallback, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { SortOrder } from '../types/user';
 
-export function useParams<T>() {
+export function useTableQueryParams<T>() {
   const [searchParam, setSearchParam] = useSearchParams();
 
   const queryParam = useMemo(() => {

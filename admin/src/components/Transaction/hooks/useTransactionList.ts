@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useTransactionStore } from '../../../store/transaction/store';
 import { Transaction } from '../../../types/transaction/transaction';
-import { useParams } from '../../../hooks/useParams';
+import { useTableQueryParams } from '../../../hooks/useTableQueryParams';
 
 export const useTransactionList = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const { fetchTransaction, transactions } = useTransactionStore();
   const { queryParam, handleParamsChange, limit, page, sortBy, search, order } =
-    useParams<Transaction>();
+    useTableQueryParams<Transaction>();
   const [confirmSearch, setConfirmSearch] = useState<string>('');
 
   const totalItem = transactions.total;

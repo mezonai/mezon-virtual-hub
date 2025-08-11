@@ -6,6 +6,7 @@ import { SortOrder } from '../../../types/user';
 import { userParams } from '../../../types/user/user';
 import { SearchInput } from '../../../theme/components/SearchInput/SearchInput';
 import { SortSelect } from '../../../theme/components/Select/SortSelect';
+import { USER_FIELDS } from '../../../constant/table/tableConfig';
 
 interface UsersFilterProps {
   sortBy: string;
@@ -15,20 +16,6 @@ interface UsersFilterProps {
   onParamsChange: (params: Partial<userParams>) => void;
   setConfirmSearch: React.Dispatch<React.SetStateAction<string>>;
 }
-
-const userFieldChange: Record<string, string> = {
-  id: 'ID',
-  mezon_id: 'Mezon ID',
-  username: 'Username',
-  email: 'Email',
-  display_name: 'Display Name',
-  gold: 'Gold',
-  diamond: 'Diamond',
-  gender: 'Gender',
-  has_first_reward: 'Has First Reward',
-  created_at: 'Created At',
-  updated_at: 'Updated At',
-} as const;
 
 export function UsersFilter({
   sortBy,
@@ -50,7 +37,7 @@ export function UsersFilter({
           sortBy={sortBy}
           order={order}
           onParamsChange={onParamsChange}
-          items={userFieldChange}
+          items={USER_FIELDS}
         />
       </Grid>
     </Card>
