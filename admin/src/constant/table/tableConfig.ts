@@ -1,13 +1,9 @@
-import React from 'react';
 import { User } from '../../models/user';
 import { formatDate } from '../../utils/format/formatDate';
 import { Transaction } from '../../types/transaction/transaction';
+import { TableColumn } from '../../theme/components/Table/AbstractTable';
 
-export const USER_TABLE_CONFIG: {
-  key: keyof User | string;
-  headerName: string;
-  render?: (row: User) => React.ReactNode;
-}[] = [
+export const USER_TABLE_CONFIG: TableColumn<User>[] = [
   {
     key: 'mezon_id',
     headerName: 'Mezon ID',
@@ -66,11 +62,7 @@ export const USER_FIELDS: Record<string, string> = {
   updated_at: 'Updated At',
 } as const;
 
-export const TRANSACTION_TABLE_CONFIG: {
-  key: keyof Transaction;
-  headerName: string;
-  render?: (row: Transaction) => React.ReactNode;
-}[] = [
+export const TRANSACTION_TABLE_CONFIG: TableColumn<Transaction>[] = [
   {
     key: 'mezon_transaction_id',
     headerName: 'Mezon Transaction ID',

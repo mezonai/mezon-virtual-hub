@@ -14,7 +14,7 @@ import {
 } from '@mui/material';
 import React from 'react';
 
-interface TableColumn<T> {
+export interface TableColumn<T> {
   key: keyof T | string;
   headerName: string;
   render?: (row: T) => React.ReactNode;
