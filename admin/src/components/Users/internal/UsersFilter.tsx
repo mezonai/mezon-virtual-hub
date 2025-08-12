@@ -1,4 +1,3 @@
-import * as React from 'react';
 import Card from '@mui/material/Card';
 import { Grid } from '@mui/material';
 import { User } from '../../../models/user';

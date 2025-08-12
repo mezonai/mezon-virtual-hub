@@ -1,10 +1,10 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { SortOrder } from '../types/user';
 
 export function useTableQueryParams<T>() {
   const [searchParam, setSearchParam] = useSearchParams();
-
+  const [confirmSearch, setConfirmSearch] = useState<string>('');
   const queryParam = useMemo(() => {
     return {
       page: Number(searchParam.get('page') || '1'),
@@ -17,20 +17,34 @@ export function useTableQueryParams<T>() {
 
   const handleParamsChange = useCallback(
     (params: Partial<typeof queryParam>) => {
-      const urlSearchParam = new URLSearchParams(searchParam);
+      let urlSearchParam: URLSearchParams = new URLSearchParams(searchParam);
       Object.entries(params).forEach(([key, value]) => {
-        if (key === 'page') {
-          const pageNumber = Number(value);
-          if (pageNumber < 1) {
-            return;
+        if (key === 'search') {
+          urlSearchParam = new URLSearchParams();
+          if (value) {
+            urlSearchParam.set('search', String(value));
           }
+        } else {
+          if (!urlSearchParam) {
+            urlSearchParam = new URLSearchParams(searchParam);
+          }
+          if (key === 'page') {
+            const pageNumber = Number(value);
+            if (pageNumber < 1) {
+              return;
+            }
+          }
+          urlSearchParam.set(key, String(value));
         }
-        urlSearchParam.set(key, String(value));
       });
       setSearchParam(urlSearchParam);
     },
     [searchParam, setSearchParam],
   );
+
+  useEffect(() => {
+    setConfirmSearch(queryParam.search);
+  }, [setConfirmSearch, queryParam.search]);
 
   return {
     queryParam,
@@ -40,5 +54,9 @@ export function useTableQueryParams<T>() {
     search: queryParam.search,
     order: queryParam.order,
     handleParamsChange,
+    setSearchParam,
+    searchParam,
+    setConfirmSearch,
+    confirmSearch,
   };
 }

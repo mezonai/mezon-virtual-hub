@@ -23,10 +23,18 @@ export const useUserList = () => {
   const [error, setError] = useState<Error | null>(null);
   const [totalPages, setTotalPages] = useState<number>(0);
   const [totalItems, setTotalItems] = useState<number>(0);
-  const [confirmSearch, setConfirmSearch] = useState<string>('');
 
-  const { queryParam, handleParamsChange, limit, page, sortBy, search, order } =
-    useTableQueryParams<User>();
+  const {
+    queryParam,
+    handleParamsChange,
+    limit,
+    page,
+    sortBy,
+    search,
+    order,
+    confirmSearch,
+    setConfirmSearch,
+  } = useTableQueryParams<User>();
 
   useEffect(() => {
     let active = true;
@@ -36,8 +44,8 @@ export const useUserList = () => {
       try {
         const res = await httpClient.get<APIResponse>('/admin/users', {
           params: {
-            search: queryParam.search ?? undefined,
-            page: queryParam.page ? queryParam.page + 1 : 1,
+            search: queryParam.search,
+            page: queryParam.page,
             limit: queryParam.limit,
             sort_by: queryParam.sort_by,
             order: queryParam.order,

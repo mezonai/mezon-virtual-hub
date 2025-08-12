@@ -6,9 +6,17 @@ import { useTableQueryParams } from '../../../hooks/useTableQueryParams';
 export const useTransactionList = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const { fetchTransaction, transactions } = useTransactionStore();
-  const { queryParam, handleParamsChange, limit, page, sortBy, search, order } =
-    useTableQueryParams<Transaction>();
-  const [confirmSearch, setConfirmSearch] = useState<string>('');
+  const {
+    queryParam,
+    handleParamsChange,
+    limit,
+    page,
+    sortBy,
+    search,
+    order,
+    setConfirmSearch,
+    confirmSearch,
+  } = useTableQueryParams<Transaction>();
 
   const totalItem = transactions.total;
   const totalPage = transactions.total_page;
