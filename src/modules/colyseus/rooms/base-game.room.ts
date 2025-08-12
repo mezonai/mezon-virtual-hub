@@ -865,6 +865,7 @@ export class BaseGameRoom extends Room<RoomState> {
   onLeave(client: AuthenticatedClient) {
     const { userData } = client;
     let userId = userData?.id ?? '';
+    this.playersInBattle.delete(client.sessionId);
     if (this.state.players.has(client.sessionId)) {
       this.resetMapItem(client, this.state.players.get(client.sessionId));
       this.state.players.delete(client.sessionId);
@@ -1013,7 +1014,7 @@ export class BaseGameRoom extends Room<RoomState> {
   async createBattleRoom(player1Id: string, player2Id: string) {
     try {
       const room = await matchMaker.createRoom("battle-room", {
-        roomName: `battle-room-${player1Id}-${player2Id}`
+        roomName: this.roomName
       });
       // Gửi thông báo cho client
       this.broadcast(MessageTypes.BATTE_ROOM_READY, {
