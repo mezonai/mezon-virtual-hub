@@ -27,6 +27,7 @@ import {
   UpdatePetPlayersDto,
 } from './dto/pet-players.dto';
 import { PetPlayersEntity } from './entity/pet-players.entity';
+import { PetSkillsEntity } from '@modules/pet-skills/entity/pet-skills.entity';
 
 const SELECTED_PETS_FOR_BATTLE = 3;
 
@@ -38,8 +39,6 @@ export class PetPlayersService extends BaseService<PetPlayersEntity> {
     private readonly petPlayersRepository: Repository<PetPlayersEntity>,
     @InjectRepository(PetsEntity)
     private readonly petsRepository: Repository<PetsEntity>,
-    @InjectRepository(PetSkillUsageEntity)
-    private readonly skillUsagesRepository: Repository<PetSkillUsageEntity>,
     @InjectRepository(Inventory)
     private readonly inventoryRepository: Repository<Inventory>,
     private manager: EntityManager,
@@ -88,29 +87,46 @@ export class PetPlayersService extends BaseService<PetPlayersEntity> {
     return pet;
   }
 
-  async createPetPlayers(payload: SpawnPetPlayersDto) {
+  async createPetPlayers(payload: SpawnPetPlayersDto, quantity = 1) {
     const pet = await this.petsRepository.findOne({
       where: { species: payload.species, rarity: payload.rarity },
+      relations: ['skill_usages', 'skill_usages.skill'],
     });
 
     if (!pet) {
       throw new NotFoundException(
-        `Pet ${payload.species} with rarity is ${payload.rarity} not found`,
+        `Pet ${payload.species} with rarity ${payload.rarity} not found`,
       );
     }
 
-    const petPlayer = this.petPlayersRepository.create({
-      pet,
-      // skill_slot_1,skill_slot_2
-      individual_value: this.generateIndividualValue(),
-      attack: pet.base_attack,
-      defense: pet.base_defense,
-      hp: pet.base_hp,
-      speed: pet.base_speed,
-      room_code: `${payload.map}${payload.sub_map ? `-${payload.sub_map}` : ''}`,
-    });
+    if (!pet.skill_usages?.length) {
+      throw new BadRequestException(
+        `Pet ${payload.species} did not set up any skills`,
+      );
+    }
 
-    return await this.save(petPlayer);
+    const skill1 = pet.skill_usages.find(({ skill_index }) => skill_index === 1);
+    const skill2 = pet.skill_usages.find(({ skill_index }) => skill_index === 2);
+
+    const petPlayers: PetPlayersEntity[] = [];
+
+    for (let i = 0; i < quantity; i++) {
+      petPlayers.push(
+        this.petPlayersRepository.create({
+          pet,
+          skill_slot_1: { skill_code: skill1?.skill.skill_code },
+          skill_slot_2: { skill_code: skill2?.skill.skill_code },
+          individual_value: this.generateIndividualValue(),
+          attack: pet.base_attack,
+          defense: pet.base_defense,
+          hp: pet.base_hp,
+          speed: pet.base_speed,
+          room_code: `${payload.map}${payload.sub_map ? `-${payload.sub_map}` : ''}`,
+        }),
+      );
+    }
+
+    return await this.petPlayersRepository.save(petPlayers);
   }
 
   async updatePetPlayers(

@@ -1,6 +1,6 @@
 import { SkillCode } from '@enum';
 import { PetSkillUsageEntity } from '@modules/pet-skill-usages/entity/pet-skill-usages.entity';
-import { ApiProperty, OmitType } from '@nestjs/swagger';
+import { ApiProperty, OmitType, PickType } from '@nestjs/swagger';
 import { Exclude, Type } from 'class-transformer';
 import {
   ArrayMaxSize,
@@ -15,6 +15,9 @@ import { PetsEntity } from '../entity/pets.entity';
 export class PetsDtoRequest extends OmitType(PetsEntity, [
   'id',
   'pet_skills',
+  'updated_at',
+  'created_at',
+  'skill_usages',
 ] as const) {
   @ApiProperty({
     type: [String],
