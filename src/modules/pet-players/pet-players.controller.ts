@@ -62,8 +62,11 @@ export class PetPlayersController {
   @ApiOperation({
     summary: 'Create (spawn) a pet',
   })
-  async createPetPlayers(@Body() pet: SpawnPetPlayersDto) {
-    return await this.petPlayersService.createPetPlayers(pet);
+  async createPetPlayers(
+    @Body() pet: SpawnPetPlayersDto,
+    @Query('quantity', new DefaultValuePipe(1), ParseIntPipe) quantity: number = 1
+  ) {
+    return await this.petPlayersService.createPetPlayers(pet, quantity);
   }
 
   @Get('battle')

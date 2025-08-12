@@ -1,4 +1,6 @@
+import { AnimalRarity } from '@enum';
 import { BaseService } from '@libs/base/base.service';
+import { PetSkillsService } from '@modules/pet-skills/pet-skills.service';
 import {
   BadRequestException,
   Injectable,
@@ -8,7 +10,6 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { EntityManager, In, Repository } from 'typeorm';
 import { PetsDtoRequest } from './dto/pets.dto';
 import { PetsEntity } from './entity/pets.entity';
-import { PetSkillsService } from '@modules/pet-skills/pet-skills.service';
 
 @Injectable()
 export class PetsService extends BaseService<PetsEntity> {
@@ -26,26 +27,27 @@ export class PetsService extends BaseService<PetsEntity> {
     return pets;
   }
 
-  async checkExistedSpecies(species: string) {
+  async checkExistedSpecies(species: string, rarity: AnimalRarity) {
     const existedPet = await this.findOne({
-      where: { species },
+      where: { species, rarity },
     });
 
     if (existedPet) {
       throw new BadRequestException(
-        `Pet '${species}' is already existed`,
+        `Pet with Species:'${species}' and Rarity:'${rarity}' is already existed`,
       );
     }
   }
 
   async createPets(payload: PetsDtoRequest) {
-    await this.checkExistedSpecies(payload.species);
+    const { skill_codes, ...pet } = payload;
+    await this.checkExistedSpecies(payload.species, payload.rarity);
 
-    const newSpecies = this.create(payload);
+    const newSpecies = this.create(pet);
 
-    if (payload.skill_codes?.length) {
+    if (skill_codes?.length) {
       const petSkills = await this.petSkillsService.find({
-        where: { skill_code: In(payload.skill_codes) },
+        where: { skill_code: In(skill_codes) },
       });
       newSpecies.pet_skills = petSkills;
     }
@@ -63,7 +65,7 @@ export class PetsService extends BaseService<PetsEntity> {
     }
 
     if (payload.species !== pets.species) {
-      await this.checkExistedSpecies(payload.species);
+      await this.checkExistedSpecies(payload.species, payload.rarity);
     }
 
     await this.petsRepository.update(id, payload);

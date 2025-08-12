@@ -1,7 +1,7 @@
 [
   { "skill_code": "NOR01", "skill_type": "decrease_attack" },
-  { "skill_code": "NOR02", "skill_type": "defend" },
-  { "skill_code": "NOR03", "skill_type": "defend" },
+  { "skill_code": "NOR02", "skill_type": "defense" },
+  { "skill_code": "NOR03", "skill_type": "defense" },
   { "skill_code": "NOR04", "skill_type": "decrease_attack" },
   { "skill_code": "NOR05", "skill_type": "attack" },
   { "skill_code": "NOR06", "skill_type": "attack" },
