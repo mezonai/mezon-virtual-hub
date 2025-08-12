@@ -1,28 +1,12 @@
-import {
-  Grid,
-  Card,
-  OutlinedInput,
-  InputAdornment,
-  Select,
-  MenuItem,
-} from '@mui/material';
-import { MagnifyingGlassIcon } from '@phosphor-icons/react';
+import { Grid, Card } from '@mui/material';
 import { SortOrder } from '../../../types/user';
 import {
   Transaction,
   transactionParams,
 } from '../../../types/transaction/transaction';
-
-const transactionFieldChange: Record<string, string> = {
-  id: 'ID',
-  mezon_transaction_id: 'Mezon Transaction ID',
-  amount: 'Amount',
-  type: 'Type',
-  currency: 'Currentcy',
-  receiver_id: 'Receiver ID',
-  extra_attribute: 'Extra Attribute',
-  created_at: 'Created At',
-} as const;
+import { SearchInput } from '../../../theme/components/SearchInput/SearchInput';
+import { SortSelect } from '../../../theme/components/Select/SortSelect';
+import { TRANSACTION_FIELDS } from '../../../constant/table/tableConfig';
 
 interface TransactionFilterProps {
   sortBy: string;
@@ -41,46 +25,18 @@ export const TransactionFilter = ({
   return (
     <Card sx={{ p: 2 }}>
       <Grid spacing={4} container>
-        <OutlinedInput
-          sx={{ maxWidth: '500px' }}
-          fullWidth
+        <SearchInput<transactionParams>
           placeholder="Search transaction"
-          onChange={(e) => setConfirmSearch(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') {
-              onParamsChange({ search: confirmSearch });
-            }
-          }}
-          startAdornment={
-            <InputAdornment position="start">
-              <MagnifyingGlassIcon fontSize="var(--icon-fontSize-md)" />
-            </InputAdornment>
-          }
+          value={confirmSearch}
+          onChangeSearch={setConfirmSearch}
+          onParamsChange={onParamsChange}
         />
-        <Select
-          sx={{ minWidth: 120 }}
-          value={sortBy}
-          onChange={(e) =>
-            onParamsChange({ sort_by: e.target.value as keyof Transaction })
-          }
-        >
-          {Object.entries(transactionFieldChange).map(([key, label]) => (
-            <MenuItem key={key} value={key}>
-              {label}
-            </MenuItem>
-          ))}
-        </Select>
-        <Select
-          sx={{ minWidth: 120 }}
-          value={order}
-          onChange={(e) => onParamsChange({ order: e.target.value })}
-        >
-          {Object.entries(SortOrder).map(([key, value]) => (
-            <MenuItem key={key} value={key}>
-              {value}
-            </MenuItem>
-          ))}
-        </Select>
+        <SortSelect<transactionParams, Transaction>
+          sortBy={sortBy}
+          order={order}
+          onParamsChange={onParamsChange}
+          items={TRANSACTION_FIELDS}
+        />
       </Grid>
     </Card>
   );

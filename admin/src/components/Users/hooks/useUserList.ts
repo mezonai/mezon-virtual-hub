@@ -1,8 +1,7 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import httpClient from '../../../services/httpService/httpServices';
 import { User } from '../../../models/user';
-import { SortOrder } from '../../../types/user';
-import { useSearchParams } from 'react-router-dom';
+import { useTableQueryParams } from '../../../hooks/useTableQueryParams';
 
 interface UserListResponse {
   result: User[];
@@ -22,22 +21,20 @@ export const useUserList = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<Error | null>(null);
-
   const [totalPages, setTotalPages] = useState<number>(0);
   const [totalItems, setTotalItems] = useState<number>(0);
 
-  const [searchParam, setSearchParam] = useSearchParams();
-  const [confirmSearch, setConfirmSearch] = useState<string>('');
-
-  const queryParam = useMemo(() => {
-    return {
-      page: Number(searchParam.get('page') || '1'),
-      limit: Number(searchParam.get('limit') || '5'),
-      search: searchParam.get('search') || '',
-      sort_by: (searchParam.get('sort_by') as keyof User) || 'created_at',
-      order: (searchParam.get('order') as SortOrder) || SortOrder.DESC,
-    };
-  }, [searchParam]);
+  const {
+    queryParam,
+    handleParamsChange,
+    limit,
+    page,
+    sortBy,
+    search,
+    order,
+    confirmSearch,
+    setConfirmSearch,
+  } = useTableQueryParams<User>();
 
   useEffect(() => {
     let active = true;
@@ -47,8 +44,8 @@ export const useUserList = () => {
       try {
         const res = await httpClient.get<APIResponse>('/admin/users', {
           params: {
-            search: queryParam.search ?? undefined,
-            page: queryParam.page ? queryParam.page + 1 : 1,
+            search: queryParam.search,
+            page: queryParam.page,
             limit: queryParam.limit,
             sort_by: queryParam.sort_by,
             order: queryParam.order,
@@ -79,36 +76,19 @@ export const useUserList = () => {
     queryParam.search,
   ]);
 
-  const handleParamsChange = useCallback(
-    (params: Partial<typeof queryParam>) => {
-      const urlSearchParam = new URLSearchParams(searchParam);
-      Object.entries(params).forEach(([key, value]) => {
-        if (key === 'page') {
-          const pageNumber = Number(value);
-          if (pageNumber < 1) {
-            return;
-          }
-        }
-        urlSearchParam.set(key, String(value));
-      });
-      setSearchParam(urlSearchParam);
-    },
-    [searchParam, setSearchParam],
-  );
-
   return {
     users,
     loading,
     error,
-    page: queryParam.page,
-    limit: queryParam.limit,
+    page,
+    limit,
     totalPages,
     totalItems,
     hasNextPage: queryParam.page < totalPages,
     hasPreviousPage: queryParam.page > 1,
-    sortBy: queryParam.sort_by,
-    order: queryParam.order,
-    search: queryParam.search,
+    sortBy,
+    order,
+    search,
     setConfirmSearch,
     confirmSearch,
     handleParamsChange,
