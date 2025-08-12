@@ -13,6 +13,7 @@ export class Player extends Schema {
   @type('number') x: number = 0;
   @type('number') y: number = 0;
   @type('string') pet_players: string = '';
+  @type('boolean') isInBattle: boolean;
 }
 
 export class SkillState extends Schema {

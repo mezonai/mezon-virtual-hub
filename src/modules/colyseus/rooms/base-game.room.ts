@@ -770,6 +770,15 @@ export class BaseGameRoom extends Room<RoomState> {
       };
       this.petQueueManager.addPetTouch(targetPetId, handler);
     });
+    this.onMessage(MessageTypes.END_BATTLE, (sender, data) => {
+      const playerEnd = this.state.players.get(sender.sessionId);
+      console.log("playerEnd: ", playerEnd);
+      if (playerEnd == null) return;
+      playerEnd.isInBattle = false;
+      this.broadcast(MessageTypes.END_BATTLE_COMPLETED, {
+        playerUpdateStatusBattle: sender.sessionId,
+      });
+    });
     this.spawnPetInRoom();
 
     //combat
@@ -783,54 +792,26 @@ export class BaseGameRoom extends Room<RoomState> {
       }
     });
 
-    this.onMessage('p2pCombatActionEscape', (sender, data) => {
-      const { senderAction, gameKey, action, from, to } = data;
-      let fromPlayer = this.clients.find((client) => client.sessionId === from);
-      let toPlayer = this.clients.find((client) => client.sessionId === to);
+    this.onMessage(MessageTypes.NOT_PET_BATTLE, async (client: AuthenticatedClient, data) => {
+      const { sender } = data
+      const player = this.clients.getById(sender);
+      if (player == null) return;
+      player.send(MessageTypes.NOTIFY_BATTLE, { message: "Đối thủ chưa có Pet để chiến đấu" })
+    });
 
-      if (this.minigameResultDict.has(gameKey)) {
-        let result = this.minigameResultDict.get(gameKey);
-        if (sender.sessionId == result.from) {
-          result.result1 = senderAction;
-        } else if (sender.sessionId == result.to) {
-          result.result2 = senderAction;
-        }
-        const isEscape = senderAction === 'giveup';
-        if (result.result1 != '' && result.result2 != '' && isEscape) {
-          let winner =
-            sender.sessionId === result.from ? result.to : result.from;
+    this.onMessage(MessageTypes.NOT_ENOUGH_PET_BATTLE, async (client: AuthenticatedClient, data) => {
+      const { sender } = data
+      const player = this.clients.getById(sender);
+      if (player == null) return;
+      player.send(MessageTypes.NOTIFY_BATTLE, { message: "Đối thủ chưa có đủ Pet để chiến đấu" })
 
-          const loserName =
-            sender.sessionId === result.from
-              ? fromPlayer?.userData?.display_name
-              : toPlayer?.userData?.display_name;
-          const winnerName =
-            sender.sessionId === result.from
-              ? toPlayer?.userData?.display_name
-              : fromPlayer?.userData?.display_name;
+    });
+    this.onMessage(MessageTypes.NOT_ENOUGH_SKILL_PET_BATTLE, async (client: AuthenticatedClient, data) => {
+      const { sender } = data
+      const player = this.clients.getById(sender);
+      if (player == null) return;
+      player.send(MessageTypes.NOTIFY_BATTLE, { message: "Đối thủ chưa thiết lập kỹ năng Pet đầy đủ" })
 
-          const message = `${loserName || 'Người chơi'} đã bỏ cuộc. ${winnerName || 'Đối thủ'} thắng!`;
-
-          this.broadcast('onp2pCombatActionEscape', {
-            action: action + 'Done',
-            from: result.from,
-            to: result.to,
-            result1: result.result1,
-            result2: result.result2,
-            winner: winner,
-            message: message,
-          });
-
-          this.minigameResultDict.delete(gameKey);
-        }
-      } else {
-        this.broadcast('onP2pGameError', {
-          message: 'Server Error',
-          action: action,
-          from: from,
-          to: to,
-        });
-      }
     });
   }
 
@@ -1004,22 +985,27 @@ export class BaseGameRoom extends Room<RoomState> {
       }, 100);
     });
   }
-  async createBattleRoom(sender: Client, targetUser: Client | undefined) {
-    const matchRoomName = `battle-room-${sender.sessionId}-${targetUser?.sessionId}`;
-    // Create the room
+  async createBattleRoom(sender: Client, targetUser?: Client) {
+    // Tạo phòng battle
     const room = await matchMaker.createRoom("battle-room", {
-      roomName: this.roomName
+      roomName: `battle-room-${sender.sessionId}-${targetUser?.sessionId ?? "unknown"}`
     });
 
-    // Send room info to both players
-    sender.send(MessageTypes.BATTE_ROOM_READY, {
-      roomId: room.roomId,
-      roomName: matchRoomName,
+    // Danh sách ID
+    const player1Id = sender.sessionId;
+    const player2Id = targetUser?.sessionId ?? "";
+
+    // Cập nhật trạng thái battle cho cả hai
+    [player1Id, player2Id].forEach(id => {
+      const player = this.state.players.get(id);
+      if (player) player.isInBattle = true;
     });
 
-    targetUser?.send(MessageTypes.BATTE_ROOM_READY, {
+    // Gửi thông báo cho client
+    this.broadcast(MessageTypes.BATTE_ROOM_READY, {
       roomId: room.roomId,
-      roomName: matchRoomName,
+      player1Id,
+      player2Id
     });
   }
 }

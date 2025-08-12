@@ -32,6 +32,7 @@ export class Shop1Room extends BaseGameRoom {
           rarity: a.pet?.rarity,
         })) ?? [],
     );
+    player.isInBattle = false;
     this.state.players.set(client.sessionId, player);
     this.logger.log(
       `Player ${userData?.username} has position ${player.x} ${player.y}`,

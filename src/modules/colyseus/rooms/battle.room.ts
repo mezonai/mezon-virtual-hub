@@ -60,6 +60,7 @@ export class BattleRoom extends BaseGameRoom {
         }
         // Gửi thông báo ngắt kết nối cho đối thủ
         opponent?.send(MessageTypes.DISCONNECTED, { message: "" });
+        
     }
 
 
