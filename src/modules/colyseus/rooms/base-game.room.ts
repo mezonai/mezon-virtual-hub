@@ -62,6 +62,7 @@ export class RoomState extends Schema {
 @Injectable()
 export class BaseGameRoom extends Room<RoomState> {
   private minigameResultDict = new Map();
+  private playersInBattle = new Set<string>();
   // maxClients = 50; // Max players
   logger = new Logger();
   petQueueManager: PetQueueManager;
@@ -772,7 +773,7 @@ export class BaseGameRoom extends Room<RoomState> {
     });
     this.onMessage(MessageTypes.END_BATTLE, (sender, data) => {
       const playerEnd = this.state.players.get(sender.sessionId);
-      console.log("playerEnd: ", playerEnd);
+      this.playersInBattle.delete(sender.sessionId);
       if (playerEnd == null) return;
       playerEnd.isInBattle = false;
       this.broadcast(MessageTypes.END_BATTLE_COMPLETED, {
@@ -784,12 +785,36 @@ export class BaseGameRoom extends Room<RoomState> {
     //combat
     this.onMessage('p2pCombatActionAccept', (sender, data) => {
       const { targetClientId, action } = data;
-      const targetClient = this.clients.find(
-        (client) => client.sessionId === targetClientId,
-      );
-      if (action == ActionKey.Battle.toString()) {
-        this.createBattleRoom(sender, targetClient);;
-      }
+      if (action !== ActionKey.Battle.toString()) return;
+
+      const targetClient = this.clients.find(c => c.sessionId === targetClientId);
+      if (!targetClient) return;
+
+      const player1Id = sender.sessionId;
+      const player2Id = targetClient.sessionId;
+
+      const notifyIfInBattle = (id: string, recipient: any) => {
+        if (this.playersInBattle.has(id)) {
+          recipient?.send(MessageTypes.NOTIFY_BATTLE, { message: "Đối thủ đang trong trận rồi" });
+          return true;
+        }
+        return false;
+      };
+
+      // Check nếu sender hoặc target đang bận
+      if (notifyIfInBattle(player1Id, targetClient)) return;
+      if (notifyIfInBattle(player2Id, sender)) return;
+
+      // Đánh dấu & tạo phòng
+      [player1Id, player2Id].forEach(id => {
+        const player = this.state.players.get(id);
+        if (player) {
+          player.isInBattle = true;
+          this.playersInBattle.add(id);
+        }
+      });
+
+      this.createBattleRoom(player1Id, player2Id);
     });
 
     this.onMessage(MessageTypes.NOT_PET_BATTLE, async (client: AuthenticatedClient, data) => {
@@ -985,27 +1010,30 @@ export class BaseGameRoom extends Room<RoomState> {
       }, 100);
     });
   }
-  async createBattleRoom(sender: Client, targetUser?: Client) {
-    // Tạo phòng battle
-    const room = await matchMaker.createRoom("battle-room", {
-      roomName: `battle-room-${sender.sessionId}-${targetUser?.sessionId ?? "unknown"}`
-    });
+  async createBattleRoom(player1Id: string, player2Id: string) {
+    try {
+      const room = await matchMaker.createRoom("battle-room", {
+        roomName: `battle-room-${player1Id}-${player2Id}`
+      });
+      // Gửi thông báo cho client
+      this.broadcast(MessageTypes.BATTE_ROOM_READY, {
+        roomId: room.roomId,
+        player1Id,
+        player2Id
+      });
 
-    // Danh sách ID
-    const player1Id = sender.sessionId;
-    const player2Id = targetUser?.sessionId ?? "";
+    } catch (error) {
+      // Cập nhật trạng thái battle cho cả hai
+      [player1Id, player2Id].forEach(id => {
+        const player = this.state.players.get(id);
+        if (player) player.isInBattle = false;
+        const client = this.clients.getById(id);
+        if (client != null) {
+          client.send(MessageTypes.NOTIFY_BATTLE, { message: "Có lỗi xảy ra" })
+        }
+      });
 
-    // Cập nhật trạng thái battle cho cả hai
-    [player1Id, player2Id].forEach(id => {
-      const player = this.state.players.get(id);
-      if (player) player.isInBattle = true;
-    });
+    }
 
-    // Gửi thông báo cho client
-    this.broadcast(MessageTypes.BATTE_ROOM_READY, {
-      roomId: room.roomId,
-      player1Id,
-      player2Id
-    });
   }
 }
