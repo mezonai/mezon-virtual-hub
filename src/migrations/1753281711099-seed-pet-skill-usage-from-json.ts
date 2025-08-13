@@ -4,10 +4,10 @@ import * as path from 'path';
 import { SkillCode } from '@enum';
 import { PetsEntity } from '@modules/pets/entity/pets.entity';
 
-export class SeedPetSkillUsageFromJson1753100206081
+export class SeedPetSkillUsageFromJson1753281711099
   implements MigrationInterface
 {
-  name = 'SeedPetSkillUsageFromJson1753100206081';
+  name = 'SeedPetSkillUsageFromJson1753281711099';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     const filePath = path.resolve(__dirname, '../seeds/pet-skill-usages.json');
