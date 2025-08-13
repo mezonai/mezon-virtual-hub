@@ -8,16 +8,37 @@ export class SeedPetSkillsFromJSON1752486194103 implements MigrationInterface {
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     const filePath = path.resolve(__dirname, '../seeds/pet-skills.json');
-
     const fileData = fs.readFileSync(filePath, 'utf-8');
-    const skills: PetSkillsEntity[] = JSON.parse(fileData);
 
-    await queryRunner.manager
-      .createQueryBuilder()
-      .insert()
-      .into('pet_skills')
-      .values(skills)
-      .execute();
+    const skills: {
+      skill_code: string;
+      name: string;
+      type: string;
+      attack: number;
+      accuracy: number;
+      power_points: number;
+      description: string;
+    }[] = JSON.parse(fileData);
+
+    for (const s of skills) {
+      await queryRunner.query(
+        `
+        INSERT INTO pet_skills
+          (skill_code, name, type, attack, accuracy, power_points, description)
+        VALUES
+          ($1, $2, $3, $4, $5, $6, $7)
+        `,
+        [
+          s.skill_code,
+          s.name,
+          s.type,
+          s.attack,
+          s.accuracy,
+          s.power_points,
+          s.description,
+        ],
+      );
+    }
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
