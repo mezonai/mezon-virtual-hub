@@ -36,14 +36,13 @@ const Loader = styled(Box)(() => ({
 
 export const Callback = () => {
   const navigate = useNavigate();
-  const [params] = useSearchParams();
+  const [searchParams] = useSearchParams();
+  const { state, code } = Object.fromEntries(searchParams.entries());
   const { handleLogin } = useAuth();
   const callRef = useRef(false);
   useEffect(() => {
     if (callRef.current) return;
     callRef.current = true;
-    const state = params.get('state');
-    const code = params.get('code');
     if (!state && !code) {
       navigate(paths.auth.login);
     }

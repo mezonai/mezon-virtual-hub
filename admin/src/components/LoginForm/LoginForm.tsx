@@ -9,6 +9,9 @@ import {
   SCOPE,
   STATE,
 } from '../../utils/config';
+import { Toast } from '../../theme/components/Toast/Toast';
+import { ToastType } from '../../types/toast/toast';
+import { WarningCircleIcon } from '@phosphor-icons/react';
 
 type LoginFormData = {
   email: string;
@@ -32,8 +35,16 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSubmit }) => {
   });
 
   const handleClickLoginWithMezon = () => {
-    const authUrl = `${OAUTH_URL}?client_id=${CLIENT_ID}&response_type=${RESPONSE_TYPE}&redirect_uri=${REDIRECT_URL}&scope=${SCOPE}&state=${STATE}`;
-    window.location.href = authUrl;
+    if (CLIENT_ID) {
+      const authUrl = `${OAUTH_URL}?client_id=${CLIENT_ID}&response_type=${RESPONSE_TYPE}&redirect_uri=${REDIRECT_URL}&scope=${SCOPE}&state=${STATE}`;
+      window.location.href = authUrl;
+    } else {
+      Toast({
+        type: ToastType.ERROR,
+        message: 'Cannot login with Mezon because client_id not found',
+        icon: <WarningCircleIcon width="24px" height="24px" fill="#fff" />,
+      });
+    }
   };
 
   return (
