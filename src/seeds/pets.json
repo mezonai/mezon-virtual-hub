@@ -167,7 +167,7 @@
     "type": "fire",
     "base_hp": 78,
     "base_attack": 100,
-    "base_defense": 11,
+    "base_defense": 100,
     "base_speed": 110
   },
   {
