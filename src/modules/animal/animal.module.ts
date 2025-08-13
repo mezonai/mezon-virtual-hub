@@ -7,10 +7,16 @@ import { AnimalController } from './animal.controller';
 import { AnimalService } from './animal.service';
 import { FoodEntity } from '@modules/food/entity/food.entity';
 import { Inventory } from '@modules/inventory/entity/inventory.entity';
+import { PetsEntity } from '@modules/pets/entity/pets.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([AnimalEntity, FoodEntity, Inventory]),
+    TypeOrmModule.forFeature([
+      AnimalEntity,
+      PetsEntity,
+      FoodEntity,
+      Inventory,
+    ]),
     ClsModule,
     forwardRef(() => UserModule),
   ],

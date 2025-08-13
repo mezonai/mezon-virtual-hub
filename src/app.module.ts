@@ -22,9 +22,14 @@ import { LogViewerModule } from '@modules/log-viewer/log-viewer.module';
 import { MezonModule } from '@modules/mezon/mezon.module';
 import { GameModule } from '@modules/game/game.module';
 import { GameEventModule } from '@modules/game-event/game-event.module';
-import { TransactionModule } from '@modules/transaction/transaction.module';
+import { TransactionsModule } from '@modules/admin/transactions/transactions.module';
 import { AnimalModule } from '@modules/animal/animal.module';
 import { FoodModule } from '@modules/food/food.module';
+import { PetsModule } from '@modules/pets/pets.module';
+import { PetPlayersModule } from '@modules/pet-players/pet-players.module';
+import { PetSkillsModule } from '@modules/pet-skills/pet-skills.module';
+import { AdminModule } from '@modules/admin/admin.module';
+import { RouterModule } from '@nestjs/core';
 
 @Module({
   imports: [
@@ -48,9 +53,19 @@ import { FoodModule } from '@modules/food/food.module';
     MezonModule,
     GameModule,
     GameEventModule,
-    TransactionModule,
+    TransactionsModule,
     AnimalModule,
     FoodModule,
+    PetsModule,
+    PetPlayersModule,
+    PetSkillsModule,
+    AdminModule,
+    RouterModule.register([
+      {
+        path: 'admin',
+        module: AdminModule,
+      },
+    ]),
     ClsModule.forRoot({
       global: true,
       middleware: { mount: true },

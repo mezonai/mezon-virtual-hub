@@ -1,7 +1,7 @@
-import { Gender } from '@enum';
+import { Gender, SortOrder } from '@enum';
 import { InventoryDto } from '@modules/inventory/dto/inventory.dto';
 import { MapDtoResponse } from '@modules/map/dto/map.dto';
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Exclude, Expose, Type } from 'class-transformer';
 import {
   IsArray,
@@ -12,6 +12,8 @@ import {
   IsUUID,
 } from 'class-validator';
 import { UUID } from 'typeorm/driver/mongodb/bson.typings';
+import { UserEntity } from '../entity/user.entity';
+import { PetPlayersWithSpeciesDto } from '@modules/pet-players/dto/pet-players.dto';
 
 export class UserExcludeResponse {
   @Exclude()
@@ -31,6 +33,9 @@ export class UserExcludeResponse {
 
   @Exclude()
   auth_provider: string | null;
+
+  @Exclude()
+  role: number;
 }
 
 export class UpdateInfoDto {
@@ -90,7 +95,6 @@ export class UpdateInfoDto {
   skin_set?: string[];
 }
 
-
 export class UserInformationDto {
   @Expose()
   @Type(() => UserExcludeResponse)
@@ -104,3 +108,8 @@ export class UserInformationDto {
   @Expose()
   map: MapDtoResponse | null;
 }
+
+export class UserWithPetPlayers extends UserEntity {
+  pet_players: PetPlayersWithSpeciesDto[];
+}
+

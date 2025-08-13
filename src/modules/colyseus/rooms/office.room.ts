@@ -2,11 +2,14 @@ import { UserEntity } from '@modules/user/entity/user.entity';
 import { Injectable } from '@nestjs/common';
 import { Client } from 'colyseus';
 import { BaseGameRoom } from './base-game.room';
-import { Player } from '@types';
+import { AuthenticatedClient, Player } from '@types';
+import { DoorManager } from '../door/DoorManager';
+import { MapKey, SubMap } from '@enum';
+import { MessageTypes } from '../MessageTypes';
 
 @Injectable()
 export class OfficeRoom extends BaseGameRoom {
-  async onJoin(client: Client<UserEntity>, options: any, auth: any) {
+  async onJoin(client: AuthenticatedClient, options: any, auth: any) {
     super.onJoin(client, options, auth);
     const { userData } = client;
 
@@ -22,18 +25,64 @@ export class OfficeRoom extends BaseGameRoom {
     player.is_show_name = BaseGameRoom.eventData == null;
     player.display_name = userData?.display_name || userData?.username || '';
     player.skin_set = userData?.skin_set?.join('/') || '';
-    player.animals = JSON.stringify(
-      (userData?.animals?.filter(a => a.is_brought)
+    player.pet_players = JSON.stringify(
+      (userData?.pet_players?.filter(a => a.is_brought)
         .map(a => ({
           id: a.id,
           name: a.name,
-          species: a.species,
-          rarity: a.rarity,
+          species: a.pet?.species,
+          rarity: a.pet?.rarity,
         }))) ?? []
     );
+    player.isInBattle = false;
     this.state.players.set(client.sessionId, player);
     this.logger.log(
       `Player ${userData?.username} has position ${player.x} ${player.y}`,
     );
+  }
+
+  async onCreate(options: any) {
+    super.onCreate(options);
+    this.doorManager = new DoorManager(this.state);
+    switch (this.roomName) {
+      case this.buildRoomName(MapKey.SG, SubMap.OFFICE):
+        this.doorManager.spawnDoors(1);
+        break;
+      case this.buildRoomName(MapKey.HN1, SubMap.OFFICE):
+        this.doorManager.spawnDoors(1);
+        break;
+      case this.buildRoomName(MapKey.HN2, SubMap.OFFICE):
+        this.doorManager.spawnDoors(1);
+        break;
+      default:
+        break;
+    }
+    this.onMessage(MessageTypes.OPEN_DOOR, (client, data) => {
+      const { doorId } = data;
+      const door = this.doorManager.openDoor(doorId);
+      if (door) {
+        const responseData = {
+          sessionId: client.sessionId,
+          doorUpadte: door,
+        };
+        this.broadcast(MessageTypes.ON_OPEN_DOOR, responseData);
+      }
+    });
+
+    this.onMessage(MessageTypes.CLOSE_DOOR, (client, data) => {
+      const { doorId } = data;
+      const door = this.doorManager.closeDoor(doorId);
+      if (door) {
+        const responseData = {
+          sessionId: client.sessionId,
+          doorUpadte: door,
+        };
+        this.broadcast(MessageTypes.ON_CLOSE_DOOR, responseData);
+      }
+    });
+  }
+
+  buildRoomName(mapKey: MapKey, subMap: SubMap): string {
+    return `${mapKey}-${subMap}`;
   }
 }

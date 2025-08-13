@@ -35,6 +35,7 @@ export enum ActionKey {
   Punch = 2,
   SendCoin = 3,
   CatchUser = 4,
+  Battle = 5,
 }
 
 export enum FoodType {
@@ -59,4 +60,78 @@ export enum AnimalRarity {
   RARE = 'rare',
   EPIC = 'epic',
   LEGENDARY = 'legendary',
+}
+
+export enum PetType {
+  NORMAL = 'normal',
+  FIRE = 'fire',
+  ICE = 'ice',
+  WATER = 'water',
+  ELECTRIC = 'electric',
+  GRASS = 'grass',
+  DRAGON = 'dragon',
+}
+
+export enum SkillType {
+  ATTACK = 'attack',
+  DEFENSE = 'defense',
+  DECREASE_ATTACK = 'decrease_attack',
+  INCREASE_ATTACK = 'increase_attack',
+  HEAL = 'heal',
+}
+
+export enum SkillCode {
+  GROWL = 'NOR01',
+  PROTECT = 'NOR02',
+  REST = 'NOR03',
+  CONFUSION = 'NOR04',
+  CUT = 'NOR05',
+  POUND = 'NOR06',
+  DOUBLE_KICK = 'NOR07',
+  BITE = 'NOR08',
+  CRUSH_CLAW = 'NOR09',
+  WING_ATTACK = 'NOR10',
+  FLY = 'NOR11',
+  FURY_PUNCH = 'NOR12',
+  EARTHQUAKE = 'GRASS01',
+  RAZOR_LEAF = 'GRASS01',
+  WHIP_WIRE = 'GRASS03',
+  ABSORB = 'GRASS02',
+  THUNDERBOLT = 'ELECTRIC01',
+  THUNDER_WAVE = 'ELECTRIC02',
+  ELECTRO_BALL = 'ELECTRIC03',
+  WATER_GUN = 'WATER01',
+  BUBBLE = 'WATER02',
+  AQUA_CUTTER = 'WATER03',
+  EMBER = 'FIRE01',
+  FIRE_BLAST = 'FIRE02',
+  OVERHEAT = 'FIRE03',
+  ICE_BALL = 'ICE01',
+  ICICLE_CRASH = 'ICE02',
+  ICE_FANG = 'ICE03',
+  DRAGON_CLAW = 'DRAGON01',
+  ATTACK = 'ATTACK01',
+}
+
+export enum EviromentType {
+  ICE = 'ice',
+  WATER = 'water',
+  GRASS = 'grass',
+}
+
+export enum Role {
+  USER,
+  ADMIN,
+}
+
+export enum TransactionType {
+  BUY = 'buy',
+  WITHDRAW = 'withdraw',
+  DEPOSIT = 'deposit',
+}
+
+export enum TransactionCurrency {
+  TOKEN = 'token',
+  GOLD = 'gold',
+  DIAMOND = 'diamond',
 }

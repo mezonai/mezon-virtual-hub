@@ -1,6 +1,7 @@
 import { configEnv } from '@config/env.config';
+import { TransactionCurrency, TransactionType } from '@enum';
 import { GenericRepository } from '@libs/repository/genericRepository';
-import { TransactionEntity } from '@modules/transaction/entity/transaction.entity';
+import { TransactionsEntity } from '@modules/transactions/entity/transactions.entity';
 import { UserEntity } from '@modules/user/entity/user.entity';
 import {
   Injectable,
@@ -18,8 +19,8 @@ import { EntityManager, Repository } from 'typeorm';
 @Injectable()
 export class MezonService implements OnModuleInit, OnModuleDestroy {
   private readonly userRepository: GenericRepository<UserEntity>;
-  @InjectRepository(TransactionEntity)
-  private readonly transactionRepository: Repository<TransactionEntity>;
+  @InjectRepository(TransactionsEntity)
+  private readonly transactionRepository: Repository<TransactionsEntity>;
   private readonly logger = new Logger(MezonService.name);
   private client: MezonClient;
 
@@ -65,7 +66,9 @@ export class MezonService implements OnModuleInit, OnModuleDestroy {
       amount,
       extra_attribute,
       receiver_id,
-      sender: user,
+      user,
+      currency: TransactionCurrency.TOKEN,
+      type: TransactionType.DEPOSIT,
     });
 
     try {
@@ -105,7 +108,7 @@ export class MezonService implements OnModuleInit, OnModuleDestroy {
   }
 
   private async sendWebhookMessage(content: { t: string }) {
-    if(!this.WEBHOOK_URL) return;
+    if (!this.WEBHOOK_URL) return;
     try {
       await axios.post(
         this.WEBHOOK_URL,
@@ -141,7 +144,7 @@ export class MezonService implements OnModuleInit, OnModuleDestroy {
     try {
       this.client = new MezonClient(configEnv().MEZON_TOKEN_RECEIVER_APP_TOKEN);
       await this.client.login();
-      
+
       this.logger.log('Mezon client authenticated in module init');
 
       await this.sendWebhookMessage({

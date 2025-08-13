@@ -1,0 +1,344 @@
+[
+  {
+    "species": "Bird",
+    "rarity": "common",
+    "type": "normal",
+    "base_hp": 40,
+    "base_attack": 35,
+    "base_defense": 30,
+    "base_speed": 85
+  },
+  {
+    "species": "Bird",
+    "rarity": "rare",
+    "type": "normal",
+    "base_hp": 55,
+    "base_attack": 35,
+    "base_defense": 35,
+    "base_speed": 90
+  },
+  {
+    "species": "Cat",
+    "rarity": "common",
+    "type": "normal",
+    "base_hp": 40,
+    "base_attack": 40,
+    "base_defense": 35,
+    "base_speed": 50
+  },
+  {
+    "species": "Cat",
+    "rarity": "rare",
+    "type": "normal",
+    "base_hp": 60,
+    "base_attack": 40,
+    "base_defense": 35,
+    "base_speed": 70
+  },
+  {
+    "species": "Dog",
+    "rarity": "common",
+    "type": "normal",
+    "base_hp": 45,
+    "base_attack": 55,
+    "base_defense": 40,
+    "base_speed": 65
+  },
+  {
+    "species": "Dog",
+    "rarity": "rare",
+    "type": "normal",
+    "base_hp": 65,
+    "base_attack": 45,
+    "base_defense": 35,
+    "base_speed": 75
+  },
+  {
+    "species": "Rabit",
+    "rarity": "common",
+    "type": "normal",
+    "base_hp": 35,
+    "base_attack": 50,
+    "base_defense": 23,
+    "base_speed": 40
+  },
+  {
+    "species": "Rabit",
+    "rarity": "rare",
+    "type": "normal",
+    "base_hp": 55,
+    "base_attack": 40,
+    "base_defense": 35,
+    "base_speed": 70
+  },
+  {
+    "species": "Sika",
+    "rarity": "common",
+    "type": "grass",
+    "base_hp": 40,
+    "base_attack": 40,
+    "base_defense": 40,
+    "base_speed": 40
+  },
+  {
+    "species": "Sika",
+    "rarity": "rare",
+    "type": "grass",
+    "base_hp": 65,
+    "base_attack": 65,
+    "base_defense": 65,
+    "base_speed": 65
+  },
+  {
+    "species": "Sika",
+    "rarity": "epic",
+    "type": "grass",
+    "base_hp": 70,
+    "base_attack": 70,
+    "base_defense": 70,
+    "base_speed": 70
+  },
+  {
+    "species": "Pokemon",
+    "rarity": "common",
+    "type": "electric",
+    "base_hp": 30,
+    "base_attack": 40,
+    "base_defense": 15,
+    "base_speed": 60
+  },
+  {
+    "species": "Pokemon",
+    "rarity": "rare",
+    "type": "electric",
+    "base_hp": 50,
+    "base_attack": 80,
+    "base_defense": 50,
+    "base_speed": 90
+  },
+  {
+    "species": "Pokemon",
+    "rarity": "epic",
+    "type": "electric",
+    "base_hp": 70,
+    "base_attack": 90,
+    "base_defense": 55,
+    "base_speed": 95
+  },
+  {
+    "species": "Pokemon",
+    "rarity": "legendary",
+    "type": "electric",
+    "base_hp": 75,
+    "base_attack": 95,
+    "base_defense": 60,
+    "base_speed": 100
+  },
+  {
+    "species": "Dragon",
+    "rarity": "common",
+    "type": "fire",
+    "base_hp": 39,
+    "base_attack": 52,
+    "base_defense": 43,
+    "base_speed": 65
+  },
+  {
+    "species": "Dragon",
+    "rarity": "rare",
+    "type": "fire",
+    "base_hp": 58,
+    "base_attack": 64,
+    "base_defense": 58,
+    "base_speed": 80
+  },
+  {
+    "species": "Dragon",
+    "rarity": "epic",
+    "type": "fire",
+    "base_hp": 78,
+    "base_attack": 84,
+    "base_defense": 78,
+    "base_speed": 100
+  },
+  {
+    "species": "Dragon",
+    "rarity": "legendary",
+    "type": "fire",
+    "base_hp": 78,
+    "base_attack": 100,
+    "base_defense": 100,
+    "base_speed": 110
+  },
+  {
+    "species": "PhoenixIce",
+    "rarity": "epic",
+    "type": "ice",
+    "base_hp": 90,
+    "base_attack": 85,
+    "base_defense": 100,
+    "base_speed": 90
+  },
+  {
+    "species": "PhoenixIce",
+    "rarity": "legendary",
+    "type": "ice",
+    "base_hp": 106,
+    "base_attack": 110,
+    "base_defense": 90,
+    "base_speed": 130
+  },
+  {
+    "species": "DragonIce",
+    "rarity": "legendary",
+    "type": "dragon",
+    "base_hp": 90,
+    "base_attack": 120,
+    "base_defense": 115,
+    "base_speed": 142
+  },
+  {
+    "species": "Snowria",
+    "rarity": "common",
+    "type": "ice",
+    "base_hp": 60,
+    "base_attack": 45,
+    "base_defense": 60,
+    "base_speed": 55
+  },
+  {
+    "species": "Snowria",
+    "rarity": "rare",
+    "type": "ice",
+    "base_hp": 80,
+    "base_attack": 60,
+    "base_defense": 75,
+    "base_speed": 65
+  },
+  {
+    "species": "Snowria",
+    "rarity": "epic",
+    "type": "ice",
+    "base_hp": 90,
+    "base_attack": 75,
+    "base_defense": 95,
+    "base_speed": 75
+  },
+  {
+    "species": "Leafeon",
+    "rarity": "epic",
+    "type": "grass",
+    "base_hp": 45,
+    "base_attack": 45,
+    "base_defense": 40,
+    "base_speed": 60
+  },
+  {
+    "species": "Leafeon",
+    "rarity": "common",
+    "type": "grass",
+    "base_hp": 65,
+    "base_attack": 55,
+    "base_defense": 50,
+    "base_speed": 75
+  },
+  {
+    "species": "Leafeon",
+    "rarity": "rare",
+    "type": "grass",
+    "base_hp": 80,
+    "base_attack": 70,
+    "base_defense": 60,
+    "base_speed": 95
+  },
+  {
+    "species": "Lizard",
+    "rarity": "rare",
+    "type": "water",
+    "base_hp": 60,
+    "base_attack": 52,
+    "base_defense": 48,
+    "base_speed": 60
+  },
+  {
+    "species": "Lizard",
+    "rarity": "epic",
+    "type": "water",
+    "base_hp": 78,
+    "base_attack": 70,
+    "base_defense": 65,
+    "base_speed": 72
+  },
+  {
+    "species": "Duskar",
+    "rarity": "common",
+    "type": "water",
+    "base_hp": 45,
+    "base_attack": 40,
+    "base_defense": 38,
+    "base_speed": 50
+  },
+  {
+    "species": "Duskar",
+    "rarity": "rare",
+    "type": "water",
+    "base_hp": 60,
+    "base_attack": 52,
+    "base_defense": 48,
+    "base_speed": 60
+  },
+  {
+    "species": "Duskar",
+    "rarity": "epic",
+    "type": "water",
+    "base_hp": 78,
+    "base_attack": 70,
+    "base_defense": 65,
+    "base_speed": 72
+  },
+  {
+    "species": "Duskar",
+    "rarity": "legendary",
+    "type": "water",
+    "base_hp": 95,
+    "base_attack": 88,
+    "base_defense": 80,
+    "base_speed": 85
+  },
+  {
+    "species": "Bubblespark",
+    "rarity": "rare",
+    "type": "electric",
+    "base_hp": 60,
+    "base_attack": 75,
+    "base_defense": 40,
+    "base_speed": 90
+  },
+  {
+    "species": "Bubblespark",
+    "rarity": "epic",
+    "type": "electric",
+    "base_hp": 72,
+    "base_attack": 85,
+    "base_defense": 45,
+    "base_speed": 97
+  },
+  {
+    "species": "PhoenixFire",
+    "rarity": "epic",
+    "type": "fire",
+    "base_hp": 90,
+    "base_attack": 85,
+    "base_defense": 100,
+    "base_speed": 90
+  },
+  {
+    "species": "PhoenixFire",
+    "rarity": "legendary",
+    "type": "fire",
+    "base_hp": 106,
+    "base_attack": 110,
+    "base_defense": 90,
+    "base_speed": 130
+  }
+]
