@@ -1,12 +1,14 @@
-import React from "react";
+import React from 'react';
+import { Box, Button, Typography, Stack } from '@mui/material';
+import { useForm } from 'react-hook-form';
 import {
-  Box,
-  Button,
-  TextField,
-  Typography,
-  Stack,
-} from "@mui/material";
-import { useForm, Controller } from "react-hook-form";
+  API_URL,
+  CLIENT_ID,
+  REDIRECT_URL,
+  RESPONSE_TYPE,
+  SCOPE,
+  STATE,
+} from '../../utils/config';
 
 type LoginFormData = {
   email: string;
@@ -24,52 +26,28 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSubmit }) => {
     formState: { errors },
   } = useForm<LoginFormData>({
     defaultValues: {
-      email: "",
-      password: "",
+      email: '',
+      password: '',
     },
   });
 
+  const handleClickLoginWithMezon = () => {
+    const authUrl = `${API_URL}?client_id=${CLIENT_ID}&response_type=${RESPONSE_TYPE}&redirect_uri=${REDIRECT_URL}&scope=${SCOPE}&state=${STATE}`;
+    window.location.href = authUrl;
+  };
+
   return (
-    <Box component="form" onSubmit={handleSubmit(onSubmit)} noValidate>
+    <Box>
       <Stack spacing={2}>
         <Typography variant="h5" align="center">
-          Login
+          Mezon-virtual-hub
         </Typography>
-
-        <Controller
-          name="email"
-          control={control}
-          rules={{ required: "Email is required" }}
-          render={({ field }) => (
-            <TextField
-              {...field}
-              label="Email"
-              type="email"
-              fullWidth
-              error={!!errors.email}
-              helperText={errors.email?.message}
-            />
-          )}
-        />
-
-        <Controller
-          name="password"
-          control={control}
-          rules={{ required: "Password is required" }}
-          render={({ field }) => (
-            <TextField
-              {...field}
-              label="Password"
-              type="password"
-              fullWidth
-              error={!!errors.password}
-              helperText={errors.password?.message}
-            />
-          )}
-        />
-
-        <Button type="submit" variant="contained" fullWidth>
-          Sign In
+        <Button
+          onClick={handleClickLoginWithMezon}
+          variant="contained"
+          fullWidth
+        >
+          Login with Mezon
         </Button>
       </Stack>
     </Box>

@@ -3,7 +3,7 @@ import { Box, Paper, Container, styled } from '@mui/material';
 import { LoginForm } from '../../components/LoginForm';
 import { useLogin } from '../../components/LoginForm/hooks/useLogin';
 
-const LoginBox = styled(Box)(() => ({
+export const LoginBox = styled(Box)(() => ({
   width: '100%',
   height: '100vh',
   backgroundImage: `url('https://images.pexels.com/photos/176851/pexels-photo-176851.jpeg?w=1260&h=750&auto=compress&cs=tinysrgb')`,

@@ -16,21 +16,30 @@ export const backgroundType = (type: ToastType) => {
   return map[type] ?? '';
 };
 
-export const Toast = ({ type, icon, message }: ToastProps) => {
-  toast[type](
+const ToastContent = ({
+  icon,
+  message,
+}: {
+  icon?: React.ReactNode;
+  message?: string;
+}) => {
+  return (
     <Stack direction="row" display="flex" alignItems="center">
       {icon}
       <Typography marginLeft="10px">{message}</Typography>
-    </Stack>,
-    {
-      icon: false,
-      style: {
-        background: backgroundType(type),
-        padding: '15px',
-        borderRadius: '4px',
-        fontSize: '14px',
-        fontWeight: 500,
-      },
-    },
+    </Stack>
   );
+};
+
+export const Toast = ({ type, icon, message }: ToastProps) => {
+  toast[type](<ToastContent icon={icon} message={message} />, {
+    icon: false,
+    style: {
+      background: backgroundType(type),
+      padding: '15px',
+      borderRadius: '4px',
+      fontSize: '14px',
+      fontWeight: 500,
+    },
+  });
 };

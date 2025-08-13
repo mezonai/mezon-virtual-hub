@@ -11,6 +11,7 @@ import { paths } from './utils/paths';
 import { NotFoundPage } from './pages/NotFoundPage';
 import { ToastContainer, Zoom } from 'react-toastify';
 import { TransactionPage } from './pages/TransactionPage';
+import { Callback } from './components/Callback/Callback';
 const App = () => {
   return (
     <ThemeProvider theme={theme}>
@@ -36,6 +37,7 @@ const App = () => {
 
           <Route path="/about" element={<></>} />
           <Route path={paths.auth.login} element={<LoginPage />} />
+          <Route path="/callback" element={<Callback />} />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </BrowserRouter>
