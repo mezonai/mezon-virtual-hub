@@ -37,7 +37,7 @@ const App = () => {
 
           <Route path="/about" element={<></>} />
           <Route path={paths.auth.login} element={<LoginPage />} />
-          <Route path="/callback" element={<Callback />} />
+          <Route path={paths.auth.callback} element={<Callback />} />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </BrowserRouter>

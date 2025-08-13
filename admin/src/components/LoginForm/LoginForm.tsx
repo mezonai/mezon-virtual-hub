@@ -2,8 +2,8 @@ import React from 'react';
 import { Box, Button, Typography, Stack } from '@mui/material';
 import { useForm } from 'react-hook-form';
 import {
-  API_URL,
   CLIENT_ID,
+  OAUTH_URL,
   REDIRECT_URL,
   RESPONSE_TYPE,
   SCOPE,
@@ -32,7 +32,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSubmit }) => {
   });
 
   const handleClickLoginWithMezon = () => {
-    const authUrl = `${API_URL}?client_id=${CLIENT_ID}&response_type=${RESPONSE_TYPE}&redirect_uri=${REDIRECT_URL}&scope=${SCOPE}&state=${STATE}`;
+    const authUrl = `${OAUTH_URL}?client_id=${CLIENT_ID}&response_type=${RESPONSE_TYPE}&redirect_uri=${REDIRECT_URL}&scope=${SCOPE}&state=${STATE}`;
     window.location.href = authUrl;
   };
 

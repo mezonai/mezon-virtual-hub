@@ -50,7 +50,7 @@ export const Callback = () => {
     const doLogin = async () => {
       const success = await handleLogin(code, state);
       if (success) {
-        navigate('/dashboard');
+        navigate(paths.dashboard.overview);
         Toast({
           message: 'Login Successfully!',
           type: ToastType.SUCCESS,

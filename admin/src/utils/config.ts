@@ -1,5 +1,6 @@
 import { NavItemConfig } from '../types/nav';
 import { paths } from './paths';
+import { generalRandomString } from './random/generalRandomString';
 
 export const navItems = [
   {
@@ -27,9 +28,9 @@ export const UPDATE_USER = '/admin/users';
 export const GET_TRANSACTION = '/admin/transactions';
 export const LOGIN = '/auth/verify-oauth2';
 
-export const API_URL = 'https://oauth2.mezon.ai/oauth2/auth';
-export const STATE = Math.random().toString(36).substring(2, 15);
-export const CLIENT_ID = '1955118881949356032';
+export const OAUTH_URL = 'https://oauth2.mezon.ai/oauth2/auth';
+export const STATE = generalRandomString();
+export const CLIENT_ID = process.env.REACT_APP_CLIENT_ID;
 export const RESPONSE_TYPE = 'code';
 export const REDIRECT_URL = 'http://localhost:3000/callback';
 export const SCOPE = 'openid offline';
