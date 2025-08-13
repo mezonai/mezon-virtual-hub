@@ -114,6 +114,7 @@ export class PetPlayersService extends BaseService<PetPlayersEntity> {
       petPlayers.push(
         this.petPlayersRepository.create({
           pet,
+          name: pet.species,
           skill_slot_1: { skill_code: skill1?.skill.skill_code },
           skill_slot_2: { skill_code: skill2?.skill.skill_code },
           individual_value: this.generateIndividualValue(),
