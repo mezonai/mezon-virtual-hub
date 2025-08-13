@@ -89,13 +89,13 @@ export class PetPlayersService extends BaseService<PetPlayersEntity> {
 
   async createPetPlayers(payload: SpawnPetPlayersDto, quantity = 1) {
     const pet = await this.petsRepository.findOne({
-      where: { species: payload.species, rarity: payload.rarity },
+      where: { species: payload.species, rarity: payload.rarity, type: payload.type },
       relations: ['skill_usages', 'skill_usages.skill'],
     });
 
     if (!pet) {
       throw new NotFoundException(
-        `Pet ${payload.species} with rarity ${payload.rarity} not found`,
+        `Pet ${payload.species} with Rarity: ${payload.rarity} and Type ${payload.type} not found`,
       );
     }
 
@@ -114,6 +114,7 @@ export class PetPlayersService extends BaseService<PetPlayersEntity> {
       petPlayers.push(
         this.petPlayersRepository.create({
           pet,
+          name: pet.species,
           skill_slot_1: { skill_code: skill1?.skill.skill_code },
           skill_slot_2: { skill_code: skill2?.skill.skill_code },
           individual_value: this.generateIndividualValue(),

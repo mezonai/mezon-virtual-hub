@@ -1,4 +1,4 @@
-import { AnimalRarity, MapKey, SkillCode, SubMap } from '@enum';
+import { AnimalRarity, MapKey, PetType, SkillCode, SubMap } from '@enum';
 import { PetsDtoResponse } from '@modules/pets/dto/pets.dto';
 import { ApiProperty, ApiPropertyOptional, PickType } from '@nestjs/swagger';
 import { Exclude, Expose, Transform, Type } from 'class-transformer';
@@ -19,7 +19,7 @@ export class SpawnPetPlayersDto {
   @Transform(({ value }) => (typeof value === 'string' ? value?.trim() : value))
   species: string;
 
-  @ApiPropertyOptional({
+  @ApiProperty({
     description: 'Rarity of the animal',
     enum: AnimalRarity,
   })
@@ -27,8 +27,14 @@ export class SpawnPetPlayersDto {
   rarity: AnimalRarity = AnimalRarity.COMMON;
 
   @ApiProperty({
+    description: 'Type of the pet.',
+    enum: PetType,
+  })
+  @IsEnum(PetType)
+  type: PetType;
+
+  @ApiProperty({
     description: 'Map of the pet.',
-    example: MapKey.HN1,
     enum: MapKey,
   })
   @IsEnum(MapKey)
@@ -36,7 +42,6 @@ export class SpawnPetPlayersDto {
 
   @ApiPropertyOptional({
     description: 'Sub map of the pet.',
-    example: SubMap.OFFICE,
     enum: SubMap,
   })
   @IsOptional()
@@ -166,7 +171,7 @@ export class BulkUpdateBattleSlotsDto {
 
 export class UpdateBattleSkillsDto extends PickType(PetPlayersEntity, [
   'equipped_skill_codes',
-]) {}
+]) { }
 
 export class BattlePetPlayersDto extends PetPlayersEntity {
   @Exclude()
