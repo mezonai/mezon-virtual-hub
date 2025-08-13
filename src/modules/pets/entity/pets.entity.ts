@@ -8,7 +8,7 @@ import { IsEnum, IsInt, IsOptional, IsString } from 'class-validator';
 import { Column, Entity, JoinTable, ManyToMany, OneToMany, Unique } from 'typeorm';
 
 @Entity('pets')
-@Unique(['species', 'rarity'])
+@Unique('UQ_pets_species_rarity_type', ['species', 'rarity', 'type'])
 export class PetsEntity extends AuditEntity {
   @Column({ type: 'varchar', length: 50 })
   @ApiProperty()
