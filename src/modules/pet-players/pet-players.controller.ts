@@ -2,13 +2,11 @@ import {
   Controller,
   DefaultValuePipe,
   Get,
-  ParseBoolPipe,
   ParseIntPipe,
   ParseUUIDPipe,
   Patch,
   Post,
-  Query,
-  UseGuards,
+  Query
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -22,18 +20,18 @@ import {
 import { Logger } from '@libs/logger';
 
 import { USER_TOKEN } from '@constant';
-import { AdminBypassGuard } from '@libs/guard/admin.guard';
+import { RequireAdmin } from '@libs/decorator';
 import { UserEntity } from '@modules/user/entity/user.entity';
 import { Body, Delete, Param, Put } from '@nestjs/common';
 import { ClsService } from 'nestjs-cls';
 import { UserService } from '../user/user.service';
-import { PetPlayersService } from './pet-players.service';
 import {
-  SpawnPetPlayersDto,
   BringPetPlayersDtoList,
   BulkUpdateBattleSlotsDto,
+  SpawnPetPlayersDto,
   UpdateBattleSkillsDto,
 } from './dto/pet-players.dto';
+import { PetPlayersService } from './pet-players.service';
 
 @ApiBearerAuth()
 @Controller('pet-players')
@@ -58,7 +56,7 @@ export class PetPlayersController {
   }
 
   @Post()
-  @UseGuards(AdminBypassGuard)
+  @RequireAdmin()
   @ApiOperation({
     summary: 'Create (spawn) a pet',
   })
@@ -104,7 +102,7 @@ export class PetPlayersController {
   }
 
   @Put(':pet_player_id')
-  @UseGuards(AdminBypassGuard)
+  @RequireAdmin()
   @ApiParam({
     name: 'pet_player_id',
     example: '91bea29f-0e87-42a5-b851-d9d0386ac32f',
@@ -120,7 +118,7 @@ export class PetPlayersController {
   }
 
   @Delete(':pet_player_id')
-  @UseGuards(AdminBypassGuard)
+  @RequireAdmin()
   @ApiParam({
     name: 'pet_player_id',
     example: '91bea29f-0e87-42a5-b851-d9d0386ac32f',
@@ -222,7 +220,7 @@ export class PetPlayersController {
   // }
 
   @Get('find/:pet_player_id')
-  @UseGuards(AdminBypassGuard)
+  @RequireAdmin()
   @ApiParam({
     name: 'pet_player_id',
     example: '91bea29f-0e87-42a5-b851-d9d0386ac32f',

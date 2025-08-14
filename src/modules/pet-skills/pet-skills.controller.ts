@@ -4,11 +4,9 @@ import {
   Get,
   Param,
   ParseEnumPipe,
-  ParseUUIDPipe,
   Post,
   Put,
-  Query,
-  UseGuards,
+  Query
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -19,18 +17,17 @@ import {
 
 import { Logger } from '@libs/logger';
 
-import { AdminBypassGuard } from '@libs/guard/admin.guard';
-import { Body } from '@nestjs/common';
+import { SkillCode } from '@enum';
+import { RequireAdmin } from '@libs/decorator';
 import { ClsService } from 'nestjs-cls';
 import { UserService } from '../user/user.service';
 import { CreatePetSkillsDto, UpdatePetSkillsDto } from './dto/pet-skills.dto';
 import { PetSkillsService } from './pet-skills.service';
-import { SkillCode } from '@enum';
 
 @ApiBearerAuth()
 @Controller('pet-skills')
 @ApiTags('Pet Skills')
-@UseGuards(AdminBypassGuard)
+@RequireAdmin()
 export class PetSkillsController {
   constructor(
     private readonly cls: ClsService,
@@ -98,7 +95,7 @@ export class PetSkillsController {
   // }
 
   // @Get('find/:pet_skills_id')
-  // @UseGuards(AdminBypassGuard)
+  // @RequireAdmin()
   // @ApiParam({
   //   name: 'pet_skills_id',
   //   example: 'NOR00',

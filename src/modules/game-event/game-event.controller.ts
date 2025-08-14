@@ -1,5 +1,5 @@
 import { USER_TOKEN } from '@constant';
-import { AdminBypassGuard } from '@libs/guard/admin.guard';
+import { RequireAdmin } from '@libs/decorator';
 import { Logger } from '@libs/logger';
 import { UserEntity } from '@modules/user/entity/user.entity';
 import {
@@ -11,8 +11,7 @@ import {
   ParseUUIDPipe,
   Post,
   Put,
-  Query,
-  UseGuards,
+  Query
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -46,7 +45,7 @@ export class GameEventController {
   }
 
   @Post()
-  @UseGuards(AdminBypassGuard)
+  @RequireAdmin()
   @ApiOperation({
     summary: 'Create a new game event',
   })
@@ -77,7 +76,7 @@ export class GameEventController {
   }
 
   @Put(':event_id')
-  @UseGuards(AdminBypassGuard)
+  @RequireAdmin()
   @ApiParam({
     name: 'event_id',
     example: '91bea29f-0e87-42a5-b851-d9d0386ac32f',
@@ -94,7 +93,7 @@ export class GameEventController {
   }
 
   @Delete(':event_id')
-  @UseGuards(AdminBypassGuard)
+  @RequireAdmin()
   @ApiParam({
     name: 'event_id',
     example: '91bea29f-0e87-42a5-b851-d9d0386ac32f',
