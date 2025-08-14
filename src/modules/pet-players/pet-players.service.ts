@@ -87,7 +87,7 @@ export class PetPlayersService extends BaseService<PetPlayersEntity> {
     return pet;
   }
 
-  async createPetPlayers(payload: SpawnPetPlayersDto, quantity = 1) {
+  async createPetPlayers(payload: Partial<SpawnPetPlayersDto>, quantity = 1) {
     const pet = await this.petsRepository.findOne({
       where: { species: payload.species, rarity: payload.rarity, type: payload.type },
       relations: ['skill_usages', 'skill_usages.skill'],

@@ -6,6 +6,7 @@ import {
   ArrayNotEmpty,
   IsArray,
   IsEnum,
+  IsNumber,
   IsOptional,
   IsString,
   IsUUID,
@@ -47,6 +48,17 @@ export class SpawnPetPlayersDto {
   @IsOptional()
   @IsEnum(SubMap)
   sub_map?: SubMap;
+
+  @ApiProperty({
+    description: 'Quantity pet to spawn',
+    type: Number,
+    required: false,
+    default: 1
+  })
+  @IsNumber()
+  @IsOptional()
+  @Type(() => Number)
+  quantity: number = 1;
 }
 
 export class UpdatePetPlayersDto {
