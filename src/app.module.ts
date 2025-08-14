@@ -14,22 +14,22 @@ import { FilterModule } from '@libs/filter';
 import { GuardModule } from '@libs/guard/guard.module';
 import { InterceptorModule } from '@libs/interceptor';
 import { LoggerModule } from '@libs/logger';
-import { InventoryModule } from '@modules/inventory/inventory.module';
-import { ItemModule } from '@modules/item/item.module';
-import { ClsModule } from 'nestjs-cls';
-import { dataSourceOption } from './config/data-source.config';
-import { LogViewerModule } from '@modules/log-viewer/log-viewer.module';
-import { MezonModule } from '@modules/mezon/mezon.module';
-import { GameModule } from '@modules/game/game.module';
-import { GameEventModule } from '@modules/game-event/game-event.module';
+import { AdminModule } from '@modules/admin/admin.module';
 import { TransactionsModule } from '@modules/admin/transactions/transactions.module';
 import { AnimalModule } from '@modules/animal/animal.module';
 import { FoodModule } from '@modules/food/food.module';
-import { PetsModule } from '@modules/pets/pets.module';
+import { GameEventModule } from '@modules/game-event/game-event.module';
+import { GameModule } from '@modules/game/game.module';
+import { InventoryModule } from '@modules/inventory/inventory.module';
+import { ItemModule } from '@modules/item/item.module';
+import { LogViewerModule } from '@modules/log-viewer/log-viewer.module';
+import { MezonModule } from '@modules/mezon/mezon.module';
 import { PetPlayersModule } from '@modules/pet-players/pet-players.module';
 import { PetSkillsModule } from '@modules/pet-skills/pet-skills.module';
-import { AdminModule } from '@modules/admin/admin.module';
+import { PetsModule } from '@modules/pets/pets.module';
 import { RouterModule } from '@nestjs/core';
+import { ClsModule } from 'nestjs-cls';
+import { dataSourceOption } from './config/data-source.config';
 
 @Module({
   imports: [

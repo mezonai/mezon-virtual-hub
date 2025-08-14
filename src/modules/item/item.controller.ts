@@ -1,4 +1,4 @@
-import { Controller, Get, ParseUUIDPipe, Post, UseGuards } from '@nestjs/common';
+import { Controller, Get, ParseUUIDPipe, Post } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiBody,
@@ -9,7 +9,7 @@ import {
 
 import { Logger } from '@libs/logger';
 
-import { AdminBypassGuard } from '@libs/guard/admin.guard';
+import { RequireAdmin } from '@libs/decorator';
 import { Body, Delete, Param, Put } from '@nestjs/common';
 import { ClsService } from 'nestjs-cls';
 import { UserService } from '../user/user.service';
@@ -38,7 +38,7 @@ export class ItemController {
   }
 
   @Post()
-  @UseGuards(AdminBypassGuard)
+  @RequireAdmin()
   @ApiOperation({
     summary: 'Create a new item',
   })
@@ -48,7 +48,7 @@ export class ItemController {
   }
 
   @Put(':item_id')
-  @UseGuards(AdminBypassGuard)
+  @RequireAdmin()
   @ApiParam({
     name: 'item_id',
     example: '91bea29f-0e87-42a5-b851-d9d0386ac32f',
@@ -65,7 +65,7 @@ export class ItemController {
   }
 
   @Delete(':item_id')
-  @UseGuards(AdminBypassGuard)
+  @RequireAdmin()
   @ApiParam({
     name: 'item_id',
     example: '91bea29f-0e87-42a5-b851-d9d0386ac32f',

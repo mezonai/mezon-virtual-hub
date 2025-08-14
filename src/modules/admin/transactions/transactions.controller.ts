@@ -1,17 +1,17 @@
-import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 
 import { Logger } from '@libs/logger';
 
-import { AdminBypassGuard } from '@libs/guard/admin.guard';
+import { RequireAdmin } from '@libs/decorator';
 import { ClsService } from 'nestjs-cls';
-import { TransactionsService } from './transactions.service';
 import { TransactionsQueryDto } from './dto/transactions.dto';
+import { TransactionsService } from './transactions.service';
 
 @ApiBearerAuth()
 @ApiTags('Admin - Transactions')
 @Controller('transactions')
-@UseGuards(AdminBypassGuard)
+@RequireAdmin()
 export class TransactionsController {
   constructor(
     private readonly clsService: ClsService,
