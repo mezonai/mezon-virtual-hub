@@ -63,8 +63,7 @@ export class PetPlayersController {
     summary: 'Create (spawn) a pet',
   })
   async createPetPlayers(
-    @Query() pet: SpawnPetPlayersDto,
-    @Query('quantity', new DefaultValuePipe(1), ParseIntPipe) quantity: number = 1
+    @Query() { quantity, ...pet }: SpawnPetPlayersDto,
   ) {
     return await this.petPlayersService.createPetPlayers(pet, quantity);
   }
