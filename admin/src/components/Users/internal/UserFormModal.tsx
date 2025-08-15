@@ -18,7 +18,6 @@ import { updateUser } from '../../../services/users/updateUser';
 import { ActionFormType, Gender, Role } from '../../../types/user';
 import { Toast } from '../../../theme/components/Toast/Toast';
 import { ToastType } from '../../../types/toast/toast';
-import { CheckFatIcon } from '@phosphor-icons/react';
 import { SharedTextField } from '../../../theme/components/SharedTextField/SharedTextField';
 interface UserFormModalProps {
   open: boolean;
@@ -57,7 +56,6 @@ export const UserFormModal = ({
         Toast({
           message: 'Update User Successfully',
           type: ToastType.SUCCESS,
-          icon: <CheckFatIcon width="24px" height="24px" fill="#fff" />,
         });
         reset(data);
         closeFormModal?.();

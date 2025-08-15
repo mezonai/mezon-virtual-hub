@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import httpClient from '../../../services/httpService/httpServices';
 import { User } from '../../../models/user';
 import { useTableQueryParams } from '../../../hooks/useTableQueryParams';
@@ -23,7 +23,7 @@ export const useUserList = () => {
   const [error, setError] = useState<Error | null>(null);
   const [totalPages, setTotalPages] = useState<number>(0);
   const [totalItems, setTotalItems] = useState<number>(0);
-
+  const firstCallRef = useRef<boolean>(true);
   const {
     queryParam,
     handleParamsChange,
@@ -37,6 +37,10 @@ export const useUserList = () => {
   } = useTableQueryParams<User>();
 
   useEffect(() => {
+    if (firstCallRef.current) {
+      firstCallRef.current = false;
+      return;
+    }
     let active = true;
 
     const fetchUsers = async () => {

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTransactionStore } from '../../../store/transaction/store';
 import { Transaction } from '../../../types/transaction/transaction';
 import { useTableQueryParams } from '../../../hooks/useTableQueryParams';
@@ -21,6 +21,7 @@ export const useTransactionList = () => {
   const totalItem = transactions.total;
   const totalPage = transactions.total_page;
   const transactionData = transactions.result;
+  const firstCallRef = useRef<boolean>(true);
 
   const fetchDataTransaction = useCallback(async () => {
     setLoading(true);
@@ -32,8 +33,12 @@ export const useTransactionList = () => {
   }, [fetchTransaction, queryParam]);
 
   useEffect(() => {
+    if (firstCallRef.current) {
+      firstCallRef.current = false;
+      return;
+    }
     fetchDataTransaction();
-  }, [fetchDataTransaction]);
+  }, [page, limit, sortBy, search, order, fetchDataTransaction]);
 
   return {
     transactionData,
