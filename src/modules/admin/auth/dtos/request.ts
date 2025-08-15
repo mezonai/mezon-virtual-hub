@@ -1,8 +1,7 @@
-import { Request } from 'express';
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEmail, IsNotEmpty, IsOptional, IsString, IsUrl } from 'class-validator';
 import { UserEntity } from '@modules/user/entity/user.entity';
-import { Optional } from '@nestjs/common';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsNotEmpty, IsOptional, IsString, IsUrl } from 'class-validator';
+import { Request } from 'express';
 
 export class OAuth2Request {
   @ApiProperty()
@@ -13,12 +12,17 @@ export class OAuth2Request {
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
-  scope?: string | string[] | undefined;
+  scope?: string | string[];
 
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
-  state?: string;
+  state: string;
+
+  @IsString()
+  @IsOptional()
+  @IsUrl({ require_tld: false })
+  redirect_uri: string;
 }
 
 export class RefreshTokenDto {
