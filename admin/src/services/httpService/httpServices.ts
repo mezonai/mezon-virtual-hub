@@ -34,18 +34,15 @@ httpClient.interceptors.response.use(
       const refreshToken = localStorage.getItem('refreshToken');
       const getToken = localStorage.getItem('accessToken');
       if (!refreshToken || !getToken) {
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
         window.location.href = paths.auth.login;
+        return;
       }
       try {
-        if (refreshToken) {
-          const res = await refreshTokens({ refreshToken });
-          localStorage.setItem('accessToken', res.accessToken);
-          localStorage.setItem('refreshToken', res.refreshToken);
-          error.config.headers['Authorization'] = `Bearer ${res.accessToken}`;
-          return httpClient(error.config);
-        }
+        const res = await refreshTokens({ refreshToken });
+        localStorage.setItem('accessToken', res.accessToken);
+        localStorage.setItem('refreshToken', res.refreshToken);
+        error.config.headers['Authorization'] = `Bearer ${res.accessToken}`;
+        return httpClient(error.config);
       } catch (err: unknown) {
         const error = err as AxiosError<ApiResponseError>;
         Toast({
