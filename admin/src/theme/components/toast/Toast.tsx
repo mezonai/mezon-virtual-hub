@@ -1,10 +1,15 @@
 import { toast } from 'react-toastify';
 import { ToastType } from '../../../types/toast/toast';
 import { Stack, Typography } from '@mui/material';
+import React from 'react';
+import {
+  CheckFatIcon,
+  WarningCircleIcon,
+  WarningIcon,
+} from '@phosphor-icons/react';
 
 interface ToastProps {
   type: ToastType;
-  icon?: React.ReactNode;
   message?: string;
 }
 
@@ -16,23 +21,36 @@ export const backgroundType = (type: ToastType) => {
   return map[type] ?? '';
 };
 
+export const showIcon = (type: ToastType) => {
+  const mapIcon: Record<ToastType, React.ReactNode> = {
+    [ToastType.SUCCESS]: (
+      <CheckFatIcon width="24px" height="24px" fill="#fff" />
+    ),
+    [ToastType.ERROR]: <WarningIcon width="24px" height="24px" fill="#fff" />,
+    [ToastType.WARNING]: (
+      <WarningCircleIcon width="24px" height="24px" fill="#fff" />
+    ),
+  };
+  return mapIcon[type] ?? null;
+};
+
 const ToastContent = ({
-  icon,
+  type,
   message,
 }: {
-  icon?: React.ReactNode;
+  type: ToastType;
   message?: string;
 }) => {
   return (
     <Stack direction="row" display="flex" alignItems="center">
-      {icon}
+      {showIcon(type)}
       <Typography marginLeft="10px">{message}</Typography>
     </Stack>
   );
 };
 
-export const Toast = ({ type, icon, message }: ToastProps) => {
-  toast[type](<ToastContent icon={icon} message={message} />, {
+export const Toast = ({ type, message }: ToastProps) => {
+  toast[type](<ToastContent type={type} message={message} />, {
     icon: false,
     style: {
       background: backgroundType(type),

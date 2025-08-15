@@ -1,27 +1,35 @@
 import { useCallback } from 'react';
-import { useAuthStore } from '../store/auth/store';
 import { login } from '../services/auth/login';
+import { useNavigate } from 'react-router-dom';
+import { paths } from '../utils/paths';
+import { getRedirectUrl } from '../utils/url/getRedirectUrl';
 
 export function useAuth() {
-  const { setTokens, clearTokens } = useAuthStore();
-
+  const navigate = useNavigate();
   const handleLogin = useCallback(
-    async (code: string | null, state: string | null): Promise<boolean> => {
-      const data = await login({ code, state });
-      if (data) {
-        localStorage.setItem('authToken', data.accessToken);
-        setTokens(data.accessToken, data.refreshToken);
-        return true;
+    async (code: string, state: string): Promise<boolean> => {
+      if (!code || !state) return false;
+      try {
+        const redirect_uri = getRedirectUrl();
+        const data = await login({ code, state, redirect_uri });
+        if (data) {
+          localStorage.setItem('accessToken', data.accessToken);
+          localStorage.setItem('refreshToken', data.refreshToken);
+          return true;
+        }
+        return false;
+      } catch {
+        return false;
       }
-      return false;
     },
     [],
   );
 
   const handleLogout = useCallback(() => {
-    clearTokens();
-    localStorage.removeItem('authToken');
-  }, []);
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
+    navigate(paths.auth.login);
+  }, [navigate]);
 
   return {
     handleLogin,

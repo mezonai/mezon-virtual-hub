@@ -7,7 +7,6 @@ import { paths } from '../../utils/paths';
 import { useAuth } from '../../hooks/useAuth';
 import { Toast } from '../../theme/components/Toast/Toast';
 import { ToastType } from '../../types/toast/toast';
-import { CheckFatIcon } from '@phosphor-icons/react';
 
 const keyframe = keyframes`
   0%   {clip-path: polygon(50% 50%,0 0,0 0,0 0,0 0,0 0)}
@@ -39,7 +38,7 @@ export const Callback = () => {
   const [searchParams] = useSearchParams();
   const { state, code } = Object.fromEntries(searchParams.entries());
   const { handleLogin } = useAuth();
-  const callRef = useRef(false);
+  const callRef = useRef<boolean>(false);
   useEffect(() => {
     if (callRef.current) return;
     callRef.current = true;
@@ -53,14 +52,17 @@ export const Callback = () => {
         Toast({
           message: 'Login Successfully!',
           type: ToastType.SUCCESS,
-          icon: <CheckFatIcon width="24px" height="24px" fill="#fff" />,
         });
       } else {
         navigate(paths.auth.login);
+        Toast({
+          message: 'Login fail!',
+          type: ToastType.ERROR,
+        });
       }
     };
     doLogin();
-  }, [navigate]);
+  }, [navigate, code, state, handleLogin]);
   return (
     <LoginBox
       sx={{
