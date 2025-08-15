@@ -1,6 +1,6 @@
 import { MapSchema, Schema, type } from '@colyseus/schema';
 import { configEnv } from '@config/env.config';
-import { EXCHANGERATE, RPS_FEE } from '@constant';
+import { BATTLE_MAX_FEE, BATTLE_MIN_FEE, EXCHANGERATE, RPS_FEE } from '@constant';
 import { ActionKey, MapKey } from '@enum';
 import { Logger } from '@libs/logger';
 import { JwtPayload } from '@modules/auth/dtos/response';
@@ -494,10 +494,7 @@ export class BaseGameRoom extends Room<RoomState> {
         }
       }
 
-      if (
-        targetClient &&
-        action == ActionKey.RPS.toString() &&
-        targetClient.userData.diamond < RPS_FEE
+      if (targetClient && action == ActionKey.RPS.toString() && targetClient.userData.diamond < RPS_FEE
       ) {
         this.sendMessageToTarget(sender, action, 'Người chơi không đủ tiền');
         return;
@@ -530,6 +527,26 @@ export class BaseGameRoom extends Room<RoomState> {
         } else {
           this.sendMessageToTarget(sender, action, 'Lỗi bất định');
           return;
+        }
+      }
+
+      if (action == ActionKey.Battle.toString()) {
+        if (amount <= 0) {
+          this.sendMessageToTarget(sender, action, 'Số tiền thách đấu không hợp lệ');
+          return;
+        }
+        if (sender.userData?.diamond <= 0 || sender.userData?.diamond < amount) {
+          this.sendMessageToTarget(sender, action, 'Bạn không đủ tiền');
+          return;
+        }
+
+        if (amount < BATTLE_MIN_FEE || amount > BATTLE_MAX_FEE) {
+          this.sendMessageToTarget(sender, action, 'Số tiền thách đấu không hợp lệ');
+          return;
+        }
+
+        if (targetClient?.userData.diamond < amount) {
+          this.sendMessageToTarget(sender, action, 'Người chơi không đủ tiền');
         }
       }
 
@@ -784,11 +801,17 @@ export class BaseGameRoom extends Room<RoomState> {
 
     //combat
     this.onMessage('p2pCombatActionAccept', (sender, data) => {
-      const { targetClientId, action } = data;
-      if (action !== ActionKey.Battle.toString()) return;
+      const { targetClientId, action, amount } = data;
+      if (action !== ActionKey.Battle.toString()) {
+        this.sendMessageToTarget(sender, action, 'Lỗi bất định');
+        return;
+      }
 
       const targetClient = this.clients.find(c => c.sessionId === targetClientId);
-      if (!targetClient) return;
+      if (!targetClient) {
+        this.sendMessageToTarget(sender, action, 'Lỗi bất định');
+        return;
+      }
 
       const player1Id = sender.sessionId;
       const player2Id = targetClient.sessionId;
@@ -814,7 +837,7 @@ export class BaseGameRoom extends Room<RoomState> {
         }
       });
 
-      this.createBattleRoom(player1Id, player2Id);
+      this.createBattleRoom(player1Id, player2Id, amount);
     });
 
     this.onMessage(MessageTypes.NOT_PET_BATTLE, async (client: AuthenticatedClient, data) => {
@@ -1011,10 +1034,11 @@ export class BaseGameRoom extends Room<RoomState> {
       }, 100);
     });
   }
-  async createBattleRoom(player1Id: string, player2Id: string) {
+  async createBattleRoom(player1Id: string, player2Id: string, valueChallenge: number) {
     try {
       const room = await matchMaker.createRoom("battle-room", {
-        roomName: this.roomName
+        roomName: this.roomName,
+        amount: valueChallenge
       });
       // Gửi thông báo cho client
       this.broadcast(MessageTypes.BATTE_ROOM_READY, {

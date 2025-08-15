@@ -15,11 +15,17 @@ export class BattleRoom extends BaseGameRoom {
     private battleState: BattleState = BattleState.READY;
     private currentEnviroment = EnvironmentType.GRASS;
     private rationIncreaseDame: number = 1.5;
+    amountChallenge: number = 0;
     // @Inject() private readonly petPlayersService: PetPlayersService;
     override async onCreate(options: any) {
         if (options?.roomName != null) {
             this.currentEnviroment = this.getEnvironment(options.roomName)
         }
+
+        if (options?.amount != null) {
+            this.amountChallenge = options.amount;
+        }
+
         this.setState(new RoomState());
         this.onMessage(MessageTypes.PLAYER_ACION, async (client, data: PlayerAction) => {
             this.onPlayerAction(client, data);
@@ -30,9 +36,7 @@ export class BattleRoom extends BaseGameRoom {
         });
         this.onMessage(MessageTypes.SURRENDER_BATTLE, (client, data) => {
             this.battleState = BattleState.FINISHED;
-            const player = this.state.battlePlayers.get(client.sessionId);
-            if (player == null) return
-            this.battleIsFinished(player);
+            this.battleIsFinished(client);
         });
         this.onMessage(MessageTypes.SET_PET_SLEEP, (client, data) => {
             const { petSleepingId } = data
@@ -60,7 +64,7 @@ export class BattleRoom extends BaseGameRoom {
         }
         // Gửi thông báo ngắt kết nối cho đối thủ
         opponent?.send(MessageTypes.DISCONNECTED, { message: "" });
-        
+
     }
 
 
@@ -310,13 +314,32 @@ export class BattleRoom extends BaseGameRoom {
         });
     }
 
-    private battleIsFinished(loser: PlayerBattleState) {
-        const opponent = [...this.state.battlePlayers.values()]
-            .find(p => p.id !== loser.id);
-
+    private battleIsFinished(loserClient: Client) {
+        const loser = this.state.battlePlayers.get(loserClient.sessionId);
+        const winner = [...this.state.battlePlayers.values()]
+            .find(p => p.id !== loser?.id);
         this.broadcast(MessageTypes.BATTLE_FINISHED, {
-            winnerId: opponent?.id ?? null,
-            loserId: loser.id,
+            winnerId: winner?.id,
+            loserId: loser?.id,
+        });
+        const winnerClient = this.clients.find(c => c.sessionId !== loser?.id);
+        if (winnerClient == null) return;
+        this.calculateBet(loserClient, winnerClient);
+
+    }
+
+    calculateBet(loserClient: Client, winnerClient: Client) {
+        if (loserClient.userData == null || winnerClient.userData == null) {
+            return;
+        }
+        loserClient.userData.diamond -= this.amountChallenge;
+        winnerClient.userData.diamond += this.amountChallenge;
+
+        this.userRepository.update(loserClient.userData.id, {
+            diamond: loserClient.userData.diamond,
+        });
+        this.userRepository.update(winnerClient.userData.id, {
+            diamond: winnerClient.userData.diamond,
         });
     }
 
@@ -330,7 +353,7 @@ export class BattleRoom extends BaseGameRoom {
             if (!hasAvailablePet || player.activePetIndex >= player.pets.length) {
                 this.battleState = BattleState.FINISHED;
                 // ❌ Người chơi này thua → xác định người chơi còn lại thắng
-                this.battleIsFinished(player);
+                this.battleIsFinished(client);
                 return;
             }
         }
