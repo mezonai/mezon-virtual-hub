@@ -1,67 +1,101 @@
-import { Injectable } from '@nestjs/common';
+import { replaceSeparator } from '@libs/utils';
+import {
+  BadRequestException,
+  HttpException,
+  HttpStatus,
+  Injectable,
+  OnModuleInit,
+} from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import axios, { AxiosInstance } from 'axios';
+import { OAuth2Request, MezonOAuth2UserInfo } from './dtos/request';
 import { configEnv } from '@config/env.config';
-import { MezonOAuth2UserInfo, OAuth2Request } from './dtos/request';
-import { Logger } from '@libs/logger';
 
 @Injectable()
-export class OAuth2Service {
-  private CLIENT_ID = configEnv().OAUTH2_CLIENT_ID;
-  private CLIENT_SECRET = configEnv().OAUTH2_CLIENT_SECRET;
-  private OAUTH2_URL = configEnv().OAUTH2_API_URL;
-  private REDIRECT_URI = configEnv().OAUTH2_REDIRECT_URI;
-  private logger = new Logger()
-  private async callOAuth2Api(
-    path: string,
-    body: Record<string, any>,
+export class OAuth2Service implements OnModuleInit {
+  private axiosInstance: AxiosInstance;
+  private defaultBody: Record<string, string>;
+  private oauth2RedirectUrls = configEnv().OAUTH2_REDIRECT_URI.split(',');
+
+  constructor(private readonly configService: ConfigService) { }
+
+  onModuleInit() {
+    const oauth2Url = configEnv().OAUTH2_API_URL;
+    const client_id = configEnv().OAUTH2_CLIENT_ID;
+    const client_secret = configEnv().OAUTH2_CLIENT_SECRET;
+
+    this.axiosInstance = axios.create({
+      baseURL: oauth2Url,
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      timeout: 5000,
+    });
+
+    this.defaultBody = {
+      client_id,
+      client_secret,
+      redirect_uri: this.oauth2RedirectUrls[0],
+    };
+  }
+
+  private async request(
     method: 'POST' | 'GET',
-  ) {
+    path: string,
+    data?: Record<string, any>,
+  ): Promise<any> {
+    const payload = new URLSearchParams({
+      ...this.defaultBody,
+      ...data,
+    }).toString();
+
     try {
-      const response = await fetch(this.OAUTH2_URL + path, {
+      const response = await this.axiosInstance.request({
         method,
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: new URLSearchParams({
-          ...body,
-          client_id: this.CLIENT_ID,
-          client_secret: this.CLIENT_SECRET,
-          redirect_uri: this.REDIRECT_URI,
-        }),
+        url: path,
+        data: method === 'POST' ? payload : undefined,
+        params: method === 'GET' ? data : undefined,
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        this.logger.error(errorData);
-        throw new Error(
-          `OAuth2 API Error: ${response.status} - ${response.statusText}.`,
-        );
-      }
-
-      return await response.json();
+      return response.data;
     } catch (error) {
-      console.error('Error calling OAuth2 API:', error);
-      throw error;
+      const { response } = error;
+      const message =
+        response?.data?.error_description ||
+        response?.data?.error ||
+        'Unknown error';
+      throw new HttpException(
+        `OAuth2 API Error: ${response?.status} - ${message}`,
+        response?.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 
-  async getOAuth2Token(payload: OAuth2Request) {
-    const body = {
-      grant_type: 'authorization_code',
-      ...payload,
-    };
-    return await this.callOAuth2Api(
-      configEnv().OAUTH2_URL_TOKEN_PATH,
-      body,
-      'POST',
-    );
+  async post(path: string, data: Record<string, any> = {}) {
+    return await this.request('POST', path, data);
   }
 
-  async decodeORYTokenOAuth2(accessToken: string): Promise<MezonOAuth2UserInfo> {
-    const body = { access_token: accessToken };
-    return await this.callOAuth2Api(
-      configEnv().OAUTH2_URL_DECODE_PATH,
-      body,
-      'POST',
-    );
+  async get(path: string, params: Record<string, any> = {}) {
+    return await this.request('GET', path, params);
+  }
+
+  async getOAuth2Token(payload: OAuth2Request) {
+    if (
+      payload.redirect_uri &&
+      !this.oauth2RedirectUrls.includes(payload.redirect_uri)
+    ) {
+      throw new BadRequestException(`Invalid Redirect URI`);
+    }
+
+    return await this.post('/oauth2/token', {
+      grant_type: 'authorization_code',
+      ...payload,
+    });
+  }
+
+  async decodeORYTokenOAuth2(
+    accessToken: string,
+  ): Promise<MezonOAuth2UserInfo> {
+    return await this.post('/userinfo', { access_token: accessToken });
   }
 }
