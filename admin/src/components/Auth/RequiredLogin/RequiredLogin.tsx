@@ -4,7 +4,7 @@ import { Outlet, useNavigate } from 'react-router-dom';
 // Basic Auth Middleware
 export const RequiredLogin: React.FC = () => {
   const navigate = useNavigate();
-  const hasAccessToken = localStorage.getItem('authToken');
+  const hasAccessToken = localStorage.getItem('accessToken');
 
   useEffect(() => {
     if (!hasAccessToken) {
