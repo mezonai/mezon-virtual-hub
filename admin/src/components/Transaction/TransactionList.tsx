@@ -1,6 +1,6 @@
 import { Stack, Typography } from '@mui/material';
-import { TransactionFilter } from './internal/TransactionFilter';
 import { TransactionTable } from './internal/TransactionTable';
+import { TransactionFilter } from './internal/TransactionFilter';
 import { useTransactionList } from './hooks/useTransactionList';
 
 export const TransactionList = () => {

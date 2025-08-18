@@ -1,20 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
-import httpClient from '../../../services/httpService/httpServices';
-import { User } from '../../../models/user';
-import { useTableQueryParams } from '../../../hooks/useTableQueryParams';
-
-interface UserListResponse {
-  result: User[];
-  page: number;
-  size: number;
-  total: number;
-  total_page: number;
-  has_previous_page: boolean;
-  has_next_page: boolean;
-}
+import { useTableQueryParams } from '@/hooks/useTableQueryParams';
+import httpClient from '@/services/httpService/httpServices';
+import { IPaginationResponse } from '@/type/api';
+import { User } from '@/models/user';
 
 interface APIResponse {
-  data: PaginationResponseApi<User>;
+  data: IPaginationResponse<User>;
 }
 
 export const useUserList = () => {

@@ -1,8 +1,8 @@
 import { AbstractTable } from '@/components/Table';
 import { TRANSACTION_TABLE_CONFIG } from '@/constant/table/tableConfig';
 import { useTableQueryParams } from '@/hooks/useTableQueryParams';
+import { IPaginationParams } from '@/type/api';
 import { Transaction } from '@/type/transaction/transaction';
-import { PaginationParams } from '@/types/common/common';
 import { Card } from '@mui/material';
 
 interface TransactionProps {
@@ -19,7 +19,7 @@ export const TransactionTable = ({
   const { handleParamsChange, page, limit } = useTableQueryParams();
   return (
     <Card>
-      <AbstractTable<Transaction, PaginationParams<Transaction>>
+      <AbstractTable<Transaction, IPaginationParams<Transaction>>
         columns={TRANSACTION_TABLE_CONFIG}
         rows={rows}
         count={count}

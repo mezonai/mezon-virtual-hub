@@ -18,7 +18,8 @@ import { ToastType } from '@/type/toast/toast';
 import { ModalForm } from '@/components/modals/ModalForm';
 import { SharedTextField } from '@/components/SharedTextField/SharedTextField';
 import { updateUser } from '@/services/users/updateUser';
-import { User } from '@/types/user/user';
+import { User } from '@/models/user';
+
 interface UserFormModalProps {
   open: boolean;
   selectedUser: User | undefined;
