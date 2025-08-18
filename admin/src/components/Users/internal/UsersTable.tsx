@@ -1,12 +1,11 @@
 import Card from '@mui/material/Card';
-import { User } from '../../../models/user';
+import { User } from '@/models/user';
 import React from 'react';
-import { PencilIcon, TrashIcon } from '@phosphor-icons/react';
-import { ActionFormType } from '../../../types/user';
-import { userParams } from '../../../types/user/user';
-import { Spinner } from '../../../theme/components/Spinner/Spinner';
-import { AbstractTable } from '../../../theme/components/Table/AbstractTable';
-import { USER_TABLE_CONFIG } from '../../../constant/table/tableConfig';
+import { PencilIcon, Spinner, TrashIcon } from '@phosphor-icons/react';
+import { ActionFormType } from '@/type/enum/user';
+import { UserParams } from '@/type/user/user';
+import { USER_TABLE_CONFIG } from '@/constant/table/tableConfig';
+import { AbstractTable } from '@/components/Table';
 
 interface UsersTableProps {
   count?: number;
@@ -17,7 +16,7 @@ interface UsersTableProps {
   setSelectedUser: React.Dispatch<React.SetStateAction<User | undefined>>;
   setActionForm: (action: ActionFormType) => void;
   openFormModal: () => void;
-  onParamsChange: (params: Partial<userParams>) => void;
+  onParamsChange: (params: Partial<UserParams>) => void;
 }
 
 export function UsersTable({
@@ -34,7 +33,7 @@ export function UsersTable({
   if (loading) return <Spinner />;
   return (
     <Card>
-      <AbstractTable<User, userParams>
+      <AbstractTable<User, UserParams>
         columns={USER_TABLE_CONFIG}
         actionBtn={[
           {

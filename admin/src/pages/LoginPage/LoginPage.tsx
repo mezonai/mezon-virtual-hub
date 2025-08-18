@@ -1,6 +1,6 @@
 import React from 'react';
 import { Box, Paper, Container, styled } from '@mui/material';
-import { LoginForm } from '../../components/LoginForm';
+import { LoginForm } from '@/components/LoginForm';
 
 export const LoginBox = styled(Box)(() => ({
   width: '100%',

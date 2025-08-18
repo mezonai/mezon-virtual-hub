@@ -1,4 +1,4 @@
-import { REDIRECT_OAUTH2 } from '../../utils/config';
+import { REDIRECT_OAUTH2 } from '@/utils/config';
 import httpClient from '../httpService/httpServices';
 
 interface ResponseRedirectOauth2 {

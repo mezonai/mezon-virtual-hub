@@ -1,12 +1,12 @@
 import { styled } from '@mui/system';
-import { LoginBox } from '../../pages/LoginPage';
+import { LoginBox } from '@/pages/LoginPage';
 import { Box, keyframes } from '@mui/material';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useEffect, useRef } from 'react';
-import { paths } from '../../utils/paths';
-import { useAuth } from '../../hooks/useAuth';
-import { Toast } from '../../theme/components/Toast/Toast';
-import { ToastType } from '../../types/toast/toast';
+import { paths } from '@/utils/paths';
+import { useAuth } from '@/hooks/useAuth';
+import { ToastType } from '@/type/toast/toast';
+import { Toast } from '../Toast';
 
 const keyframe = keyframes`
   0%   {clip-path: polygon(50% 50%,0 0,0 0,0 0,0 0,0 0)}

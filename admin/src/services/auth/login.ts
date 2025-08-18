@@ -1,5 +1,5 @@
-import { AuthResponseApi } from '../../types/auth/auth';
-import { LOGIN } from '../../utils/config';
+import { AuthResponseApi } from '@/types/auth/auth';
+import { LOGIN } from '@/utils/config';
 import httpClient from '../httpService/httpServices';
 
 interface LoginBody {

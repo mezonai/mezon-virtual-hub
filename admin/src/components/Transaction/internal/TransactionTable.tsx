@@ -2,10 +2,10 @@ import { Card } from '@mui/material';
 import {
   Transaction,
   transactionParams,
-} from '../../../types/transaction/transaction';
-import { Spinner } from '../../../theme/components/Spinner/Spinner';
-import { AbstractTable } from '../../../theme/components/Table/AbstractTable';
-import { TRANSACTION_TABLE_CONFIG } from '../../../constant/table/tableConfig';
+} from '@/type/transaction/transaction';
+import { TRANSACTION_TABLE_CONFIG } from '@/constant/table/tableConfig';
+import { AbstractTable } from '@/components/Table';
+import { Spinner } from '@/components/Spinner';
 
 interface TransactionProps {
   loading?: boolean;

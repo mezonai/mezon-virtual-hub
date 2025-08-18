@@ -1,5 +1,5 @@
+import { Role } from '@/type/enum';
 import { z } from 'zod';
-import { Role } from '../../../types/user';
 
 
 export const userSchema = z.object({

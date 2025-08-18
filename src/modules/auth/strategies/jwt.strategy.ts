@@ -1,4 +1,4 @@
-import { USER_TOKEN } from '@constant/meta-key.constant';
+import { USER_TOKEN } from '@/constant/meta-key.constant';
 import { UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { isEmail } from 'class-validator';

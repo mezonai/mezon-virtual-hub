@@ -6,10 +6,10 @@ import { UsersFilter } from './internal/UsersFilter';
 import { UsersTable } from './internal/UsersTable';
 import { useUserList } from './hooks/useUserList';
 import { UserFormModal } from './internal/UserFormModal';
-import { User } from '../../models/user';
+import { User } from '@/models/user';
 import { useState } from 'react';
-import { ActionFormType } from '../../types/user';
-import { useModal } from '../../theme/components/modals/hook/useModal';
+import { ActionFormType } from '@/type/enum/user';
+import { useModal } from '@/hooks/useModal';
 
 export function UserList(): React.JSX.Element {
   const {

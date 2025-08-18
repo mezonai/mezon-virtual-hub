@@ -3,8 +3,8 @@ import { TransactionStore } from './type';
 import {
   getTransaction,
   getTransactionParams,
-} from '../../services/transaction/getTransaction';
-import { TransactionResponseAPI } from '../../types/transaction/transaction';
+} from '@/services/transaction/getTransaction';
+import { TransactionResponseAPI } from '@/type/transaction/transaction';
 
 
 export const useTransactionStore = create<TransactionStore>((set, get) => ({

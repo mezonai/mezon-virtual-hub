@@ -1,5 +1,5 @@
-import { TransactionResponseAPI } from '../../types/transaction/transaction';
-import { GET_TRANSACTION } from '../../utils/config';
+import { TransactionResponseAPI } from '@/type/transaction/transaction';
+import { GET_TRANSACTION } from '@/utils/config';
 import httpClient from '../httpService/httpServices';
 
 export interface getTransactionParams {

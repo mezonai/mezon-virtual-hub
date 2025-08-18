@@ -1,18 +1,18 @@
 import Card from '@mui/material/Card';
 import { Grid } from '@mui/material';
-import { User } from '../../../models/user';
-import { SortOrder } from '../../../types/user';
-import { userParams } from '../../../types/user/user';
-import { SearchInput } from '../../../theme/components/SearchInput/SearchInput';
-import { SortSelect } from '../../../theme/components/Select/SortSelect';
-import { USER_FIELDS } from '../../../constant/table/tableConfig';
+import { User } from '@/models/user';
+import { SortOrder } from '@/type/enum/user';
+import { UserParams } from '@/type/user/user';
+import { USER_FIELDS } from '@/constant/table/tableConfig';
+import { SearchInput } from '@/components/SearchInput';
+import { SortSelect } from '@/components/Select';
 
 interface UsersFilterProps {
   sortBy: string;
   search: string;
   order: SortOrder;
   confirmSearch: string;
-  onParamsChange: (params: Partial<userParams>) => void;
+  onParamsChange: (params: Partial<UserParams>) => void;
   setConfirmSearch: React.Dispatch<React.SetStateAction<string>>;
 }
 
@@ -26,13 +26,13 @@ export function UsersFilter({
   return (
     <Card sx={{ p: 2 }}>
       <Grid container spacing={4}>
-        <SearchInput<userParams>
+        <SearchInput<UserParams>
           placeholder="Search user"
           value={confirmSearch}
           onChangeSearch={setConfirmSearch}
           onParamsChange={onParamsChange}
         />
-        <SortSelect<userParams, User>
+        <SortSelect<UserParams, User>
           sortBy={sortBy}
           order={order}
           onParamsChange={onParamsChange}

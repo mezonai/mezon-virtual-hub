@@ -1,5 +1,5 @@
-import { getTransactionParams } from '../../services/transaction/getTransaction';
-import { TransactionResponseAPI } from '../../types/transaction/transaction';
+import { getTransactionParams } from '@/services/transaction/getTransaction';
+import { TransactionResponseAPI } from '@/type/transaction/transaction';
 
 export interface TransactionStore {
   transactions: TransactionResponseAPI;

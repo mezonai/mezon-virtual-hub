@@ -1,12 +1,12 @@
 import { Grid, Card } from '@mui/material';
-import { SortOrder } from '../../../types/user';
+import { SortOrder } from '@/type/enum/user';
 import {
   Transaction,
   transactionParams,
-} from '../../../types/transaction/transaction';
-import { SearchInput } from '../../../theme/components/SearchInput/SearchInput';
-import { SortSelect } from '../../../theme/components/Select/SortSelect';
-import { TRANSACTION_FIELDS } from '../../../constant/table/tableConfig';
+} from '@/type/transaction/transaction';
+import { TRANSACTION_FIELDS } from '@/constant/table/tableConfig';
+import { SortSelect } from '@/components/Select';
+import { SearchInput } from '@/components/SearchInput';
 
 interface TransactionFilterProps {
   sortBy: string;

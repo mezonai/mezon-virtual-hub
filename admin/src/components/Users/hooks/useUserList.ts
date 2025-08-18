@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
-import httpClient from '../../../services/httpService/httpServices';
-import { User } from '../../../models/user';
-import { useTableQueryParams } from '../../../hooks/useTableQueryParams';
+import httpClient from '@/services/httpService/httpServices';
+import { User } from '@/models/user';
+import { useTableQueryParams } from '@/hooks/useTableQueryParams';
 
 interface UserListResponse {
   result: User[];
