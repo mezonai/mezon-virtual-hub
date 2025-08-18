@@ -1,7 +1,8 @@
 import { getTransactionParams } from '@/services/transaction/getTransaction';
-import { TransactionResponseAPI } from '@/type/transaction/transaction';
+import { IPaginationResponse } from '@/type/api';
+import { Transaction } from '@/type/transaction/transaction';
 
 export interface TransactionStore {
-  transactions: TransactionResponseAPI;
+  transactions: IPaginationResponse<Transaction>;
   fetchTransaction: (params: getTransactionParams) => Promise<void>;
 }

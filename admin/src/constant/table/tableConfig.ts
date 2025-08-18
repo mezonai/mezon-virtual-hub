@@ -1,7 +1,7 @@
+import { TableColumn } from '@/components/Table';
 import { User } from '@/models/user';
-import { formatDate } from '@/utils/format/formatDate';
 import { Transaction } from '@/type/transaction/transaction';
-import { TableColumn } from '@/components/Table/AbstractTable';
+import { formatDate } from '@/utils/format/formatDate';
 
 export const USER_TABLE_CONFIG: TableColumn<User>[] = [
   {

@@ -1,39 +1,34 @@
 import Card from '@mui/material/Card';
-import { User } from '@/models/user';
 import React from 'react';
-import { PencilIcon, Spinner, TrashIcon } from '@phosphor-icons/react';
-import { ActionFormType } from '@/type/enum/user';
-import { UserParams } from '@/type/user/user';
+import { PencilIcon, TrashIcon } from '@phosphor-icons/react';
+import { ActionFormType } from '@/type/enum';
+import { useTableQueryParams } from '@/hooks/useTableQueryParams';
+import { AbstractTable } from '@/components/Table/AbstractTable';
+import { IPaginationParams } from '@/type/api';
 import { USER_TABLE_CONFIG } from '@/constant/table/tableConfig';
-import { AbstractTable } from '@/components/Table';
+import { User } from '@/models/user';
 
 interface UsersTableProps {
   count?: number;
-  page?: number;
   rows?: User[];
-  rowsPerPage?: number;
   loading?: boolean;
   setSelectedUser: React.Dispatch<React.SetStateAction<User | undefined>>;
   setActionForm: (action: ActionFormType) => void;
   openFormModal: () => void;
-  onParamsChange: (params: Partial<UserParams>) => void;
 }
 
 export function UsersTable({
   count = 0,
   rows = [],
-  page = 0,
-  rowsPerPage = 0,
   loading,
-  onParamsChange,
   setSelectedUser,
   openFormModal,
   setActionForm,
 }: UsersTableProps): React.JSX.Element {
-  if (loading) return <Spinner />;
+  const { handleParamsChange, page, limit } = useTableQueryParams();
   return (
     <Card>
-      <AbstractTable<User, UserParams>
+      <AbstractTable<User, IPaginationParams<User>>
         columns={USER_TABLE_CONFIG}
         actionBtn={[
           {
@@ -53,8 +48,9 @@ export function UsersTable({
         rows={rows}
         count={count}
         page={page}
-        rowsPerPage={rowsPerPage}
-        onParamsChange={onParamsChange}
+        rowsPerPage={limit}
+        onParamsChange={handleParamsChange}
+        loading={loading}
       />
     </Card>
   );

@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { SortOrder } from '../type/enum/user';
-import { IPaginationResponse } from '@/type/api';
 
 interface IQueryParams {
   page: number;
@@ -19,7 +18,7 @@ export function useTableQueryParams<T>() {
       page: Number(searchParam.get('page') || '1'),
       limit: Number(searchParam.get('limit') || '5'),
       search: searchParam.get('search') || '',
-      sort_by: (searchParam.get('sort_by')) || 'created_at',
+      sort_by: searchParam.get('sort_by') || 'created_at',
       order: (searchParam.get('order') as SortOrder) || SortOrder.DESC,
     };
   }, [searchParam]);

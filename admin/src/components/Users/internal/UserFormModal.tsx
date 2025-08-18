@@ -11,15 +11,15 @@ import {
 import { Controller, useForm } from 'react-hook-form';
 import { UserInfo, userSchema } from '@/lib/schema/user/user';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { User } from '@/models/user';
 import { useEffect } from 'react';
-import { updateUser } from '@/services/users/updateUser';
 import { ActionFormType, Gender, Role } from '@/type/enum';
-import { ToastType } from '@/type/toast/toast';
-import { CheckFatIcon } from '@phosphor-icons/react';
-import { ModalForm } from '@/components/modals';
-import { SharedTextField } from '@/components/SharedTextField';
 import { Toast } from '@/components/Toast';
+import { ToastType } from '@/type/toast/toast';
+import { ModalForm } from '@/components/modals/ModalForm';
+import { SharedTextField } from '@/components/SharedTextField/SharedTextField';
+import { updateUser } from '@/services/users/updateUser';
+import { User } from '@/models/user';
+
 interface UserFormModalProps {
   open: boolean;
   selectedUser: User | undefined;

@@ -44,6 +44,7 @@ export const Callback = () => {
     callRef.current = true;
     if (!state && !code) {
       navigate(paths.auth.login);
+      return;
     }
     const doLogin = async () => {
       const success = await handleLogin(code, state);
