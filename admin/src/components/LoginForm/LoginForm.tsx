@@ -1,7 +1,7 @@
 import React from 'react';
 import { Box, Button, Typography, Stack } from '@mui/material';
-import { getRedirectOauth2 } from '../../services/auth/getRedirectOauth2';
-import { getRedirectUrl } from '../../utils/url/getRedirectUrl';
+import { getRedirectOauth2 } from '@/services/auth/getRedirectOauth2';
+import { getRedirectUrl } from '@/utils/url/getRedirectUrl';
 
 export const LoginForm: React.FC = () => {
   const handleClickLoginWithMezon = async () => {

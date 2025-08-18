@@ -1,9 +1,9 @@
+import { Toast } from '@/components/Toast';
+import { ToastType } from '@/type/toast/toast';
 import axios, { AxiosError } from 'axios';
-import { Toast } from '../../theme/components/Toast/Toast';
-import { ToastType } from '../../types/toast/toast';
+import { ApiResponseError } from '@/types/auth/auth';
+import { paths } from '@/utils/paths';
 import { refreshTokens } from '../auth/refreshTokens';
-import { ApiResponseError } from '../../types/auth/auth';
-import { paths } from '../../utils/paths';
 
 const httpClient = axios.create({
   baseURL: process.env.REACT_APP_API_BASE_URL || 'https://fallback.example.com',

@@ -1,5 +1,5 @@
-import { AuthResponseApi } from '../../types/auth/auth';
-import { REFRESH_TOKEN } from '../../utils/config';
+import { AuthResponseApi } from '@/types/auth/auth';
+import { REFRESH_TOKEN } from '@/utils/config';
 import httpClient from '../httpService/httpServices';
 
 interface RefreshTokenBody {

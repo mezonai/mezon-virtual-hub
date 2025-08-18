@@ -1,12 +1,3 @@
-export interface User {
-  id: string;
-  name?: string;
-  avatar?: string;
-  email?: string;
-
-  [key: string]: unknown;
-}
-
 export enum MapKey {
   HN1 = 'hn1',
   HN2 = 'hn2',

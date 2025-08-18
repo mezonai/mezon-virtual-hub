@@ -1,5 +1,5 @@
 import { MenuItem, Select, SelectProps, SxProps, Theme } from '@mui/material';
-import { SortOrder } from '../../../types/user';
+import { SortOrder } from '@/type/enum/user';
 
 type SortSelectProps<P> = SelectProps & {
   sortBy?: string;
@@ -10,7 +10,7 @@ type SortSelectProps<P> = SelectProps & {
 };
 
 export function SortSelect<
-  P extends { sort_by: keyof T; order: SortOrder },
+  P extends { sort_by: string; order: SortOrder },
   T,
 >({ items, sortBy, order, sx, onParamsChange, ...props }: SortSelectProps<P>) {
   return (
@@ -21,7 +21,7 @@ export function SortSelect<
         {...props}
         onChange={(e) => {
           onParamsChange?.({
-            sort_by: e.target.value as keyof T,
+            sort_by: e.target.value as string,
           } as Partial<P>);
         }}
       >

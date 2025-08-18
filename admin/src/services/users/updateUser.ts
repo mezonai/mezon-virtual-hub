@@ -1,5 +1,5 @@
-import { UserInfo } from '../../lib/schema/user/user';
-import { UPDATE_USER } from '../../utils/config';
+import { UserInfo } from '@/lib/schema/user/user';
+import { UPDATE_USER } from '@/utils/config';
 import httpClient from '../httpService/httpServices';
 
 export const updateUser = async (

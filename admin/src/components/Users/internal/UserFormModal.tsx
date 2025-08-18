@@ -8,17 +8,18 @@ import {
   MenuItem,
   Select,
 } from '@mui/material';
-import { ModalForm } from '../../../theme/components/modals/ModalForm';
 import { Controller, useForm } from 'react-hook-form';
-import { UserInfo, userSchema } from '../../../lib/schema/user/user';
+import { UserInfo, userSchema } from '@/lib/schema/user/user';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { User } from '../../../models/user';
+import { User } from '@/models/user';
 import { useEffect } from 'react';
-import { updateUser } from '../../../services/users/updateUser';
-import { ActionFormType, Gender, Role } from '../../../types/user';
-import { Toast } from '../../../theme/components/Toast/Toast';
-import { ToastType } from '../../../types/toast/toast';
-import { SharedTextField } from '../../../theme/components/SharedTextField/SharedTextField';
+import { updateUser } from '@/services/users/updateUser';
+import { ActionFormType, Gender, Role } from '@/type/enum';
+import { ToastType } from '@/type/toast/toast';
+import { CheckFatIcon } from '@phosphor-icons/react';
+import { ModalForm } from '@/components/modals';
+import { SharedTextField } from '@/components/SharedTextField';
+import { Toast } from '@/components/Toast';
 interface UserFormModalProps {
   open: boolean;
   selectedUser: User | undefined;
