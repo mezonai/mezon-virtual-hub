@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { EntityManager, FindOptionsWhere, ILike, Repository } from 'typeorm';
-import { TransactionsEntity } from '@/transactions/entity/transactions.entity';
+import { TransactionsEntity } from '../../transactions/entity/transactions.entity';
 import {
   TransactionResponseDto,
   TransactionsQueryDto,

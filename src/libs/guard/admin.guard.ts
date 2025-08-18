@@ -1,5 +1,5 @@
 import { configEnv } from '@config/env.config';
-import { USER_TOKEN } from '@/constant/meta-key.constant';
+import { USER_TOKEN } from '@constant/meta-key.constant';
 import { Role } from '@enum';
 import { UserEntity } from '@modules/user/entity/user.entity';
 import {

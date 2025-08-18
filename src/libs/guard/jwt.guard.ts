@@ -1,4 +1,4 @@
-import { SKIP_AUTH, SKIP_GLOBAL_GUARD } from "@/constant/meta-key.constant";
+import { SKIP_AUTH, SKIP_GLOBAL_GUARD } from "@constant/meta-key.constant";
 import { ExecutionContext, Injectable } from "@nestjs/common";
 import { Reflector } from "@nestjs/core";
 import { AuthGuard } from "@nestjs/passport";
