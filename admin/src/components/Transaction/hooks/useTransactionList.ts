@@ -38,7 +38,7 @@ export const useTransactionList = () => {
       return;
     }
     fetchDataTransaction();
-  }, [page, limit, sortBy, search, order, fetchDataTransaction]);
+  }, [queryParam, fetchDataTransaction]);
 
   return {
     transactionData,

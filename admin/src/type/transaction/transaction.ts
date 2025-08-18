@@ -1,4 +1,4 @@
-import { SortOrder } from '../enum/user';
+import { SortOrder } from '@/type/enum';
 
 export interface Transaction {
   id: string;

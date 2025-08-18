@@ -1,26 +1,26 @@
 import { Box, CircularProgress } from '@mui/material';
 
-export const Spinner = () => {
+interface SpinnerProps {
+  variant?: 'absolute' | 'fixed';
+}
+
+export const Spinner = ({ variant = 'fixed' }: SpinnerProps) => {
   return (
     <Box
       sx={{
-        position: 'fixed',
+        position: variant,
         top: 0,
         left: 0,
-        width: '100vw',
-        height: '100vh',
+        bottom: 0,
+        right: 0,
         zIndex: 9999,
         display: 'flex',
         justifyContent: 'center',
         alignItems: 'center',
+        backgroundColor: 'rgba(0,0,0,0.5)',
       }}
     >
-      <CircularProgress
-        size={60}
-        color="secondary"
-        disableShrink
-        thickness={5}
-      />
+      <CircularProgress size={50} />
     </Box>
   );
 };

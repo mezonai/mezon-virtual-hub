@@ -1,39 +1,32 @@
-import { Card } from '@mui/material';
-import {
-  Transaction,
-  transactionParams,
-} from '@/type/transaction/transaction';
-import { TRANSACTION_TABLE_CONFIG } from '@/constant/table/tableConfig';
 import { AbstractTable } from '@/components/Table';
-import { Spinner } from '@/components/Spinner';
+import { TRANSACTION_TABLE_CONFIG } from '@/constant/table/tableConfig';
+import { useTableQueryParams } from '@/hooks/useTableQueryParams';
+import { IPaginationParams } from '@/type/api';
+import { Transaction } from '@/type/transaction/transaction';
+import { Card } from '@mui/material';
 
 interface TransactionProps {
   loading?: boolean;
   rows?: Transaction[];
-  rowsPerPage?: number;
   count?: number;
-  page?: number;
-  onParamsChange: (params: Partial<transactionParams>) => void;
 }
 
 export const TransactionTable = ({
   rows = [],
-  rowsPerPage = 0,
   count = 0,
-  page = 0,
   loading,
-  onParamsChange,
 }: TransactionProps) => {
-  if (loading) return <Spinner />;
+  const { handleParamsChange, page, limit } = useTableQueryParams();
   return (
     <Card>
-      <AbstractTable<Transaction, transactionParams>
+      <AbstractTable<Transaction, IPaginationParams<Transaction>>
         columns={TRANSACTION_TABLE_CONFIG}
         rows={rows}
         count={count}
         page={page}
-        rowsPerPage={rowsPerPage}
-        onParamsChange={onParamsChange}
+        rowsPerPage={limit}
+        onParamsChange={handleParamsChange}
+        loading={loading}
       />
     </Card>
   );

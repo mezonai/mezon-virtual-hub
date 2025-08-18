@@ -1,4 +1,5 @@
 import {
+  Box,
   Button,
   Card,
   Divider,
@@ -13,6 +14,7 @@ import {
   Typography,
 } from '@mui/material';
 import React from 'react';
+import { Spinner } from '../Spinner/Spinner';
 
 export interface TableColumn<T> {
   key: keyof T | string;
@@ -34,6 +36,7 @@ interface AbstractTableProps<T, P> {
   page?: number;
   rowsPerPage?: number;
   onParamsChange?: (params: Partial<P>) => void;
+  loading?: boolean;
 }
 
 export function AbstractTable<
@@ -47,67 +50,71 @@ export function AbstractTable<
   page = 0,
   rowsPerPage = 0,
   onParamsChange,
+  loading,
 }: AbstractTableProps<T, P>): React.JSX.Element {
   return (
     <Card>
-      <TableContainer
-        sx={{ overflowX: 'auto', overflowY: 'auto', maxHeight: 400 }}
-      >
-        <Table sx={{ minWidth: '800px' }} stickyHeader>
-          <TableHead>
-            <TableRow>
-              {columns.map((col, index) => (
-                <TableCell key={index}>{col.headerName}</TableCell>
-              ))}
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {rows.map((row) => (
-              <TableRow hover key={row.id}>
-                {columns.map((col, index) => {
-                  if (col.key === 'action') {
-                    return (
-                      <TableCell>
-                        <Stack direction="row" spacing={1}>
-                          {actionBtn?.map((action, index) => (
-                            <Button
-                              variant="contained"
-                              key={index}
-                              onClick={() => action?.onClick?.(row)}
-                              color={action.color || 'primary'}
-                              sx={{
-                                justifyContent: 'flex-center',
-                                gap: 1.5,
-                                paddingLeft: 2,
-                              }}
-                            >
-                              {action.icon}
-                            </Button>
-                          ))}
-                        </Stack>
-                      </TableCell>
-                    );
-                  } else {
-                    return (
-                      <TableCell key={index}>
-                        {col.render ? (
-                          col.render(row)
-                        ) : (
-                          <Typography variant="subtitle2">
-                            {typeof col.key === 'string'
-                              ? ((row as any)[col.key] ?? '')
-                              : ''}
-                          </Typography>
-                        )}
-                      </TableCell>
-                    );
-                  }
-                })}
+      <Box sx={{ position: 'relative' }}>
+        <TableContainer
+          sx={{ overflowX: 'auto', overflowY: 'auto', maxHeight: 400 }}
+        >
+          <Table sx={{ minWidth: '800px' }} stickyHeader>
+            <TableHead>
+              <TableRow>
+                {columns.map((col, index) => (
+                  <TableCell key={index}>{col.headerName}</TableCell>
+                ))}
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
+            </TableHead>
+            <TableBody>
+              {rows.map((row) => (
+                <TableRow hover key={row.id}>
+                  {columns.map((col, index) => {
+                    if (col.key === 'action') {
+                      return (
+                        <TableCell>
+                          <Stack direction="row" spacing={1}>
+                            {actionBtn?.map((action, index) => (
+                              <Button
+                                variant="contained"
+                                key={index}
+                                onClick={() => action?.onClick?.(row)}
+                                color={action.color || 'primary'}
+                                sx={{
+                                  justifyContent: 'flex-center',
+                                  gap: 1.5,
+                                  paddingLeft: 2,
+                                }}
+                              >
+                                {action.icon}
+                              </Button>
+                            ))}
+                          </Stack>
+                        </TableCell>
+                      );
+                    } else {
+                      return (
+                        <TableCell key={index}>
+                          {col.render ? (
+                            col.render(row)
+                          ) : (
+                            <Typography variant="subtitle2">
+                              {typeof col.key === 'string'
+                                ? ((row as any)[col.key] ?? '')
+                                : ''}
+                            </Typography>
+                          )}
+                        </TableCell>
+                      );
+                    }
+                  })}
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+        {loading && <Spinner variant="absolute" />}
+      </Box>
       <Divider />
       <TablePagination
         component="div"

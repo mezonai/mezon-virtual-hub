@@ -1,4 +1,4 @@
-import { AuthResponseApi } from '@/types/auth/auth';
+import { AuthResponseApi } from '@/type/auth/auth';
 import { LOGIN } from '@/utils/config';
 import httpClient from '../httpService/httpServices';
 
