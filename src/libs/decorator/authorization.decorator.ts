@@ -1,4 +1,4 @@
-import { SKIP_AUTH, SKIP_GLOBAL_GUARD } from "@constant/meta-key.constant";
+import { SKIP_AUTH, SKIP_GLOBAL_GUARD } from "@/constant/meta-key.constant";
 import { AdminGuard } from "@libs/guard/admin.guard";
 import { applyDecorators, SetMetadata, UseGuards } from "@nestjs/common";
 
