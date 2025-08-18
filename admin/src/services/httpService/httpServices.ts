@@ -4,6 +4,11 @@ import { ToastType } from '../../types/toast/toast';
 import { refreshTokens } from '../auth/refreshTokens';
 import { ApiResponseError } from '../../types/auth/auth';
 import { paths } from '../../utils/paths';
+import {
+  getAccessToken,
+  getRefreshToken,
+  setTokens,
+} from '../../utils/auth/authStorage';
 
 const httpClient = axios.create({
   baseURL: process.env.REACT_APP_API_BASE_URL || 'https://fallback.example.com',
@@ -16,7 +21,7 @@ const httpClient = axios.create({
 // Attach token from localStorage before each request
 httpClient.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('accessToken');
+    const token = getAccessToken();
     if (token) {
       config.headers['Authorization'] = `Bearer ${token}`;
     }
@@ -31,16 +36,15 @@ httpClient.interceptors.response.use(
   },
   async (error) => {
     if (error?.response?.status === 401) {
-      const refreshToken = localStorage.getItem('refreshToken');
-      const getToken = localStorage.getItem('accessToken');
+      const refreshToken = getRefreshToken();
+      const getToken = getAccessToken();
       if (!refreshToken || !getToken) {
         window.location.href = paths.auth.login;
         return;
       }
       try {
         const res = await refreshTokens({ refreshToken });
-        localStorage.setItem('accessToken', res.accessToken);
-        localStorage.setItem('refreshToken', res.refreshToken);
+        setTokens(res.accessToken, res.refreshToken);
         error.config.headers['Authorization'] = `Bearer ${res.accessToken}`;
         return httpClient(error.config);
       } catch (err: unknown) {

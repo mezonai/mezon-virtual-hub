@@ -4,11 +4,11 @@ import {
   getTransaction,
   getTransactionParams,
 } from '../../services/transaction/getTransaction';
-import { TransactionResponseAPI } from '../../types/transaction/transaction';
-
+import { Transaction } from '../../types/transaction/transaction';
+import { PaginationResponseApi } from '../../types/common/common';
 
 export const useTransactionStore = create<TransactionStore>((set, get) => ({
-  transactions: {} as TransactionResponseAPI,
+  transactions: {} as PaginationResponseApi<Transaction>,
   fetchTransaction: async ({
     search,
     page,

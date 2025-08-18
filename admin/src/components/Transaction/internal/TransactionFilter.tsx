@@ -1,40 +1,28 @@
 import { Grid, Card } from '@mui/material';
-import { SortOrder } from '../../../types/user';
-import {
-  Transaction,
-  transactionParams,
-} from '../../../types/transaction/transaction';
+import { Transaction } from '../../../types/transaction/transaction';
 import { SearchInput } from '../../../theme/components/SearchInput/SearchInput';
 import { SortSelect } from '../../../theme/components/Select/SortSelect';
 import { TRANSACTION_FIELDS } from '../../../constant/table/tableConfig';
+import { PaginationParams } from '../../../types/common/common';
+import { useTableQueryParams } from '../../../hooks/useTableQueryParams';
 
-interface TransactionFilterProps {
-  sortBy: string;
-  order: SortOrder;
-  confirmSearch: string;
-  onParamsChange: (params: Partial<transactionParams>) => void;
-  setConfirmSearch: React.Dispatch<React.SetStateAction<string>>;
-}
-export const TransactionFilter = ({
-  sortBy,
-  order,
-  confirmSearch,
-  onParamsChange,
-  setConfirmSearch,
-}: TransactionFilterProps) => {
+
+export const TransactionFilter = () => {
+  const { handleParamsChange, setConfirmSearch, confirmSearch, sortBy, order } =
+    useTableQueryParams<Transaction>();
   return (
     <Card sx={{ p: 2 }}>
       <Grid spacing={4} container>
-        <SearchInput<transactionParams>
+        <SearchInput<PaginationParams<Transaction>>
           placeholder="Search transaction"
           value={confirmSearch}
           onChangeSearch={setConfirmSearch}
-          onParamsChange={onParamsChange}
+          onParamsChange={handleParamsChange}
         />
-        <SortSelect<transactionParams, Transaction>
+        <SortSelect<PaginationParams<Transaction>, Transaction>
           sortBy={sortBy}
           order={order}
-          onParamsChange={onParamsChange}
+          onParamsChange={handleParamsChange}
           items={TRANSACTION_FIELDS}
         />
       </Grid>

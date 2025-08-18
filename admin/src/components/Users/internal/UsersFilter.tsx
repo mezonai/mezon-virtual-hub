@@ -1,41 +1,28 @@
 import Card from '@mui/material/Card';
 import { Grid } from '@mui/material';
-import { User } from '../../../models/user';
-import { SortOrder } from '../../../types/user';
-import { userParams } from '../../../types/user/user';
 import { SearchInput } from '../../../theme/components/SearchInput/SearchInput';
 import { SortSelect } from '../../../theme/components/Select/SortSelect';
 import { USER_FIELDS } from '../../../constant/table/tableConfig';
+import { PaginationParams } from '../../../types/common/common';
+import { User } from '../../../types/user/user';
+import { useTableQueryParams } from '../../../hooks/useTableQueryParams';
 
-interface UsersFilterProps {
-  sortBy: string;
-  search: string;
-  order: SortOrder;
-  confirmSearch: string;
-  onParamsChange: (params: Partial<userParams>) => void;
-  setConfirmSearch: React.Dispatch<React.SetStateAction<string>>;
-}
-
-export function UsersFilter({
-  sortBy,
-  order,
-  onParamsChange,
-  confirmSearch,
-  setConfirmSearch,
-}: UsersFilterProps): React.JSX.Element {
+export function UsersFilter(): React.JSX.Element {
+  const { handleParamsChange, setConfirmSearch, confirmSearch, sortBy, order } =
+    useTableQueryParams<User>();
   return (
     <Card sx={{ p: 2 }}>
       <Grid container spacing={4}>
-        <SearchInput<userParams>
+        <SearchInput<PaginationParams<User>>
           placeholder="Search user"
           value={confirmSearch}
           onChangeSearch={setConfirmSearch}
-          onParamsChange={onParamsChange}
+          onParamsChange={handleParamsChange}
         />
-        <SortSelect<userParams, User>
+        <SortSelect<PaginationParams<User>, User>
           sortBy={sortBy}
           order={order}
-          onParamsChange={onParamsChange}
+          onParamsChange={handleParamsChange}
           items={USER_FIELDS}
         />
       </Grid>

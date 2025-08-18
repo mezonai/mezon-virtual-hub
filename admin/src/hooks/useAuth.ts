@@ -3,6 +3,7 @@ import { login } from '../services/auth/login';
 import { useNavigate } from 'react-router-dom';
 import { paths } from '../utils/paths';
 import { getRedirectUrl } from '../utils/url/getRedirectUrl';
+import { removeToken, setTokens } from '../utils/auth/authStorage';
 
 export function useAuth() {
   const navigate = useNavigate();
@@ -13,8 +14,7 @@ export function useAuth() {
         const redirect_uri = getRedirectUrl();
         const data = await login({ code, state, redirect_uri });
         if (data) {
-          localStorage.setItem('accessToken', data.accessToken);
-          localStorage.setItem('refreshToken', data.refreshToken);
+          setTokens(data.accessToken, data.refreshToken);
           return true;
         }
         return false;
@@ -26,8 +26,7 @@ export function useAuth() {
   );
 
   const handleLogout = useCallback(() => {
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
+    removeToken();
     navigate(paths.auth.login);
   }, [navigate]);
 

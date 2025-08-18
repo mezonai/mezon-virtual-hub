@@ -1,20 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import httpClient from '../../../services/httpService/httpServices';
-import { User } from '../../../models/user';
 import { useTableQueryParams } from '../../../hooks/useTableQueryParams';
-
-interface UserListResponse {
-  result: User[];
-  page: number;
-  size: number;
-  total: number;
-  total_page: number;
-  has_previous_page: boolean;
-  has_next_page: boolean;
-}
+import { PaginationResponseApi } from '../../../types/common/common';
+import { User } from '../../../types/user/user';
 
 interface APIResponse {
-  data: UserListResponse;
+  data: PaginationResponseApi<User>;
 }
 
 export const useUserList = () => {
@@ -26,7 +17,6 @@ export const useUserList = () => {
   const firstCallRef = useRef<boolean>(true);
   const {
     queryParam,
-    handleParamsChange,
     limit,
     page,
     sortBy,
@@ -47,13 +37,7 @@ export const useUserList = () => {
       setLoading(true);
       try {
         const res = await httpClient.get<APIResponse>('/admin/users', {
-          params: {
-            search: queryParam.search,
-            page: queryParam.page,
-            limit: queryParam.limit,
-            sort_by: queryParam.sort_by,
-            order: queryParam.order,
-          },
+          params: queryParam,
         });
 
         if (active) {
@@ -72,13 +56,7 @@ export const useUserList = () => {
     return () => {
       active = false;
     };
-  }, [
-    queryParam.page,
-    queryParam.limit,
-    queryParam.sort_by,
-    queryParam.order,
-    queryParam.search,
-  ]);
+  }, [queryParam]);
 
   return {
     users,
@@ -95,6 +73,5 @@ export const useUserList = () => {
     search,
     setConfirmSearch,
     confirmSearch,
-    handleParamsChange,
   };
 };
