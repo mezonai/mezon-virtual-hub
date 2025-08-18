@@ -5,10 +5,10 @@ import Box from '@mui/material/Box';
 import Divider from '@mui/material/Divider';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
-import { NavItemConfig } from '../../types/nav';
-import { navItems } from '../../utils/config';
-import { isNavItemActive } from '../../utils/is-nav-item-active';
-import { navIcons } from '../../utils/nav-icons';
+import { NavItemConfig } from '@/type/nav';
+import { navItems } from '@/utils/config';
+import { isNavItemActive } from '@/utils/is-nav-item-active';
+import { navIcons } from '@/utils/nav-icons';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 export function SideNav(): React.JSX.Element {

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useTransactionStore } from '../../../store/transaction/store';
-import { Transaction } from '../../../types/transaction/transaction';
-import { useTableQueryParams } from '../../../hooks/useTableQueryParams';
+import { useTransactionStore } from '@/store/transaction/store';
+import { Transaction } from '@/type/transaction/transaction';
+import { useTableQueryParams } from '@/hooks/useTableQueryParams';
 
 export const useTransactionList = () => {
   const [loading, setLoading] = useState<boolean>(false);

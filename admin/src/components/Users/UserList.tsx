@@ -2,14 +2,14 @@ import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { PlusIcon } from '@phosphor-icons/react/dist/ssr/Plus';
+import { useUserList } from './hooks/useUserList';
+import { useModal } from '@/hooks/useModal';
+import { useState } from 'react';
+import { User } from '@/models/user';
+import { ActionFormType } from '@/type/enum';
 import { UsersFilter } from './internal/UsersFilter';
 import { UsersTable } from './internal/UsersTable';
-import { useUserList } from './hooks/useUserList';
 import { UserFormModal } from './internal/UserFormModal';
-import { useState } from 'react';
-import { ActionFormType } from '../../types/user';
-import { useModal } from '../../theme/components/modals/hook/useModal';
-import { User } from '../../types/user/user';
 
 export function UserList(): React.JSX.Element {
   const { users, totalItems, loading } = useUserList();

@@ -1,14 +1,14 @@
 import { create } from 'zustand';
 import { TransactionStore } from './type';
+import { IPaginationResponse } from '@/type/api';
+import { Transaction } from '@/type/transaction/transaction';
 import {
   getTransaction,
   getTransactionParams,
-} from '../../services/transaction/getTransaction';
-import { Transaction } from '../../types/transaction/transaction';
-import { PaginationResponseApi } from '../../types/common/common';
+} from '@/services/transaction/getTransaction';
 
 export const useTransactionStore = create<TransactionStore>((set, get) => ({
-  transactions: {} as PaginationResponseApi<Transaction>,
+  transactions: {} as IPaginationResponse<Transaction>,
   fetchTransaction: async ({
     search,
     page,

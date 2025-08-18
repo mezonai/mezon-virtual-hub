@@ -4,7 +4,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Pageable } from '@types';
 import { plainToInstance } from 'class-transformer';
 import { DataSource, FindOptionsWhere, ILike, Repository } from 'typeorm';
-import { UserEntity } from '../../user/entity/user.entity';
+import { UserEntity } from '@/user/entity/user.entity';
 import {
   UsersManagementQueryDto,
   UsersManagementResDto,

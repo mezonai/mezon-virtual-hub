@@ -1,5 +1,5 @@
 import { toast } from 'react-toastify';
-import { ToastType } from '../../../types/toast/toast';
+import { ToastType } from '@/type/toast/toast';
 import { Stack, Typography } from '@mui/material';
 import React from 'react';
 import {

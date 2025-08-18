@@ -1,9 +1,9 @@
+import { AbstractTable } from '@/components/Table';
+import { TRANSACTION_TABLE_CONFIG } from '@/constant/table/tableConfig';
+import { useTableQueryParams } from '@/hooks/useTableQueryParams';
+import { Transaction } from '@/type/transaction/transaction';
+import { PaginationParams } from '@/types/common/common';
 import { Card } from '@mui/material';
-import { Transaction } from '../../../types/transaction/transaction';
-import { AbstractTable } from '../../../theme/components/Table/AbstractTable';
-import { TRANSACTION_TABLE_CONFIG } from '../../../constant/table/tableConfig';
-import { PaginationParams } from '../../../types/common/common';
-import { useTableQueryParams } from '../../../hooks/useTableQueryParams';
 
 interface TransactionProps {
   loading?: boolean;

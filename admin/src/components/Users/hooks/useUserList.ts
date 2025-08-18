@@ -1,8 +1,17 @@
 import { useEffect, useRef, useState } from 'react';
 import httpClient from '../../../services/httpService/httpServices';
+import { User } from '../../../models/user';
 import { useTableQueryParams } from '../../../hooks/useTableQueryParams';
-import { PaginationResponseApi } from '../../../types/common/common';
-import { User } from '../../../types/user/user';
+
+interface UserListResponse {
+  result: User[];
+  page: number;
+  size: number;
+  total: number;
+  total_page: number;
+  has_previous_page: boolean;
+  has_next_page: boolean;
+}
 
 interface APIResponse {
   data: PaginationResponseApi<User>;

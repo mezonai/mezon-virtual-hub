@@ -1,12 +1,12 @@
 import Card from '@mui/material/Card';
 import React from 'react';
 import { PencilIcon, TrashIcon } from '@phosphor-icons/react';
-import { ActionFormType } from '../../../types/user';
-import { AbstractTable } from '../../../theme/components/Table/AbstractTable';
-import { USER_TABLE_CONFIG } from '../../../constant/table/tableConfig';
-import { PaginationParams } from '../../../types/common/common';
-import { User } from '../../../types/user/user';
-import { useTableQueryParams } from '../../../hooks/useTableQueryParams';
+import { ActionFormType } from '@/type/enum';
+import { useTableQueryParams } from '@/hooks/useTableQueryParams';
+import { AbstractTable } from '@/components/Table/AbstractTable';
+import { IPaginationParams } from '@/type/api';
+import { USER_TABLE_CONFIG } from '@/constant/table/tableConfig';
+import { User } from '@/models/user';
 
 interface UsersTableProps {
   count?: number;
@@ -28,7 +28,7 @@ export function UsersTable({
   const { handleParamsChange, page, limit } = useTableQueryParams();
   return (
     <Card>
-      <AbstractTable<User, PaginationParams<User>>
+      <AbstractTable<User, IPaginationParams<User>>
         columns={USER_TABLE_CONFIG}
         actionBtn={[
           {
