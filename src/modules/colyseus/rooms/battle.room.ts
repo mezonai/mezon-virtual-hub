@@ -49,19 +49,17 @@ export class BattleRoom extends BaseGameRoom {
     }
 
     override onLeave(client: AuthenticatedClient): void {
-        const player = this.state.battlePlayers.get(client.sessionId);
-
         // Nếu không có player hoặc trận đấu đã kết thúc thì không xử lý gì
-        if (!player || this.battleState === BattleState.FINISHED) return;
-        const opponent = this.clients.find(c => c.sessionId !== player.id);
+        if (this.battleState === BattleState.FINISHED) return;
+
         // Nếu đang trong trận, kết thúc trận đấu với player này
         if (this.battleState === BattleState.BATTLE) {
-            opponent?.send(MessageTypes.BATTLE_FINISHED, {
-                winnerId: opponent?.id ?? null,
-                loserId: client.id,
-            });
+            this.battleIsFinished(client);
             return;
         }
+        const player = this.state.battlePlayers.get(client.sessionId);
+        if (player == null) return;
+        const opponent = this.clients.find(c => c.sessionId !== player.id);
         // Gửi thông báo ngắt kết nối cho đối thủ
         opponent?.send(MessageTypes.DISCONNECTED, { message: "" });
 
@@ -378,7 +376,7 @@ export class BattleRoom extends BaseGameRoom {
         const attack = attacker.attack;
         const defense = defender.defense;
         const baseDamage = Math.floor(
-            (((2 * attacker.level) / 5 + 2) * skill.damage * (attack / (defense + 1))) / 20 + 2
+            (((2 * attacker.level) / 5 + 2) * skill.damage * (attack / (defense + 1))) / 10 + 2
         );
         const effectiveness = this.getTypeEffectiveness(attacker.type, defender.type);
         const finalDamage = Math.floor(baseDamage * effectiveness);

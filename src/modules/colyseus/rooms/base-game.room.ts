@@ -531,6 +531,10 @@ export class BaseGameRoom extends Room<RoomState> {
       }
 
       if (action == ActionKey.Battle.toString()) {
+        if (sender.userData?.id == targetClient?.userData?.id) {
+          this.sendMessageToTarget(sender, action, 'Cùng 1 tài khoản không thể thách đấu');
+          return;
+        }
         if (amount <= 0) {
           this.sendMessageToTarget(sender, action, 'Số tiền thách đấu không hợp lệ');
           return;
@@ -547,6 +551,7 @@ export class BaseGameRoom extends Room<RoomState> {
 
         if (targetClient?.userData.diamond < amount) {
           this.sendMessageToTarget(sender, action, 'Người chơi không đủ tiền');
+          return;
         }
       }
 
