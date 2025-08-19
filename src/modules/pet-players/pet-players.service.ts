@@ -88,7 +88,11 @@ export class PetPlayersService extends BaseService<PetPlayersEntity> {
 
   async createPetPlayers(payload: Partial<SpawnPetPlayersDto>, quantity = 1) {
     const pet = await this.petsRepository.findOne({
-      where: { species: payload.species, rarity: payload.rarity, type: payload.type },
+      where: {
+        species: payload.species,
+        rarity: payload.rarity,
+        type: payload.type,
+      },
       relations: ['skill_usages', 'skill_usages.skill'],
     });
 
@@ -104,8 +108,12 @@ export class PetPlayersService extends BaseService<PetPlayersEntity> {
       );
     }
 
-    const skill1 = pet.skill_usages.find(({ skill_index }) => skill_index === 1);
-    const skill2 = pet.skill_usages.find(({ skill_index }) => skill_index === 2);
+    const skill1 = pet.skill_usages.find(
+      ({ skill_index }) => skill_index === 1,
+    );
+    const skill2 = pet.skill_usages.find(
+      ({ skill_index }) => skill_index === 2,
+    );
 
     const petPlayers: PetPlayersEntity[] = [];
 
@@ -469,22 +477,31 @@ export class PetPlayersService extends BaseService<PetPlayersEntity> {
 
     await this.petPlayersRepository.save([...winners, ...losers]);
 
-    return { winners, losers };
+    return {
+      winners: plainToInstance(PetPlayersInfoDto, winners),
+      losers: plainToInstance(PetPlayersInfoDto, losers),
+    };
   }
 
   private calculateExp(b: number, level: number): number {
     return Math.floor((1.5 * b * level) / 7);
   }
 
-  private getBaseExp(rarity?: AnimalRarity | null, fallback: number = 20): number {
+  private getBaseExp(
+    rarity?: AnimalRarity | null,
+    fallback: number = 20,
+  ): number {
     if (!rarity) return fallback;
     return BASE_EXP_MAP[rarity] ?? fallback;
   }
 
-  private recalculateStats(petPlayer: PetPlayersEntity, expGain: number = 0): void {
+  private recalculateStats(
+    petPlayer: PetPlayersEntity,
+    expGain: number = 0,
+  ): void {
     const base = petPlayer.pet; // assuming `pet` relation has base stats
 
-    if (!base) return
+    if (!base) return;
     const iv = petPlayer.individual_value ?? 0;
 
     petPlayer.exp += expGain;
@@ -496,13 +513,21 @@ export class PetPlayersService extends BaseService<PetPlayersEntity> {
 
     const level = petPlayer.level;
     // 📌 Recalculate stats with formulas
-    petPlayer.hp += Math.floor((((base.base_hp * 2 + iv) * level) / 100) + level + 10);
+    petPlayer.hp += Math.floor(
+      ((base.base_hp * 2 + iv) * level) / 100 + level + 10,
+    );
 
-    petPlayer.attack += Math.floor((((base.base_attack * 2 + iv) * level) / 100) + 5);
+    petPlayer.attack += Math.floor(
+      ((base.base_attack * 2 + iv) * level) / 100 + 5,
+    );
 
-    petPlayer.defense += Math.floor((((base.base_defense * 2 + iv) * level) / 100) + 5);
+    petPlayer.defense += Math.floor(
+      ((base.base_defense * 2 + iv) * level) / 100 + 5,
+    );
 
-    petPlayer.speed += Math.floor((((base.base_speed * 2 + iv) * level) / 100) + 5);
+    petPlayer.speed += Math.floor(
+      ((base.base_speed * 2 + iv) * level) / 100 + 5,
+    );
   }
 
   generateIndividualValue(): number {
