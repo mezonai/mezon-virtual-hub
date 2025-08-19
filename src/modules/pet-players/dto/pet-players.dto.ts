@@ -53,7 +53,7 @@ export class SpawnPetPlayersDto {
     description: 'Quantity pet to spawn',
     type: Number,
     required: false,
-    default: 1
+    default: 1,
   })
   @IsNumber()
   @IsOptional()
@@ -183,7 +183,7 @@ export class BulkUpdateBattleSlotsDto {
 
 export class UpdateBattleSkillsDto extends PickType(PetPlayersEntity, [
   'equipped_skill_codes',
-]) { }
+]) {}
 
 export class BattlePetPlayersDto extends PetPlayersEntity {
   @Exclude()
@@ -214,4 +214,9 @@ export class BattlePetPlayersDto extends PetPlayersEntity {
   @Expose()
   @Type(() => PetSkillsResponseDto)
   equipped_skills: PetSkillsResponseDto[];
+
+  @Expose()
+  get max_exp(): number {
+    return Math.pow(this.level, 3);
+  }
 }

@@ -97,11 +97,11 @@ export class BattleRoom extends BaseGameRoom {
         return newPlayer;
     }
 
-    private createPetState(a: any): PetState {
+    private createPetState(a: BattlePetPlayersDto): PetState {
         const pet = new PetState();
         const boost = String(a.pet.type) === String(this.currentEnviroment) ? this.rationIncreaseDame : 1;
         pet.id = a.id;
-        pet.name = a.name;
+        pet.name = a.name ?? "";
         pet.species = a.pet?.species ?? "";
         pet.type = a.pet?.type ?? "";
         pet.attack = a.attack * boost;
@@ -110,7 +110,7 @@ export class BattleRoom extends BaseGameRoom {
         pet.totalHp = a.hp;
         pet.level = a.level;
         pet.currentExp = a.exp;
-        pet.totalExp = a.exp;
+        pet.totalExp = a.max_exp;
         pet.speed = a.speed * boost;
         pet.sleepTurns = 0;
 
