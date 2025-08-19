@@ -496,13 +496,13 @@ export class PetPlayersService extends BaseService<PetPlayersEntity> {
 
     const level = petPlayer.level;
     // 📌 Recalculate stats with formulas
-    petPlayer.hp = Math.floor((((base.base_hp * 2 + iv) * level) / 100) + level + 10);
+    petPlayer.hp += Math.floor((((base.base_hp * 2 + iv) * level) / 100) + level + 10);
 
-    petPlayer.attack = Math.floor((((base.base_attack * 2 + iv) * level) / 100) + 5);
+    petPlayer.attack += Math.floor((((base.base_attack * 2 + iv) * level) / 100) + 5);
 
-    petPlayer.defense = Math.floor((((base.base_defense * 2 + iv) * level) / 100) + 5);
+    petPlayer.defense += Math.floor((((base.base_defense * 2 + iv) * level) / 100) + 5);
 
-    petPlayer.speed = Math.floor((((base.base_speed * 2 + iv) * level) / 100) + 5);
+    petPlayer.speed += Math.floor((((base.base_speed * 2 + iv) * level) / 100) + 5);
   }
 
   generateIndividualValue(): number {
