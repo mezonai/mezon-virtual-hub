@@ -1,4 +1,4 @@
-import { NavItemConfig } from '../types/nav';
+import { NavItemConfig } from '../type/nav';
 import { paths } from './paths';
 
 export const navItems = [
@@ -25,3 +25,6 @@ export const navItems = [
 
 export const UPDATE_USER = '/admin/users';
 export const GET_TRANSACTION = '/admin/transactions';
+export const LOGIN = '/admin/auth/verify-oauth2';
+export const REFRESH_TOKEN = '/admin/auth/refresh-token';
+export const REDIRECT_OAUTH2 = '/admin/auth/redirect-oauth2';

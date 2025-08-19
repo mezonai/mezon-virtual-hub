@@ -1,20 +1,69 @@
-import axios from 'axios';
+import { Toast } from '@/components/Toast';
+import { ToastType } from '@/type/toast/toast';
+import { getAccessToken, getRefreshToken, setTokens } from '@/utils/auth/authStorage';
+import { paths } from '@/utils/paths';
+import axios, { AxiosError } from 'axios';
+import { ApiResponseError } from '@/type/auth/auth';
+import { refreshTokens } from '../auth/refreshTokens';
 
 const httpClient = axios.create({
   baseURL: process.env.REACT_APP_API_BASE_URL || 'https://fallback.example.com',
   timeout: 10000,
+  headers: {
+    'Content-Type': 'application/json',
+  },
 });
 
 // Attach token from localStorage before each request
 httpClient.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('authToken');
+    const token = getAccessToken();
     if (token) {
       config.headers['Authorization'] = `Bearer ${token}`;
     }
     return config;
   },
   (error) => Promise.reject(error),
+);
+
+httpClient.interceptors.response.use(
+  function (response) {
+    return response;
+  },
+  async (error) => {
+    if (error?.response?.status === 401) {
+      const refreshToken = getRefreshToken();
+      const getToken = getAccessToken();
+      if (!refreshToken || !getToken) {
+        window.location.href = paths.auth.login;
+        return;
+      }
+      try {
+        const res = await refreshTokens({ refreshToken });
+        setTokens(res.accessToken, res.refreshToken);
+        error.config.headers['Authorization'] = `Bearer ${res.accessToken}`;
+        return httpClient(error.config);
+      } catch (err: unknown) {
+        const error = err as AxiosError<ApiResponseError>;
+        Toast({
+          type: ToastType.ERROR,
+          message: error?.response?.data?.message,
+        });
+      }
+    }
+    if (error?.response) {
+      Toast({
+        message: error?.response?.data?.message || 'An Error occurred',
+        type: ToastType.ERROR,
+      });
+    } else {
+      Toast({
+        message: 'Network error, please try again',
+        type: ToastType.ERROR,
+      });
+    }
+    return Promise.reject(error);
+  },
 );
 
 export default httpClient;

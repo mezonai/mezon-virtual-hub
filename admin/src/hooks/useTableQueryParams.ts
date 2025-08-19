@@ -1,16 +1,24 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { SortOrder } from '../types/user';
+import { SortOrder } from '../type/enum/user';
+
+interface IQueryParams {
+  page: number;
+  limit: number;
+  search: string;
+  sort_by: string;
+  order: SortOrder;
+}
 
 export function useTableQueryParams<T>() {
   const [searchParam, setSearchParam] = useSearchParams();
   const [confirmSearch, setConfirmSearch] = useState<string>('');
-  const queryParam = useMemo(() => {
+  const queryParam: IQueryParams = useMemo(() => {
     return {
       page: Number(searchParam.get('page') || '1'),
       limit: Number(searchParam.get('limit') || '5'),
       search: searchParam.get('search') || '',
-      sort_by: (searchParam.get('sort_by') as keyof T) || 'created_at',
+      sort_by: searchParam.get('sort_by') || 'created_at',
       order: (searchParam.get('order') as SortOrder) || SortOrder.DESC,
     };
   }, [searchParam]);

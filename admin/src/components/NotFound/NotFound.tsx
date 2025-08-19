@@ -4,7 +4,7 @@ import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { ArrowLeftIcon } from '@phosphor-icons/react/dist/ssr/ArrowLeft';
-import { paths } from '../../utils/paths';
+import { paths } from '@/utils/paths';
 import { useNavigate } from 'react-router-dom';
 
 export default function NotFound(): React.JSX.Element {

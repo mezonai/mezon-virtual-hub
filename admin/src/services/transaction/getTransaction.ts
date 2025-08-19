@@ -1,6 +1,7 @@
-import { TransactionResponseAPI } from '../../types/transaction/transaction';
-import { GET_TRANSACTION } from '../../utils/config';
+import { IPaginationResponse } from '@/type/api';
+import { Transaction } from '@/type/transaction/transaction';
 import httpClient from '../httpService/httpServices';
+import { GET_TRANSACTION } from '@/utils/config';
 
 export interface getTransactionParams {
   search: string;
@@ -16,7 +17,7 @@ export const getTransaction = async ({
   limit,
   sort_by,
   order,
-}: getTransactionParams): Promise<TransactionResponseAPI | null> => {
+}: getTransactionParams): Promise<IPaginationResponse<Transaction> | null> => {
   try {
     const response = await httpClient.get(`${GET_TRANSACTION}`, {
       params: {

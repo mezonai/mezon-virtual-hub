@@ -5,6 +5,8 @@ import { MessageTypes } from "../MessageTypes";
 import { EviromentType as EnvironmentType, PetType, SkillCode, SkillType } from "@enum";
 import { isAttackAction, PlayerAction } from "../battle/PlayerAction";
 import { SkillHandlerFactory } from "../battle/SkillHandlerFactory";
+import { BattlePetPlayersDto } from "@modules/pet-players/dto/pet-players.dto";
+
 enum BattleState {
     READY,     // Chờ cả 2 người chọn hành động
     BATTLE,  // Bắt đầu xử lý skill (đang diễn ra turn)
@@ -81,7 +83,7 @@ export class BattleRoom extends BaseGameRoom {
         }
     }
 
-    private createPlayerState(client: AuthenticatedClient, userData: any, petsFromUser: any[]): PlayerBattleState {
+    private createPlayerState(client: AuthenticatedClient, userData: any, petsFromUser: BattlePetPlayersDto[]): PlayerBattleState {
         const newPlayer = new PlayerBattleState();
         newPlayer.id = client.sessionId;
         newPlayer.user_id = userData.id;
@@ -311,11 +313,18 @@ export class BattleRoom extends BaseGameRoom {
             newPetIndex: player.action.newPetIndex,
         });
     }
-
-    private battleIsFinished(loserClient: Client) {
+    private async battleIsFinished(loserClient: Client) {
         const loser = this.state.battlePlayers.get(loserClient.sessionId);
         const winner = [...this.state.battlePlayers.values()]
             .find(p => p.id !== loser?.id);
+
+        const [winnerIds, loserIds] = [winner, loser].map((player) =>
+            player?.pets.map(({ id }) => id)
+            ?? []);
+
+        if (winnerIds.length && loserIds.length) {
+            await this.petPlayersService.finalizeBattleResult(winnerIds, loserIds)
+        }
         this.broadcast(MessageTypes.BATTLE_FINISHED, {
             winnerId: winner?.id,
             loserId: loser?.id,
