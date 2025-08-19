@@ -29,6 +29,7 @@ import {
 import { PetPlayersEntity } from './entity/pet-players.entity';
 import { BASE_EXP_MAP } from '@constant';
 import { AnimalRarity } from '@enum';
+import { serializeDto } from '@libs/utils';
 
 @Injectable()
 export class PetPlayersService extends BaseService<PetPlayersEntity> {
@@ -478,8 +479,8 @@ export class PetPlayersService extends BaseService<PetPlayersEntity> {
     await this.petPlayersRepository.save([...winners, ...losers]);
 
     return {
-      winners: plainToInstance(PetPlayersInfoDto, winners),
-      losers: plainToInstance(PetPlayersInfoDto, losers),
+      winners: serializeDto(PetPlayersInfoDto, winners),
+      losers: serializeDto(PetPlayersInfoDto, losers),
     };
   }
 
