@@ -7,10 +7,9 @@ export function serializeDto<T, V>(
 export function serializeDto<T, V>(cls: new (...args: any[]) => T, data: V): T;
 export function serializeDto<T, V>(
   cls: new (...args: any[]) => T,
-  data: V | V[],
+  data: V,
 ): T | T[] {
-  const instance = plainToInstance(cls, data, {
-    excludeExtraneousValues: true,
-  });
-  return instanceToPlain(instance, { exposeUnsetFields: false }) as T | T[];
+  return instanceToPlain(plainToInstance(cls, data), {
+    exposeUnsetFields: false,
+  }) as T | T[];
 }
