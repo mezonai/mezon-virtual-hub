@@ -29,7 +29,7 @@ import {
 import { PetPlayersEntity } from './entity/pet-players.entity';
 import { BASE_EXP_MAP } from '@constant';
 import { AnimalRarity } from '@enum';
-import { serializeDto } from '@libs/utils';
+import { getExpForNextLevel, serializeDto } from '@libs/utils';
 
 @Injectable()
 export class PetPlayersService extends BaseService<PetPlayersEntity> {
@@ -457,8 +457,8 @@ export class PetPlayersService extends BaseService<PetPlayersEntity> {
 
     petPlayer.exp += expGain;
     // 📌 Handle level up and exp rollover
-    while (petPlayer.exp >= this.getExpForNextLevel(petPlayer.level)) {
-      petPlayer.exp -= this.getExpForNextLevel(petPlayer.level); // keep residual exp
+    while (petPlayer.exp >= getExpForNextLevel(petPlayer.level)) {
+      petPlayer.exp -= getExpForNextLevel(petPlayer.level); // keep residual exp
       petPlayer.level++;
     }
 
@@ -483,9 +483,5 @@ export class PetPlayersService extends BaseService<PetPlayersEntity> {
 
   generateIndividualValue(): number {
     return Math.floor(Math.random() * 31) + 1;
-  }
-
-  private getExpForNextLevel(level: number): number {
-    return Math.pow(level + 1, 3) - Math.pow(level, 3);
   }
 }

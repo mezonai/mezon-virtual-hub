@@ -74,7 +74,6 @@ export class AdminPetPlayersService extends BaseService<PetPlayersEntity> {
       rarity,
       species,
     } = query;
-    console.log(query);
 
     const where: FindOptionsWhere<PetPlayersEntity>[] = [];
 
