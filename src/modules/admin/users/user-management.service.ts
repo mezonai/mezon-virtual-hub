@@ -21,7 +21,7 @@ export class UserManagementService extends BaseService<UserEntity> {
     super(userRepository, UserEntity.name);
   }
 
-  async getAllUsers(query: UsersManagementQueryDto) {
+  async getUsers(query: UsersManagementQueryDto) {
     const {
       page = 1,
       limit = 10,
