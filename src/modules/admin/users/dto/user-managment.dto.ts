@@ -1,6 +1,6 @@
 import { Gender, SortOrder } from '@enum';
 import { ApiProperty, ApiPropertyOptional, PickType } from '@nestjs/swagger';
-import { Exclude, Type } from 'class-transformer';
+import { Exclude, Expose, Type } from 'class-transformer';
 import {
   IsEnum,
   IsNumber,
@@ -81,4 +81,13 @@ export class UpdateUserDto extends PickType(UserEntity, [
   @IsOptional()
   @IsEnum(Gender)
   gender?: Gender;
+}
+
+@Exclude()
+export class UserSummaryDto extends PickType(UserEntity, [] as const) {
+  @Expose()
+  id: string;
+
+  @Expose()
+  username: string;
 }
