@@ -13,6 +13,7 @@ import {
 } from 'class-validator';
 import { PetPlayersEntity } from '../entity/pet-players.entity';
 import { PetSkillsResponseDto } from '@modules/pet-skills/dto/pet-skills.dto';
+import { getExpForNextLevel } from '@libs/utils';
 
 export class SpawnPetPlayersDto {
   @ApiProperty()
@@ -107,7 +108,7 @@ export class PetPlayersWithSpeciesDto extends PetPlayersEntity {
 
   @Expose()
   get max_exp(): number {
-    return Math.pow(this.level + 1, 3) - Math.pow(this.level, 3);
+    return getExpForNextLevel(this.level);
   }
 }
 
@@ -120,7 +121,7 @@ export class PetPlayersInfoDto extends PetPlayersEntity {
 
   @Expose()
   get max_exp(): number {
-    return Math.pow(this.level + 1, 3) - Math.pow(this.level, 3);
+    return getExpForNextLevel(this.level);
   }
 
   @Expose()
@@ -217,6 +218,6 @@ export class BattlePetPlayersDto extends PetPlayersEntity {
 
   @Expose()
   get max_exp(): number {
-    return Math.pow(this.level, 3);
+    return getExpForNextLevel(this.level);
   }
 }
