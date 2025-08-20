@@ -10,6 +10,7 @@ export const paths = {
     overview: '/dashboard',
     users: '/dashboard/users',
     transaction: '/dashboard/transaction',
+    petPlayers: '/dashboard/pet-players',
   },
   errors: { notFound: '/errors/not-found' },
 } as const;

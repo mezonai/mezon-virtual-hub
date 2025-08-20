@@ -17,6 +17,7 @@ export const TransactionFilter = () => {
           value={confirmSearch}
           onChangeSearch={setConfirmSearch}
           onParamsChange={handleParamsChange}
+          valueParams="search"
         />
         <SortSelect<IPaginationParams<Transaction>, Transaction>
           sortBy={sortBy}

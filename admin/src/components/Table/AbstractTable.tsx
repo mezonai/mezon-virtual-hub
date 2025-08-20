@@ -2,6 +2,7 @@ import {
   Box,
   Button,
   Card,
+  Checkbox,
   Divider,
   Stack,
   Table,
@@ -72,7 +73,7 @@ export function AbstractTable<
                   {columns.map((col, index) => {
                     if (col.key === 'action') {
                       return (
-                        <TableCell>
+                        <TableCell key={index}>
                           <Stack direction="row" spacing={1}>
                             {actionBtn?.map((action, index) => (
                               <Button
@@ -95,15 +96,33 @@ export function AbstractTable<
                     } else {
                       return (
                         <TableCell key={index}>
-                          {col.render ? (
-                            col.render(row)
-                          ) : (
-                            <Typography variant="subtitle2">
-                              {typeof col.key === 'string'
-                                ? ((row as any)[col.key] ?? '')
-                                : ''}
-                            </Typography>
-                          )}
+                          {col.render
+                            ? col.render(row)
+                            : (() => {
+                                const val =
+                                  typeof col.key === 'string'
+                                    ? ((row as any)[col.key] ?? '')
+                                    : '';
+                                if (typeof val === 'boolean') {
+                                  return <Checkbox checked={val} disabled />;
+                                }
+                                if (Array.isArray(val)) {
+                                  return (
+                                    <Stack>
+                                      <Typography>
+                                        {val
+                                          .map((item) => `[${item ?? 'X'}]`)
+                                          .join(' , ')}
+                                      </Typography>
+                                    </Stack>
+                                  );
+                                }
+                                return (
+                                  <Typography variant="subtitle2">
+                                    {val}
+                                  </Typography>
+                                );
+                              })()}
                         </TableCell>
                       );
                     }

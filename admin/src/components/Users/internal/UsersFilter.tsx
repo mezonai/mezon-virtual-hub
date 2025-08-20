@@ -9,13 +9,14 @@ import { IPaginationParams } from '@/type/api';
 
 export function UsersFilter(): React.JSX.Element {
   const { handleParamsChange, setConfirmSearch, confirmSearch, sortBy, order } =
-    useTableQueryParams<User>();
+    useTableQueryParams();
   return (
     <Card sx={{ p: 2 }}>
       <Grid container spacing={4}>
         <SearchInput<IPaginationParams<User>>
           placeholder="Search user"
           value={confirmSearch}
+          valueParams="search"
           onChangeSearch={setConfirmSearch}
           onParamsChange={handleParamsChange}
         />

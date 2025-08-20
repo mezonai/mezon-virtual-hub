@@ -24,7 +24,7 @@ export const useUserList = () => {
     order,
     confirmSearch,
     setConfirmSearch,
-  } = useTableQueryParams<User>();
+  } = useTableQueryParams();
 
   useEffect(() => {
     if (firstCallRef.current) {

@@ -14,14 +14,16 @@ interface SearchInputProps<P> extends OutlinedInputProps {
   onChangeSearch?: (value: string) => void;
   onParamsChange?: (params: Partial<P>) => void;
   sx?: SxProps<Theme>;
+  valueParams: keyof P;
 }
 
-export function SearchInput<P extends { search: string }>({
+export function SearchInput<P>({
   placeholder,
   value,
   onChangeSearch,
   onParamsChange,
   sx,
+  valueParams,
   ...props
 }: SearchInputProps<P>): React.JSX.Element {
   return (
@@ -30,11 +32,13 @@ export function SearchInput<P extends { search: string }>({
       fullWidth
       {...props}
       placeholder={placeholder}
-      value={value}
+      value={value ?? ''}
       onChange={(e) => onChangeSearch?.(e.target.value)}
       onKeyDown={(e) => {
         if (e.key === 'Enter') {
-          onParamsChange?.({ search: value } as Partial<P>);
+          onParamsChange?.({
+            [valueParams as keyof P]: value,
+          } as Partial<P>);
         }
       }}
       startAdornment={
