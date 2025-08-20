@@ -107,7 +107,7 @@ export class PetPlayersWithSpeciesDto extends PetPlayersEntity {
 
   @Expose()
   get max_exp(): number {
-    return Math.pow(this.level, 3);
+    return Math.pow(this.level + 1, 3) - Math.pow(this.level, 3);
   }
 }
 
@@ -120,7 +120,7 @@ export class PetPlayersInfoDto extends PetPlayersEntity {
 
   @Expose()
   get max_exp(): number {
-    return Math.pow(this.level, 3);
+    return Math.pow(this.level + 1, 3) - Math.pow(this.level, 3);
   }
 
   @Expose()

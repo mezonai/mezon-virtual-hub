@@ -55,17 +55,6 @@ export class PetPlayersController {
     return await this.petPlayersService.findPetPlayersByUserId(user.id);
   }
 
-  @Post()
-  @RequireAdmin()
-  @ApiOperation({
-    summary: 'Create (spawn) a pet',
-  })
-  async createPetPlayers(
-    @Query() { quantity, ...pet }: SpawnPetPlayersDto,
-  ) {
-    return await this.petPlayersService.createPetPlayers(pet, quantity);
-  }
-
   @Get('battle')
   @ApiOperation({
     summary: 'Get all pets and their skills is chosen for battle',

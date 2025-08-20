@@ -87,53 +87,6 @@ export class PetPlayersService extends BaseService<PetPlayersEntity> {
     return pet;
   }
 
-  async createPetPlayers(payload: Partial<SpawnPetPlayersDto>, quantity = 1) {
-    const pet = await this.petsRepository.findOne({
-      where: {
-        species: payload.species,
-        rarity: payload.rarity,
-        type: payload.type,
-      },
-      relations: ['skill_usages', 'skill_usages.skill'],
-    });
-
-    if (!pet) {
-      throw new NotFoundException(
-        `Pet ${payload.species} with Rarity: ${payload.rarity} and Type ${payload.type} not found`,
-      );
-    }
-
-    if (!pet.skill_usages?.length) {
-      throw new BadRequestException(
-        `Pet ${payload.species} did not set up any skills`,
-      );
-    }
-
-    const skill1 = pet.skill_usages.find(
-      ({ skill_index }) => skill_index === 1,
-    );
-    const skill2 = pet.skill_usages.find(
-      ({ skill_index }) => skill_index === 2,
-    );
-
-    const petPlayers: PetPlayersEntity[] = [];
-
-    for (let i = 0; i < quantity; i++) {
-      const newPetPlayer = this.petPlayersRepository.create({
-        pet,
-        name: pet.species,
-        skill_slot_1: { skill_code: skill1?.skill.skill_code },
-        skill_slot_2: { skill_code: skill2?.skill.skill_code },
-        individual_value: this.generateIndividualValue(),
-        room_code: `${payload.map}${payload.sub_map ? `-${payload.sub_map}` : ''}`,
-      });
-      this.recalculateStats(newPetPlayer);
-      petPlayers.push(newPetPlayer);
-    }
-
-    return await this.petPlayersRepository.save(petPlayers);
-  }
-
   async updatePetPlayers(
     updatePetPlayers: UpdatePetPlayersDto,
     pet_id: string,
@@ -496,10 +449,7 @@ export class PetPlayersService extends BaseService<PetPlayersEntity> {
     return BASE_EXP_MAP[rarity] ?? fallback;
   }
 
-  private recalculateStats(
-    petPlayer: PetPlayersEntity,
-    expGain: number = 0,
-  ): void {
+  recalculateStats(petPlayer: PetPlayersEntity, expGain: number = 0): void {
     const base = petPlayer.pet; // assuming `pet` relation has base stats
 
     if (!base) return;
@@ -507,8 +457,8 @@ export class PetPlayersService extends BaseService<PetPlayersEntity> {
 
     petPlayer.exp += expGain;
     // 📌 Handle level up and exp rollover
-    while (petPlayer.exp >= this.getMaxExp(petPlayer.level)) {
-      petPlayer.exp -= this.getMaxExp(petPlayer.level); // keep residual exp
+    while (petPlayer.exp >= this.getExpForNextLevel(petPlayer.level)) {
+      petPlayer.exp -= this.getExpForNextLevel(petPlayer.level); // keep residual exp
       petPlayer.level++;
     }
 
@@ -535,7 +485,7 @@ export class PetPlayersService extends BaseService<PetPlayersEntity> {
     return Math.floor(Math.random() * 31) + 1;
   }
 
-  private getMaxExp(level: number): number {
-    return Math.pow(level, 3);
+  private getExpForNextLevel(level: number): number {
+    return Math.pow(level + 1, 3) - Math.pow(level, 3);
   }
 }

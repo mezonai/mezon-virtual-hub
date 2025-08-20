@@ -42,8 +42,8 @@ export class UserManagementController {
   @ApiOperation({
     summary: 'Get all users information',
   })
-  async getAllMaps(@Query() query: UsersManagementQueryDto) {
-    return await this.userService.getAllUsers(query);
+  async getUsers(@Query() query: UsersManagementQueryDto) {
+    return await this.userService.getUsers(query);
   }
 
   @Put(':user_id')
