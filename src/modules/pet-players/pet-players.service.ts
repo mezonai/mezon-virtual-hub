@@ -457,8 +457,8 @@ export class PetPlayersService extends BaseService<PetPlayersEntity> {
 
     petPlayer.exp += expGain;
     // 📌 Handle level up and exp rollover
-    while (petPlayer.exp >= this.getMaxExp(petPlayer.level)) {
-      petPlayer.exp -= this.getMaxExp(petPlayer.level); // keep residual exp
+    while (petPlayer.exp >= this.getExpForNextLevel(petPlayer.level)) {
+      petPlayer.exp -= this.getExpForNextLevel(petPlayer.level); // keep residual exp
       petPlayer.level++;
     }
 
@@ -485,7 +485,7 @@ export class PetPlayersService extends BaseService<PetPlayersEntity> {
     return Math.floor(Math.random() * 31) + 1;
   }
 
-  private getMaxExp(level: number): number {
-    return Math.pow(level, 3);
+  private getExpForNextLevel(level: number): number {
+    return Math.pow(level + 1, 3) - Math.pow(level, 3);
   }
 }
