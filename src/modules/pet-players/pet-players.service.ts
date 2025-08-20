@@ -434,6 +434,8 @@ export class PetPlayersService extends BaseService<PetPlayersEntity> {
     return {
       winners: serializeDto(PetPlayersInfoDto, winners),
       losers: serializeDto(PetPlayersInfoDto, losers),
+      expPerLoser,
+      expPerWinner,
     };
   }
 

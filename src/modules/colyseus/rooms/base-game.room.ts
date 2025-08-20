@@ -155,7 +155,6 @@ export class BaseGameRoom extends Room<RoomState> {
   broadcastToAllRooms(type: string, data: any) {
     BaseGameRoom.activeRooms.forEach((room) => {
       room.broadcast(type, data);
-      console.log('Room broadcast: ', room.roomId);
     });
   }
 

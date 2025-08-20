@@ -190,7 +190,7 @@ export class BattleRoom extends BaseGameRoom {
         const a2 = this.playerActions.get(p2Id);
 
         if (!a1 || !a2) {
-            console.warn("One or both players have not submitted their action.");
+           this.sendMessageError();
             return;
         }
 
@@ -314,25 +314,74 @@ export class BattleRoom extends BaseGameRoom {
         });
     }
     private async battleIsFinished(loserClient: Client) {
-        const loser = this.state.battlePlayers.get(loserClient.sessionId);
-        const winner = [...this.state.battlePlayers.values()]
-            .find(p => p.id !== loser?.id);
-
-        const [winnerIds, loserIds] = [winner, loser].map((player) =>
-            player?.pets.map(({ id }) => id)
-            ?? []);
-
-        if (winnerIds.length && loserIds.length) {
-            await this.petPlayersService.finalizeBattleResult(winnerIds, loserIds)
+        if (!loserClient) {
+            this.sendMessageError();
+            return;
         }
-        this.broadcast(MessageTypes.BATTLE_FINISHED, {
-            winnerId: winner?.id,
-            loserId: loser?.id,
-        });
-        const winnerClient = this.clients.find(c => c.sessionId !== loser?.id);
-        if (winnerClient == null) return;
-        this.calculateBet(loserClient, winnerClient);
 
+        const loser = this.state.battlePlayers.get(loserClient.sessionId);
+        if (!loser) {
+            this.sendMessageError();
+            return;
+        }
+
+        // tìm winner (khác với loser)
+        const winner = [...this.state.battlePlayers.values()]
+            .find(p => p.id !== loser.id);
+
+        if (!winner) {
+            this.sendMessageError();
+            return;
+        }
+
+        // lấy danh sách petIds
+        const winnerIds = winner.pets?.map(p => p.id) ?? [];
+        const loserIds = loser.pets?.map(p => p.id) ?? [];
+
+        if (winnerIds.length === 0 || loserIds.length === 0) {
+            this.sendMessageError();
+            return;
+        }
+
+        try {
+            // tính kết quả trận đấu
+            const result = await this.petPlayersService.finalizeBattleResult(winnerIds, loserIds)
+            if (!result) {
+                this.sendMessageError();
+                return;
+            }
+
+            // tìm client của winner
+            const winnerClient = this.clients.find(c => c.sessionId !== loserClient.sessionId);
+            if (!winnerClient) {
+                this.sendMessageError();
+                return;
+            }
+
+            // tính tiền cược (bet)
+            await this.calculateBet(loserClient, winnerClient);
+
+            // gửi kết quả cho loser
+            loserClient.send(MessageTypes.BATTLE_FINISHED, {
+                id: loser.id,
+                expReceived: result.expPerLoser ?? 0,
+                dimondChallenge: this.amountChallenge ?? 0,
+                currentPets: result.losers,
+                isWinner: false,
+            });
+
+            // gửi kết quả cho winner
+            winnerClient.send(MessageTypes.BATTLE_FINISHED, {
+                id: winner.id,
+                expReceived: result.expPerWinner ?? 0,
+                dimondChallenge: this.amountChallenge ?? 0,
+                currentPets: result.winners,
+                isWinner: true,
+            });
+
+        } catch (err) {
+            this.sendMessageError();
+        }
     }
 
     calculateBet(loserClient: Client, winnerClient: Client) {
@@ -366,7 +415,7 @@ export class BattleRoom extends BaseGameRoom {
         }
         const petIndex = player.pets.findIndex(p => p.id === petId);
         if (petIndex === -1) {
-            console.warn(`[handleSwitchPetAfterFaint] Pet không tồn tại: ${petId}`);
+            this.sendMessageError();
             return;
         }
         player.activePetIndex++;
@@ -405,6 +454,10 @@ export class BattleRoom extends BaseGameRoom {
             activePetIndex: player.activePetIndex,
             battlePets: player.pets.map(pet => this.serializePet(pet))
         };
+    }
+
+    sendMessageError() {
+        this.broadcast(MessageTypes.NOTIFY_BATTLE, { message: "Có Lỗi xảy ra, Trò chơi kết thúc" });
     }
 
     private serializePet(pet: PetState) {
