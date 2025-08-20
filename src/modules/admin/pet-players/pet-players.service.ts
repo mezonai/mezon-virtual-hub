@@ -75,31 +75,29 @@ export class AdminPetPlayersService extends BaseService<PetPlayersEntity> {
       species,
     } = query;
 
-    const where: FindOptionsWhere<PetPlayersEntity>[] = [];
+    const orConditions: FindOptionsWhere<PetPlayersEntity>[] = [];
 
-    const petFilter: FindOptionsWhere<PetsEntity> = {};
-    if (pet_type) petFilter.type = pet_type;
-    if (rarity) petFilter.rarity = rarity;
-    if (species) petFilter.species = ILike(`%${species}%`);
+    const petConditions: FindOptionsWhere<PetsEntity> = {};
+    if (pet_type) petConditions.type = pet_type;
+    if (rarity) petConditions.rarity = rarity;
+    if (species) petConditions.species = `%${species}%`;
 
-    const baseFilter: FindOptionsWhere<PetPlayersEntity> = {
+    const commonConditions: FindOptionsWhere<PetPlayersEntity> = {
       ...(isNumber(search) ? { level: +search } : {}),
       ...(isNumber(search) ? { stars: +search } : {}),
       ...(is_caught !== undefined ? { is_caught } : {}),
-      ...(Object.keys(petFilter).length > 0 ? { pet: petFilter } : {}),
+      ...(Object.keys(petConditions).length > 0 ? { pet: petConditions } : {}),
     };
 
     if (search) {
-      where.push(
-        { name: ILike(`%${search}%`) },
-        { user: { username: ILike(`%${search}%`) } },
+      orConditions.push(
+        { name: ILike(`%${search}%`), ...commonConditions },
+        { user: { username: ILike(`%${search}%`) }, ...commonConditions },
       );
     }
 
-    where.push(baseFilter);
-
     const [pets, total] = await this.petPlayersRepository.findAndCount({
-      where: where.length > 0 ? where : undefined,
+      where: orConditions.length > 0 ? orConditions : commonConditions,
       relations: ['pet', 'user'],
       take: limit,
       skip: (page - 1) * limit,

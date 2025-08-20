@@ -1,4 +1,5 @@
 import { AnimalRarity, MapKey, PetType, SubMap } from '@enum';
+import { getExpForNextLevel } from '@libs/utils';
 import { UserSummaryDto } from '@modules/admin/users/dto/user-managment.dto';
 import { PetPlayersEntity } from '@modules/pet-players/entity/pet-players.entity';
 import { PetsDtoResponse } from '@modules/pets/dto/pets.dto';
@@ -128,6 +129,11 @@ export class PetPlayersListDto extends OmitType(PetPlayersEntity, ['user']) {
   @ApiProperty({ type: () => UserSummaryDto })
   @Type(() => UserSummaryDto)
   user: UserSummaryDto;
+
+  @Expose()
+  get max_exp(): number {
+    return getExpForNextLevel(this.level);
+  }
 }
 
 export class PetPlayersInfoDto extends OmitType(PetPlayersEntity, ['user']) {
@@ -139,7 +145,7 @@ export class PetPlayersInfoDto extends OmitType(PetPlayersEntity, ['user']) {
 
   @Expose()
   get max_exp(): number {
-    return Math.pow(this.level, 3);
+    return getExpForNextLevel(this.level);
   }
 
   @Expose()
