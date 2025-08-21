@@ -1,4 +1,5 @@
 import { configEnv } from '@config/env.config';
+import { SYSTEM_ERROR } from '@constant';
 import { Logger } from '@libs/logger';
 import { GenericRepository } from '@libs/repository/genericRepository';
 import { TransactionsService } from '@modules/admin/transactions/transactions.service';
@@ -103,7 +104,7 @@ export class MezonService implements OnModuleInit, OnModuleDestroy {
       this.logger.error(
         `Withdraw Failed | User: ${user?.username} | Amount: ${sendTokenData.amount} token: ${err?.toString()}`,
       );
-      return { success: false, message: 'Lỗi hệ thống, xin vui lòng liên hệ nhà phát triển để đượcc hỗ trợ' };
+      return { success: false, message: SYSTEM_ERROR };
     }
   }
 

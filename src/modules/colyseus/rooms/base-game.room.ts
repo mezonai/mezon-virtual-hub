@@ -1,6 +1,6 @@
 import { MapSchema, Schema, type } from '@colyseus/schema';
 import { configEnv } from '@config/env.config';
-import { BATTLE_MAX_FEE, BATTLE_MIN_FEE, EXCHANGERATE, RPS_FEE } from '@constant';
+import { BATTLE_MAX_FEE, BATTLE_MIN_FEE, EXCHANGERATE, RPS_FEE, SYSTEM_ERROR } from '@constant';
 import { ActionKey, MapKey } from '@enum';
 import { Logger } from '@libs/logger';
 import { JwtPayload } from '@modules/auth/dtos/response';
@@ -371,7 +371,7 @@ export class BaseGameRoom extends Room<RoomState> {
 
         if (!result.success) {
           return client.send('onWithdrawFailed', {
-            reason: result.message ?? 'Lỗi hệ thống, xin vui lòng liên hệ nhà phát triển để đượcc hỗ trợ',
+            reason: result.message ?? SYSTEM_ERROR,
           });
         }
 
