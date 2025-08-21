@@ -6,24 +6,17 @@ import { PetPlayers } from '@/type/pet-players/petPlayers';
 import { Card } from '@mui/material';
 import { PencilIcon, TrashIcon } from '@phosphor-icons/react';
 import React from 'react';
+import { usePetPlayerTable } from '../hooks/usePetPlayerTable';
 
-interface PetPlayersTableProps {
-  loading?: boolean;
-  rows?: PetPlayers[];
-  count?: number;
-}
-export const PetPlayersTable = ({
-  count = 0,
-  loading,
-  rows = [],
-}: PetPlayersTableProps): React.JSX.Element => {
+export const PetPlayersTable = (): React.JSX.Element => {
   const { page, limit, handleParamsChange } = useTableQueryParams();
+  const { loading, totalItem, petPlayersData } = usePetPlayerTable();
   return (
     <Card>
       <AbstractTable<PetPlayers, IPaginationParams<PetPlayers>>
         columns={PET_PLAYERS_TABLE_CONFIG}
-        rows={rows}
-        count={count}
+        rows={petPlayersData}
+        count={totalItem}
         loading={loading}
         page={page}
         rowsPerPage={limit}

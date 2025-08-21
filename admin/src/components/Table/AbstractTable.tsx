@@ -45,7 +45,7 @@ export function AbstractTable<
   P extends { page: number; limit: number },
 >({
   columns,
-  rows,
+  rows = [],
   actionBtn,
   count = 0,
   page = 0,

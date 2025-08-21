@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { SortOrder } from '../type/enum/user';
 
-interface IQueryParams {
+export interface IQueryParams {
   page: number;
   limit: number;
   search: string;

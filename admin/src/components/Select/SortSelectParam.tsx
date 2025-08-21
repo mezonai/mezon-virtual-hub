@@ -7,36 +7,31 @@ import {
   Theme,
 } from '@mui/material';
 import { SortOrder } from '@/type/enum/user';
+import { useTableQueryParams } from '@/hooks/useTableQueryParams';
+import { CONTROL_HEIGHT } from '@/constant/table/tableConfig';
 
-type SortSelectProps<P> = SelectProps & {
-  sortBy?: string;
-  order?: string;
-  sx?: SxProps<Theme>;
-  onParamsChange?: (params: Partial<P>) => void;
+type SortSelectParamProps<P> = SelectProps & {
   items: Record<string, string>;
+  sxSelect?: SxProps<Theme>;
 };
 
-export function SortSelect<P extends { sort_by: string; order: SortOrder }, T>({
-  items,
-  sortBy,
-  order,
-  sx,
-  onParamsChange,
-  ...props
-}: SortSelectProps<P>) {
+export function SortSelectParam<
+  P extends { sort_by: string; order: SortOrder },
+>({ items, sxSelect, ...props }: SortSelectParamProps<P>) {
+  const { queryParam, handleParamsChange } = useTableQueryParams();
   return (
     <Grid container spacing={2}>
       <Grid size={6}>
         <Select
           fullWidth
-          sx={{ minWidth: 120, ...sx }}
-          value={sortBy}
-          {...props}
+          sx={{ height: CONTROL_HEIGHT, ...sxSelect }}
+          value={queryParam.sort_by ?? ''}
           onChange={(e) => {
-            onParamsChange?.({
+            handleParamsChange({
               sort_by: e.target.value as string,
             } as Partial<P>);
           }}
+          {...props}
         >
           {Object.entries(items).map(([key, label]) => (
             <MenuItem key={key} value={key}>
@@ -48,12 +43,14 @@ export function SortSelect<P extends { sort_by: string; order: SortOrder }, T>({
       <Grid size={6}>
         <Select
           fullWidth
-          sx={{ minWidth: 120, ...sx }}
-          value={order}
+          sx={{ height: CONTROL_HEIGHT, ...sxSelect }}
+          value={queryParam?.order ?? ''}
+          onChange={(e) => {
+            handleParamsChange({
+              order: e.target.value as string,
+            } as Partial<P>);
+          }}
           {...props}
-          onChange={(e) =>
-            onParamsChange?.({ order: e.target.value } as Partial<P>)
-          }
         >
           {Object.entries(SortOrder).map(([key, value]) => (
             <MenuItem key={key} value={key}>

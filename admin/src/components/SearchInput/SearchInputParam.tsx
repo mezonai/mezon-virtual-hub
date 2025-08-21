@@ -1,4 +1,9 @@
 import {
+  CONTROL_HEIGHT,
+  WIDTH_SEARCH_PARAMS,
+} from '@/constant/table/tableConfig';
+import { IQueryParams, useTableQueryParams } from '@/hooks/useTableQueryParams';
+import {
   InputAdornment,
   OutlinedInput,
   OutlinedInputProps,
@@ -6,41 +11,36 @@ import {
   Theme,
 } from '@mui/material';
 import { MagnifyingGlassIcon } from '@phosphor-icons/react';
-import React from 'react';
 
-interface SearchInputProps<P> extends OutlinedInputProps {
+interface SearchInputParamProps<P> extends OutlinedInputProps {
   placeholder: string;
+  valueParams: keyof P | keyof IQueryParams;
   value?: string;
-  onChangeSearch?: (value: string) => void;
-  onParamsChange?: (params: Partial<P>) => void;
   sx?: SxProps<Theme>;
-  valueParams: keyof P;
 }
 
-export function SearchInput<P>({
+export function SearchInputParam<P extends Record<string, any>>({
   placeholder,
-  value,
-  onChangeSearch,
-  onParamsChange,
-  sx,
   valueParams,
+  value,
+  sx,
   ...props
-}: SearchInputProps<P>): React.JSX.Element {
+}: SearchInputParamProps<P>) {
+  const { handleParamsChange } = useTableQueryParams<P>();
   return (
     <OutlinedInput
-      sx={{ maxWidth: '500px', ...sx }}
       fullWidth
-      {...props}
+      sx={{ height: CONTROL_HEIGHT, maxWidth: WIDTH_SEARCH_PARAMS, ...sx }}
       placeholder={placeholder}
       value={value ?? ''}
-      onChange={(e) => onChangeSearch?.(e.target.value)}
       onKeyDown={(e) => {
         if (e.key === 'Enter') {
-          onParamsChange?.({
-            [valueParams as keyof P]: value,
+          handleParamsChange({
+            [valueParams as keyof P | keyof IQueryParams]: value,
           } as Partial<P>);
         }
       }}
+      {...props}
       startAdornment={
         <InputAdornment position="start">
           <MagnifyingGlassIcon fontSize="var(--icon-fontSize-md)" />

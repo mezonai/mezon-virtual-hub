@@ -1,3 +1,3 @@
-export * from './SortSelect';
-export * from './SelectItem';
-export * from './SelectCheckbox';
+export * from './SortSelectParam';
+export * from './SelectItemParam';
+export * from './SelectCheckboxParam';

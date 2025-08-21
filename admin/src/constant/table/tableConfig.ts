@@ -183,3 +183,7 @@ export const ANIMAL_RARITY_FIELD: Record<AnimalRarity, string> = {
   [AnimalRarity.EPIC]: 'Epic',
   [AnimalRarity.LEGENDARY]: 'Legendary',
 };
+
+export const CONTROL_HEIGHT = '50px';
+export const WIDTH_SEARCH_PARAMS = '500px';
+export const TOP_INPUT_LABEL_PARAMS = '-3px';
