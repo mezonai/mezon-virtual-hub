@@ -5,9 +5,10 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { MezonService } from './mezon.service';
 import { MezonController } from './mezon.controller';
+import { TransactionsModule } from '@modules/admin/transactions/transactions.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([UserEntity, TransactionsEntity]), LoggerModule],
+  imports: [TypeOrmModule.forFeature([UserEntity, TransactionsEntity]), LoggerModule, TransactionsModule],
   controllers: [MezonController],
   providers: [MezonService],
   exports: [MezonService],
