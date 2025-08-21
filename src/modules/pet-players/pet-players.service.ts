@@ -434,6 +434,8 @@ export class PetPlayersService extends BaseService<PetPlayersEntity> {
     return {
       winners: serializeDto(PetPlayersInfoDto, winners),
       losers: serializeDto(PetPlayersInfoDto, losers),
+      expPerLoser,
+      expPerWinner,
     };
   }
 
@@ -464,19 +466,19 @@ export class PetPlayersService extends BaseService<PetPlayersEntity> {
 
     const level = petPlayer.level;
     // 📌 Recalculate stats with formulas
-    petPlayer.hp += Math.floor(
+    petPlayer.hp = base.base_hp + Math.floor(
       ((base.base_hp * 2 + iv) * level) / 100 + level + 10,
     );
 
-    petPlayer.attack += Math.floor(
+    petPlayer.attack = base.base_attack + Math.floor(
       ((base.base_attack * 2 + iv) * level) / 100 + 5,
     );
 
-    petPlayer.defense += Math.floor(
+    petPlayer.defense = base.base_defense + Math.floor(
       ((base.base_defense * 2 + iv) * level) / 100 + 5,
     );
 
-    petPlayer.speed += Math.floor(
+    petPlayer.speed = base.base_speed + Math.floor(
       ((base.base_speed * 2 + iv) * level) / 100 + 5,
     );
   }

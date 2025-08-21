@@ -80,7 +80,7 @@ export class AdminPetPlayersService extends BaseService<PetPlayersEntity> {
     const petConditions: FindOptionsWhere<PetsEntity> = {};
     if (pet_type) petConditions.type = pet_type;
     if (rarity) petConditions.rarity = rarity;
-    if (species) petConditions.species = `%${species}%`;
+    if (species) petConditions.species = ILike(`%${species}%`);
 
     const commonConditions: FindOptionsWhere<PetPlayersEntity> = {
       ...(isNumber(search) ? { level: +search } : {}),
