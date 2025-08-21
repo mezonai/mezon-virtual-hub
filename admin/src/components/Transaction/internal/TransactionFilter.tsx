@@ -1,29 +1,25 @@
-import { Grid, Card } from '@mui/material';
-import { Transaction } from '@/type/transaction/transaction';
-import { SearchInput } from '@/components/SearchInput';
-import { SortSelect } from '@/components/Select';
+import { SearchInputParam } from '@/components/SearchInput/SearchInputParam';
+import { SortSelectParam } from '@/components/Select/SortSelectParam';
 import { TRANSACTION_FIELDS } from '@/constant/table/tableConfig';
-import { useTableQueryParams } from '@/hooks/useTableQueryParams';
 import { IPaginationParams } from '@/type/api';
+import { Transaction } from '@/type/transaction/transaction';
+import { Card, Grid } from '@mui/material';
 
 export const TransactionFilter = () => {
-  const { handleParamsChange, confirmSearch, setConfirmSearch, order, sortBy } =
-    useTableQueryParams();
   return (
     <Card sx={{ p: 2 }}>
-      <Grid spacing={4} container>
-        <SearchInput<IPaginationParams<Transaction>>
-          placeholder="Search transaction"
-          value={confirmSearch}
-          onChangeSearch={setConfirmSearch}
-          onParamsChange={handleParamsChange}
-        />
-        <SortSelect<IPaginationParams<Transaction>, Transaction>
-          sortBy={sortBy}
-          order={order}
-          onParamsChange={handleParamsChange}
-          items={TRANSACTION_FIELDS}
-        />
+      <Grid spacing={3} container>
+        <Grid size={4}>
+          <SearchInputParam<IPaginationParams<Transaction>>
+            placeholder="Search transaction"
+            valueParams="search"
+          />
+        </Grid>
+        <Grid size={4}>
+          <SortSelectParam<IPaginationParams<Transaction>>
+            items={TRANSACTION_FIELDS}
+          />
+        </Grid>
       </Grid>
     </Card>
   );

@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTransactionStore } from '@/store/transaction/store';
-import { Transaction } from '@/type/transaction/transaction';
 import { useTableQueryParams } from '@/hooks/useTableQueryParams';
 
 export const useTransactionList = () => {
@@ -14,9 +13,7 @@ export const useTransactionList = () => {
     sortBy,
     search,
     order,
-    setConfirmSearch,
-    confirmSearch,
-  } = useTableQueryParams<Transaction>();
+  } = useTableQueryParams();
 
   const totalItem = transactions.total;
   const totalPage = transactions.total_page;
@@ -52,8 +49,6 @@ export const useTransactionList = () => {
     sortBy,
     search,
     order,
-    confirmSearch,
     handleParamsChange,
-    setConfirmSearch,
   };
 };

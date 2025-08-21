@@ -1,8 +1,8 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { SortOrder } from '../type/enum/user';
 
-interface IQueryParams {
+export interface IQueryParams {
   page: number;
   limit: number;
   search: string;
@@ -10,17 +10,25 @@ interface IQueryParams {
   order: SortOrder;
 }
 
-export function useTableQueryParams<T>() {
+export function useTableQueryParams<T extends Record<string, any>>() {
   const [searchParam, setSearchParam] = useSearchParams();
-  const [confirmSearch, setConfirmSearch] = useState<string>('');
-  const queryParam: IQueryParams = useMemo(() => {
-    return {
+  const queryParam: IQueryParams & Partial<T> = useMemo(() => {
+    const defaultParams: IQueryParams = {
       page: Number(searchParam.get('page') || '1'),
       limit: Number(searchParam.get('limit') || '5'),
       search: searchParam.get('search') || '',
       sort_by: searchParam.get('sort_by') || 'created_at',
       order: (searchParam.get('order') as SortOrder) || SortOrder.DESC,
     };
+
+    const otherPrams = {} as Partial<T>;
+    searchParam.forEach((value, key) => {
+      if (!(key in defaultParams)) {
+        (otherPrams as any)[key] = value;
+      }
+    });
+
+    return { ...defaultParams, ...otherPrams };
   }, [searchParam]);
 
   const handleParamsChange = useCallback(
@@ -50,10 +58,6 @@ export function useTableQueryParams<T>() {
     [searchParam, setSearchParam],
   );
 
-  useEffect(() => {
-    setConfirmSearch(queryParam.search);
-  }, [setConfirmSearch, queryParam.search]);
-
   return {
     queryParam,
     limit: queryParam.limit,
@@ -64,7 +68,5 @@ export function useTableQueryParams<T>() {
     handleParamsChange,
     setSearchParam,
     searchParam,
-    setConfirmSearch,
-    confirmSearch,
   };
 }

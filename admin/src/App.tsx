@@ -12,6 +12,7 @@ import { NotFoundPage } from './pages/NotFoundPage';
 import { ToastContainer, Zoom } from 'react-toastify';
 import { TransactionPage } from './pages/TransactionPage';
 import { Callback } from './components/Callback/Callback';
+import { PetPlayersPage } from './pages/PetPlayersPage';
 const App = () => {
   return (
     <ThemeProvider theme={theme}>
@@ -28,6 +29,10 @@ const App = () => {
               <Route
                 path={paths.dashboard.transaction}
                 element={<TransactionPage />}
+              />
+              <Route
+                path={paths.dashboard.petPlayers}
+                element={<PetPlayersPage />}
               />
             </Route>
 
