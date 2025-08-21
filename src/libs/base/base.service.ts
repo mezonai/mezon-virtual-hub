@@ -3,15 +3,17 @@ import {
   DeepPartial,
   FindManyOptions,
   FindOneOptions,
+  FindOptionsWhere,
   ObjectLiteral,
   Repository,
 } from 'typeorm';
+import { QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialEntity';
 
 export abstract class BaseService<T extends ObjectLiteral> {
   protected constructor(
     protected readonly repository: Repository<T>,
     private readonly entityName: string,
-  ) {}
+  ) { }
 
   create(dto: DeepPartial<T>): T {
     return this.repository.create(dto);
@@ -63,5 +65,17 @@ export abstract class BaseService<T extends ObjectLiteral> {
 
   async findOne(options: FindOneOptions<T>) {
     return await this.repository.findOne(options);
+  }
+
+  async update(criteria: string | string[] | number | number[], partialEntity: QueryDeepPartialEntity<T>) {
+    return await this.repository.update(criteria, partialEntity);
+  }
+
+  async increment(conditions: FindOptionsWhere<T>, propertyPath: string, value: number | string) {
+    return await this.repository.increment(conditions, propertyPath, value)
+  }
+
+  async decrement(conditions: FindOptionsWhere<T>, propertyPath: string, value: number | string) {
+    return await this.repository.decrement(conditions, propertyPath, value)
   }
 }

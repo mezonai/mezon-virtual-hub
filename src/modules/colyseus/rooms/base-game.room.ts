@@ -17,7 +17,7 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
-import { AuthenticatedClient, Player, PlayerBattleInfo, WithdrawPayload } from '@types';
+import { AuthenticatedClient, Player, PlayerBattleInfo, WithdrawMezonPayload } from '@types';
 import { Client, matchMaker, Room } from 'colyseus';
 import { IncomingMessage } from 'http';
 import { Repository } from 'typeorm';
@@ -355,59 +355,32 @@ export class BaseGameRoom extends Room<RoomState> {
 
     this.onMessage(
       'onWithrawDiamond',
-      async (client: AuthenticatedClient, data: WithdrawPayload) => {
-        const userId = client.userData?.id;
+      async (client: AuthenticatedClient, data: WithdrawMezonPayload) => {
+        const user = client.userData;
 
-        if (!userId) {
+        if (!user?.id) {
           return client.send('onWithdrawFailed', {
             reason: 'Không xác định được người dùng',
           });
         }
 
-        const user = await this.userRepository.findOne({
-          where: { id: userId },
-        });
+        const result = await this.mezonService.withdrawTokenRequest(
+          data,
+          user.id,
+        );
 
-        if (!user?.mezon_id) {
+        if (!result.success) {
           return client.send('onWithdrawFailed', {
-            reason: 'Tài khoản không liên kết với Mezon',
+            reason: result.message ?? 'Lỗi hệ thống, xin vui lòng liên hệ nhà phát triển để đượcc hỗ trợ',
           });
         }
-
-        const currentDiamond = user.diamond;
-        const amountToWithdraw = data.amount;
-
-        if (
-          typeof currentDiamond !== 'number' ||
-          currentDiamond < amountToWithdraw
-        ) {
-          return client.send('onWithdrawFailed', {
-            reason: 'Không đủ Diamond để rút',
-          });
-        }
-
-        const newDiamond = currentDiamond - amountToWithdraw;
 
         const responseData = {
           sessionId: client.sessionId,
-          amountChange: amountToWithdraw,
+          amountChange: data.amount,
         };
 
-        this.mezonService.WithdrawTokenRequest({
-          receiver_id: user.mezon_id,
-          sender_id: configEnv().MEZON_TOKEN_RECEIVER_APP_ID,
-          sender_name: 'Virtual-Hub',
-          ...data,
-        });
-
         this.broadcast('onWithrawDiamond', responseData);
-        try {
-          await this.userRepository.update(userId, { diamond: newDiamond });
-        } catch (err) {
-          return client.send('onWithdrawFailed', {
-            reason: 'Lỗi hệ thống khi cập nhật dữ liệu. Vui lòng thử lại.',
-          });
-        }
       },
     );
 
@@ -454,7 +427,6 @@ export class BaseGameRoom extends Room<RoomState> {
           diamondChange: -diamondTransfer,
         };
         this.broadcast('onExchangeDiamondToCoin', responseData);
-
         try {
           await this.userRepository.update(userId, {
             gold: newGold,
