@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { SortOrder } from '../type/enum/user';
 
@@ -12,7 +12,6 @@ export interface IQueryParams {
 
 export function useTableQueryParams<T extends Record<string, any>>() {
   const [searchParam, setSearchParam] = useSearchParams();
-  const [confirmSearch, setConfirmSearch] = useState<string>('');
   const queryParam: IQueryParams & Partial<T> = useMemo(() => {
     const defaultParams: IQueryParams = {
       page: Number(searchParam.get('page') || '1'),
@@ -59,10 +58,6 @@ export function useTableQueryParams<T extends Record<string, any>>() {
     [searchParam, setSearchParam],
   );
 
-  useEffect(() => {
-    setConfirmSearch(queryParam.search);
-  }, [setConfirmSearch, queryParam.search]);
-
   return {
     queryParam,
     limit: queryParam.limit,
@@ -73,7 +68,5 @@ export function useTableQueryParams<T extends Record<string, any>>() {
     handleParamsChange,
     setSearchParam,
     searchParam,
-    setConfirmSearch,
-    confirmSearch,
   };
 }

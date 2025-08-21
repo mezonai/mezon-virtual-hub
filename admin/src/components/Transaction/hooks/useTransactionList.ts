@@ -13,8 +13,6 @@ export const useTransactionList = () => {
     sortBy,
     search,
     order,
-    setConfirmSearch,
-    confirmSearch,
   } = useTableQueryParams();
 
   const totalItem = transactions.total;
@@ -51,8 +49,6 @@ export const useTransactionList = () => {
     sortBy,
     search,
     order,
-    confirmSearch,
     handleParamsChange,
-    setConfirmSearch,
   };
 };

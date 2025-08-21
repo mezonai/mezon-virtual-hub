@@ -22,8 +22,6 @@ export const useUserList = () => {
     sortBy,
     search,
     order,
-    confirmSearch,
-    setConfirmSearch,
   } = useTableQueryParams();
 
   useEffect(() => {
@@ -71,7 +69,5 @@ export const useUserList = () => {
     sortBy,
     order,
     search,
-    setConfirmSearch,
-    confirmSearch,
   };
 };

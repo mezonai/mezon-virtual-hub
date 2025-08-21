@@ -6,11 +6,12 @@ import { PetPlayers } from '@/type/pet-players/petPlayers';
 import { Card } from '@mui/material';
 import { PencilIcon, TrashIcon } from '@phosphor-icons/react';
 import React from 'react';
-import { usePetPlayerTable } from '../hooks/usePetPlayerTable';
+import { usePetPlayerList } from '../hooks/usePetPlayersList';
 
 export const PetPlayersTable = (): React.JSX.Element => {
   const { page, limit, handleParamsChange } = useTableQueryParams();
-  const { loading, totalItem, petPlayersData } = usePetPlayerTable();
+  const { loading, totalItem, petPlayersData } = usePetPlayerList();
+
   return (
     <Card>
       <AbstractTable<PetPlayers, IPaginationParams<PetPlayers>>
