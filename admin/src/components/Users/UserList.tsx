@@ -2,7 +2,6 @@ import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { PlusIcon } from '@phosphor-icons/react/dist/ssr/Plus';
-import { useUserList } from './hooks/useUserList';
 import { useModal } from '@/hooks/useModal';
 import { useState } from 'react';
 import { User } from '@/models/user';
@@ -12,7 +11,6 @@ import { UsersTable } from './internal/UsersTable';
 import { UserFormModal } from './internal/UserFormModal';
 
 export function UserList(): React.JSX.Element {
-  const { users, totalItems, loading } = useUserList();
   const { isOpenModal, open, close } = useModal();
   const [selectedUser, setSelectedUser] = useState<User | undefined>(undefined);
   const [actionType, setActionType] = useState<ActionFormType | null>(null);
@@ -34,12 +32,9 @@ export function UserList(): React.JSX.Element {
       </Stack>
       <UsersFilter />
       <UsersTable
-        count={totalItems}
-        rows={users}
         setSelectedUser={setSelectedUser}
         openFormModal={open}
         setActionForm={setActionType}
-        loading={loading}
       />
       <UserFormModal
         open={isOpenModal}

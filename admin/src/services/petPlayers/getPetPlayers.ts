@@ -2,17 +2,10 @@ import { PetPlayers } from '@/type/pet-players/petPlayers';
 import httpClient from '../httpService/httpServices';
 import { GET_PET_PLAYERS } from '@/utils/config';
 import { IPaginationResponse } from '@/type/api';
-
-export interface getPetPlayersParams {
-  search: string;
-  page: number;
-  limit: number;
-  sort_by: string;
-  order: string;
-}
+import { IQueryParams } from '@/hooks/useTableQueryParams';
 
 export const getPetPlayers = async (
-  params: getPetPlayersParams,
+  params: IQueryParams,
 ): Promise<IPaginationResponse<PetPlayers> | null> => {
   try {
     const response = await httpClient.get(`${GET_PET_PLAYERS}`, {

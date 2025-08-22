@@ -29,6 +29,7 @@ export const navItems = [
   },
 ] satisfies NavItemConfig[];
 
+export const GET_USERS = '/admin/users';
 export const UPDATE_USER = '/admin/users';
 export const GET_TRANSACTION = '/admin/transactions';
 export const LOGIN = '/admin/auth/verify-oauth2';
