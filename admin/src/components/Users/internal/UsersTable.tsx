@@ -7,25 +7,26 @@ import { AbstractTable } from '@/components/Table/AbstractTable';
 import { IPaginationParams } from '@/type/api';
 import { USER_TABLE_CONFIG } from '@/constant/table/tableConfig';
 import { User } from '@/models/user';
+import { useTableList } from '@/hooks/useTableList';
+import { useUserStore } from '@/store/user/store';
 
 interface UsersTableProps {
-  count?: number;
-  rows?: User[];
-  loading?: boolean;
   setSelectedUser: React.Dispatch<React.SetStateAction<User | undefined>>;
   setActionForm: (action: ActionFormType) => void;
   openFormModal: () => void;
 }
 
 export function UsersTable({
-  count = 0,
-  rows = [],
-  loading,
   setSelectedUser,
   openFormModal,
   setActionForm,
 }: UsersTableProps): React.JSX.Element {
   const { handleParamsChange, page, limit } = useTableQueryParams();
+  const { fetchUsers, users } = useUserStore();
+  const { loading, totalItem, responseData } = useTableList<User>({
+    fetchData: fetchUsers,
+    storeData: users,
+  });
   return (
     <Card>
       <AbstractTable<User, IPaginationParams<User>>
@@ -45,8 +46,8 @@ export function UsersTable({
             icon: <TrashIcon width="20px" height="20px" />,
           },
         ]}
-        rows={rows}
-        count={count}
+        rows={responseData}
+        count={totalItem}
         page={page}
         rowsPerPage={limit}
         onParamsChange={handleParamsChange}
