@@ -197,6 +197,7 @@ export class AdminPetPlayersService extends BaseService<PetPlayersEntity> {
         name: pet.species,
         skill_slot_1: { skill_code: skill1?.skill.skill_code },
         skill_slot_2: { skill_code: skill2?.skill.skill_code },
+        equipped_skill_codes: [skill1?.skill.skill_code ?? null, skill2?.skill.skill_code ?? null],
         individual_value: this.petPlayersService.generateIndividualValue(),
         room_code: `${payload.map}${payload.sub_map ? `-${payload.sub_map}` : ''}`,
       });
