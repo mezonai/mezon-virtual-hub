@@ -1,6 +1,6 @@
 import { MapSchema, Schema, type } from '@colyseus/schema';
 import { configEnv } from '@config/env.config';
-import { EXCHANGERATE, RPS_FEE } from '@constant';
+import { BATTLE_MAX_FEE, BATTLE_MIN_FEE, EXCHANGERATE, RPS_FEE, SYSTEM_ERROR } from '@constant';
 import { ActionKey, MapKey } from '@enum';
 import { Logger } from '@libs/logger';
 import { JwtPayload } from '@modules/auth/dtos/response';
@@ -17,7 +17,7 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
-import { AuthenticatedClient, Player, PlayerBattleInfo, WithdrawPayload } from '@types';
+import { AuthenticatedClient, Player, PlayerBattleInfo, WithdrawMezonPayload } from '@types';
 import { Client, matchMaker, Room } from 'colyseus';
 import { IncomingMessage } from 'http';
 import { Repository } from 'typeorm';
@@ -155,7 +155,6 @@ export class BaseGameRoom extends Room<RoomState> {
   broadcastToAllRooms(type: string, data: any) {
     BaseGameRoom.activeRooms.forEach((room) => {
       room.broadcast(type, data);
-      console.log('Room broadcast: ', room.roomId);
     });
   }
 
@@ -356,59 +355,32 @@ export class BaseGameRoom extends Room<RoomState> {
 
     this.onMessage(
       'onWithrawDiamond',
-      async (client: AuthenticatedClient, data: WithdrawPayload) => {
-        const userId = client.userData?.id;
+      async (client: AuthenticatedClient, data: WithdrawMezonPayload) => {
+        const user = client.userData;
 
-        if (!userId) {
+        if (!user?.id) {
           return client.send('onWithdrawFailed', {
             reason: 'Không xác định được người dùng',
           });
         }
 
-        const user = await this.userRepository.findOne({
-          where: { id: userId },
-        });
+        const result = await this.mezonService.withdrawTokenRequest(
+          data,
+          user.id,
+        );
 
-        if (!user?.mezon_id) {
+        if (!result.success) {
           return client.send('onWithdrawFailed', {
-            reason: 'Tài khoản không liên kết với Mezon',
+            reason: result.message ?? SYSTEM_ERROR,
           });
         }
-
-        const currentDiamond = user.diamond;
-        const amountToWithdraw = data.amount;
-
-        if (
-          typeof currentDiamond !== 'number' ||
-          currentDiamond < amountToWithdraw
-        ) {
-          return client.send('onWithdrawFailed', {
-            reason: 'Không đủ Diamond để rút',
-          });
-        }
-
-        const newDiamond = currentDiamond - amountToWithdraw;
 
         const responseData = {
           sessionId: client.sessionId,
-          amountChange: amountToWithdraw,
+          amountChange: data.amount,
         };
 
-        this.mezonService.WithdrawTokenRequest({
-          receiver_id: user.mezon_id,
-          sender_id: configEnv().MEZON_TOKEN_RECEIVER_APP_ID,
-          sender_name: 'Virtual-Hub',
-          ...data,
-        });
-
         this.broadcast('onWithrawDiamond', responseData);
-        try {
-          await this.userRepository.update(userId, { diamond: newDiamond });
-        } catch (err) {
-          return client.send('onWithdrawFailed', {
-            reason: 'Lỗi hệ thống khi cập nhật dữ liệu. Vui lòng thử lại.',
-          });
-        }
       },
     );
 
@@ -455,7 +427,6 @@ export class BaseGameRoom extends Room<RoomState> {
           diamondChange: -diamondTransfer,
         };
         this.broadcast('onExchangeDiamondToCoin', responseData);
-
         try {
           await this.userRepository.update(userId, {
             gold: newGold,
@@ -494,10 +465,7 @@ export class BaseGameRoom extends Room<RoomState> {
         }
       }
 
-      if (
-        targetClient &&
-        action == ActionKey.RPS.toString() &&
-        targetClient.userData.diamond < RPS_FEE
+      if (targetClient && action == ActionKey.RPS.toString() && targetClient.userData.diamond < RPS_FEE
       ) {
         this.sendMessageToTarget(sender, action, 'Người chơi không đủ tiền');
         return;
@@ -529,6 +497,31 @@ export class BaseGameRoom extends Room<RoomState> {
           });
         } else {
           this.sendMessageToTarget(sender, action, 'Lỗi bất định');
+          return;
+        }
+      }
+
+      if (action == ActionKey.Battle.toString()) {
+        if (sender.userData?.id == targetClient?.userData?.id) {
+          this.sendMessageToTarget(sender, action, 'Cùng 1 tài khoản không thể thách đấu');
+          return;
+        }
+        if (amount <= 0) {
+          this.sendMessageToTarget(sender, action, 'Số tiền thách đấu không hợp lệ');
+          return;
+        }
+        if (sender.userData?.diamond <= 0 || sender.userData?.diamond < amount) {
+          this.sendMessageToTarget(sender, action, 'Bạn không đủ tiền');
+          return;
+        }
+
+        if (amount < BATTLE_MIN_FEE || amount > BATTLE_MAX_FEE) {
+          this.sendMessageToTarget(sender, action, 'Số tiền thách đấu không hợp lệ');
+          return;
+        }
+
+        if (targetClient?.userData.diamond < amount) {
+          this.sendMessageToTarget(sender, action, 'Người chơi không đủ tiền');
           return;
         }
       }
@@ -784,11 +777,17 @@ export class BaseGameRoom extends Room<RoomState> {
 
     //combat
     this.onMessage('p2pCombatActionAccept', (sender, data) => {
-      const { targetClientId, action } = data;
-      if (action !== ActionKey.Battle.toString()) return;
+      const { targetClientId, action, amount } = data;
+      if (action !== ActionKey.Battle.toString()) {
+        this.sendMessageToTarget(sender, action, 'Lỗi bất định');
+        return;
+      }
 
       const targetClient = this.clients.find(c => c.sessionId === targetClientId);
-      if (!targetClient) return;
+      if (!targetClient) {
+        this.sendMessageToTarget(sender, action, 'Lỗi bất định');
+        return;
+      }
 
       const player1Id = sender.sessionId;
       const player2Id = targetClient.sessionId;
@@ -814,7 +813,7 @@ export class BaseGameRoom extends Room<RoomState> {
         }
       });
 
-      this.createBattleRoom(player1Id, player2Id);
+      this.createBattleRoom(player1Id, player2Id, amount);
     });
 
     this.onMessage(MessageTypes.NOT_PET_BATTLE, async (client: AuthenticatedClient, data) => {
@@ -1011,10 +1010,11 @@ export class BaseGameRoom extends Room<RoomState> {
       }, 100);
     });
   }
-  async createBattleRoom(player1Id: string, player2Id: string) {
+  async createBattleRoom(player1Id: string, player2Id: string, valueChallenge: number) {
     try {
       const room = await matchMaker.createRoom("battle-room", {
-        roomName: this.roomName
+        roomName: this.roomName,
+        amount: valueChallenge
       });
       // Gửi thông báo cho client
       this.broadcast(MessageTypes.BATTE_ROOM_READY, {

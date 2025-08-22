@@ -5,8 +5,7 @@ import {
   Param,
   ParseUUIDPipe,
   Put,
-  Query,
-  UseGuards,
+  Query
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -18,18 +17,18 @@ import {
 
 import { Logger } from '@libs/logger';
 
-import { AdminBypassGuard } from '@libs/guard/admin.guard';
+import { RequireAdmin } from '@libs/decorator';
 import { ClsService } from 'nestjs-cls';
-import { UserManagementService } from './user-management.service';
 import {
-  UsersManagementQueryDto,
   UpdateUserDto,
+  UsersManagementQueryDto,
 } from './dto/user-managment.dto';
+import { UserManagementService } from './user-management.service';
 
 @ApiBearerAuth()
 @Controller('users')
 @ApiTags('Admin - Users')
-@UseGuards(AdminBypassGuard)
+@RequireAdmin()
 export class UserManagementController {
   constructor(
     private readonly userService: UserManagementService,
@@ -43,8 +42,8 @@ export class UserManagementController {
   @ApiOperation({
     summary: 'Get all users information',
   })
-  async getAllMaps(@Query() query: UsersManagementQueryDto) {
-    return await this.userService.getAllUsers(query);
+  async getUsers(@Query() query: UsersManagementQueryDto) {
+    return await this.userService.getUsers(query);
   }
 
   @Put(':user_id')

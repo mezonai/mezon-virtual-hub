@@ -1,7 +1,12 @@
-import { User } from '../../models/user';
-import { formatDate } from '../../utils/format/formatDate';
-import { Transaction } from '../../types/transaction/transaction';
-import { TableColumn } from '../../theme/components/Table/AbstractTable';
+import { TableColumn } from '@/components/Table';
+import { User } from '@/models/user';
+import {
+  AnimalRarity,
+  PetPlayers,
+  PetType,
+} from '@/type/pet-players/petPlayers';
+import { Transaction } from '@/type/transaction/transaction';
+import { formatDate } from '@/utils/format/formatDate';
 
 export const USER_TABLE_CONFIG: TableColumn<User>[] = [
   {
@@ -105,3 +110,80 @@ export const TRANSACTION_FIELDS: Record<string, string> = {
   extra_attribute: 'Extra Attribute',
   created_at: 'Created At',
 } as const;
+
+export const PET_PLAYERS_FIELD: Record<string, string> = {
+  id: 'ID',
+  name: 'Name',
+  level: 'Level',
+  stars: 'Stars',
+  is_caught: 'Is Caught',
+  equipped_skill_codes: 'Equipped Skill',
+  created_at: 'Created At',
+};
+
+export const PET_PLAYERS_TABLE_CONFIG: TableColumn<PetPlayers>[] = [
+  {
+    key: 'id',
+    headerName: 'ID',
+  },
+  {
+    key: 'name',
+    headerName: 'Name',
+  },
+  {
+    key: 'level',
+    headerName: 'Level',
+  },
+  {
+    key: 'stars',
+    headerName: 'Stars',
+  },
+  {
+    key: 'is_caught',
+    headerName: 'Is Caught',
+  },
+  {
+    key: 'equipped_skill_codes',
+    headerName: 'Equipped Skill',
+  },
+  {
+    key: 'user',
+    headerName: 'User',
+    render: (row) => row?.user?.username ?? '',
+  },
+  {
+    key: 'pet',
+    headerName: 'Pet',
+    render: (row) => row?.pet?.species ?? '',
+  },
+  {
+    key: 'created_at',
+    headerName: 'Created At',
+    render: (row) => formatDate({ date: row.created_at }),
+  },
+  {
+    key: 'action',
+    headerName: 'Action',
+  },
+];
+
+export const PET_TYPE_FIELD: Record<PetType, string> = {
+  [PetType.NORMAL]: 'Normal',
+  [PetType.FIRE]: 'Fire',
+  [PetType.ICE]: 'Ice',
+  [PetType.WATER]: 'Water',
+  [PetType.ELECTRIC]: 'Electric',
+  [PetType.GRASS]: 'Grass',
+  [PetType.DRAGON]: 'Dragon',
+};
+
+export const ANIMAL_RARITY_FIELD: Record<AnimalRarity, string> = {
+  [AnimalRarity.COMMON]: 'Common',
+  [AnimalRarity.RARE]: 'Race',
+  [AnimalRarity.EPIC]: 'Epic',
+  [AnimalRarity.LEGENDARY]: 'Legendary',
+};
+
+export const CONTROL_HEIGHT = '50px';
+export const WIDTH_SEARCH_PARAMS = '500px';
+export const TOP_INPUT_LABEL_PARAMS = '-3px';

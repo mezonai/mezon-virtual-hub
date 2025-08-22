@@ -2,32 +2,16 @@ import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { PlusIcon } from '@phosphor-icons/react/dist/ssr/Plus';
+import { useModal } from '@/hooks/useModal';
+import { useState } from 'react';
+import { User } from '@/models/user';
+import { ActionFormType } from '@/type/enum';
 import { UsersFilter } from './internal/UsersFilter';
 import { UsersTable } from './internal/UsersTable';
-import { useUserList } from './hooks/useUserList';
 import { UserFormModal } from './internal/UserFormModal';
-import { User } from '../../models/user';
-import { useState } from 'react';
-import { ActionFormType } from '../../types/user';
-import { useModal } from '../../theme/components/modals/hook/useModal';
 
 export function UserList(): React.JSX.Element {
-  const {
-    users,
-    page,
-    limit: rowsPerPage,
-    totalItems,
-    sortBy,
-    order,
-    search,
-    loading,
-    confirmSearch,
-    setConfirmSearch,
-    handleParamsChange,
-  } = useUserList();
-
   const { isOpenModal, open, close } = useModal();
-
   const [selectedUser, setSelectedUser] = useState<User | undefined>(undefined);
   const [actionType, setActionType] = useState<ActionFormType | null>(null);
 
@@ -46,24 +30,11 @@ export function UserList(): React.JSX.Element {
           </Button>
         </div>
       </Stack>
-      <UsersFilter
-        sortBy={sortBy}
-        search={search}
-        order={order}
-        confirmSearch={confirmSearch}
-        setConfirmSearch={setConfirmSearch}
-        onParamsChange={handleParamsChange}
-      />
+      <UsersFilter />
       <UsersTable
-        count={totalItems}
-        page={page}
-        rows={users}
-        rowsPerPage={rowsPerPage}
         setSelectedUser={setSelectedUser}
         openFormModal={open}
         setActionForm={setActionType}
-        onParamsChange={handleParamsChange}
-        loading={loading}
       />
       <UserFormModal
         open={isOpenModal}

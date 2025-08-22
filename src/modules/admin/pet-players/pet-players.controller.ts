@@ -1,0 +1,108 @@
+import { Controller, Get, ParseUUIDPipe, Post, Query } from '@nestjs/common';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiParam,
+  ApiTags,
+} from '@nestjs/swagger';
+
+import { Logger } from '@libs/logger';
+
+import { RequireAdmin } from '@libs/decorator';
+import { Delete, Param, Put } from '@nestjs/common';
+import { ClsService } from 'nestjs-cls';
+import { PetPlayersQueryDto, SpawnPetPlayersDto } from './dto/pet-players.dto';
+import { AdminPetPlayersService } from './pet-players.service';
+
+@ApiBearerAuth()
+@RequireAdmin()
+@Controller('pet-players')
+@ApiTags('Admin - Pet Players')
+export class AdminPetPlayersController {
+  constructor(
+    private readonly cls: ClsService,
+    private readonly adminPetPlayersService: AdminPetPlayersService,
+    private readonly logger: Logger,
+  ) {
+    this.logger.setContext(AdminPetPlayersController.name);
+  }
+
+  @Get()
+  @ApiOperation({
+    summary: 'Get list all Pet Players',
+  })
+  async getPetPlayerList(@Query() query: PetPlayersQueryDto) {
+    return await this.adminPetPlayersService.getPetPlayerList(query);
+  }
+
+  @Post()
+  @RequireAdmin()
+  @ApiOperation({
+    summary: 'Create (spawn) a pet',
+  })
+  async createPetPlayers(@Query() { quantity, ...pet }: SpawnPetPlayersDto) {
+    return await this.adminPetPlayersService.createPetPlayers(pet, quantity);
+  }
+
+  @Get(':pet_player_id')
+  @ApiParam({
+    name: 'pet_player_id',
+    example: '91bea29f-0e87-42a5-b851-d9d0386ac32f',
+  })
+  @ApiOperation({
+    summary: 'Get one PetPlayer detail',
+  })
+  async getPetPlayersWithRoom(
+    @Param('pet_player_id', ParseUUIDPipe) pet_player_id: string,
+  ) {
+    return await this.adminPetPlayersService.getOnePetPlayer(pet_player_id);
+  }
+
+  @Put(':pet_player_id')
+  @ApiParam({
+    name: 'pet_player_id',
+    example: '91bea29f-0e87-42a5-b851-d9d0386ac32f',
+  })
+  @ApiOperation({
+    summary: 'Update a specific item',
+  })
+  async updatePetPlayers(
+    @Query() pet: SpawnPetPlayersDto,
+    @Param('pet_player_id', ParseUUIDPipe) pet_player_id: string,
+  ) {
+    return await this.adminPetPlayersService.updatePetPlayers(
+      pet,
+      pet_player_id,
+    );
+  }
+
+  @Delete(':pet_player_id')
+  @RequireAdmin()
+  @ApiParam({
+    name: 'pet_player_id',
+    example: '91bea29f-0e87-42a5-b851-d9d0386ac32f',
+  })
+  @ApiOperation({
+    summary: 'Soft delete a specific pet',
+  })
+  async deletePetPlayers(
+    @Param('pet_player_id', ParseUUIDPipe) pet_player_id: string,
+  ) {
+    return await this.adminPetPlayersService.deletePetPlayers(pet_player_id);
+  }
+
+  @Get('find/:pet_player_id')
+  @RequireAdmin()
+  @ApiParam({
+    name: 'pet_player_id',
+    example: '91bea29f-0e87-42a5-b851-d9d0386ac32f',
+  })
+  @ApiOperation({
+    summary: 'Get a specific pet',
+  })
+  async getOnePetPlayers(
+    @Param('pet_player_id', ParseUUIDPipe) pet_player_id: string,
+  ) {
+    return await this.adminPetPlayersService.getPetPlayersById(pet_player_id);
+  }
+}

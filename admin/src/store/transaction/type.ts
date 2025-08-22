@@ -1,7 +1,8 @@
-import { getTransactionParams } from '../../services/transaction/getTransaction';
-import { TransactionResponseAPI } from '../../types/transaction/transaction';
+import { IQueryParams } from '@/hooks/useTableQueryParams';
+import { IPaginationResponse } from '@/type/api';
+import { Transaction } from '@/type/transaction/transaction';
 
 export interface TransactionStore {
-  transactions: TransactionResponseAPI;
-  fetchTransaction: (params: getTransactionParams) => Promise<void>;
+  transactions: IPaginationResponse<Transaction>;
+  fetchTransaction: (params: IQueryParams) => Promise<void>;
 }

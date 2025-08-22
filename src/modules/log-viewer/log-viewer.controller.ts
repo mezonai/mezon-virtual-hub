@@ -1,16 +1,15 @@
-import { Controller, Get, HttpException, HttpStatus, Res, UseGuards } from '@nestjs/common';
-import { Response } from 'express';
+import { Controller, Get, HttpException, HttpStatus, Res } from '@nestjs/common';
 import { exec } from 'child_process';
+import { Response } from 'express';
 
-import { existsSync } from 'fs';
-import { Public } from '@libs/decorator';
-import { AdminBypassGuard } from '@libs/guard/admin.guard';
+import { RequireAdmin } from '@libs/decorator';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { existsSync } from 'fs';
 
 @ApiBearerAuth()
 @ApiTags('Log Viewer')
 @Controller('log-viewer')
-@UseGuards(AdminBypassGuard)
+@RequireAdmin()
 export class LogViewerController {
   @Get('logs')
   getLogs(@Res() res: Response) {

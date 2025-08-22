@@ -1,33 +1,33 @@
 import { configEnv } from '@config/env.config';
-import { TransactionCurrency, TransactionType } from '@enum';
+import { SYSTEM_ERROR } from '@constant';
+import { Logger } from '@libs/logger';
 import { GenericRepository } from '@libs/repository/genericRepository';
-import { TransactionsEntity } from '@modules/transactions/entity/transactions.entity';
+import { TransactionsService } from '@modules/admin/transactions/transactions.service';
 import { UserEntity } from '@modules/user/entity/user.entity';
 import {
   Injectable,
-  Logger,
   OnModuleDestroy,
   OnModuleInit,
 } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { MezonTokenSentEvent } from '@types';
+import { MezonTokenSentEvent, WithdrawMezonPayload, WithdrawMezonResult } from '@types';
 import axios from 'axios';
 import { Events, MezonClient, TokenSentEvent } from 'mezon-sdk';
 import moment from 'moment';
-import { EntityManager, Repository } from 'typeorm';
+import { EntityManager } from 'typeorm';
 
 @Injectable()
 export class MezonService implements OnModuleInit, OnModuleDestroy {
   private readonly userRepository: GenericRepository<UserEntity>;
-  @InjectRepository(TransactionsEntity)
-  private readonly transactionRepository: Repository<TransactionsEntity>;
   private readonly logger = new Logger(MezonService.name);
   private client: MezonClient;
 
   private readonly WEBHOOK_URL = configEnv().MEZON_CHANNEL_WEBHOOK_URL;
 
-  constructor(private manager: EntityManager) {
-    this.userRepository = new GenericRepository(UserEntity, manager);
+  constructor(
+    private manager: EntityManager,
+    private readonly transactionService: TransactionsService
+  ) {
+    this.userRepository = new GenericRepository(UserEntity, manager)
   }
 
   async onModuleInit() {
@@ -48,63 +48,64 @@ export class MezonService implements OnModuleInit, OnModuleDestroy {
   async transferTokenToDiamond(data: MezonTokenSentEvent) {
     if (data.receiver_id !== configEnv().MEZON_TOKEN_RECEIVER_APP_ID) return;
 
-    const user = await this.userRepository.findOne({
-      where: { mezon_id: data.sender_id },
-    });
-
-    if (!user) {
-      this.logger.error(
-        `User ${data.sender_name} with Mezon id ${data.sender_id} not found`,
+    const success = await this.transactionService.handleDepositTransaction(data);
+    if (success) {
+      return this.logger.log(
+        `Deposit successful | User: ${data?.sender_name} | Amount: ${data.amount} diamond`,
       );
-      return;
     }
-
-    const { amount, extra_attribute, receiver_id, transaction_id } = data;
-
-    const transaction = this.transactionRepository.create({
-      mezon_transaction_id: transaction_id,
-      amount,
-      extra_attribute,
-      receiver_id,
-      user,
-      currency: TransactionCurrency.TOKEN,
-      type: TransactionType.DEPOSIT,
-    });
-
-    try {
-      await this.transactionRepository.save(transaction);
-      const updatedDiamond = user.diamond + amount;
-      await this.userRepository.update(user.id, { diamond: updatedDiamond });
-
-      this.logger.log(
-        `Transaction saved: ${transaction_id} for user ${user.id}`,
-      );
-      this.logger.log(`Updated user ${user.id} diamond to ${updatedDiamond}`);
-
-      await this.sendWebhookMessage({
-        t: `Token transferred by ${user.email || user.username}: ${amount}`,
-      });
-    } catch (error) {
-      const existing = await this.transactionRepository.findOne({
-        where: { mezon_transaction_id: transaction_id },
-      });
-
-      if (existing) {
-        this.logger.warn(
-          `Transaction ${transaction_id} already exists (user: ${user.id}).`,
-        );
-      } else {
-        this.logger.error(`Transaction ${transaction_id} failed to save.`);
-      }
-    }
+    this.logger.error(
+      `Deposit Failed | User: ${data?.sender_name} | Amount: ${data.amount} diamond`,
+    );
   }
 
-  async WithdrawTokenRequest(sendTokenData: TokenSentEvent) {
-    this.client.sendToken(sendTokenData);
-
-    this.sendWebhookMessage({
-      t: `Token sent to ${sendTokenData.receiver_id}: ${sendTokenData.amount}`,
+  async withdrawTokenRequest(
+    sendTokenData: WithdrawMezonPayload,
+    userId: string
+  ): Promise<WithdrawMezonResult> {
+    const user = await this.userRepository.findOne({
+      where: { id: userId },
     });
+
+    if (!user?.mezon_id) {
+      return { success: false, message: 'Tài khoản không liên kết với Mezon' };
+    }
+
+    const currentDiamond = user.diamond;
+    const amountToWithdraw = sendTokenData.amount;
+
+    if (typeof currentDiamond !== 'number' || currentDiamond < amountToWithdraw) {
+      return { success: false, message: 'Không đủ Diamond để rút' };
+    }
+
+    try {
+      const payloadWithdraw: TokenSentEvent = {
+        ...sendTokenData,
+        receiver_id: user.mezon_id,
+        sender_id: configEnv().MEZON_TOKEN_RECEIVER_APP_ID,
+        sender_name: 'Virtual-Hub',
+        amount: amountToWithdraw,
+      }
+
+      const success = await this.transactionService.handleWithdrawTransaction(payloadWithdraw, user);
+
+      if (!success) {
+        return { success: false }
+      }
+
+      await this.client.sendToken(payloadWithdraw);
+
+      this.logger.log(
+        `Withdraw successful | User: ${user?.username} | Amount: ${sendTokenData.amount} token`,
+      );
+
+      return { success: true };
+    } catch (err) {
+      this.logger.error(
+        `Withdraw Failed | User: ${user?.username} | Amount: ${sendTokenData.amount} token: ${err?.toString()}`,
+      );
+      return { success: false, message: SYSTEM_ERROR };
+    }
   }
 
   private async sendWebhookMessage(content: { t: string }) {

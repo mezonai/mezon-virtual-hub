@@ -1,42 +1,25 @@
-import { Grid, Card } from '@mui/material';
-import { SortOrder } from '../../../types/user';
-import {
-  Transaction,
-  transactionParams,
-} from '../../../types/transaction/transaction';
-import { SearchInput } from '../../../theme/components/SearchInput/SearchInput';
-import { SortSelect } from '../../../theme/components/Select/SortSelect';
-import { TRANSACTION_FIELDS } from '../../../constant/table/tableConfig';
+import { SearchInputParam } from '@/components/SearchInput/SearchInputParam';
+import { SortSelectParam } from '@/components/Select/SortSelectParam';
+import { TRANSACTION_FIELDS } from '@/constant/table/tableConfig';
+import { IPaginationParams } from '@/type/api';
+import { Transaction } from '@/type/transaction/transaction';
+import { Card, Grid } from '@mui/material';
 
-interface TransactionFilterProps {
-  sortBy: string;
-  order: SortOrder;
-  confirmSearch: string;
-  onParamsChange: (params: Partial<transactionParams>) => void;
-  setConfirmSearch: React.Dispatch<React.SetStateAction<string>>;
-}
-export const TransactionFilter = ({
-  sortBy,
-  order,
-  confirmSearch,
-  onParamsChange,
-  setConfirmSearch,
-}: TransactionFilterProps) => {
+export const TransactionFilter = () => {
   return (
     <Card sx={{ p: 2 }}>
-      <Grid spacing={4} container>
-        <SearchInput<transactionParams>
-          placeholder="Search transaction"
-          value={confirmSearch}
-          onChangeSearch={setConfirmSearch}
-          onParamsChange={onParamsChange}
-        />
-        <SortSelect<transactionParams, Transaction>
-          sortBy={sortBy}
-          order={order}
-          onParamsChange={onParamsChange}
-          items={TRANSACTION_FIELDS}
-        />
+      <Grid spacing={3} container>
+        <Grid size={4}>
+          <SearchInputParam<IPaginationParams<Transaction>>
+            placeholder="Search transaction"
+            valueParams="search"
+          />
+        </Grid>
+        <Grid size={4}>
+          <SortSelectParam<IPaginationParams<Transaction>>
+            items={TRANSACTION_FIELDS}
+          />
+        </Grid>
       </Grid>
     </Card>
   );

@@ -3,8 +3,7 @@ import {
   Get,
   ParseUUIDPipe,
   Post,
-  Query,
-  UseGuards
+  Query
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -17,7 +16,7 @@ import {
 import { Logger } from '@libs/logger';
 
 import { USER_TOKEN } from '@constant';
-import { AdminBypassGuard } from '@libs/guard/admin.guard';
+import { RequireAdmin } from '@libs/decorator';
 import { UserEntity } from '@modules/user/entity/user.entity';
 import { Body, Delete, Param, Put } from '@nestjs/common';
 import { ClsService } from 'nestjs-cls';
@@ -48,7 +47,7 @@ export class AnimalController {
   }
 
   @Post()
-  @UseGuards(AdminBypassGuard)
+  @RequireAdmin()
   @ApiOperation({
     summary: 'Create an animal',
   })
@@ -69,7 +68,7 @@ export class AnimalController {
   }
 
   @Put(':animal_id')
-  @UseGuards(AdminBypassGuard)
+  @RequireAdmin()
   @ApiParam({
     name: 'animal_id',
     example: '91bea29f-0e87-42a5-b851-d9d0386ac32f',
@@ -85,7 +84,7 @@ export class AnimalController {
   }
 
   @Delete(':animal_id')
-  @UseGuards(AdminBypassGuard)
+  @RequireAdmin()
   @ApiParam({
     name: 'animal_id',
     example: '91bea29f-0e87-42a5-b851-d9d0386ac32f',
@@ -109,7 +108,7 @@ export class AnimalController {
   }
 
   @Get('find/:animal_id')
-  @UseGuards(AdminBypassGuard)
+  @RequireAdmin()
   @ApiParam({
     name: 'animal_id',
     example: '91bea29f-0e87-42a5-b851-d9d0386ac32f',

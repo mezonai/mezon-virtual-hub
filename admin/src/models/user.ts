@@ -1,4 +1,4 @@
-import { Gender, Role } from '../types/user';
+import { Gender, Role } from '@/type/enum';
 
 export interface User {
   id: string;

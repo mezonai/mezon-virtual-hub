@@ -1,17 +1,15 @@
-import { Controller, Get, ParseUUIDPipe, Post, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, ParseUUIDPipe, Post, Query } from '@nestjs/common';
 import {
   ApiBearerAuth,
-  ApiBody,
   ApiOperation,
   ApiParam,
-  ApiQuery,
-  ApiTags,
+  ApiTags
 } from '@nestjs/swagger';
 
 import { Logger } from '@libs/logger';
 
-import { AdminBypassGuard } from '@libs/guard/admin.guard';
-import { Body, Delete, Param, Put } from '@nestjs/common';
+import { RequireAdmin } from '@libs/decorator';
+import { Delete, Param, Put } from '@nestjs/common';
 import { ClsService } from 'nestjs-cls';
 import { UserService } from '../user/user.service';
 import { FoodDtoRequest } from './dto/food.dto';
@@ -39,7 +37,7 @@ export class FoodController {
   }
 
   @Post()
-  @UseGuards(AdminBypassGuard)
+  @RequireAdmin()
   @ApiOperation({
     summary: 'Create a new food',
   })
@@ -48,7 +46,7 @@ export class FoodController {
   }
 
   @Put(':food_id')
-  @UseGuards(AdminBypassGuard)
+  @RequireAdmin()
   @ApiParam({
     name: 'food_id',
     example: '91bea29f-0e87-42a5-b851-d9d0386ac32f',
@@ -64,7 +62,7 @@ export class FoodController {
   }
 
   @Delete(':food_id')
-  @UseGuards(AdminBypassGuard)
+  @RequireAdmin()
   @ApiParam({
     name: 'food_id',
     example: '91bea29f-0e87-42a5-b851-d9d0386ac32f',

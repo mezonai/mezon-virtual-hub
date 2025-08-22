@@ -52,9 +52,14 @@ export class PlayerBattleInfo extends Schema {
   @type("number") activePetIndex: number = 0;
 }
 
-export interface WithdrawPayload
-  extends Pick<TokenSentEvent, 'amount' | 'note'> { }
+export interface WithdrawMezonPayload
+  extends Pick<TokenSentEvent, 'amount' | 'note' > { }
 
 export interface AuthenticatedClient extends ColyseusClient {
   userData?: UserWithPetPlayers;
+}
+
+export interface WithdrawMezonResult {
+  success: boolean;
+  message?: string;
 }

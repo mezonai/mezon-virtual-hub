@@ -173,7 +173,6 @@ export class GameRoom extends BaseGameRoom {
     }
     this.mathProblemData.id = data.id;
     this.mathProblemData.answer = correctAnswer.toString();
-    this.logger.log(JSON.stringify(data))
     this.broadcast('mathProblem', data);
   }
 

@@ -1,5 +1,5 @@
 import React from 'react';
-import NotFound from '../../components/NotFound/NotFound';
+import NotFound from '@/components/NotFound/NotFound';
 import { Box } from '@mui/material';
 
 export const NotFoundPage = () => {

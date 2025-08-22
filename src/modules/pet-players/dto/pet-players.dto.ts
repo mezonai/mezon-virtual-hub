@@ -13,6 +13,7 @@ import {
 } from 'class-validator';
 import { PetPlayersEntity } from '../entity/pet-players.entity';
 import { PetSkillsResponseDto } from '@modules/pet-skills/dto/pet-skills.dto';
+import { getExpForNextLevel } from '@libs/utils';
 
 export class SpawnPetPlayersDto {
   @ApiProperty()
@@ -53,7 +54,7 @@ export class SpawnPetPlayersDto {
     description: 'Quantity pet to spawn',
     type: Number,
     required: false,
-    default: 1
+    default: 1,
   })
   @IsNumber()
   @IsOptional()
@@ -107,7 +108,7 @@ export class PetPlayersWithSpeciesDto extends PetPlayersEntity {
 
   @Expose()
   get max_exp(): number {
-    return Math.pow(this.level, 3);
+    return getExpForNextLevel(this.level);
   }
 }
 
@@ -120,7 +121,7 @@ export class PetPlayersInfoDto extends PetPlayersEntity {
 
   @Expose()
   get max_exp(): number {
-    return Math.pow(this.level, 3);
+    return getExpForNextLevel(this.level);
   }
 
   @Expose()
@@ -183,7 +184,7 @@ export class BulkUpdateBattleSlotsDto {
 
 export class UpdateBattleSkillsDto extends PickType(PetPlayersEntity, [
   'equipped_skill_codes',
-]) { }
+]) {}
 
 export class BattlePetPlayersDto extends PetPlayersEntity {
   @Exclude()
@@ -214,4 +215,9 @@ export class BattlePetPlayersDto extends PetPlayersEntity {
   @Expose()
   @Type(() => PetSkillsResponseDto)
   equipped_skills: PetSkillsResponseDto[];
+
+  @Expose()
+  get max_exp(): number {
+    return getExpForNextLevel(this.level);
+  }
 }

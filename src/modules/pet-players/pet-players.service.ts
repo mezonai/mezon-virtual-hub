@@ -27,9 +27,9 @@ import {
   UpdatePetPlayersDto,
 } from './dto/pet-players.dto';
 import { PetPlayersEntity } from './entity/pet-players.entity';
-import { PetSkillsEntity } from '@modules/pet-skills/entity/pet-skills.entity';
-
-const SELECTED_PETS_FOR_BATTLE = 3;
+import { BASE_EXP_MAP } from '@constant';
+import { AnimalRarity } from '@enum';
+import { getExpForNextLevel, serializeDto } from '@libs/utils';
 
 @Injectable()
 export class PetPlayersService extends BaseService<PetPlayersEntity> {
@@ -85,49 +85,6 @@ export class PetPlayersService extends BaseService<PetPlayersEntity> {
       throw new Error('Pet-player not found');
     }
     return pet;
-  }
-
-  async createPetPlayers(payload: Partial<SpawnPetPlayersDto>, quantity = 1) {
-    const pet = await this.petsRepository.findOne({
-      where: { species: payload.species, rarity: payload.rarity, type: payload.type },
-      relations: ['skill_usages', 'skill_usages.skill'],
-    });
-
-    if (!pet) {
-      throw new NotFoundException(
-        `Pet ${payload.species} with Rarity: ${payload.rarity} and Type ${payload.type} not found`,
-      );
-    }
-
-    if (!pet.skill_usages?.length) {
-      throw new BadRequestException(
-        `Pet ${payload.species} did not set up any skills`,
-      );
-    }
-
-    const skill1 = pet.skill_usages.find(({ skill_index }) => skill_index === 1);
-    const skill2 = pet.skill_usages.find(({ skill_index }) => skill_index === 2);
-
-    const petPlayers: PetPlayersEntity[] = [];
-
-    for (let i = 0; i < quantity; i++) {
-      petPlayers.push(
-        this.petPlayersRepository.create({
-          pet,
-          name: pet.species,
-          skill_slot_1: { skill_code: skill1?.skill.skill_code },
-          skill_slot_2: { skill_code: skill2?.skill.skill_code },
-          individual_value: this.generateIndividualValue(),
-          attack: pet.base_attack,
-          defense: pet.base_defense,
-          hp: pet.base_hp,
-          speed: pet.base_speed,
-          room_code: `${payload.map}${payload.sub_map ? `-${payload.sub_map}` : ''}`,
-        }),
-      );
-    }
-
-    return await this.petPlayersRepository.save(petPlayers);
   }
 
   async updatePetPlayers(
@@ -434,6 +391,96 @@ export class PetPlayersService extends BaseService<PetPlayersEntity> {
     });
 
     return plainToInstance(BattlePetPlayersDto, battlePets);
+  }
+
+  async finalizeBattleResult(winnerIds: string[], loserIds: string[]) {
+    const [winners, losers] = await Promise.all([
+      this.petPlayersRepository.find({
+        where: { id: In(winnerIds) },
+        relations: ['pet'],
+      }),
+      this.petPlayersRepository.find({
+        where: { id: In(loserIds) },
+        relations: ['pet'],
+      }),
+    ]);
+
+    if (!winners.length || !losers.length) {
+      throw new Error('Invalid battle participants');
+    }
+
+    // Calculate total EXP from all losers
+    let totalExp = 0;
+    for (const loser of losers) {
+      const baseExp = this.getBaseExp(loser.pet?.rarity);
+      totalExp += this.calculateExp(baseExp, loser.level);
+    }
+
+    // Divide EXP evenly among winners
+    const expPerWinner = Math.floor(totalExp / winners.length);
+
+    for (const winner of winners) {
+      this.recalculateStats(winner, expPerWinner);
+    }
+
+    // Give losers half of expPerWinner each
+    const expPerLoser = Math.floor(expPerWinner / 2);
+    for (const loser of losers) {
+      this.recalculateStats(loser, expPerLoser);
+    }
+
+    await this.petPlayersRepository.save([...winners, ...losers]);
+
+    return {
+      winners: serializeDto(PetPlayersInfoDto, winners),
+      losers: serializeDto(PetPlayersInfoDto, losers),
+      expPerLoser,
+      expPerWinner,
+    };
+  }
+
+  private calculateExp(b: number, level: number): number {
+    return Math.floor((1.5 * b * level) / 7);
+  }
+
+  private getBaseExp(
+    rarity?: AnimalRarity | null,
+    fallback: number = 20,
+  ): number {
+    if (!rarity) return fallback;
+    return BASE_EXP_MAP[rarity] ?? fallback;
+  }
+
+  recalculateStats(petPlayer: PetPlayersEntity, expGain: number = 0): void {
+    const base = petPlayer.pet; // assuming `pet` relation has base stats
+
+    if (!base) return;
+    const iv = petPlayer.individual_value ?? 0;
+
+    petPlayer.exp += expGain;
+    // 📌 Handle level up and exp rollover
+    while (petPlayer.exp >= getExpForNextLevel(petPlayer.level)) {
+      petPlayer.exp -= getExpForNextLevel(petPlayer.level); // keep residual exp
+      petPlayer.level++;
+    }
+
+    const level = petPlayer.level;
+    // 📌 Recalculate stats with formulas
+    petPlayer.hp = base.base_hp + Math.floor(
+      ((base.base_hp * 2 + iv) * level) / 100 + level + 10,
+    );
+
+    petPlayer.attack = base.base_attack + Math.floor(
+      ((base.base_attack * 2 + iv) * level) / 100 + 5,
+    );
+
+    petPlayer.defense = base.base_defense + Math.floor(
+      ((base.base_defense * 2 + iv) * level) / 100 + 5,
+    );
+
+    petPlayer.speed = base.base_speed + Math.floor(
+      ((base.base_speed * 2 + iv) * level) / 100 + 5,
+    );
   }
 
   generateIndividualValue(): number {

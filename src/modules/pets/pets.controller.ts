@@ -6,8 +6,7 @@ import {
   ParseUUIDPipe,
   Post,
   Put,
-  Query,
-  UseGuards,
+  Query
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -18,8 +17,7 @@ import {
 
 import { Logger } from '@libs/logger';
 
-import { AdminBypassGuard } from '@libs/guard/admin.guard';
-import { Body } from '@nestjs/common';
+import { RequireAdmin } from '@libs/decorator';
 import { ClsService } from 'nestjs-cls';
 import { UserService } from '../user/user.service';
 import { PetsDtoRequest } from './dto/pets.dto';
@@ -28,7 +26,7 @@ import { PetsService } from './pets.service';
 @ApiBearerAuth()
 @Controller('pets')
 @ApiTags('Pets')
-@UseGuards(AdminBypassGuard)
+@RequireAdmin()
 export class PetsController {
   constructor(
     private readonly cls: ClsService,

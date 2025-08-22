@@ -11,6 +11,8 @@ import { paths } from './utils/paths';
 import { NotFoundPage } from './pages/NotFoundPage';
 import { ToastContainer, Zoom } from 'react-toastify';
 import { TransactionPage } from './pages/TransactionPage';
+import { Callback } from './components/Callback/Callback';
+import { PetPlayersPage } from './pages/PetPlayersPage';
 const App = () => {
   return (
     <ThemeProvider theme={theme}>
@@ -28,6 +30,10 @@ const App = () => {
                 path={paths.dashboard.transaction}
                 element={<TransactionPage />}
               />
+              <Route
+                path={paths.dashboard.petPlayers}
+                element={<PetPlayersPage />}
+              />
             </Route>
 
             <Route path="/unauthorized" element={<></>} />
@@ -36,6 +42,7 @@ const App = () => {
 
           <Route path="/about" element={<></>} />
           <Route path={paths.auth.login} element={<LoginPage />} />
+          <Route path={paths.auth.callback} element={<Callback />} />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </BrowserRouter>

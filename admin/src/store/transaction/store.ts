@@ -1,29 +1,15 @@
 import { create } from 'zustand';
 import { TransactionStore } from './type';
-import {
-  getTransaction,
-  getTransactionParams,
-} from '../../services/transaction/getTransaction';
-import { TransactionResponseAPI } from '../../types/transaction/transaction';
-
+import { IPaginationResponse } from '@/type/api';
+import { Transaction } from '@/type/transaction/transaction';
+import { getTransaction } from '@/services/transaction/getTransaction';
+import { IQueryParams } from '@/hooks/useTableQueryParams';
 
 export const useTransactionStore = create<TransactionStore>((set, get) => ({
-  transactions: {} as TransactionResponseAPI,
-  fetchTransaction: async ({
-    search,
-    page,
-    limit,
-    sort_by,
-    order,
-  }: getTransactionParams) => {
+  transactions: {} as IPaginationResponse<Transaction>,
+  fetchTransaction: async (params: IQueryParams) => {
     if (get().transactions) {
-      const transactions = await getTransaction({
-        search,
-        page,
-        limit,
-        sort_by,
-        order,
-      });
+      const transactions = await getTransaction(params);
       if (transactions) {
         return set({ transactions });
       } else {

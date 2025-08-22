@@ -5,6 +5,8 @@ import { MessageTypes } from "../MessageTypes";
 import { EviromentType as EnvironmentType, PetType, SkillCode, SkillType } from "@enum";
 import { isAttackAction, PlayerAction } from "../battle/PlayerAction";
 import { SkillHandlerFactory } from "../battle/SkillHandlerFactory";
+import { BattlePetPlayersDto } from "@modules/pet-players/dto/pet-players.dto";
+
 enum BattleState {
     READY,     // Chờ cả 2 người chọn hành động
     BATTLE,  // Bắt đầu xử lý skill (đang diễn ra turn)
@@ -15,11 +17,17 @@ export class BattleRoom extends BaseGameRoom {
     private battleState: BattleState = BattleState.READY;
     private currentEnviroment = EnvironmentType.GRASS;
     private rationIncreaseDame: number = 1.5;
+    amountChallenge: number = 0;
     // @Inject() private readonly petPlayersService: PetPlayersService;
     override async onCreate(options: any) {
         if (options?.roomName != null) {
             this.currentEnviroment = this.getEnvironment(options.roomName)
         }
+
+        if (options?.amount != null) {
+            this.amountChallenge = options.amount;
+        }
+
         this.setState(new RoomState());
         this.onMessage(MessageTypes.PLAYER_ACION, async (client, data: PlayerAction) => {
             this.onPlayerAction(client, data);
@@ -30,9 +38,7 @@ export class BattleRoom extends BaseGameRoom {
         });
         this.onMessage(MessageTypes.SURRENDER_BATTLE, (client, data) => {
             this.battleState = BattleState.FINISHED;
-            const player = this.state.battlePlayers.get(client.sessionId);
-            if (player == null) return
-            this.battleIsFinished(player);
+            this.battleIsFinished(client);
         });
         this.onMessage(MessageTypes.SET_PET_SLEEP, (client, data) => {
             const { petSleepingId } = data
@@ -45,22 +51,20 @@ export class BattleRoom extends BaseGameRoom {
     }
 
     override onLeave(client: AuthenticatedClient): void {
-        const player = this.state.battlePlayers.get(client.sessionId);
-
         // Nếu không có player hoặc trận đấu đã kết thúc thì không xử lý gì
-        if (!player || this.battleState === BattleState.FINISHED) return;
-        const opponent = this.clients.find(c => c.sessionId !== player.id);
+        if (this.battleState === BattleState.FINISHED) return;
+
         // Nếu đang trong trận, kết thúc trận đấu với player này
         if (this.battleState === BattleState.BATTLE) {
-            opponent?.send(MessageTypes.BATTLE_FINISHED, {
-                winnerId: opponent?.id ?? null,
-                loserId: client.id,
-            });
+            this.battleIsFinished(client);
             return;
         }
+        const player = this.state.battlePlayers.get(client.sessionId);
+        if (player == null) return;
+        const opponent = this.clients.find(c => c.sessionId !== player.id);
         // Gửi thông báo ngắt kết nối cho đối thủ
         opponent?.send(MessageTypes.DISCONNECTED, { message: "" });
-        
+
     }
 
 
@@ -79,7 +83,7 @@ export class BattleRoom extends BaseGameRoom {
         }
     }
 
-    private createPlayerState(client: AuthenticatedClient, userData: any, petsFromUser: any[]): PlayerBattleState {
+    private createPlayerState(client: AuthenticatedClient, userData: any, petsFromUser: BattlePetPlayersDto[]): PlayerBattleState {
         const newPlayer = new PlayerBattleState();
         newPlayer.id = client.sessionId;
         newPlayer.user_id = userData.id;
@@ -93,11 +97,11 @@ export class BattleRoom extends BaseGameRoom {
         return newPlayer;
     }
 
-    private createPetState(a: any): PetState {
+    private createPetState(a: BattlePetPlayersDto): PetState {
         const pet = new PetState();
         const boost = String(a.pet.type) === String(this.currentEnviroment) ? this.rationIncreaseDame : 1;
         pet.id = a.id;
-        pet.name = a.name;
+        pet.name = a.name ?? "";
         pet.species = a.pet?.species ?? "";
         pet.type = a.pet?.type ?? "";
         pet.attack = a.attack * boost;
@@ -106,7 +110,7 @@ export class BattleRoom extends BaseGameRoom {
         pet.totalHp = a.hp;
         pet.level = a.level;
         pet.currentExp = a.exp;
-        pet.totalExp = a.exp;
+        pet.totalExp = a.max_exp;
         pet.speed = a.speed * boost;
         pet.sleepTurns = 0;
 
@@ -186,7 +190,7 @@ export class BattleRoom extends BaseGameRoom {
         const a2 = this.playerActions.get(p2Id);
 
         if (!a1 || !a2) {
-            console.warn("One or both players have not submitted their action.");
+           this.sendMessageError();
             return;
         }
 
@@ -309,14 +313,89 @@ export class BattleRoom extends BaseGameRoom {
             newPetIndex: player.action.newPetIndex,
         });
     }
+    private async battleIsFinished(loserClient: Client) {
+        if (!loserClient) {
+            this.sendMessageError();
+            return;
+        }
 
-    private battleIsFinished(loser: PlayerBattleState) {
-        const opponent = [...this.state.battlePlayers.values()]
+        const loser = this.state.battlePlayers.get(loserClient.sessionId);
+        if (!loser) {
+            this.sendMessageError();
+            return;
+        }
+
+        // tìm winner (khác với loser)
+        const winner = [...this.state.battlePlayers.values()]
             .find(p => p.id !== loser.id);
 
-        this.broadcast(MessageTypes.BATTLE_FINISHED, {
-            winnerId: opponent?.id ?? null,
-            loserId: loser.id,
+        if (!winner) {
+            this.sendMessageError();
+            return;
+        }
+
+        // lấy danh sách petIds
+        const winnerIds = winner.pets?.map(p => p.id) ?? [];
+        const loserIds = loser.pets?.map(p => p.id) ?? [];
+
+        if (winnerIds.length === 0 || loserIds.length === 0) {
+            this.sendMessageError();
+            return;
+        }
+
+        try {
+            // tính kết quả trận đấu
+            const result = await this.petPlayersService.finalizeBattleResult(winnerIds, loserIds)
+            if (!result) {
+                this.sendMessageError();
+                return;
+            }
+
+            // tìm client của winner
+            const winnerClient = this.clients.find(c => c.sessionId !== loserClient.sessionId);
+            if (!winnerClient) {
+                this.sendMessageError();
+                return;
+            }
+
+            // tính tiền cược (bet)
+            await this.calculateBet(loserClient, winnerClient);
+
+            // gửi kết quả cho loser
+            loserClient.send(MessageTypes.BATTLE_FINISHED, {
+                id: loser.id,
+                expReceived: result.expPerLoser ?? 0,
+                dimondChallenge: this.amountChallenge ?? 0,
+                currentPets: result.losers,
+                isWinner: false,
+            });
+
+            // gửi kết quả cho winner
+            winnerClient.send(MessageTypes.BATTLE_FINISHED, {
+                id: winner.id,
+                expReceived: result.expPerWinner ?? 0,
+                dimondChallenge: this.amountChallenge ?? 0,
+                currentPets: result.winners,
+                isWinner: true,
+            });
+
+        } catch (err) {
+            this.sendMessageError();
+        }
+    }
+
+    calculateBet(loserClient: Client, winnerClient: Client) {
+        if (loserClient.userData == null || winnerClient.userData == null) {
+            return;
+        }
+        loserClient.userData.diamond -= this.amountChallenge;
+        winnerClient.userData.diamond += this.amountChallenge;
+
+        this.userRepository.update(loserClient.userData.id, {
+            diamond: loserClient.userData.diamond,
+        });
+        this.userRepository.update(winnerClient.userData.id, {
+            diamond: winnerClient.userData.diamond,
         });
     }
 
@@ -330,13 +409,13 @@ export class BattleRoom extends BaseGameRoom {
             if (!hasAvailablePet || player.activePetIndex >= player.pets.length) {
                 this.battleState = BattleState.FINISHED;
                 // ❌ Người chơi này thua → xác định người chơi còn lại thắng
-                this.battleIsFinished(player);
+                this.battleIsFinished(client);
                 return;
             }
         }
         const petIndex = player.pets.findIndex(p => p.id === petId);
         if (petIndex === -1) {
-            console.warn(`[handleSwitchPetAfterFaint] Pet không tồn tại: ${petId}`);
+            this.sendMessageError();
             return;
         }
         player.activePetIndex++;
@@ -355,7 +434,7 @@ export class BattleRoom extends BaseGameRoom {
         const attack = attacker.attack;
         const defense = defender.defense;
         const baseDamage = Math.floor(
-            (((2 * attacker.level) / 5 + 2) * skill.damage * (attack / (defense + 1))) / 20 + 2
+            (((2 * attacker.level) / 5 + 2) * skill.damage * (attack / (defense + 1))) / 10 + 2
         );
         const effectiveness = this.getTypeEffectiveness(attacker.type, defender.type);
         const finalDamage = Math.floor(baseDamage * effectiveness);
@@ -375,6 +454,10 @@ export class BattleRoom extends BaseGameRoom {
             activePetIndex: player.activePetIndex,
             battlePets: player.pets.map(pet => this.serializePet(pet))
         };
+    }
+
+    sendMessageError() {
+        this.broadcast(MessageTypes.NOTIFY_BATTLE, { message: "Có Lỗi xảy ra, Trò chơi kết thúc" });
     }
 
     private serializePet(pet: PetState) {
