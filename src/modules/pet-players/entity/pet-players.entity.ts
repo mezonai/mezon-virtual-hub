@@ -158,5 +158,5 @@ export class PetPlayersEntity extends AuditEntity {
   @ManyToOne(() => PetsEntity)
   @JoinColumn({ name: 'pet_id' })
   @ApiProperty({ type: () => PetsEntity })
-  pet: PetsEntity | null;
+  pet: PetsEntity;
 }
