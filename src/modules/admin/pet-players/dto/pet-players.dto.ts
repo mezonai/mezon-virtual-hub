@@ -60,41 +60,6 @@ export class SpawnPetPlayersDto {
   @Type(() => Number)
   quantity: number = 1;
 }
-
-export class UpdatePetPlayersDto {
-  @ApiProperty()
-  @IsString()
-  @IsOptional()
-  @Transform(({ value }) => (typeof value === 'string' ? value?.trim() : value))
-  species?: string;
-
-  @ApiPropertyOptional({
-    description: 'Rarity of the animal',
-    enum: AnimalRarity,
-  })
-  @IsEnum(AnimalRarity)
-  @IsOptional()
-  rarity?: AnimalRarity = AnimalRarity.COMMON;
-
-  @ApiProperty({
-    description: 'Map of the pet.',
-    example: MapKey.HN1,
-    enum: MapKey,
-  })
-  @IsEnum(MapKey)
-  @IsOptional()
-  map?: MapKey;
-
-  @ApiPropertyOptional({
-    description: 'Sub map of the pet.',
-    example: SubMap.OFFICE,
-    enum: SubMap,
-  })
-  @IsOptional()
-  @IsEnum(SubMap)
-  sub_map?: SubMap;
-}
-
 @Exclude()
 export class PetPlayersListDto extends OmitType(PetPlayersEntity, ['user']) {
   @Expose()
@@ -187,3 +152,11 @@ export class PetPlayersQueryDto extends QueryParamsDto {
   @Type(() => Boolean)
   is_caught?: boolean;
 }
+
+export class UpdatePetPlayersDto extends OmitType(PetPlayersInfoDto, [
+  'skill_slot_1',
+  'skill_slot_2',
+  'skill_slot_3',
+  'skill_slot_4',
+  'pet',
+]) {}

@@ -28,7 +28,7 @@ import {
 } from './dto/pet-players.dto';
 import { PetPlayersEntity } from './entity/pet-players.entity';
 import { BASE_EXP_MAP } from '@constant';
-import { AnimalRarity } from '@enum';
+import { AnimalRarity, SkillCode } from '@enum';
 import { getExpForNextLevel, serializeDto } from '@libs/utils';
 
 @Injectable()
@@ -334,6 +334,15 @@ export class PetPlayersService extends BaseService<PetPlayersEntity> {
       throw new NotFoundException('Pet-player not found');
     }
 
+    this.checkIsValidSkills(petPlayer, equipped_skill_codes);
+
+    return await this.save({ ...petPlayer, equipped_skill_codes });
+  }
+
+  checkIsValidSkills(
+    petPlayer: PetPlayersEntity,
+    equippedSkills: (SkillCode | null)[],
+  ) {
     const allowedCodes = [
       petPlayer.skill_slot_1?.skill_code,
       petPlayer.skill_slot_2?.skill_code,
@@ -341,15 +350,13 @@ export class PetPlayersService extends BaseService<PetPlayersEntity> {
       petPlayer.skill_slot_4?.skill_code,
     ].filter(Boolean);
 
-    for (const skillCode of equipped_skill_codes) {
+    for (const skillCode of equippedSkills) {
       if (skillCode && !allowedCodes.includes(skillCode)) {
         throw new BadRequestException(
           `Skill code ${skillCode} is not assigned to this pet`,
         );
       }
     }
-
-    return await this.save({ ...petPlayer, equipped_skill_codes });
   }
 
   async getPetsForBattle(userId: string) {
@@ -466,21 +473,21 @@ export class PetPlayersService extends BaseService<PetPlayersEntity> {
 
     const level = petPlayer.level;
     // 📌 Recalculate stats with formulas
-    petPlayer.hp = base.base_hp + Math.floor(
-      ((base.base_hp * 2 + iv) * level) / 100 + level + 10,
-    );
+    petPlayer.hp =
+      base.base_hp +
+      Math.floor(((base.base_hp * 2 + iv) * level) / 100 + level + 10);
 
-    petPlayer.attack = base.base_attack + Math.floor(
-      ((base.base_attack * 2 + iv) * level) / 100 + 5,
-    );
+    petPlayer.attack =
+      base.base_attack +
+      Math.floor(((base.base_attack * 2 + iv) * level) / 100 + 5);
 
-    petPlayer.defense = base.base_defense + Math.floor(
-      ((base.base_defense * 2 + iv) * level) / 100 + 5,
-    );
+    petPlayer.defense =
+      base.base_defense +
+      Math.floor(((base.base_defense * 2 + iv) * level) / 100 + 5);
 
-    petPlayer.speed = base.base_speed + Math.floor(
-      ((base.base_speed * 2 + iv) * level) / 100 + 5,
-    );
+    petPlayer.speed =
+      base.base_speed +
+      Math.floor(((base.base_speed * 2 + iv) * level) / 100 + 5);
   }
 
   generateIndividualValue(): number {
