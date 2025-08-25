@@ -38,3 +38,4 @@ export const REDIRECT_OAUTH2 = '/admin/auth/redirect-oauth2';
 export const GET_PET_PLAYERS = '/admin/pet-players';
 export const GET_PET_PLAYERS_DETAIL = '/admin/pet-players';
 export const CREATE_PET_PLAYERS = '/admin/pet-players';
+export const UPDATE_PET_PLAYERS = '/admin/pet-player';

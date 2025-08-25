@@ -50,7 +50,7 @@ export function useTableList<T, P extends Record<string, any> = {}>({
     if (hasExcludedParam(queryParam, excludeParam)) return;
     setLoading(true);
     fetchData(filterQueryParam).finally(() => setLoading(false));
-  }, [filterQueryParam, fetchData, queryParam, excludeParam]);
+  }, [filterQueryParam, fetchData]);
 
   return {
     loading,

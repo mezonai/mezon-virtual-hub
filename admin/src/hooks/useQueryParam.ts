@@ -38,7 +38,7 @@ export function useQueryParam<T extends Record<string, any>>({
       }
     });
     return params;
-  }, [searchParam, defaultParam]);
+  }, [searchParam]);
 
   const handleParamsChange = useCallback(
     (params: Partial<T>) => {

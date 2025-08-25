@@ -30,6 +30,7 @@ import { useEffect } from 'react';
 import { createPetPlayers } from '@/services/petPlayers/createPetPlayers';
 import { Toast } from '@/components/Toast';
 import { ToastType } from '@/type/toast/toast';
+import { updatePetPlayers } from '@/services/petPlayers/updatePetPlayers';
 
 interface PetPlayersFormModalProps {
   open: boolean;
@@ -45,7 +46,8 @@ export function PetPlayersFormModal({
   loading,
 }: PetPlayersFormModalProps) {
   const { petPlayersDetail } = usePetPlayersStore();
-  const { handleParamPetPlayerDetail } = usePetPlayersDetailParam();
+  const { handleParamPetPlayerDetail, queryParamPetPlayerDetail } =
+    usePetPlayersDetailParam();
   const isEdit = action === ActionFormType.EDIT;
 
   const handleClose = () => {
@@ -73,19 +75,29 @@ export function PetPlayersFormModal({
     },
   });
 
-  const onSubmit = (data: PetPlayerCreateInfo | PetPlayerUpdateInfo) => {
-    if (!isEdit) {
-      createPetPlayers(data).then((res) => {
-        if (res) {
-          Toast({
-            message: 'Create Pet Player Successfully',
-            type: ToastType.SUCCESS,
-          });
-          reset();
-          closeFormModal?.();
-        }
-      });
+  const submitAction = (
+    data: PetPlayerCreateInfo | PetPlayerUpdateInfo,
+    pet_player_id: string,
+  ) => {
+    if (isEdit) {
+      return updatePetPlayers(data as PetPlayerUpdateInfo, pet_player_id);
+    } else {
+      return createPetPlayers(data as PetPlayerCreateInfo);
     }
+  };
+
+  const onSubmit = (data: PetPlayerCreateInfo | PetPlayerUpdateInfo) => {
+    submitAction(data, petPlayersDetail.id).then((res) => {
+      if (!res) return;
+      Toast({
+        message: isEdit
+          ? 'Update Pet Player Successfully'
+          : 'Create Pet Player Successfully',
+        type: ToastType.SUCCESS,
+      });
+      reset();
+      closeFormModal?.();
+    });
   };
 
   useEffect(() => {
