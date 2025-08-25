@@ -114,3 +114,18 @@ export interface PetPlayersDetail {
   pet: PetsDto;
   created_at: string;
 }
+
+export enum MapKey {
+  HN1 = 'hn1',
+  HN2 = 'hn2',
+  HN3 = 'hn3',
+  VINH = 'vinh',
+  DN = 'dn',
+  QN = 'qn',
+  SG = 'sg',
+}
+export enum SubMap {
+  OFFICE = 'office',
+  OFFICE_MEETING_ROOM1 = 'office-meeting-room1',
+  SHOP1 = 'shop1',
+}

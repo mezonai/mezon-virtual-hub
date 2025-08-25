@@ -1,4 +1,5 @@
-import { AnimalRarity, PetType } from '@/type/pet-players/petPlayers';
+import { MapKey } from '@/type/enum';
+import { AnimalRarity, PetType, SubMap } from '@/type/pet-players/petPlayers';
 import z from 'zod';
 
 export const petPlayerCreateSchema = z.object({
@@ -9,7 +10,16 @@ export const petPlayerCreateSchema = z.object({
   type: z.enum(Object.values(PetType) as [string, ...string[]], {
     message: 'Pet Type is required',
   }),
-  map: z.string({ message: 'Map is required' }),
+  map: z.enum(Object.values(MapKey) as [string, ...string[]], {
+    message: 'Map is required',
+  }),
+  sub_map: z
+    .union([
+      z.literal(''),
+      z.enum(Object.values(SubMap) as [string, ...string[]]),
+    ])
+    .optional(),
+
   quantity: z
     .number({ message: 'Quantity is required' })
     .refine((val) => val >= 0, {

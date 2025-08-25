@@ -6,7 +6,13 @@ export const createPetPlayers = async (
   body: PetPlayerCreateInfo,
 ): Promise<boolean> => {
   try {
-    const response = await httpClient.post(`${CREATE_PET_PLAYERS}`, body);
+    const { map, sub_map, ...others } = body;
+    const room_code = sub_map ? `${map}-${sub_map}` : `${map}`;
+    const payload = {
+      ...others,
+      room_code,
+    };
+    const response = await httpClient.post(`${CREATE_PET_PLAYERS}`, payload);
     return response?.data?.success;
   } catch (error) {
     console.error('createPetPlayer', error);

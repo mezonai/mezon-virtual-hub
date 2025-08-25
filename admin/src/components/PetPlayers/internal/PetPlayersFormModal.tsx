@@ -4,8 +4,10 @@ import { usePetPlayersStore } from '@/store/petPlayers/store';
 import { ActionFormType } from '@/type/enum';
 import {
   AnimalRarity,
+  MapKey,
   PetType,
   SkillCode,
+  SubMap,
 } from '@/type/pet-players/petPlayers';
 import {
   FormControl,
@@ -18,7 +20,7 @@ import {
 import { usePetPlayersDetailParam } from '../hook/usePetPlayersDetailParam';
 import { formatDate } from '@/utils/format/formatDate';
 import { Spinner } from '@/components/Spinner';
-import { Controller, useForm } from 'react-hook-form';
+import { Controller, useForm, useWatch } from 'react-hook-form';
 import {
   PetPlayerCreateInfo,
   petPlayerCreateSchema,
@@ -46,8 +48,7 @@ export function PetPlayersFormModal({
   loading,
 }: PetPlayersFormModalProps) {
   const { petPlayersDetail } = usePetPlayersStore();
-  const { handleParamPetPlayerDetail, queryParamPetPlayerDetail } =
-    usePetPlayersDetailParam();
+  const { handleParamPetPlayerDetail } = usePetPlayersDetailParam();
   const isEdit = action === ActionFormType.EDIT;
 
   const handleClose = () => {
@@ -71,9 +72,12 @@ export function PetPlayersFormModal({
       rarity: '',
       type: '',
       map: '',
+      sub_map: '',
       quantity: 1,
     },
   });
+
+  const mapValue = useWatch({ control, name: 'map' });
 
   const submitAction = (data: PetPlayerCreateInfo | PetPlayerUpdateInfo) => {
     return isEdit && 'id' in data
@@ -107,6 +111,8 @@ export function PetPlayersFormModal({
         species: '',
         rarity: '',
         type: '',
+        map: '',
+        sub_map: '',
         quantity: 0,
       });
     }
@@ -510,17 +516,59 @@ export function PetPlayersFormModal({
               control={control}
               name="map"
               render={({ field }) => (
-                <SharedTextField
-                  fullWidth
-                  label="Map"
-                  {...field}
-                  value={field.value ?? ''}
-                  onChange={(e) => {
-                    field.onChange(e.target.value);
-                  }}
-                  error={!!formState.errors.map}
-                  helperText={formState.errors?.map?.message}
-                />
+                <FormControl fullWidth error={!!formState.errors.map}>
+                  <InputLabel>Map</InputLabel>
+                  <Select
+                    fullWidth
+                    label="Map"
+                    {...field}
+                    value={field.value ?? ''}
+                    onChange={(e) => {
+                      field.onChange(e.target.value);
+                    }}
+                    error={!!formState.errors.map}
+                  >
+                    {Object.entries(MapKey).map(([key, value]) => (
+                      <MenuItem key={key} value={value}>
+                        {value}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                  {formState?.errors?.map && (
+                    <FormHelperText>
+                      {formState.errors.map.message}
+                    </FormHelperText>
+                  )}
+                </FormControl>
+              )}
+            />
+          </Grid>
+        )}
+        {!isEdit && (
+          <Grid size={6}>
+            <Controller
+              control={control}
+              name="sub_map"
+              render={({ field }) => (
+                <FormControl fullWidth>
+                  <InputLabel>Sub Map</InputLabel>
+                  <Select
+                    fullWidth
+                    label="Sub Map"
+                    {...field}
+                    disabled={mapValue === '' ? true : false}
+                    value={field.value ?? ''}
+                    onChange={(e) => {
+                      field.onChange(e.target.value);
+                    }}
+                  >
+                    {Object.entries(SubMap).map(([key, value]) => (
+                      <MenuItem key={key} value={value}>
+                        {value}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
               )}
             />
           </Grid>
