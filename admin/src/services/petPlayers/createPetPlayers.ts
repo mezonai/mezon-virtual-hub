@@ -7,7 +7,7 @@ export const createPetPlayers = async (
 ): Promise<boolean> => {
   try {
     const { map, sub_map, ...others } = body;
-    const room_code = sub_map ? `${map}-${sub_map}` : `${map}`;
+    const room_code = sub_map ? `${map}-${sub_map}` : map;
     const payload = {
       ...others,
       room_code,

@@ -113,7 +113,7 @@ export function PetPlayersFormModal({
         type: '',
         map: '',
         sub_map: '',
-        quantity: 0,
+        quantity: 1,
       });
     }
   }, [isEdit, petPlayersDetail, reset]);
@@ -185,7 +185,7 @@ export function PetPlayersFormModal({
                 >
                   {Object.entries(PetType).map(([key, value]) => (
                     <MenuItem key={key} value={value}>
-                      {value}
+                      {key}
                     </MenuItem>
                   ))}
                 </Select>
@@ -291,7 +291,7 @@ export function PetPlayersFormModal({
               >
                 {Object.entries(SkillCode).map(([key, value]) => (
                   <MenuItem key={key} value={value}>
-                    {value}
+                    {key}
                   </MenuItem>
                 ))}
               </Select>
@@ -319,7 +319,7 @@ export function PetPlayersFormModal({
                 >
                   {Object.entries(AnimalRarity).map(([key, value]) => (
                     <MenuItem key={key} value={value}>
-                      {value}
+                      {key}
                     </MenuItem>
                   ))}
                 </Select>
@@ -367,7 +367,7 @@ export function PetPlayersFormModal({
               >
                 {Object.entries(SkillCode).map(([key, value]) => (
                   <MenuItem key={key} value={value}>
-                    {value}
+                    {key}
                   </MenuItem>
                 ))}
               </Select>
@@ -424,7 +424,7 @@ export function PetPlayersFormModal({
               >
                 {Object.entries(SkillCode).map(([key, value]) => (
                   <MenuItem key={key} value={value}>
-                    {value}
+                    {key}
                   </MenuItem>
                 ))}
               </Select>
@@ -482,7 +482,7 @@ export function PetPlayersFormModal({
               >
                 {Object.entries(SkillCode).map(([key, value]) => (
                   <MenuItem key={key} value={value}>
-                    {value}
+                    {key}
                   </MenuItem>
                 ))}
               </Select>
@@ -503,7 +503,7 @@ export function PetPlayersFormModal({
               >
                 {Object.entries(SkillCode).map(([key, value]) => (
                   <MenuItem key={key} value={key}>
-                    {value}
+                    {key}
                   </MenuItem>
                 ))}
               </Select>
@@ -530,7 +530,7 @@ export function PetPlayersFormModal({
                   >
                     {Object.entries(MapKey).map(([key, value]) => (
                       <MenuItem key={key} value={value}>
-                        {value}
+                        {key}
                       </MenuItem>
                     ))}
                   </Select>
@@ -564,7 +564,7 @@ export function PetPlayersFormModal({
                   >
                     {Object.entries(SubMap).map(([key, value]) => (
                       <MenuItem key={key} value={value}>
-                        {value}
+                        {key}
                       </MenuItem>
                     ))}
                   </Select>
