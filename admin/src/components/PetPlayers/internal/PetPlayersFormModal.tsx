@@ -75,19 +75,14 @@ export function PetPlayersFormModal({
     },
   });
 
-  const submitAction = (
-    data: PetPlayerCreateInfo | PetPlayerUpdateInfo,
-    pet_player_id: string,
-  ) => {
-    if (isEdit) {
-      return updatePetPlayers(data as PetPlayerUpdateInfo, pet_player_id);
-    } else {
-      return createPetPlayers(data as PetPlayerCreateInfo);
-    }
+  const submitAction = (data: PetPlayerCreateInfo | PetPlayerUpdateInfo) => {
+    return isEdit && 'id' in data
+      ? updatePetPlayers(data)
+      : createPetPlayers(data);
   };
 
   const onSubmit = (data: PetPlayerCreateInfo | PetPlayerUpdateInfo) => {
-    submitAction(data, petPlayersDetail.id).then((res) => {
+    submitAction(data).then((res) => {
       if (!res) return;
       Toast({
         message: isEdit
