@@ -6,13 +6,15 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ClsModule } from 'nestjs-cls';
 import { AdminPetPlayersService } from './pet-players.service';
 import { PetPlayersModule } from '@modules/pet-players/pet-players.module';
+import { UserModule } from '@modules/user/user.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([PetPlayersEntity, PetsEntity]),
     ClsModule,
     PetSkillsModule,
-    PetPlayersModule
+    PetPlayersModule,
+    UserModule,
   ],
   providers: [AdminPetPlayersService],
   exports: [AdminPetPlayersService],

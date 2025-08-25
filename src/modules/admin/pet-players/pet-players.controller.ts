@@ -1,4 +1,4 @@
-import { Controller, Get, ParseUUIDPipe, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, ParseUUIDPipe, Post, Query } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiOperation,
@@ -11,7 +11,7 @@ import { Logger } from '@libs/logger';
 import { RequireAdmin } from '@libs/decorator';
 import { Delete, Param, Put } from '@nestjs/common';
 import { ClsService } from 'nestjs-cls';
-import { PetPlayersQueryDto, SpawnPetPlayersDto } from './dto/pet-players.dto';
+import { PetPlayersQueryDto, SpawnPetPlayersDto, UpdatePetPlayersDto } from './dto/pet-players.dto';
 import { AdminPetPlayersService } from './pet-players.service';
 
 @ApiBearerAuth()
@@ -40,7 +40,7 @@ export class AdminPetPlayersController {
   @ApiOperation({
     summary: 'Create (spawn) a pet',
   })
-  async createPetPlayers(@Query() { quantity, ...pet }: SpawnPetPlayersDto) {
+  async createPetPlayers(@Body() { quantity, ...pet }: SpawnPetPlayersDto) {
     return await this.adminPetPlayersService.createPetPlayers(pet, quantity);
   }
 
@@ -67,7 +67,7 @@ export class AdminPetPlayersController {
     summary: 'Update a specific item',
   })
   async updatePetPlayers(
-    @Query() pet: SpawnPetPlayersDto,
+    @Body() pet: UpdatePetPlayersDto,
     @Param('pet_player_id', ParseUUIDPipe) pet_player_id: string,
   ) {
     return await this.adminPetPlayersService.updatePetPlayers(
@@ -89,20 +89,5 @@ export class AdminPetPlayersController {
     @Param('pet_player_id', ParseUUIDPipe) pet_player_id: string,
   ) {
     return await this.adminPetPlayersService.deletePetPlayers(pet_player_id);
-  }
-
-  @Get('find/:pet_player_id')
-  @RequireAdmin()
-  @ApiParam({
-    name: 'pet_player_id',
-    example: '91bea29f-0e87-42a5-b851-d9d0386ac32f',
-  })
-  @ApiOperation({
-    summary: 'Get a specific pet',
-  })
-  async getOnePetPlayers(
-    @Param('pet_player_id', ParseUUIDPipe) pet_player_id: string,
-  ) {
-    return await this.adminPetPlayersService.getPetPlayersById(pet_player_id);
   }
 }
