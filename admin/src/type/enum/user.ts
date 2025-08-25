@@ -25,6 +25,6 @@ export enum SortOrder {
 }
 
 export enum ActionFormType {
-  ADD = 'add',
+  CREATE = 'create',
   EDIT = 'edit',
 }
