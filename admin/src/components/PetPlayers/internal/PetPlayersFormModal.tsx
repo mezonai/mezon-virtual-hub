@@ -2,13 +2,7 @@ import { ModalForm } from '@/components/modals';
 import { SharedTextField } from '@/components/SharedTextField';
 import { usePetPlayersStore } from '@/store/petPlayers/store';
 import { ActionFormType } from '@/type/enum';
-import {
-  AnimalRarity,
-  MapKey,
-  PetType,
-  SkillCode,
-  SubMap,
-} from '@/type/pet-players/petPlayers';
+import { SkillCode } from '@/type/pet-players/petPlayers';
 import {
   FormControl,
   FormHelperText,
@@ -33,6 +27,15 @@ import { createPetPlayers } from '@/services/petPlayers/createPetPlayers';
 import { Toast } from '@/components/Toast';
 import { ToastType } from '@/type/toast/toast';
 import { updatePetPlayers } from '@/services/petPlayers/updatePetPlayers';
+import {
+  ANIMAL_RARITY_FIELD,
+  PET_TYPE_FIELD,
+} from '@/constant/table/tableConfig';
+import {
+  MAP_KEY_FIELD,
+  SKILL_CODE_FIELD,
+  SUB_MAP_FIELD,
+} from '@/constant/petPlayers/petPlayer';
 
 interface PetPlayersFormModalProps {
   open: boolean;
@@ -183,9 +186,9 @@ export function PetPlayersFormModal({
                   }}
                   error={!!formState.errors.type}
                 >
-                  {Object.entries(PetType).map(([key, value]) => (
-                    <MenuItem key={key} value={value}>
-                      {key}
+                  {Object.entries(PET_TYPE_FIELD).map(([key, value]) => (
+                    <MenuItem key={key} value={key}>
+                      {value}
                     </MenuItem>
                   ))}
                 </Select>
@@ -289,9 +292,9 @@ export function PetPlayersFormModal({
                 label="Skill Slot 1"
                 value={petPlayersDetail?.skill_slot_1?.skill_code ?? ''}
               >
-                {Object.entries(SkillCode).map(([key, value]) => (
-                  <MenuItem key={key} value={value}>
-                    {key}
+                {Object.entries(SKILL_CODE_FIELD).map(([key, value]) => (
+                  <MenuItem key={key} value={key}>
+                    {value}
                   </MenuItem>
                 ))}
               </Select>
@@ -317,9 +320,9 @@ export function PetPlayersFormModal({
                   }}
                   error={!!formState.errors.rarity}
                 >
-                  {Object.entries(AnimalRarity).map(([key, value]) => (
-                    <MenuItem key={key} value={value}>
-                      {key}
+                  {Object.entries(ANIMAL_RARITY_FIELD).map(([key, value]) => (
+                    <MenuItem key={key} value={key}>
+                      {value}
                     </MenuItem>
                   ))}
                 </Select>
@@ -365,9 +368,9 @@ export function PetPlayersFormModal({
                 label="Skill Slot 2"
                 value={petPlayersDetail?.skill_slot_2?.skill_code ?? ''}
               >
-                {Object.entries(SkillCode).map(([key, value]) => (
-                  <MenuItem key={key} value={value}>
-                    {key}
+                {Object.entries(SKILL_CODE_FIELD).map(([key, value]) => (
+                  <MenuItem key={key} value={key}>
+                    {value}
                   </MenuItem>
                 ))}
               </Select>
@@ -422,9 +425,9 @@ export function PetPlayersFormModal({
                 label="Skill Slot 3"
                 value={petPlayersDetail?.skill_slot_3?.skill_code ?? ''}
               >
-                {Object.entries(SkillCode).map(([key, value]) => (
-                  <MenuItem key={key} value={value}>
-                    {key}
+                {Object.entries(SKILL_CODE_FIELD).map(([key, value]) => (
+                  <MenuItem key={key} value={key}>
+                    {value}
                   </MenuItem>
                 ))}
               </Select>
@@ -480,9 +483,9 @@ export function PetPlayersFormModal({
                 label="Skill Slot 4"
                 value={petPlayersDetail?.skill_slot_4?.skill_code ?? ''}
               >
-                {Object.entries(SkillCode).map(([key, value]) => (
-                  <MenuItem key={key} value={value}>
-                    {key}
+                {Object.entries(SKILL_CODE_FIELD).map(([key, value]) => (
+                  <MenuItem key={key} value={key}>
+                    {value}
                   </MenuItem>
                 ))}
               </Select>
@@ -501,9 +504,9 @@ export function PetPlayersFormModal({
                   (selected as string[]).map((s) => `[${s ?? 'X'}]`).join(', ')
                 }
               >
-                {Object.entries(SkillCode).map(([key, value]) => (
+                {Object.entries(SKILL_CODE_FIELD).map(([key, value]) => (
                   <MenuItem key={key} value={key}>
-                    {key}
+                    {value}
                   </MenuItem>
                 ))}
               </Select>
@@ -528,9 +531,9 @@ export function PetPlayersFormModal({
                     }}
                     error={!!formState.errors.map}
                   >
-                    {Object.entries(MapKey).map(([key, value]) => (
-                      <MenuItem key={key} value={value}>
-                        {key}
+                    {Object.entries(MAP_KEY_FIELD).map(([key, value]) => (
+                      <MenuItem key={key} value={key}>
+                        {value}
                       </MenuItem>
                     ))}
                   </Select>
@@ -562,9 +565,9 @@ export function PetPlayersFormModal({
                       field.onChange(e.target.value);
                     }}
                   >
-                    {Object.entries(SubMap).map(([key, value]) => (
-                      <MenuItem key={key} value={value}>
-                        {key}
+                    {Object.entries(SUB_MAP_FIELD).map(([key, value]) => (
+                      <MenuItem key={key} value={key}>
+                        {value}
                       </MenuItem>
                     ))}
                   </Select>
