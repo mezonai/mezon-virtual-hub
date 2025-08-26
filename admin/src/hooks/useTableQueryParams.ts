@@ -1,6 +1,6 @@
-import { useCallback, useMemo } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useMemo } from 'react';
 import { SortOrder } from '../type/enum/user';
+import { useQueryParam } from './useQueryParam';
 
 export interface IQueryParams {
   page: number;
@@ -11,52 +11,23 @@ export interface IQueryParams {
 }
 
 export function useTableQueryParams<T extends Record<string, any>>() {
-  const [searchParam, setSearchParam] = useSearchParams();
-  const queryParam: IQueryParams & Partial<T> = useMemo(() => {
-    const defaultParams: IQueryParams = {
-      page: Number(searchParam.get('page') || '1'),
-      limit: Number(searchParam.get('limit') || '5'),
-      search: searchParam.get('search') || '',
-      sort_by: searchParam.get('sort_by') || 'created_at',
-      order: (searchParam.get('order') as SortOrder) || SortOrder.DESC,
+  const defaultParam: IQueryParams = useMemo(() => {
+    return {
+      page: 1,
+      limit: 5,
+      search: '',
+      sort_by: 'created_at',
+      order: SortOrder.DESC,
     };
-
-    const otherPrams = {} as Partial<T>;
-    searchParam.forEach((value, key) => {
-      if (!(key in defaultParams)) {
-        (otherPrams as any)[key] = value;
-      }
+  }, []);
+  const { queryParam, handleParamsChange, searchParam, setSearchParam } =
+    useQueryParam<Partial<T> & IQueryParams>({
+      defaultParam: { ...defaultParam, ...({} as Partial<T>) },
+      options: {
+        resetOnSearch: true,
+        validatePage: true,
+      },
     });
-
-    return { ...defaultParams, ...otherPrams };
-  }, [searchParam]);
-
-  const handleParamsChange = useCallback(
-    (params: Partial<typeof queryParam>) => {
-      let urlSearchParam: URLSearchParams = new URLSearchParams(searchParam);
-      Object.entries(params).forEach(([key, value]) => {
-        if (key === 'search') {
-          urlSearchParam = new URLSearchParams();
-          if (value) {
-            urlSearchParam.set('search', String(value));
-          }
-        } else {
-          if (!urlSearchParam) {
-            urlSearchParam = new URLSearchParams(searchParam);
-          }
-          if (key === 'page') {
-            const pageNumber = Number(value);
-            if (pageNumber < 1) {
-              return;
-            }
-          }
-          urlSearchParam.set(key, String(value));
-        }
-      });
-      setSearchParam(urlSearchParam);
-    },
-    [searchParam, setSearchParam],
-  );
 
   return {
     queryParam,
