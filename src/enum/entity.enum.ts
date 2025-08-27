@@ -141,19 +141,13 @@ export enum QuestType {
 }
 
 export enum RewardType {
-  LOGIN_REWARD = 'login_reward',
+  NEWBIE_DAILY = 'newbie_daily',
+  NEWBIE_DAILY_SPECIAL = 'newbie_daily_special',
 }
 
 export enum QuestFrequency {
   DAILY = 'daily',
   WEEKLY = 'weekly',
-}
-
-export enum RewardType {
-  GOLD = 'gold',
-  DIAMOND = 'diamond',
-  FOOD = 'food',
-  ITEM = 'item',
 }
 
 export enum RewardItemType {

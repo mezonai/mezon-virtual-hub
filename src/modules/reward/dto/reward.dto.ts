@@ -1,5 +1,10 @@
 // dto/quest-response.dto.ts
-import { ApiProperty } from '@nestjs/swagger';
+import { FoodType, RewardItemType } from '@enum';
+import { RewardItemEntity } from '@modules/reward-item/entity/reward-item.entity';
+import { ApiProperty, PickType } from '@nestjs/swagger';
+import { IsEnum, IsOptional } from 'class-validator';
+import { Column } from 'typeorm';
+import { RewardEntity } from '../entity/reward.entity';
 
 export class RewardDto {
   @ApiProperty()
@@ -31,3 +36,9 @@ export class RewardsResponseDto {
   @ApiProperty({ type: [RewardDto] })
   weekly: RewardDto[];
 }
+
+export class CreateRewardDto extends PickType(RewardEntity, [
+  'description',
+  'name',
+  'type',
+]) {}

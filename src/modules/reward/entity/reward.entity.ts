@@ -1,4 +1,4 @@
-import { RewardItemType } from '@enum';
+import { RewardItemType, RewardType } from '@enum';
 import { RewardItemEntity } from '@modules/reward-item/entity/reward-item.entity';
 import { ApiProperty } from '@nestjs/swagger';
 import { IsEnum, IsOptional, IsString, MaxLength } from 'class-validator';
@@ -21,10 +21,10 @@ export class RewardEntity {
   @IsOptional()
   description: string | null;
 
-  @ApiProperty({ enum: RewardItemType })
-  @Column({ type: 'varchar', length: 50 })
-  @IsEnum(RewardItemType)
-  type: RewardItemType;
+  @ApiProperty({ enum: RewardType })
+  @Column({ type: 'varchar', length: 50, unique: true })
+  @IsEnum(RewardType)
+  type: RewardType;
 
   @OneToMany(() => RewardItemEntity, (ri) => ri.reward, { cascade: true })
   items: RewardItemEntity[];

@@ -10,7 +10,7 @@ export class CreateRewardAndRewardItemTable1756201000037
       `CREATE TABLE "rewards" (
         "id" uuid NOT NULL DEFAULT uuid_generate_v4(),
         "name" character varying(255) NOT NULL,
-        "type" character varying(50) NOT NULL,
+        "type" character varying(50) NOT NULL UNIQUE,
         "description" text,
         CONSTRAINT "PK_rewards_id" PRIMARY KEY ("id")
       )`,
@@ -19,7 +19,7 @@ export class CreateRewardAndRewardItemTable1756201000037
     await queryRunner.query(
       `CREATE TABLE "reward_items" (
         "id" uuid NOT NULL DEFAULT uuid_generate_v4(),
-        "type" character varying(50) NOT NULL,
+        "type" character varying(50) NOT NULL UNIQUE,
         "quantity" integer NOT NULL DEFAULT '1',
         "reward_id" uuid,
         "item_id" uuid,
