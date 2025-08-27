@@ -12,7 +12,7 @@ import { UUID } from 'typeorm/driver/mongodb/bson.typings';
 import { QueryParamsDto } from '@types';
 import { UserEntity } from '@modules/user/entity/user.entity';
 
-export class UsersManagementQueryDto extends QueryParamsDto {}
+export class UsersManagementQueryDto extends QueryParamsDto { }
 
 export class UsersManagementResDto extends UserEntity {
   @Exclude()
@@ -89,5 +89,6 @@ export class UserSummaryDto extends PickType(UserEntity, [] as const) {
   id: string;
 
   @Expose()
+  @IsString()
   username: string;
 }

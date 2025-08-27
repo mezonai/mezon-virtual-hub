@@ -105,7 +105,6 @@ export class PetPlayersEntity extends AuditEntity {
 
   @Column({ type: 'varchar', length: 255, nullable: true })
   @ApiProperty()
-  @IsOptional()
   @IsString()
   @IsValidRoomCode()
   room_code: string | null;
