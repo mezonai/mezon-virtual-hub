@@ -21,10 +21,9 @@ import {
 } from '@/lib/schema/petPlayer/petPlayer';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect } from 'react';
-import { createPetPlayers } from '@/services/petPlayers/createPetPlayers';
 import { Toast } from '@/components/Toast';
 import { ToastType } from '@/type/toast/toast';
-import { updatePetPlayers } from '@/services/petPlayers/updatePetPlayers';
+
 import {
   ANIMAL_RARITY_FIELD,
   PET_TYPE_FIELD,
@@ -34,6 +33,8 @@ import {
   SKILL_CODE_FIELD,
   SUB_MAP_FIELD,
 } from '@/constant/petPlayers/petPlayer';
+import { updatePetPlayer } from '@/services/petPlayers/updatePetPlayer';
+import { createPetPlayer } from '@/services/petPlayers/createPetPlayer';
 
 interface PetPlayersFormModalProps {
   open: boolean;
@@ -82,8 +83,8 @@ export function PetPlayersFormModal({
 
   const submitAction = (data: PetPlayerCreateInfo | PetPlayerUpdateInfo) => {
     return isEdit && 'id' in data
-      ? updatePetPlayers(data)
-      : createPetPlayers(data);
+      ? updatePetPlayer(data)
+      : createPetPlayer(data);
   };
 
   const onSubmit = (data: PetPlayerCreateInfo | PetPlayerUpdateInfo) => {

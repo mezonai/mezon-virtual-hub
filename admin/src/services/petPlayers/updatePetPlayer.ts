@@ -6,14 +6,14 @@ type UpdatePetPlayerPayload = Omit<PetPlayerUpdateInfo, 'map' | 'sub_map'> & {
   room_code: string;
 };
 
-export const updatePetPlayers = async (
+export const updatePetPlayer = async (
   body: PetPlayerUpdateInfo,
 ): Promise<boolean> => {
   try {
     const { map, sub_map, id, ...rest } = body;
     const payload: UpdatePetPlayerPayload = {
       ...rest,
-      room_code: `${map}-${sub_map}`,
+      room_code: sub_map ? `${map}-${sub_map}` : map,
     };
 
     const res = await httpClient.put(

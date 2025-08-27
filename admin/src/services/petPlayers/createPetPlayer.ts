@@ -2,7 +2,7 @@ import { PetPlayerCreateInfo } from '@/lib/schema/petPlayer/petPlayer';
 import httpClient from '../httpService/httpServices';
 import { CREATE_PET_PLAYERS } from '@/utils/config';
 
-export const createPetPlayers = async (
+export const createPetPlayer = async (
   body: PetPlayerCreateInfo,
 ): Promise<boolean> => {
   try {
