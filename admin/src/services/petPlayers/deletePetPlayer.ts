@@ -1,7 +1,7 @@
 import { DELETE_PET_PLAYERS } from '@/utils/config';
 import httpClient from '../httpService/httpServices';
 
-export const deletePetPlayers = async (
+export const deletePetPlayer = async (
   pet_players_id: string,
 ): Promise<boolean> => {
   try {

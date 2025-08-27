@@ -9,6 +9,11 @@ import { ActionFormType } from '@/type/enum';
 import { usePetPlayersDetailParam } from './hook/usePetPlayersDetailParam';
 import { PlusIcon } from '@phosphor-icons/react';
 import { PetPlayersFormConfirm } from './internal/PetPlayersFormConfirm';
+import { useTableList } from '@/hooks/useTableList';
+import {
+  PetPlayers,
+  PetPlayersFilterParams,
+} from '@/type/pet-players/petPlayers';
 
 export const PetPlayersList = (): React.JSX.Element => {
   const { fetchPetPlayersDetail } = usePetPlayersStore();
@@ -39,7 +44,17 @@ export const PetPlayersList = (): React.JSX.Element => {
     fetchDataPetPlayerDetail();
   }, [fetchDataPetPlayerDetail]);
 
-  const [refetchTable, setRefetchTable] = useState<() => void>(() => () => {});
+  const { petPlayers, fetchPetPlayers } = usePetPlayersStore();
+  const {
+    loading: loadingPetPlayerList,
+    totalItem,
+    responseData,
+    fetchDataApi,
+  } = useTableList<PetPlayers, PetPlayersFilterParams>({
+    fetchData: fetchPetPlayers,
+    storeData: petPlayers,
+    excludeParam: 'pet_player_id',
+  });
 
   return (
     <Stack spacing={3}>
@@ -66,7 +81,9 @@ export const PetPlayersList = (): React.JSX.Element => {
         openFormConfirm={openConfirm}
         setActionForm={setActionType}
         setPetPlayerIdDelete={setPetPlayerIdDelete}
-        setFetchDataApi={setRefetchTable}
+        loading={loadingPetPlayerList}
+        totalItem={totalItem}
+        responseData={responseData}
         reloadPetPlayerDetail={fetchDataPetPlayerDetail}
       />
       <PetPlayersFormModal
@@ -79,7 +96,7 @@ export const PetPlayersList = (): React.JSX.Element => {
         open={isConfirmOpen}
         closeFormModal={closeConfirm}
         petPlayerIdDelete={petPlayerIdDelete}
-        reloadPetPlayerList={refetchTable}
+        reloadPetPlayerList={fetchDataApi}
       />
     </Stack>
   );

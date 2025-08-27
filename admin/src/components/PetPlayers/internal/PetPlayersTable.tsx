@@ -2,15 +2,10 @@ import { AbstractTable } from '@/components/Table';
 import { PET_PLAYERS_TABLE_CONFIG } from '@/constant/table/tableConfig';
 import { useTableQueryParams } from '@/hooks/useTableQueryParams';
 import { IPaginationParams } from '@/type/api';
-import {
-  PetPlayers,
-  PetPlayersFilterParams,
-} from '@/type/pet-players/petPlayers';
+import { PetPlayers } from '@/type/pet-players/petPlayers';
 import { Card } from '@mui/material';
 import { PencilIcon, TrashIcon } from '@phosphor-icons/react';
-import React, { useEffect } from 'react';
-import { useTableList } from '@/hooks/useTableList';
-import { usePetPlayersStore } from '@/store/petPlayers/store';
+import React from 'react';
 import { ActionFormType } from '@/type/enum';
 import { usePetPlayersDetailParam } from '../hook/usePetPlayersDetailParam';
 
@@ -19,8 +14,10 @@ interface PetPlayersTableProps {
   setActionForm: (action: ActionFormType) => void;
   openFormConfirm: () => void;
   setPetPlayerIdDelete?: (id: string) => void;
-  setFetchDataApi?: (fn: () => void) => void;
   reloadPetPlayerDetail: () => void;
+  loading: boolean;
+  totalItem: number;
+  responseData: PetPlayers[];
 }
 
 export const PetPlayersTable = ({
@@ -28,26 +25,14 @@ export const PetPlayersTable = ({
   setActionForm,
   openFormConfirm,
   setPetPlayerIdDelete,
-  setFetchDataApi,
   reloadPetPlayerDetail,
+  loading,
+  responseData,
+  totalItem,
 }: PetPlayersTableProps): React.JSX.Element => {
   const { page, limit, handleParamsChange } = useTableQueryParams();
-  const { petPlayers, fetchPetPlayers } = usePetPlayersStore();
-  const { loading, totalItem, responseData, fetchDataApi } = useTableList<
-    PetPlayers,
-    PetPlayersFilterParams
-  >({
-    fetchData: fetchPetPlayers,
-    storeData: petPlayers,
-    excludeParam: 'pet_player_id',
-  });
-  const { handleParamPetPlayerDetail } = usePetPlayersDetailParam();
 
-  useEffect(() => {
-    if (setFetchDataApi) {
-      setFetchDataApi(() => fetchDataApi);
-    }
-  }, [fetchDataApi]);
+  const { handleParamPetPlayerDetail } = usePetPlayersDetailParam();
 
   return (
     <Card>

@@ -1,6 +1,6 @@
 import { ModalConfirm } from '@/components/modals';
-import { deletePetPlayers } from '@/services/petPlayers/deletePetPlayers';
 import { Toast } from '@/components/Toast';
+import { deletePetPlayer } from '@/services/petPlayers/deletePetPlayer';
 import { ToastType } from '@/type/toast/toast';
 
 interface PetPlayersFormConfirmProps {
@@ -22,7 +22,7 @@ export const PetPlayersFormConfirm = ({
 
   const handleDeletePetPlayer = async () => {
     if (petPlayerIdDelete) {
-      const success = await deletePetPlayers(petPlayerIdDelete);
+      const success = await deletePetPlayer(petPlayerIdDelete);
       if (success) {
         closeFormModal?.();
         if (reloadPetPlayerList) reloadPetPlayerList();
