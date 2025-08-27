@@ -2,18 +2,27 @@ import { UPDATE_PET_PLAYERS } from '@/utils/config';
 import httpClient from '../httpService/httpServices';
 import { PetPlayerUpdateInfo } from '@/lib/schema/petPlayer/petPlayer';
 
-type UpdatePetPlayerPayload = Omit<PetPlayerUpdateInfo, 'map' | 'sub_map'> & {
-  room_code: string;
-};
-
 export const updatePetPlayer = async (
   body: PetPlayerUpdateInfo,
 ): Promise<boolean> => {
   try {
-    const { map, sub_map, id, ...rest } = body;
-    const payload: UpdatePetPlayerPayload = {
+    const {
+      map,
+      sub_map,
+      skill_slot_1,
+      skill_slot_2,
+      skill_slot_3,
+      skill_slot_4,
+      id,
+      type,
+      rarity,
+      species,
+      ...rest
+    } = body;
+
+    const payload = {
       ...rest,
-      room_code: sub_map ? `${map}-${sub_map}` : map,
+      room_code: `${map}${sub_map ? `-${sub_map}` : ``}`,
     };
 
     const res = await httpClient.put(

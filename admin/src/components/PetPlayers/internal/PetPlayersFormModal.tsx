@@ -98,6 +98,7 @@ export function PetPlayersFormModal({
       });
       reset();
       closeFormModal?.();
+      handleParamPetPlayerDetail({ pet_player_id: '' });
     });
   };
 
