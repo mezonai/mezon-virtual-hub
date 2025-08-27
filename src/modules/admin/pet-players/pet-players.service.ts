@@ -190,7 +190,7 @@ export class AdminPetPlayersService extends BaseService<PetPlayersEntity> {
           skill2?.skill.skill_code ?? null,
         ],
         individual_value: this.petPlayersService.generateIndividualValue(),
-        room_code: `${payload.map}${payload.sub_map ? `-${payload.sub_map}` : ''}`,
+        room_code: payload.room_code,
       });
       this.petPlayersService.recalculateStats(newPetPlayer);
       petPlayers.push(newPetPlayer);
