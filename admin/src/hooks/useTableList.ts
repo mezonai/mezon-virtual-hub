@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { IQueryParams, useTableQueryParams } from './useTableQueryParams';
 import { IPaginationResponse } from '@/type/api';
 
@@ -14,7 +14,6 @@ export function useTableList<T, P extends Record<string, any> = {}>({
   excludeParam,
 }: useTableListProps<T>) {
   const { queryParam } = useTableQueryParams<P>();
-  const firstCallRef = useRef<boolean>(true);
   const [loading, setLoading] = useState<boolean>(false);
   const totalItem = storeData.total;
   const totalPage = storeData.total_page;
@@ -42,20 +41,21 @@ export function useTableList<T, P extends Record<string, any> = {}>({
     return Object.keys(queryParams).some((key) => excludes?.includes(key));
   }
 
-  useEffect(() => {
-    if (firstCallRef.current) {
-      firstCallRef.current = false;
-      return;
-    }
-    if (hasExcludedParam(queryParam, excludeParam)) return;
+  const fetchDataApi = useCallback(async () => {
     setLoading(true);
     fetchData(filterQueryParam).finally(() => setLoading(false));
   }, [filterQueryParam, fetchData]);
+
+  useEffect(() => {
+    if (hasExcludedParam(queryParam, excludeParam)) return;
+    fetchDataApi();
+  }, [filterQueryParam, fetchDataApi, queryParam, excludeParam]);
 
   return {
     loading,
     totalItem,
     totalPage,
     responseData,
+    fetchDataApi,
   };
 }

@@ -8,7 +8,7 @@ import {
 } from '@/type/pet-players/petPlayers';
 import { Card } from '@mui/material';
 import { PencilIcon, TrashIcon } from '@phosphor-icons/react';
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useTableList } from '@/hooks/useTableList';
 import { usePetPlayersStore } from '@/store/petPlayers/store';
 import { ActionFormType } from '@/type/enum';
@@ -17,15 +17,23 @@ import { usePetPlayersDetailParam } from '../hook/usePetPlayersDetailParam';
 interface PetPlayersTableProps {
   openFormModal: () => void;
   setActionForm: (action: ActionFormType) => void;
+  openFormConfirm: () => void;
+  setPetPlayerIdDelete?: (id: string) => void;
+  setFetchDataApi?: (fn: () => void) => void;
+  reloadPetPlayerDetail: () => void;
 }
 
 export const PetPlayersTable = ({
   openFormModal,
   setActionForm,
+  openFormConfirm,
+  setPetPlayerIdDelete,
+  setFetchDataApi,
+  reloadPetPlayerDetail,
 }: PetPlayersTableProps): React.JSX.Element => {
   const { page, limit, handleParamsChange } = useTableQueryParams();
   const { petPlayers, fetchPetPlayers } = usePetPlayersStore();
-  const { loading, totalItem, responseData } = useTableList<
+  const { loading, totalItem, responseData, fetchDataApi } = useTableList<
     PetPlayers,
     PetPlayersFilterParams
   >({
@@ -34,6 +42,13 @@ export const PetPlayersTable = ({
     excludeParam: 'pet_player_id',
   });
   const { handleParamPetPlayerDetail } = usePetPlayersDetailParam();
+
+  useEffect(() => {
+    if (setFetchDataApi) {
+      setFetchDataApi(() => fetchDataApi);
+    }
+  }, [fetchDataApi]);
+
   return (
     <Card>
       <AbstractTable<PetPlayers, IPaginationParams<PetPlayers>>
@@ -49,12 +64,17 @@ export const PetPlayersTable = ({
             onClick: (row) => {
               handleParamPetPlayerDetail({ pet_player_id: row.id });
               openFormModal?.();
+              reloadPetPlayerDetail();
               setActionForm(ActionFormType.EDIT);
             },
             color: 'success',
             icon: <PencilIcon width="20px" height="20px" />,
           },
           {
+            onClick: (row) => {
+              openFormConfirm?.();
+              setPetPlayerIdDelete?.(row.id);
+            },
             color: 'error',
             icon: <TrashIcon width="20px" height="20px" />,
           },

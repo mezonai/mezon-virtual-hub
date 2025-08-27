@@ -1,5 +1,5 @@
 import { Button, Stack, Typography } from '@mui/material';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { PetPlayersTable } from './internal/PetPlayersTable';
 import { PetPlayersFilter } from './internal/PetPlayersFilter';
 import { usePetPlayersStore } from '@/store/petPlayers/store';
@@ -8,21 +8,38 @@ import { PetPlayersFormModal } from './internal/PetPlayersFormModal';
 import { ActionFormType } from '@/type/enum';
 import { usePetPlayersDetailParam } from './hook/usePetPlayersDetailParam';
 import { PlusIcon } from '@phosphor-icons/react';
+import { PetPlayersFormConfirm } from './internal/PetPlayersFormConfirm';
 
 export const PetPlayersList = (): React.JSX.Element => {
   const { fetchPetPlayersDetail } = usePetPlayersStore();
   const [loading, setLoading] = useState<boolean>(false);
-  const { isOpenModal, open, close } = useModal();
   const [actionType, setActionType] = useState<ActionFormType | null>(null);
   const { queryParamPetPlayerDetail } = usePetPlayersDetailParam();
+  const {
+    isOpenModal: isFormOpen,
+    open: openForm,
+    close: closeForm,
+  } = useModal();
+  const {
+    isOpenModal: isConfirmOpen,
+    open: openConfirm,
+    close: closeConfirm,
+  } = useModal();
+  const [petPlayerIdDelete, setPetPlayerIdDelete] = useState<string>('');
 
-  useEffect(() => {
+  const fetchDataPetPlayerDetail = useCallback(async () => {
     if (!queryParamPetPlayerDetail.pet_player_id) return;
     setLoading(true);
     fetchPetPlayersDetail(queryParamPetPlayerDetail.pet_player_id).finally(() =>
       setLoading(false),
     );
   }, [queryParamPetPlayerDetail]);
+
+  useEffect(() => {
+    fetchDataPetPlayerDetail();
+  }, [fetchDataPetPlayerDetail]);
+
+  const [refetchTable, setRefetchTable] = useState<() => void>(() => () => {});
 
   return (
     <Stack spacing={3}>
@@ -35,7 +52,7 @@ export const PetPlayersList = (): React.JSX.Element => {
             startIcon={<PlusIcon fontSize="var(--icon-fontSize-md)" />}
             variant="contained"
             onClick={() => {
-              open?.();
+              openForm?.();
               setActionType(ActionFormType.CREATE);
             }}
           >
@@ -44,12 +61,25 @@ export const PetPlayersList = (): React.JSX.Element => {
         </div>
       </Stack>
       <PetPlayersFilter />
-      <PetPlayersTable openFormModal={open} setActionForm={setActionType} />
+      <PetPlayersTable
+        openFormModal={openForm}
+        openFormConfirm={openConfirm}
+        setActionForm={setActionType}
+        setPetPlayerIdDelete={setPetPlayerIdDelete}
+        setFetchDataApi={setRefetchTable}
+        reloadPetPlayerDetail={fetchDataPetPlayerDetail}
+      />
       <PetPlayersFormModal
-        open={isOpenModal}
+        open={isFormOpen}
         action={actionType}
-        closeFormModal={close}
+        closeFormModal={closeForm}
         loading={loading}
+      />
+      <PetPlayersFormConfirm
+        open={isConfirmOpen}
+        closeFormModal={closeConfirm}
+        petPlayerIdDelete={petPlayerIdDelete}
+        reloadPetPlayerList={refetchTable}
       />
     </Stack>
   );
