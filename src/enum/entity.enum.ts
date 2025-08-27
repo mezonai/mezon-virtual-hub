@@ -135,3 +135,30 @@ export enum TransactionCurrency {
   GOLD = 'gold',
   DIAMOND = 'diamond',
 }
+
+export enum QuestType {
+  LOGIN_REWARD = 'login_reward',
+}
+
+export enum RewardType {
+  LOGIN_REWARD = 'login_reward',
+}
+
+export enum QuestFrequency {
+  DAILY = 'daily',
+  WEEKLY = 'weekly',
+}
+
+export enum RewardType {
+  GOLD = 'gold',
+  DIAMOND = 'diamond',
+  FOOD = 'food',
+  ITEM = 'item',
+}
+
+export enum RewardItemType {
+  GOLD = 'gold',
+  DIAMOND = 'diamond',
+  FOOD = 'food',
+  ITEM = 'item',
+}
