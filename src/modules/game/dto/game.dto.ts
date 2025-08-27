@@ -1,4 +1,4 @@
-import { RewardType } from '@enum';
+import { RewardSlotType } from '@enum';
 import { FoodDto } from '@modules/food/dto/food.dto';
 import { FoodEntity } from '@modules/food/entity/food.entity';
 import { ItemDto } from '@modules/item/dto/item.dto';
@@ -7,10 +7,10 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class AwardResponseDto {
   @ApiProperty({
-    enum: RewardType,
+    enum: RewardSlotType,
     description: 'Type of reward',
   })
-  type: RewardType;
+  type: RewardSlotType;
 
   @ApiPropertyOptional({
     description: 'Amount of gold awarded (if applicable)',
