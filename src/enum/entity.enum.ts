@@ -135,3 +135,30 @@ export enum TransactionCurrency {
   GOLD = 'gold',
   DIAMOND = 'diamond',
 }
+
+export enum QuestType {
+  NEWBIE_DAILY_DAY1 = 'newbie_daily_day1',
+  NEWBIE_DAILY_DAY2 = 'newbie_daily_day2',
+  NEWBIE_DAILY_DAY3 = 'newbie_daily_day3',
+  NEWBIE_DAILY_DAY4 = 'newbie_daily_day4',
+  NEWBIE_DAILY_DAY5 = 'newbie_daily_day5',
+  NEWBIE_DAILY_DAY6 = 'newbie_daily_day6',
+  NEWBIE_DAILY_DAY7 = 'newbie_daily_day7',
+}
+
+export enum RewardType {
+  NEWBIE_DAILY = 'newbie_daily',
+  NEWBIE_DAILY_SPECIAL = 'newbie_daily_special',
+}
+
+export enum QuestFrequency {
+  DAILY = 'daily',
+  WEEKLY = 'weekly',
+}
+
+export enum RewardItemType {
+  GOLD = 'gold',
+  DIAMOND = 'diamond',
+  FOOD = 'food',
+  ITEM = 'item',
+}

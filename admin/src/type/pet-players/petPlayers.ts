@@ -112,7 +112,6 @@ export interface PetPlayersDetail {
   equipped_skill_codes: (SkillCode | null)[];
   user: UserDto | null;
   pet: PetsDto;
-  created_at: string;
 }
 
 export enum MapKey {

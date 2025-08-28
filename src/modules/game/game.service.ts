@@ -1,6 +1,6 @@
 import { configEnv } from '@config/env.config';
 import { NEW_USER_FOOD_REWARD_QUANTITY } from '@constant';
-import { FoodType, Gender, RewardType } from '@enum';
+import { FoodType, Gender, RewardSlotType } from '@enum';
 import { FoodEntity } from '@modules/food/entity/food.entity';
 import { FoodService } from '@modules/food/food.service';
 import { InventoryService } from '@modules/inventory/inventory.service';
@@ -136,7 +136,7 @@ export class GameService {
         }
 
         user.gold += coinReward;
-        result.push({ type: RewardType.GOLD, amount: coinReward });
+        result.push({ type: RewardSlotType.GOLD, amount: coinReward });
       } else if (reward instanceof ItemEntity) {
         let inventoryItem = await this.inventoryService.getUserInventoryItem(
           user.id,
@@ -148,12 +148,12 @@ export class GameService {
             user,
             reward,
           );
-          result.push({ type: RewardType.ITEM, item: reward, quantity: 1 });
+          result.push({ type: RewardSlotType.ITEM, item: reward, quantity: 1 });
         } else if (reward.is_stackable) {
           inventoryItem.quantity += 1;
           await this.inventoryService.save(inventoryItem);
           result.push({
-            type: RewardType.ITEM,
+            type: RewardSlotType.ITEM,
             item: reward,
             quantity: inventoryItem.quantity,
           });
@@ -167,7 +167,7 @@ export class GameService {
         );
 
         result.push({
-          type: RewardType.FOOD,
+          type: RewardSlotType.FOOD,
           food: reward,
           quantity: inventoryFood.quantity,
         });
@@ -206,7 +206,7 @@ export class GameService {
 
       const rewards: (AwardResponseDto | null)[] = [
         {
-          type: RewardType.FOOD,
+          type: RewardSlotType.FOOD,
           quantity: NEW_USER_FOOD_REWARD_QUANTITY,
           food: foodReward,
         },

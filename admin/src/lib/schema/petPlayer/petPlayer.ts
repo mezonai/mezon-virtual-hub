@@ -1,5 +1,10 @@
 import { MapKey } from '@/type/enum';
-import { AnimalRarity, PetType, SubMap } from '@/type/pet-players/petPlayers';
+import {
+  AnimalRarity,
+  PetType,
+  SkillCode,
+  SubMap,
+} from '@/type/pet-players/petPlayers';
 import z from 'zod';
 
 export const petPlayerCreateSchema = z.object({
@@ -29,41 +34,89 @@ export const petPlayerCreateSchema = z.object({
 });
 
 export const petPlayersUpdateSchema = petPlayerCreateSchema.extend({
-  pet_player_id: z.string().min(1, { message: 'Pet player id is required' }),
-  exp: z.number({ message: 'Exp is required' }).optional(),
-  user: z.object({
-    id: z.string().optional(),
-    name: z.string({ message: 'User name is required' }),
+  exp: z.number({ message: 'Exp is required' }).refine((val) => val >= 0, {
+    message: 'Exp must be positive',
   }),
-  hp: z.number({ message: 'Hp is required' }).optional(),
+  user: z
+    .object({
+      id: z.string().optional(),
+      username: z.string().optional(),
+    })
+    .optional(),
+
+  level: z.number({ message: 'Level is required' }).refine((val) => val >= 1, {
+    message: 'Level must be greater than or equal to 1 ',
+  }),
+  battle_slot: z
+    .number({ message: 'Battle Slot is required' })
+    .refine((val) => val >= 0, {
+      message: 'Battle slot must be positive',
+    }),
+  hp: z.number({ message: 'Hp is required' }).refine((val) => val >= 0, {
+    message: 'Hp must be positive',
+  }),
   individual_value: z
     .number({ message: 'Individual value is required' })
-    .optional(),
+    .refine((val) => val >= 0, {
+      message: 'Individual value must be positive',
+    }),
   id: z.string().optional(),
-  stars: z.number({ message: 'Stars is required' }).optional(),
-  skill_slot_1: z.object({
-    skill_code: z.string({ message: 'Skill code 1 is required' }).optional(),
+  stars: z.number({ message: 'Stars is required' }).refine((val) => val >= 0, {
+    message: 'Stars must be positive',
   }),
-  room_code: z.string({ message: 'Room code is required' }).optional(),
-  defense: z.number({ message: 'Defense is required' }).optional(),
-  skill_slot_2: z.object({
-    skill_code: z.string({ message: 'Skill code 2 is required' }).optional(),
+  skill_slot_1: z
+    .object({
+      skill_code: z.union([
+        z.string(),
+        z.enum(Object.values(SubMap) as [string, ...string[]]).optional(),
+      ]),
+    })
+    .optional(),
+  defense: z
+    .number({ message: 'Defense is required' })
+    .refine((val) => val >= 0, {
+      message: 'Defense must be positive',
+    }),
+  skill_slot_2: z
+    .object({
+      skill_code: z.union([
+        z.string(),
+        z.enum(Object.values(SubMap) as [string, ...string[]]).optional(),
+      ]),
+    })
+    .optional(),
+  is_caught: z.boolean({
+    message: 'Caught is required',
   }),
-  is_caught: z.boolean({ message: 'Caught is required' }).optional(),
-  name: z.string({ message: 'Name is required' }).optional(),
-  speed: z.number({ message: 'Speed is required' }).optional(),
-  skill_slot_3: z.object({
-    skill_code: z.string({ message: 'Skill code 3 is required' }).optional(),
+  name: z.string().min(1, { message: 'Name is required' }),
+  speed: z.number({ message: 'Speed is required' }).refine((val) => val >= 0, {
+    message: 'Speed must be positive',
   }),
-  is_brought: z.boolean({ message: 'Brought is required' }).optional(),
-  create_at: z.string().optional(),
-  attack: z.number({ message: 'Attack is required' }).optional(),
-  skill_slot_4: z.object({
-    skill_code: z.string({ message: 'Skill code 4 is required' }).optional(),
-  }),
-  equipped_skill_codes: z.array(z.string(), {
-    message: 'Equipped skill codes is required',
-  }),
+  skill_slot_3: z
+    .object({
+      skill_code: z.union([
+        z.string(),
+        z.enum(Object.values(SubMap) as [string, ...string[]]).optional(),
+      ]),
+    })
+    .optional(),
+  is_brought: z.boolean({ message: 'Brought is required' }),
+  attack: z
+    .number({ message: 'Attack is required' })
+    .refine((val) => val >= 0, {
+      message: 'Attack must be positive',
+    }),
+  skill_slot_4: z
+    .object({
+      skill_code: z.union([
+        z.string(),
+        z.enum(Object.values(SubMap) as [string, ...string[]]).optional(),
+      ]),
+    })
+    .optional(),
+  equipped_skill_codes: z
+    .array(z.nativeEnum(SkillCode).nullable())
+    .nonempty({ message: 'Equipped skill code is required' }),
 });
 
 export type PetPlayerCreateInfo = z.infer<typeof petPlayerCreateSchema>;
