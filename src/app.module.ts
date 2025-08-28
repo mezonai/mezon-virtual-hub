@@ -32,6 +32,7 @@ import { ClsModule } from 'nestjs-cls';
 import { dataSourceOption } from './config/data-source.config';
 import { PlayerQuestModule } from '@modules/player-quest/player-quest.module';
 import { RewardModule } from '@modules/reward/reward.module';
+import { RewardItemModule } from '@modules/reward-item/reward-item.module';
 
 @Module({
   imports: [
@@ -64,6 +65,7 @@ import { RewardModule } from '@modules/reward/reward.module';
     AdminModule,
     PlayerQuestModule,
     RewardModule,
+    RewardItemModule,
     RouterModule.register([
       {
         path: 'admin',
