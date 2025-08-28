@@ -19,7 +19,7 @@ export class RewardManagementDto {
   progress: number;
 
   @ApiProperty()
-  required_count: number;
+  total_progress: number;
 
   @ApiProperty()
   is_completed: boolean;

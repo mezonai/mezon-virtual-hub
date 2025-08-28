@@ -1,8 +1,8 @@
 // dto/quest-response.dto.ts
 import { RewardType } from '@enum';
+import { QuestEntity } from '@modules/quest/entity/quest.entity';
 import { ApiProperty, OmitType } from '@nestjs/swagger';
 import { IsEnum } from 'class-validator';
-import { QuestEntity } from '../entity/quest.entity';
 
 export class QuestManagementDto {
   @ApiProperty()
@@ -18,7 +18,7 @@ export class QuestManagementDto {
   progress: number;
 
   @ApiProperty()
-  required_count: number;
+  total_progress: number;
 
   @ApiProperty()
   is_completed: boolean;
