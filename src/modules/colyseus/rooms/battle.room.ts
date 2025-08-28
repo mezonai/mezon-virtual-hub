@@ -17,6 +17,9 @@ export class BattleRoom extends BaseGameRoom {
     private battleState: BattleState = BattleState.READY;
     private currentEnviroment = EnvironmentType.GRASS;
     private rationIncreaseDame: number = 1.5;
+    private turnTimer: NodeJS.Timeout | null = null;
+    private timeLeft: number = 0;
+    timeRemaning: number = 10;
     amountChallenge: number = 0;
     // @Inject() private readonly petPlayersService: PetPlayersService;
     override async onCreate(options: any) {
@@ -39,6 +42,9 @@ export class BattleRoom extends BaseGameRoom {
         this.onMessage(MessageTypes.SURRENDER_BATTLE, (client, data) => {
             this.battleState = BattleState.FINISHED;
             this.battleIsFinished(client);
+        });
+        this.onMessage(MessageTypes.CONFIRM_END_TURN, (client, data) => {
+            this.checkEndTurn(client);
         });
         this.onMessage(MessageTypes.SET_PET_SLEEP, (client, data) => {
             const { petSleepingId } = data
@@ -88,7 +94,7 @@ export class BattleRoom extends BaseGameRoom {
         newPlayer.id = client.sessionId;
         newPlayer.user_id = userData.id;
         newPlayer.name = userData.username ?? "";
-
+        newPlayer.isEndTurn = false;
         petsFromUser.forEach((petData, index) => {
             newPlayer.pets[index] = this.createPetState(petData);
         });
@@ -173,11 +179,13 @@ export class BattleRoom extends BaseGameRoom {
 
 
     public onPlayerAction(client: Client, action: PlayerAction) {
+        this.setEndTurn(client, false);
         this.playerActions.set(client.sessionId, action);
         if (this.playerActions.size < 2) {
             client.send(MessageTypes.WAITING_OTHER_USER, { message: "" });
             return;
         }
+        this.stopRemaningTimeUsingSkill();
         this.resolveTurn(); // khi đủ 2 người, xử lý lượt
     }
     private async resolveTurn() {
@@ -190,7 +198,7 @@ export class BattleRoom extends BaseGameRoom {
         const a2 = this.playerActions.get(p2Id);
 
         if (!a1 || !a2) {
-           this.sendMessageError();
+            this.sendMessageError();
             return;
         }
 
@@ -256,6 +264,65 @@ export class BattleRoom extends BaseGameRoom {
 
 
         this.playerActions.clear();
+    }
+
+
+    setEndTurn(client: Client, isEnded: boolean) {
+        const player = this.state.battlePlayers.get(client.sessionId);
+        if (player) {
+            player.isEndTurn = isEnded;
+        }
+    }
+
+    checkEndTurn(client: Client) {
+        this.setEndTurn(client, true);
+        // Kiểm tra nếu tất cả player trong phòng đã confirm end turn
+        const allConfirmed = Array.from(this.state.battlePlayers.values())
+            .every(p => p.isEndTurn);
+
+        if (allConfirmed) {
+            this.remainingTimeUsingSkill();
+        }
+    }
+
+    remainingTimeUsingSkill() {
+        this.stopRemaningTimeUsingSkill();
+        this.timeLeft = this.timeRemaning;
+        this.turnTimer = setInterval(() => {
+            this.state.battlePlayers.forEach((player, sessionId) => {
+                if (player.isEndTurn) {
+                    const client = this.clients.find(c => c.sessionId === sessionId);
+                    if (client) {
+                        client.send(MessageTypes.TIME_REMAINING_USING_SKILL, this.timeLeft);
+                    }
+                }
+            });
+
+            if (this.timeLeft <= 0) {
+                this.stopRemaningTimeUsingSkill();
+                this.handleTurnTimeout();
+            }
+            this.timeLeft--;
+        }, 1000);
+    }
+
+    private handleTurnTimeout() {
+        for (const player of this.state.battlePlayers.values()) {
+            if (player.isEndTurn) {
+                player.isEndTurn = false;
+                const client = this.clients.find(c => c.sessionId === player.id);
+                if (client) {
+                    client.send(MessageTypes.AUTO_ATTACK, {});
+                }
+            }
+        }
+    }
+
+    private stopRemaningTimeUsingSkill() {
+        if (this.turnTimer) {
+            clearInterval(this.turnTimer);
+            this.turnTimer = null;
+        }
     }
 
     async executeAttack(
