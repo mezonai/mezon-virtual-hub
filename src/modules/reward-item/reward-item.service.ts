@@ -56,14 +56,12 @@ export class RewardItemService extends BaseService<RewardItemEntity> {
     }));
   }
 
-  private async upsertRewardItem(
+  async upsertRewardItem(
     where: FindOptionsWhere<RewardItemEntity>,
     data: Partial<RewardItemEntity>,
     quantity: number,
   ): Promise<RewardItemEntity> {
     let rewardItem = await this.rewardItemRepo.findOne({ where });
-
-    console.log('reward: ', rewardItem);
     if (rewardItem) {
       if (quantity <= 0)
         throw new BadRequestException('Quantity must be greater than 0');
