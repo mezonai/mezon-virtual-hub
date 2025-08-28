@@ -50,10 +50,11 @@ export class PlayerBattleInfo extends Schema {
   @type("string") name: string = "";
   @type([PetState]) pets: PetState[] = [];
   @type("number") activePetIndex: number = 0;
+  @type("boolean") isEndTurn = false;
 }
 
 export interface WithdrawMezonPayload
-  extends Pick<TokenSentEvent, 'amount' | 'note' > { }
+  extends Pick<TokenSentEvent, 'amount' | 'note'> { }
 
 export interface AuthenticatedClient extends ColyseusClient {
   userData?: UserWithPetPlayers;
