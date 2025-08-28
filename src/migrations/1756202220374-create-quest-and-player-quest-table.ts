@@ -13,7 +13,7 @@ export class CreateQuestAndPlayerQuestTable1756202220374
         "duration_hours" integer NOT NULL,
         "description" text, "type" character varying(50) NOT NULL,
         "frequency" character varying(20) NOT NULL,
-        "required_count" integer NOT NULL DEFAULT '1',
+        "total_progress" integer NOT NULL DEFAULT '1',
         "reward_id" uuid,
         CONSTRAINT "PK_quests_id" PRIMARY KEY ("id")
        )`,

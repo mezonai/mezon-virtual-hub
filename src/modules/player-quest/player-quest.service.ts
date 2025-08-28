@@ -39,7 +39,7 @@ export class PlayerQuestService {
       name: pq.quest.name,
       frequency: pq.quest.frequency,
       progress: pq.progress,
-      required_count: pq.quest.required_count,
+      total_progress: pq.quest.total_progress,
       is_completed: pq.is_completed,
       is_claimed: pq.is_claimed,
     };
@@ -47,7 +47,7 @@ export class PlayerQuestService {
 
   async initLoginQuest(userId: string): Promise<PlayerQuestEntity> {
     const quest = await this.questRepo.findOneBy({
-      type: QuestType.LOGIN_REWARD,
+      type: QuestType.NEWBIE_DAILY_DAY1,
     });
     if (!quest) {
       throw new NotFoundException('Login quest not defined!');

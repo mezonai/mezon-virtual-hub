@@ -70,7 +70,7 @@ export class QuestEntity {
   @IsInt()
   @Min(1)
   @Type(() => Number)
-  required_count: number = 1;
+  total_progress: number = 1;
 
   @OneToMany(() => PlayerQuestEntity, (pq) => pq.quest)
   player_quests: PlayerQuestEntity[] | null;
