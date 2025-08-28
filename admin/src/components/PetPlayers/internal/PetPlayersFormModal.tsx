@@ -172,18 +172,14 @@ export function PetPlayersFormModal({
           <Grid size={3}>
             <Controller
               control={control}
-              name="exp"
+              name="id"
               render={({ field }) => (
                 <SharedTextField
+                  label="ID"
                   fullWidth
-                  label="Exp"
-                  type="number"
-                  {...field}
-                  value={field.value ?? 0}
-                  onChange={(e) => field.onChange(Number(e.target.value))}
-                  shrinkMode="auto"
-                  error={!!formState.errors.exp}
-                  helperText={formState?.errors?.exp?.message}
+                  disabled
+                  value={field.value ?? ''}
+                  shrinkMode={true}
                 />
               )}
             />
@@ -245,7 +241,27 @@ export function PetPlayersFormModal({
             )}
           />
         </Grid>
-
+        {isEdit && (
+          <Grid size={3}>
+            <Controller
+              control={control}
+              name="exp"
+              render={({ field }) => (
+                <SharedTextField
+                  fullWidth
+                  label="Exp"
+                  type="number"
+                  {...field}
+                  value={field.value ?? 0}
+                  onChange={(e) => field.onChange(Number(e.target.value))}
+                  shrinkMode="auto"
+                  error={!!formState.errors.exp}
+                  helperText={formState?.errors?.exp?.message}
+                />
+              )}
+            />
+          </Grid>
+        )}
         {isEdit && (
           <Grid size={3}>
             <Controller
@@ -256,28 +272,6 @@ export function PetPlayersFormModal({
                   fullWidth
                   label="User Name"
                   {...field}
-                  shrinkMode="auto"
-                />
-              )}
-            />
-          </Grid>
-        )}
-
-        {isEdit && (
-          <Grid size={3}>
-            <Controller
-              control={control}
-              name="hp"
-              render={({ field }) => (
-                <SharedTextField
-                  fullWidth
-                  label="HP"
-                  type="number"
-                  {...field}
-                  value={field.value ?? 0}
-                  onChange={(e) => field.onChange(Number(e.target.value))}
-                  error={!!formState.errors.hp}
-                  helperText={formState.errors.hp?.message}
                   shrinkMode="auto"
                 />
               )}
@@ -328,40 +322,21 @@ export function PetPlayersFormModal({
             )}
           />
         </Grid>
-
         {isEdit && (
           <Grid size={3}>
             <Controller
               control={control}
-              name="id"
-              render={({ field }) => (
-                <SharedTextField
-                  label="ID"
-                  fullWidth
-                  disabled
-                  value={field.value ?? ''}
-                  shrinkMode={true}
-                />
-              )}
-            />
-          </Grid>
-        )}
-
-        {isEdit && (
-          <Grid size={3}>
-            <Controller
-              control={control}
-              name="stars"
+              name="hp"
               render={({ field }) => (
                 <SharedTextField
                   fullWidth
-                  label="Stars"
+                  label="HP"
                   type="number"
                   {...field}
                   value={field.value ?? 0}
                   onChange={(e) => field.onChange(Number(e.target.value))}
-                  error={!!formState.errors.stars}
-                  helperText={formState.errors.stars?.message}
+                  error={!!formState.errors.hp}
+                  helperText={formState.errors.hp?.message}
                   shrinkMode="auto"
                 />
               )}
@@ -395,7 +370,27 @@ export function PetPlayersFormModal({
             />
           </Grid>
         )}
-
+        {isEdit && (
+          <Grid size={3}>
+            <Controller
+              control={control}
+              name="stars"
+              render={({ field }) => (
+                <SharedTextField
+                  fullWidth
+                  label="Stars"
+                  type="number"
+                  {...field}
+                  value={field.value ?? 0}
+                  onChange={(e) => field.onChange(Number(e.target.value))}
+                  error={!!formState.errors.stars}
+                  helperText={formState.errors.stars?.message}
+                  shrinkMode="auto"
+                />
+              )}
+            />
+          </Grid>
+        )}
         <Grid size={isEdit ? 3 : 6}>
           <Controller
             control={control}
@@ -624,31 +619,6 @@ export function PetPlayersFormModal({
           <Grid size={3}>
             <Controller
               control={control}
-              name="skill_slot_4.skill_code"
-              render={({ field }) => (
-                <FormControl fullWidth>
-                  <InputLabel>Skill Slot 4</InputLabel>
-                  <Select
-                    fullWidth
-                    disabled
-                    label="Skill Slot 4"
-                    value={field.value ?? ''}
-                  >
-                    {Object.entries(SKILL_CODE_FIELD).map(([key, value]) => (
-                      <MenuItem key={key} value={key}>
-                        {value}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              )}
-            />
-          </Grid>
-        )}
-        {isEdit && (
-          <Grid size={3}>
-            <Controller
-              control={control}
               name="equipped_skill_codes"
               render={({ field }) => (
                 <FormControl
@@ -681,6 +651,31 @@ export function PetPlayersFormModal({
                       {formState.errors.equipped_skill_codes?.message}
                     </FormHelperText>
                   )}
+                </FormControl>
+              )}
+            />
+          </Grid>
+        )}
+        {isEdit && (
+          <Grid size={3}>
+            <Controller
+              control={control}
+              name="skill_slot_4.skill_code"
+              render={({ field }) => (
+                <FormControl fullWidth>
+                  <InputLabel>Skill Slot 4</InputLabel>
+                  <Select
+                    fullWidth
+                    disabled
+                    label="Skill Slot 4"
+                    value={field.value ?? ''}
+                  >
+                    {Object.entries(SKILL_CODE_FIELD).map(([key, value]) => (
+                      <MenuItem key={key} value={key}>
+                        {value}
+                      </MenuItem>
+                    ))}
+                  </Select>
                 </FormControl>
               )}
             />
