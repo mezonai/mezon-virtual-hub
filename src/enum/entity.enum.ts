@@ -137,13 +137,8 @@ export enum TransactionCurrency {
 }
 
 export enum QuestType {
-  NEWBIE_DAILY_DAY1 = 'newbie_daily_day1',
-  NEWBIE_DAILY_DAY2 = 'newbie_daily_day2',
-  NEWBIE_DAILY_DAY3 = 'newbie_daily_day3',
-  NEWBIE_DAILY_DAY4 = 'newbie_daily_day4',
-  NEWBIE_DAILY_DAY5 = 'newbie_daily_day5',
-  NEWBIE_DAILY_DAY6 = 'newbie_daily_day6',
-  NEWBIE_DAILY_DAY7 = 'newbie_daily_day7',
+  NEWBIE_LOGIN = 'newbie_login',
+  NEWBIE_LOGIN_SPECIAL = 'newbie_login_special',
 }
 
 export enum RewardType {
