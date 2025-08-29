@@ -5,7 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Between, In, MoreThanOrEqual, Repository } from 'typeorm';
+import { Between, In, MoreThanOrEqual, Not, Repository } from 'typeorm';
 import { PlayerQuestEntity } from './entity/player-quest.entity';
 import { QuestEntity } from '@modules/quest/entity/quest.entity';
 import { QuestFrequency, QuestType } from '@enum';
@@ -39,6 +39,43 @@ export class PlayerQuestService {
       weekly: quests
         .filter((pq) => pq.quest.frequency === QuestFrequency.WEEKLY)
         .map((pq) => this.mapQuest(pq)),
+    };
+  }
+
+  async getPlayerQuestsByFrequency(userId: string, query: PlayerQuestQueryDto) {
+    const { page = 1, limit = 50, sort_by = 'start_at', order = 'ASC' } = query;
+
+    const quests = await this.playerQuestRepo.find({
+      where: {
+        user: { id: userId },
+        quest: {
+          type: Not(
+            In([QuestType.NEWBIE_LOGIN, QuestType.NEWBIE_LOGIN_SPECIAL]),
+          ),
+        },
+      },
+      relations: ['quest', 'quest.reward', 'quest.reward.items', 'user'],
+      take: limit,
+      skip: (page - 1) * limit,
+      order: { [sort_by]: order },
+    });
+
+    const groupByFrequency = (list: typeof quests) =>
+      list.reduce(
+        (acc, pq) => {
+          const freq = pq.quest.frequency;
+          if (!acc[freq]) acc[freq] = [];
+          acc[freq].push(this.mapQuest(pq));
+          return acc;
+        },
+        {} as Record<string, ReturnType<typeof this.mapQuest>[]>,
+      );
+
+    const grouped = groupByFrequency(quests);
+
+    return {
+      daily: grouped[QuestFrequency.DAILY] ?? [],
+      weekly: grouped[QuestFrequency.WEEKLY] ?? [],
     };
   }
 
