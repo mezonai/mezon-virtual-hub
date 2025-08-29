@@ -26,6 +26,7 @@ import {
   PlayerQuestsResponseDto,
   UpdatePlayerQuestDto,
 } from './dto/player-quest.dto';
+import { RequireAdmin } from '@libs/decorator';
 
 @ApiTags('Player Quests')
 @Controller('player-quests')
@@ -53,14 +54,14 @@ export class PlayerQuestController {
     return this.playerQuestService.getLoginQuest(user.id, query);
   }
 
-  @Post('init_login_quest')
+  @Post('init-login-quest')
   @ApiOperation({ summary: 'Init login quest for player' })
   async initLoginQuest(): Promise<{ quests: PlayerQuestEntity[] }> {
     const user = this.cls.get<UserEntity>(USER_TOKEN);
     return this.playerQuestService.initLoginQuest(user.id);
   }
 
-  @Put('finish_quest/:player_quest_id')
+  @Put('finish-quest/:player_quest_id')
   @ApiOperation({ summary: 'Finish quest player' })
   async finishQuest(
     @Param('player_quest_id') player_quest_id: string,
@@ -69,7 +70,8 @@ export class PlayerQuestController {
     return this.playerQuestService.finishQuest(user.id, player_quest_id);
   }
 
-  @Patch('update_quest_player')
+  @Patch('update-quest-player')
+  @RequireAdmin()
   @ApiOperation({ summary: 'Update quest player' })
   async updateQuest(@Body() dto: UpdatePlayerQuestDto) {
     const user = this.cls.get<UserEntity>(USER_TOKEN);
@@ -80,7 +82,8 @@ export class PlayerQuestController {
     );
   }
 
-  @Delete('delete_login_quests')
+  @Delete('delete-login-quests')
+  @RequireAdmin()
   @ApiOperation({ summary: 'Delete all login quests for player' })
   async deleteLoginQuests(): Promise<{ success: boolean; message: string }> {
     const user = this.cls.get<UserEntity>(USER_TOKEN);
