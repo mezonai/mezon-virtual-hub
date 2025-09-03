@@ -1,5 +1,7 @@
 import { QuestFrequency, QuestType } from '@enum';
+import { InventoryService } from '@modules/inventory/inventory.service';
 import { QuestEntity } from '@modules/quest/entity/quest.entity';
+import { UserEntity } from '@modules/user/entity/user.entity';
 import {
   BadRequestException,
   Injectable,
@@ -7,12 +9,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import moment from 'moment';
-import {
-  Between,
-  In,
-  MoreThan,
-  Repository
-} from 'typeorm';
+import { Between, In, MoreThan, Repository } from 'typeorm';
 import {
   FinishQuestQueryDto,
   NewbieRewardDto,
@@ -28,6 +25,7 @@ export class PlayerQuestService {
     private readonly playerQuestRepo: Repository<PlayerQuestEntity>,
     @InjectRepository(QuestEntity)
     private questRepo: Repository<QuestEntity>,
+    private inventoryService: InventoryService,
   ) {}
 
   async getPlayerQuests(userId: string) {
@@ -230,12 +228,12 @@ export class PlayerQuestService {
   }
 
   async finishQuest(
-    userId: string,
+    user: UserEntity,
     player_quest_id: string,
   ): Promise<PlayerQuestEntity> {
     const playerQuest = await this.playerQuestRepo.findOne({
-      where: { user: { id: userId }, id: player_quest_id },
-      relations: ['quest', 'user'],
+      where: { user: { id: user.id }, id: player_quest_id },
+      relations: ['quest', 'quest.reward', 'quest.reward.items'],
     });
 
     if (!playerQuest) {
@@ -273,7 +271,7 @@ export class PlayerQuestService {
 
       const completedToday = await this.playerQuestRepo.findOne({
         where: {
-          user: { id: userId },
+          user: { id: user.id },
           quest: {
             type: In([QuestType.NEWBIE_LOGIN, QuestType.NEWBIE_LOGIN_SPECIAL]),
           },
@@ -282,7 +280,7 @@ export class PlayerQuestService {
         },
       });
 
-      const availableQuest = await this.getNextNewbiePlayerQuest(userId);
+      const availableQuest = await this.getNextNewbiePlayerQuest(user.id);
 
       if (availableQuest && availableQuest.id !== playerQuest.id) {
         throw new BadRequestException(
@@ -298,6 +296,11 @@ export class PlayerQuestService {
       playerQuest.is_completed = true;
       playerQuest.progress = playerQuest.quest.total_progress;
       playerQuest.completed_at = now;
+
+      await this.inventoryService.processRewardItems(
+        user,
+        playerQuest.quest.reward.items,
+      );
     }
 
     return await this.playerQuestRepo.save(playerQuest);

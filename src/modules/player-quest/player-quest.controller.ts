@@ -68,7 +68,7 @@ export class PlayerQuestController {
     @Param('player_quest_id') player_quest_id: string,
   ): Promise<PlayerQuestEntity> {
     const user = this.cls.get<UserEntity>(USER_TOKEN);
-    return this.playerQuestService.finishQuest(user.id, player_quest_id);
+    return this.playerQuestService.finishQuest(user, player_quest_id);
   }
 
   @Patch('update-quest-player')

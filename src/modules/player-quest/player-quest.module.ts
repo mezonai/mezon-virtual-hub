@@ -17,6 +17,7 @@ import { QuestEntity } from '@modules/quest/entity/quest.entity';
     JwtModule.register({}),
     FoodModule,
     ItemModule,
+    InventoryModule,
   ],
   controllers: [PlayerQuestController],
   providers: [PlayerQuestService],

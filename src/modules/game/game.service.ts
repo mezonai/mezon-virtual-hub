@@ -121,7 +121,7 @@ export class GameService {
     return rewards;
   }
 
-  private async processRewards(user: UserEntity, rewards: RewardDataType) {
+  async processRewards(user: UserEntity, rewards: RewardDataType) {
     const result: (AwardResponseDto | null)[] = [];
 
     for (const reward of rewards) {
@@ -146,7 +146,7 @@ export class GameService {
         if (!inventoryItem) {
           inventoryItem = await this.inventoryService.addItemToInventory(
             user,
-            reward,
+            reward.id,
           );
           result.push({ type: RewardSlotType.ITEM, item: reward, quantity: 1 });
         } else if (reward.is_stackable) {
@@ -163,7 +163,7 @@ export class GameService {
       } else if (reward instanceof FoodEntity) {
         const inventoryFood = await this.inventoryService.addFoodToInventory(
           user,
-          reward,
+          reward.id,
         );
 
         result.push({
@@ -197,7 +197,7 @@ export class GameService {
     if (foodReward) {
       await this.inventoryService.addFoodToInventory(
         user,
-        foodReward,
+        foodReward.id,
         NEW_USER_FOOD_REWARD_QUANTITY,
       );
 
