@@ -22,6 +22,7 @@ import { PlayerQuestEntity } from './entity/player-quest.entity';
 import { USER_TOKEN } from '@constant';
 import { UserEntity } from '@modules/user/entity/user.entity';
 import {
+  FinishQuestQueryDto,
   PlayerQuestQueryDto,
   PlayerQuestsResponseDto,
   UpdatePlayerQuestDto,
@@ -54,27 +55,27 @@ export class PlayerQuestController {
     return this.playerQuestService.getPlayerQuestsByFrequency(user.id, query);
   }
 
-  @Get('login')
+  @Get('newbie-login')
   @ApiOperation({ summary: 'Get player quests by login' })
   async getLoginReward(@Query() query: PlayerQuestQueryDto) {
     const user = this.cls.get<UserEntity>(USER_TOKEN);
-    return this.playerQuestService.getLoginQuest(user.id, query);
+    return this.playerQuestService.getNewbieLoginQuests(user.id, query);
   }
 
   @Post('init-login-quest')
   @ApiOperation({ summary: 'Init login quest for player' })
-  async initLoginQuest(): Promise<{ quests: PlayerQuestEntity[] }> {
+  async initLoginQuest(@Query() query: FinishQuestQueryDto) {
     const user = this.cls.get<UserEntity>(USER_TOKEN);
-    return this.playerQuestService.initLoginQuest(user.id);
+    return this.playerQuestService.initQuest(user.id, query);
   }
 
-  @Put('finish-quest/:player_quest_id')
+  @Put(':player_quest_id/finish-quest')
   @ApiOperation({ summary: 'Finish quest player' })
   async finishQuest(
     @Param('player_quest_id') player_quest_id: string,
   ): Promise<PlayerQuestEntity> {
     const user = this.cls.get<UserEntity>(USER_TOKEN);
-    return this.playerQuestService.finishQuest(user.id, player_quest_id);
+    return this.playerQuestService.finishQuest(user, player_quest_id);
   }
 
   @Patch('update-quest-player')

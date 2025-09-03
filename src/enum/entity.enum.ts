@@ -156,4 +156,5 @@ export enum RewardItemType {
   DIAMOND = 'diamond',
   FOOD = 'food',
   ITEM = 'item',
+  PET = 'pet',
 }

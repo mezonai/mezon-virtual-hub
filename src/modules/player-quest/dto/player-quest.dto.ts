@@ -1,19 +1,19 @@
 // dto/quest-response.dto.ts
-import { QuestFrequency, SortOrder } from '@enum';
+import { QuestFrequency, QuestType, SortOrder } from '@enum';
+import { RewardItemEntity } from '@modules/reward-item/entity/reward-item.entity';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { QueryParamsDto } from '@types';
 import { Type } from 'class-transformer';
 import {
   IsBoolean,
-  IsDate,
   IsEnum,
   IsInt,
   IsNumber,
   IsOptional,
   IsString,
   IsUUID,
-  Min,
+  Validate,
 } from 'class-validator';
+import moment from 'moment';
 
 export class PlayerQuestDto {
   @ApiProperty()
@@ -113,4 +113,31 @@ export class PlayerQuestQueryDto {
   @IsOptional()
   @IsEnum(SortOrder)
   order?: SortOrder = SortOrder.ASC;
+}
+
+export class FinishQuestQueryDto {
+  @ApiPropertyOptional({
+    description: 'Timezone in IANA format (e.g. Asia/Ho_Chi_Minh, UTC)',
+    example: 'Asia/Ho_Chi_Minh',
+  })
+  @IsOptional()
+  @IsString()
+  @Validate((value: string) => moment.tz.zone(value) !== null, {
+    message: 'Invalid timezone',
+  })
+  timezone?: string = 'Asia/Ho_Chi_Minh';
+}
+
+export class NewbieRewardDto {
+  id: string;
+  end_at: Date | null;
+  quest_id: string;
+  name: string;
+  description?: string | null;
+  quest_type: QuestType;
+  is_claimed: boolean;
+  is_available: boolean;
+
+  @Type()
+  rewards: RewardItemEntity[];
 }
