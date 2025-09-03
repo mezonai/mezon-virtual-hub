@@ -1,20 +1,25 @@
-// player-quest.service.ts
+import { QuestFrequency, QuestType } from '@enum';
+import { QuestEntity } from '@modules/quest/entity/quest.entity';
 import {
   BadRequestException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Between, In, MoreThanOrEqual, Repository } from 'typeorm';
-import { PlayerQuestEntity } from './entity/player-quest.entity';
-import { QuestEntity } from '@modules/quest/entity/quest.entity';
-import { QuestFrequency, QuestType } from '@enum';
 import moment from 'moment';
 import {
+  Between,
+  In,
+  MoreThan,
+  Repository
+} from 'typeorm';
+import {
+  FinishQuestQueryDto,
+  NewbieRewardDto,
   PlayerQuestQueryDto,
   UpdatePlayerQuestDto,
 } from './dto/player-quest.dto';
-const TIMEZONE = 'Asia/Ho_Chi_Minh';
+import { PlayerQuestEntity } from './entity/player-quest.entity';
 
 @Injectable()
 export class PlayerQuestService {
@@ -42,29 +47,68 @@ export class PlayerQuestService {
     };
   }
 
-  async getLoginQuest(userId: string, query: PlayerQuestQueryDto) {
+  async getNewbieLoginQuests(userId: string, query: PlayerQuestQueryDto) {
     const {
       page = 1,
       limit = 50,
       sort_by = 'start_at',
       order = 'DESC',
-      search,
     } = query;
 
-    const quests = await this.playerQuestRepo.find({
-      where: { user: { id: userId } },
-      relations: ['quest', 'quest.reward', 'quest.reward.items', 'user'],
-      take: limit,
-      skip: (page - 1) * limit,
-      order: {
-        [sort_by]: order,
-      },
-    });
+    const [quests, nextQuest] = await Promise.all([
+      this.playerQuestRepo.find({
+        where: {
+          user: { id: userId },
+          quest: {
+            type: In([QuestType.NEWBIE_LOGIN, QuestType.NEWBIE_LOGIN_SPECIAL]),
+          },
+        },
+        relations: ['quest', 'quest.reward', 'quest.reward.items'],
+        take: limit,
+        skip: (page - 1) * limit,
+        order: {
+          [sort_by]: order,
+        },
+      }),
+      this.getNextNewbiePlayerQuest(userId),
+    ]);
 
-    return quests.map((q) => ({
-      ...q,
-      user: { id: q.user.id, username: q.user.username },
-    }));
+    return quests.map((q) => this.toQuestProgressDto(q, nextQuest));
+  }
+
+  async getNextNewbiePlayerQuest(userId: string) {
+    const now = new Date();
+
+    return await this.playerQuestRepo.findOne({
+      where: {
+        user: { id: userId },
+        quest: {
+          type: In([QuestType.NEWBIE_LOGIN, QuestType.NEWBIE_LOGIN_SPECIAL]),
+        },
+        is_completed: false,
+        end_at: MoreThan(now),
+      },
+      relations: ['quest'],
+      order: { quest: { name: 'ASC' } },
+    });
+  }
+
+  toQuestProgressDto(
+    entity: PlayerQuestEntity,
+    nextQuest?: PlayerQuestEntity | null,
+  ): NewbieRewardDto {
+    const { quest } = entity;
+    return {
+      id: entity.id,
+      end_at: entity.end_at,
+      quest_id: quest?.id,
+      name: quest?.name,
+      description: quest.type,
+      quest_type: quest?.type,
+      is_claimed: entity.is_claimed,
+      rewards: quest.reward.items,
+      is_available: nextQuest ? nextQuest.id === entity.id : false,
+    };
   }
 
   async deleteLoginQuests(userId: string) {
@@ -113,43 +157,14 @@ export class PlayerQuestService {
     };
   }
 
-  mapPlayerQuests(playerQuests: PlayerQuestEntity[]): any[] {
-    return playerQuests.map((pq) => ({
-      id: pq.id,
-      questId: pq.quest.id,
-      name: pq.quest.name,
-      type: pq.quest.type,
-      progress: pq.progress,
-      startAt: pq.start_at,
-      endAt: pq.end_at,
-      completed: pq.progress >= pq.quest.total_progress,
-    }));
-  }
-
-  async initLoginQuest(
+  async initQuest(
     userId: string,
-  ): Promise<{ quests: PlayerQuestEntity[] }> {
-    const existing = await this.playerQuestRepo.find({
-      where: { user: { id: userId } },
-      relations: ['quest'],
-      order: { id: 'ASC' },
-    });
+    { timezone = 'Asia/Ho_Chi_Minh' }: FinishQuestQueryDto,
+  ) {
+    const missingQuests = await this.findMissingQuestsForPlayer(userId);
 
-    if (
-      existing.some(
-        (pq) =>
-          pq.quest.type === QuestType.NEWBIE_LOGIN ||
-          pq.quest.type === QuestType.NEWBIE_LOGIN_SPECIAL,
-      )
-    ) {
-      throw new BadRequestException(
-        'Login quests already initialized for this user',
-      );
-    }
-
-    let missingQuests = await this.findMissingQuestsForPlayer(userId);
     if (!missingQuests.length) {
-      throw new BadRequestException('No missing login quests to initialize');
+      return { message: 'No missing quests to initialize' };
     }
 
     const normalDailies = missingQuests.filter(
@@ -159,7 +174,7 @@ export class PlayerQuestService {
       (q) => q.type === QuestType.NEWBIE_LOGIN_SPECIAL,
     );
 
-    const firstLoginDay = moment.tz(TIMEZONE).startOf('day');
+    const firstLoginDay = moment.tz(timezone).startOf('day');
     const toCreate: PlayerQuestEntity[] = [];
 
     normalDailies.forEach((quest, idx) => {
@@ -192,11 +207,11 @@ export class PlayerQuestService {
       );
     }
 
-    const saved = await this.playerQuestRepo.save(toCreate);
+    if (!toCreate.length) {
+      return { message: 'No missing quests to initialize' };
+    }
 
-    return {
-      quests: this.mapPlayerQuests(saved),
-    };
+    return await this.playerQuestRepo.save(toCreate);
   }
 
   async findMissingQuestsForPlayer(userId: string): Promise<QuestEntity[]> {
@@ -267,16 +282,23 @@ export class PlayerQuestService {
         },
       });
 
+      const availableQuest = await this.getNextNewbiePlayerQuest(userId);
+
+      if (availableQuest && availableQuest.id !== playerQuest.id) {
+        throw new BadRequestException(
+          'This login quest is not available. Please finish the next quest in order.',
+        );
+      }
+
       if (completedToday) {
         throw new BadRequestException(
           'You already completed a login quest today.',
         );
       }
+      playerQuest.is_completed = true;
+      playerQuest.progress = playerQuest.quest.total_progress;
+      playerQuest.completed_at = now;
     }
-
-    playerQuest.is_completed = true;
-    playerQuest.progress = playerQuest.quest.total_progress;
-    playerQuest.completed_at = now;
 
     return await this.playerQuestRepo.save(playerQuest);
   }
