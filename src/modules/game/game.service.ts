@@ -11,6 +11,7 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { AwardResponseDto, RewardDataType } from './dto/game.dto';
+import { PlayerQuestService } from '@modules/player-quest/player-quest.service';
 
 @Injectable()
 export class GameService {
@@ -26,6 +27,7 @@ export class GameService {
     @InjectRepository(UserEntity)
     private readonly userRepository: Repository<UserEntity>,
     private readonly foodService: FoodService,
+    private readonly playerQuestService: PlayerQuestService,
   ) {
     this.itemPercent = configEnv().REWARD_ITEM_PERCENT;
     this.coinPercent = configEnv().REWARD_COIN_PERCENT;
@@ -181,6 +183,10 @@ export class GameService {
   }
 
   async giveInitialReward(user: UserEntity) {
+    const initQuestPromise = this.playerQuestService.initQuest(user.id, {
+      timezone: 'Asia/Ho_Chi_Minh',
+    });
+
     if (user.has_first_reward) {
       return {
         success: false,
@@ -189,30 +195,32 @@ export class GameService {
     }
 
     const foodReward = await this.foodService.findOne({
-      where: {
-        type: FoodType.NORMAL,
-      },
+      where: { type: FoodType.NORMAL },
     });
 
-    if (foodReward) {
-      await this.inventoryService.addFoodToInventory(
-        user,
-        foodReward.id,
-        NEW_USER_FOOD_REWARD_QUANTITY,
-      );
-
-      user.has_first_reward = true;
-      await this.userRepository.save(user);
-
-      const rewards: (AwardResponseDto | null)[] = [
-        {
-          type: RewardSlotType.FOOD,
-          quantity: NEW_USER_FOOD_REWARD_QUANTITY,
-          food: foodReward,
-        },
-      ];
-      return { rewards };
+    if (!foodReward) {
+      return { success: false, message: 'No food reward available.' };
     }
+
+    await this.inventoryService.addFoodToInventory(
+      user,
+      foodReward.id,
+      NEW_USER_FOOD_REWARD_QUANTITY,
+    );
+
+    user.has_first_reward = true;
+    await this.userRepository.save(user);
+
+    const rewards: AwardResponseDto[] = [
+      {
+        type: RewardSlotType.FOOD,
+        quantity: NEW_USER_FOOD_REWARD_QUANTITY,
+        food: foodReward,
+      },
+    ];
+
+    await initQuestPromise;
+    return { rewards };
   }
 
   getRewardPercent() {

@@ -57,7 +57,7 @@ export class PlayerQuestService {
           ),
         },
       },
-      relations: ['quest', 'quest.reward', 'quest.reward.items', 'user'],
+      relations: ['quest', 'quest.reward', 'quest.reward.items'],
       take: limit,
       skip: (page - 1) * limit,
       order: { [sort_by]: order },
@@ -141,7 +141,7 @@ export class PlayerQuestService {
       description: quest.type,
       quest_type: quest?.type,
       is_claimed: entity.is_claimed,
-      rewards: quest.reward.items,
+      rewards: quest.reward?.items,
       is_available: nextQuest ? nextQuest.id === entity.id : false,
     };
   }
@@ -150,9 +150,6 @@ export class PlayerQuestService {
     const quests = await this.playerQuestRepo.find({
       where: {
         user: { id: userId },
-        quest: {
-          type: In([QuestType.NEWBIE_LOGIN, QuestType.NEWBIE_LOGIN_SPECIAL]),
-        },
       },
       relations: ['quest', 'quest.reward', 'quest.reward.items'],
     });
@@ -184,11 +181,13 @@ export class PlayerQuestService {
     return {
       id: pq.quest.id,
       name: pq.quest.name,
+      description: pq.quest.description,
       frequency: pq.quest.frequency,
       progress: pq.progress,
       total_progress: pq.quest.total_progress,
       is_completed: pq.is_completed,
       is_claimed: pq.is_claimed,
+      rewards: pq.quest?.reward?.items
     };
   }
 
@@ -215,6 +214,30 @@ export class PlayerQuestService {
     normalDailies.forEach((quest, idx) => {
       const startAt = firstLoginDay.clone().add(idx, 'days').toDate();
       const endAt = firstLoginDay.clone().add(9, 'days').endOf('day').toDate();
+
+      toCreate.push(
+        this.playerQuestRepo.create({
+          user: { id: userId },
+          quest,
+          progress: 0,
+          start_at: startAt,
+          end_at: endAt,
+        }),
+      );
+    });
+
+    const others = missingQuests.filter(
+      (q) =>
+        q.type !== QuestType.NEWBIE_LOGIN &&
+        q.type !== QuestType.NEWBIE_LOGIN_SPECIAL,
+    );
+
+    others.forEach((quest) => {
+      const startAt = firstLoginDay.clone().toDate();
+      const endAt =
+        quest.frequency === QuestFrequency.DAILY
+          ? firstLoginDay.clone().endOf('day').toDate()
+          : firstLoginDay.clone().endOf('week').toDate();
 
       toCreate.push(
         this.playerQuestRepo.create({
@@ -261,7 +284,8 @@ export class PlayerQuestService {
       existingPlayerQuests.map((pq) => pq.quest.id),
     );
 
-    return allQuests.filter((q) => !existingQuestIds.has(q.id));
+    const missing = allQuests.filter((q) => !existingQuestIds.has(q.id));
+    return missing;
   }
 
   async finishQuest(
