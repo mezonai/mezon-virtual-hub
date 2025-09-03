@@ -9,7 +9,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import moment from 'moment';
-import { Between, In, MoreThan, Repository } from 'typeorm';
+import { Between, In, MoreThan, Not, Repository } from 'typeorm';
 import {
   FinishQuestQueryDto,
   NewbieRewardDto,
@@ -42,6 +42,43 @@ export class PlayerQuestService {
       weekly: quests
         .filter((pq) => pq.quest.frequency === QuestFrequency.WEEKLY)
         .map((pq) => this.mapQuest(pq)),
+    };
+  }
+
+  async getPlayerQuestsByFrequency(userId: string, query: PlayerQuestQueryDto) {
+    const { page = 1, limit = 50, sort_by = 'start_at', order = 'ASC' } = query;
+
+    const quests = await this.playerQuestRepo.find({
+      where: {
+        user: { id: userId },
+        quest: {
+          type: Not(
+            In([QuestType.NEWBIE_LOGIN, QuestType.NEWBIE_LOGIN_SPECIAL]),
+          ),
+        },
+      },
+      relations: ['quest', 'quest.reward', 'quest.reward.items'],
+      take: limit,
+      skip: (page - 1) * limit,
+      order: { [sort_by]: order },
+    });
+
+    const groupByFrequency = (list: typeof quests) =>
+      list.reduce(
+        (acc, pq) => {
+          const freq = pq.quest.frequency;
+          if (!acc[freq]) acc[freq] = [];
+          acc[freq].push(this.mapQuest(pq));
+          return acc;
+        },
+        {} as Record<string, ReturnType<typeof this.mapQuest>[]>,
+      );
+
+    const grouped = groupByFrequency(quests);
+
+    return {
+      daily: grouped[QuestFrequency.DAILY] ?? [],
+      weekly: grouped[QuestFrequency.WEEKLY] ?? [],
     };
   }
 
@@ -104,7 +141,7 @@ export class PlayerQuestService {
       description: quest.type,
       quest_type: quest?.type,
       is_claimed: entity.is_claimed,
-      rewards: quest.reward.items,
+      rewards: quest.reward?.items,
       is_available: nextQuest ? nextQuest.id === entity.id : false,
     };
   }
@@ -113,9 +150,6 @@ export class PlayerQuestService {
     const quests = await this.playerQuestRepo.find({
       where: {
         user: { id: userId },
-        quest: {
-          type: In([QuestType.NEWBIE_LOGIN, QuestType.NEWBIE_LOGIN_SPECIAL]),
-        },
       },
       relations: ['quest', 'quest.reward', 'quest.reward.items'],
     });
@@ -147,11 +181,13 @@ export class PlayerQuestService {
     return {
       id: pq.quest.id,
       name: pq.quest.name,
+      description: pq.quest.description,
       frequency: pq.quest.frequency,
       progress: pq.progress,
       total_progress: pq.quest.total_progress,
       is_completed: pq.is_completed,
       is_claimed: pq.is_claimed,
+      rewards: pq.quest?.reward?.items
     };
   }
 
@@ -178,6 +214,30 @@ export class PlayerQuestService {
     normalDailies.forEach((quest, idx) => {
       const startAt = firstLoginDay.clone().add(idx, 'days').toDate();
       const endAt = firstLoginDay.clone().add(9, 'days').endOf('day').toDate();
+
+      toCreate.push(
+        this.playerQuestRepo.create({
+          user: { id: userId },
+          quest,
+          progress: 0,
+          start_at: startAt,
+          end_at: endAt,
+        }),
+      );
+    });
+
+    const others = missingQuests.filter(
+      (q) =>
+        q.type !== QuestType.NEWBIE_LOGIN &&
+        q.type !== QuestType.NEWBIE_LOGIN_SPECIAL,
+    );
+
+    others.forEach((quest) => {
+      const startAt = firstLoginDay.clone().toDate();
+      const endAt =
+        quest.frequency === QuestFrequency.DAILY
+          ? firstLoginDay.clone().endOf('day').toDate()
+          : firstLoginDay.clone().endOf('week').toDate();
 
       toCreate.push(
         this.playerQuestRepo.create({
@@ -224,7 +284,8 @@ export class PlayerQuestService {
       existingPlayerQuests.map((pq) => pq.quest.id),
     );
 
-    return allQuests.filter((q) => !existingQuestIds.has(q.id));
+    const missing = allQuests.filter((q) => !existingQuestIds.has(q.id));
+    return missing;
   }
 
   async finishQuest(

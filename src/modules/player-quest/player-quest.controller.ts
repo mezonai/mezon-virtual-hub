@@ -48,18 +48,18 @@ export class PlayerQuestController {
     return this.playerQuestService.getPlayerQuests(user.id);
   }
 
+  @Get('get-quests-frequency')
+  @ApiOperation({ summary: 'get Player Quests By Frequency' })
+  async getPlayerQuestsByFrequency(@Query() query: PlayerQuestQueryDto): Promise<PlayerQuestsResponseDto> {
+    const user = this.cls.get<UserEntity>(USER_TOKEN);
+    return this.playerQuestService.getPlayerQuestsByFrequency(user.id, query);
+  }
+
   @Get('newbie-login')
   @ApiOperation({ summary: 'Get player quests by login' })
   async getLoginReward(@Query() query: PlayerQuestQueryDto) {
     const user = this.cls.get<UserEntity>(USER_TOKEN);
     return this.playerQuestService.getNewbieLoginQuests(user.id, query);
-  }
-
-  @Post('init-login-quest')
-  @ApiOperation({ summary: 'Init login quest for player' })
-  async initLoginQuest(@Query() query: FinishQuestQueryDto) {
-    const user = this.cls.get<UserEntity>(USER_TOKEN);
-    return this.playerQuestService.initQuest(user.id, query);
   }
 
   @Put(':player_quest_id/finish-quest')

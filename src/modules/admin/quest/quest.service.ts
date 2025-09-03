@@ -18,7 +18,7 @@ export class QuestManagementService extends BaseService<QuestEntity> {
   }
 
   async getAll() {
-    const quests = await this.questRepo.find();
+    const quests = await this.questRepo.find( {relations: ['reward', 'reward.items']});
     return quests;
   }
 
@@ -39,6 +39,10 @@ export class QuestManagementService extends BaseService<QuestEntity> {
 
   async updateQuestManagement(id: string, payload: CreateQuestManagementDto) {
     const quest = await this.findOneNotDeletedById(id);
+    const reward = await this.rewardRepo.findOne({where: {type: payload.reward_type} })
+    if(reward){
+      quest.reward = reward;
+    }
     Object.assign(quest, payload);
 
     const updateQuestManagement = await this.save(quest);
