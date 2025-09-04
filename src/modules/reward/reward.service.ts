@@ -20,7 +20,9 @@ export class RewardService extends BaseService<RewardEntity> {
   }
 
   async getAll() {
-    const rewards = await this.rewardRepo.find();
+    const rewards = await this.rewardRepo.find({
+      relations: ['items', 'items.pet', 'items.food', 'items.item'],
+    });
     return rewards;
   }
 

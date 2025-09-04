@@ -71,7 +71,7 @@ export class PlayerQuestController {
     return this.playerQuestService.finishQuest(user, player_quest_id);
   }
 
-  @Patch('update-quest-player')
+  @Put('update-quest-player')
   @RequireAdmin()
   @ApiOperation({ summary: 'Update quest player' })
   async updateQuest(@Body() dto: UpdatePlayerQuestDto) {

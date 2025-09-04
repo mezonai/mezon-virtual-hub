@@ -15,40 +15,30 @@ import { PetPlayersEntity } from '../entity/pet-players.entity';
 import { PetSkillsResponseDto } from '@modules/pet-skills/dto/pet-skills.dto';
 import { getExpForNextLevel } from '@libs/utils';
 
-export class SpawnPetPlayersDto {
-  @ApiProperty()
+export class SpawnPetPlayersDto extends PickType(PetPlayersEntity, [
+  'room_code',
+]) {
+  @ApiPropertyOptional()
   @IsString()
+  @IsOptional()
   @Transform(({ value }) => (typeof value === 'string' ? value?.trim() : value))
-  species: string;
+  species?: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'Rarity of the animal',
     enum: AnimalRarity,
   })
   @IsEnum(AnimalRarity)
-  rarity: AnimalRarity = AnimalRarity.COMMON;
+  @IsOptional()
+  rarity?: AnimalRarity = AnimalRarity.COMMON;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'Type of the pet.',
     enum: PetType,
   })
   @IsEnum(PetType)
-  type: PetType;
-
-  @ApiProperty({
-    description: 'Map of the pet.',
-    enum: MapKey,
-  })
-  @IsEnum(MapKey)
-  map: MapKey;
-
-  @ApiPropertyOptional({
-    description: 'Sub map of the pet.',
-    enum: SubMap,
-  })
   @IsOptional()
-  @IsEnum(SubMap)
-  sub_map?: SubMap;
+  type?: PetType;
 
   @ApiProperty({
     description: 'Quantity pet to spawn',
@@ -60,6 +50,16 @@ export class SpawnPetPlayersDto {
   @IsOptional()
   @Type(() => Number)
   quantity: number = 1;
+
+  @ApiPropertyOptional({ description: 'ID of User' })
+  @IsUUID()
+  @IsOptional()
+  user_id?: string;
+
+  @ApiPropertyOptional({ description: 'ID of Pet' })
+  @IsUUID()
+  @IsOptional()
+  pet_id?: string;
 }
 
 export class UpdatePetPlayersDto {

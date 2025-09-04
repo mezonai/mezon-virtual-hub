@@ -137,7 +137,5 @@ export class NewbieRewardDto {
   quest_type: QuestType;
   is_claimed: boolean;
   is_available: boolean;
-
-  @Type()
   rewards: RewardItemEntity[];
 }

@@ -24,10 +24,12 @@ export class CreateRewardAndRewardItemTable1756201000037
         "reward_id" uuid,
         "item_id" uuid,
         "food_id" uuid,
+        "pet_id" uuid,
         CONSTRAINT "PK_reward_items_id" PRIMARY KEY ("id"),
         CONSTRAINT "FK_reward_items_reward_id" FOREIGN KEY ("reward_id") REFERENCES "rewards"("id") ON DELETE CASCADE,
         CONSTRAINT "FK_reward_items_item_id" FOREIGN KEY ("item_id") REFERENCES "item"("id") ON DELETE NO ACTION,
-        CONSTRAINT "FK_reward_items_food_id" FOREIGN KEY ("food_id") REFERENCES "food"("id") ON DELETE NO ACTION
+        CONSTRAINT "FK_reward_items_food_id" FOREIGN KEY ("food_id") REFERENCES "food"("id") ON DELETE NO ACTION,
+        CONSTRAINT "FK_reward_items_pet_id" FOREIGN KEY ("pet_id") REFERENCES "pets"("id") ON DELETE NO ACTION
       )`,
     );
 
@@ -37,6 +39,9 @@ export class CreateRewardAndRewardItemTable1756201000037
     await queryRunner.query(
       `ALTER TABLE "reward_items" ADD CONSTRAINT "UQ_reward_items_reward_id_item_id" UNIQUE ("reward_id", "item_id")`,
     );
+    await queryRunner.query(
+      `ALTER TABLE "reward_items" ADD CONSTRAINT "UQ_reward_items_reward_id_pet_id" UNIQUE ("reward_id", "pet_id")`,
+    );
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
@@ -45,6 +50,12 @@ export class CreateRewardAndRewardItemTable1756201000037
     );
     await queryRunner.query(
       `ALTER TABLE "reward_items" DROP CONSTRAINT "UQ_reward_items_reward_id_food_id"`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "reward_items" DROP CONSTRAINT "UQ_reward_items_reward_id_pet_id"`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "reward_items" DROP CONSTRAINT "FK_reward_items_pet_id"`,
     );
     await queryRunner.query(
       `ALTER TABLE "reward_items" DROP CONSTRAINT "FK_reward_items_food_id"`,

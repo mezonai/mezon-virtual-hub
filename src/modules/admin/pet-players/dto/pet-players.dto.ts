@@ -3,7 +3,12 @@ import { getExpForNextLevel } from '@libs/utils';
 import { UserSummaryDto } from '@modules/admin/users/dto/user-managment.dto';
 import { PetPlayersEntity } from '@modules/pet-players/entity/pet-players.entity';
 import { PetsDtoResponse } from '@modules/pets/dto/pets.dto';
-import { ApiProperty, ApiPropertyOptional, OmitType, PickType } from '@nestjs/swagger';
+import {
+  ApiProperty,
+  ApiPropertyOptional,
+  OmitType,
+  PickType,
+} from '@nestjs/swagger';
 import { QueryParamsDto } from '@types';
 import { Exclude, Expose, Transform, Type } from 'class-transformer';
 import {
@@ -12,27 +17,33 @@ import {
   IsNumber,
   IsOptional,
   IsString,
+  IsUUID,
 } from 'class-validator';
 
-export class SpawnPetPlayersDto extends PickType(PetPlayersEntity, ['room_code']) {
-  @ApiProperty()
+export class SpawnPetPlayersDto extends PickType(PetPlayersEntity, [
+  'room_code',
+]) {
+  @ApiPropertyOptional()
   @IsString()
+  @IsOptional()
   @Transform(({ value }) => (typeof value === 'string' ? value?.trim() : value))
-  species: string;
+  species?: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'Rarity of the animal',
     enum: AnimalRarity,
   })
   @IsEnum(AnimalRarity)
-  rarity: AnimalRarity = AnimalRarity.COMMON;
+  @IsOptional()
+  rarity?: AnimalRarity = AnimalRarity.COMMON;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'Type of the pet.',
     enum: PetType,
   })
   @IsEnum(PetType)
-  type: PetType;
+  @IsOptional()
+  type?: PetType;
 
   @ApiProperty({
     description: 'Quantity pet to spawn',
@@ -44,6 +55,16 @@ export class SpawnPetPlayersDto extends PickType(PetPlayersEntity, ['room_code']
   @IsOptional()
   @Type(() => Number)
   quantity: number = 1;
+
+  @ApiPropertyOptional({ description: 'ID of User' })
+  @IsUUID()
+  @IsOptional()
+  user_id?: string;
+
+  @ApiPropertyOptional({ description: 'ID of Pet' })
+  @IsUUID()
+  @IsOptional()
+  pet_id?: string;
 }
 
 @Exclude()
@@ -147,5 +168,5 @@ export class UpdatePetPlayersDto extends OmitType(PetPlayersInfoDto, [
   'skill_slot_4',
   'pet',
   'max_exp',
-  'id'
-]) { }
+  'id',
+]) {}
