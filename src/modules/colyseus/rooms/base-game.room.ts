@@ -30,6 +30,7 @@ import { UserService } from '@modules/user/user.service';
 import { UserWithPetPlayers } from '@modules/user/dto/user.dto';
 import { plainToInstance } from 'class-transformer';
 import { MessageTypes } from '../MessageTypes';
+import { PlayerSessionManager } from '../player/PlayerSessionManager';
 
 export class Item extends Schema {
   @type('number') x: number = 0;
@@ -149,6 +150,7 @@ export class BaseGameRoom extends Room<RoomState> {
 
     console.log(`User ${user.username} is allowed in ${this.roomId}`);
     client.userData = userWithPets;
+    PlayerSessionManager.register(client.userData.id, client);
     return true;
   }
 

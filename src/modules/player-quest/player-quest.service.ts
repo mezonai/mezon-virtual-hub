@@ -25,6 +25,7 @@ import {
   UpdatePlayerQuestDto,
 } from './dto/player-quest.dto';
 import { PlayerQuestEntity } from './entity/player-quest.entity';
+import { PlayerQuestProgressService } from './player-quest-progress.service';
 
 @Injectable()
 export class PlayerQuestService {
@@ -34,6 +35,7 @@ export class PlayerQuestService {
     @InjectRepository(QuestEntity)
     private questRepo: Repository<QuestEntity>,
     private inventoryService: InventoryService,
+    private playerQuestProgressService: PlayerQuestProgressService
   ) {}
 
   async getPlayerQuests(userId: string) {
@@ -97,7 +99,9 @@ export class PlayerQuestService {
       );
 
     const grouped = groupByFrequency(quests);
-
+    if (quests.some(pq => pq.is_completed && !pq.is_claimed)) {
+      this.playerQuestProgressService.notifyHasUnclaimedQuests(userId);
+    }
     return {
       daily: grouped[QuestFrequency.DAILY] ?? [],
       weekly: grouped[QuestFrequency.WEEKLY] ?? [],

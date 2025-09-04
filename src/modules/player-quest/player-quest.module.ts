@@ -10,6 +10,8 @@ import { PlayerQuestEntity } from './entity/player-quest.entity';
 import { PlayerQuestController } from './player-quest.controller';
 import { PlayerQuestService } from './player-quest.service';
 import { QuestEntity } from '@modules/quest/entity/quest.entity';
+import { QuestListener } from './events/quest.listener';
+import { PlayerQuestProgressService } from './player-quest-progress.service';
 
 @Module({
   imports: [
@@ -20,7 +22,7 @@ import { QuestEntity } from '@modules/quest/entity/quest.entity';
     InventoryModule,
   ],
   controllers: [PlayerQuestController],
-  providers: [PlayerQuestService],
-  exports: [PlayerQuestService],
+  providers: [PlayerQuestService, QuestListener, PlayerQuestProgressService],
+  exports: [PlayerQuestService, PlayerQuestProgressService],
 })
 export class PlayerQuestModule {}

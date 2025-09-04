@@ -139,8 +139,13 @@ export enum TransactionCurrency {
 export enum QuestType {
   NEWBIE_LOGIN = 'newbie_login',
   NEWBIE_LOGIN_SPECIAL = 'newbie_login_special',
-  QUEST_DAILY = 'quest_daily',
-  QUEST_WEEKLY = 'quest_weekly',
+  VISIT_OFFICE = 'visit_office',
+  SPIN_LUCKY_WHEEL = 'spin_lucky_wheel',
+  BUY_FOOD = 'buy_food', 
+  CATCH_PETS = 'catch_pet',
+  PLAY_RPS = 'play_rps',
+  PET_BATTLE = 'pet_battle',
+  LOGIN_DAYS = 'login_days'
 }
 
 export enum RewardType {
