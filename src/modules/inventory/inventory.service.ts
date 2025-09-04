@@ -23,6 +23,8 @@ import { FoodInventoryResDto, ItemInventoryResDto } from './dto/inventory.dto';
 import { RewardDataType, AwardResponseDto } from '@modules/game/dto/game.dto';
 import { RewardItemEntity } from '@modules/reward-item/entity/reward-item.entity';
 import { Logger } from '@libs/logger';
+import { PetPlayersService } from '@modules/pet-players/pet-players.service';
+import { AdminPetPlayersService } from '@modules/admin/pet-players/pet-players.service';
 
 @Injectable()
 export class InventoryService extends BaseService<Inventory> {
@@ -36,6 +38,7 @@ export class InventoryService extends BaseService<Inventory> {
     @InjectRepository(ItemEntity)
     private readonly itemRepository: Repository<ItemEntity>,
     private readonly foodService: FoodService,
+    private readonly petPlayerService: PetPlayersService,
   ) {
     super(inventoryRepository, Inventory.name);
   }
@@ -251,7 +254,7 @@ export class InventoryService extends BaseService<Inventory> {
         case RewardItemType.ITEM: {
           if (!reward.item_id) {
             this.logger.warn(
-              `Reward ITEM missing item_id for user=${user.id}, rewardId=${reward.id}`,
+              `Reward ITEM missing item_id for user=${user.username}, rewardId=${reward.id}`,
             );
             break;
           }
@@ -262,7 +265,7 @@ export class InventoryService extends BaseService<Inventory> {
 
           if (!item) {
             this.logger.warn(
-              `Item not found: item_id=${reward.item_id}, user=${user.id}`,
+              `Item not found: item_id=${reward.item_id}, user=${user.username}`,
             );
             break;
           }
@@ -284,7 +287,7 @@ export class InventoryService extends BaseService<Inventory> {
         case RewardItemType.FOOD: {
           if (!reward.food_id) {
             this.logger.warn(
-              `Reward FOOD missing food_id for user=${user.id}, rewardId=${reward.id}`,
+              `Reward FOOD missing food_id for user=${user.username}, rewardId=${reward.id}`,
             );
             break;
           }
@@ -292,7 +295,28 @@ export class InventoryService extends BaseService<Inventory> {
           const addedFood = await this.addFoodToInventory(user, reward.food_id);
           if (!addedFood) {
             this.logger.warn(
-              `Food not found: food_id=${reward.food_id}, user=${user.id}`,
+              `Food not found: food_id=${reward.food_id}, user=${user.username}`,
+            );
+          }
+          break;
+        }
+
+        case RewardItemType.PET: {
+          if (!reward.pet_id) {
+            this.logger.warn(
+              `Reward PET missing pet_id for user=${user.username}, rewardId=${reward.id}`,
+            );
+            break;
+          }
+
+          const pet = await this.petPlayerService.createPetPlayers({
+            user_id: user.id,
+            pet_id: reward.pet_id,
+          });
+
+          if (!pet) {
+            this.logger.warn(
+              `Pet not found: pet_id=${reward.pet_id}, user=${user.username}`,
             );
           }
           break;
@@ -300,7 +324,7 @@ export class InventoryService extends BaseService<Inventory> {
 
         default: {
           this.logger.warn(
-            `Unknown reward type=${reward.type}, user=${user.id}, rewardId=${reward.id}`,
+            `Unknown reward type=${reward.type}, user=${user.username}, rewardId=${reward.id}`,
           );
           break;
         }

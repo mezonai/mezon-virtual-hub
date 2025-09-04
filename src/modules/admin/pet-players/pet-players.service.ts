@@ -149,54 +149,7 @@ export class AdminPetPlayersService extends BaseService<PetPlayersEntity> {
   }
 
   async createPetPlayers(payload: Partial<SpawnPetPlayersDto>, quantity = 1) {
-    const pet = await this.petsRepository.findOne({
-      where: {
-        species: payload.species,
-        rarity: payload.rarity,
-        type: payload.type,
-      },
-      relations: ['skill_usages', 'skill_usages.skill'],
-    });
-
-    if (!pet) {
-      throw new NotFoundException(
-        `Pet ${payload.species} with Rarity: ${payload.rarity} and Type ${payload.type} not found`,
-      );
-    }
-
-    if (!pet.skill_usages?.length) {
-      throw new BadRequestException(
-        `Pet ${payload.species} did not set up any skills`,
-      );
-    }
-
-    const skill1 = pet.skill_usages.find(
-      ({ skill_index }) => skill_index === 1,
-    );
-    const skill2 = pet.skill_usages.find(
-      ({ skill_index }) => skill_index === 2,
-    );
-
-    const petPlayers: PetPlayersEntity[] = [];
-
-    for (let i = 0; i < quantity; i++) {
-      const newPetPlayer = this.petPlayersRepository.create({
-        pet,
-        name: pet.species,
-        skill_slot_1: { skill_code: skill1?.skill.skill_code },
-        skill_slot_2: { skill_code: skill2?.skill.skill_code },
-        equipped_skill_codes: [
-          skill1?.skill.skill_code ?? null,
-          skill2?.skill.skill_code ?? null,
-        ],
-        individual_value: this.petPlayersService.generateIndividualValue(),
-        room_code: payload.room_code,
-      });
-      this.petPlayersService.recalculateStats(newPetPlayer);
-      petPlayers.push(newPetPlayer);
-    }
-
-    return await this.petPlayersRepository.save(petPlayers);
+    return await this.petPlayersService.createPetPlayers(payload, quantity);
   }
 
   async updatePetPlayers(

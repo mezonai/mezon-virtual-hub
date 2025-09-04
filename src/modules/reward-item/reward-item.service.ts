@@ -12,6 +12,7 @@ import { FoodEntity } from '@modules/food/entity/food.entity';
 import { BaseService } from '@libs/base/base.service';
 import { RewardItemDto, UpdateRewardItemDto } from './dto/reward-item.dto';
 import { RewardItemType } from '@enum';
+import { PetsEntity } from '@modules/pets/entity/pets.entity';
 
 @Injectable()
 export class RewardItemService extends BaseService<RewardItemEntity> {
@@ -27,6 +28,9 @@ export class RewardItemService extends BaseService<RewardItemEntity> {
 
     @InjectRepository(FoodEntity)
     private readonly foodRepo: Repository<FoodEntity>,
+
+    @InjectRepository(PetsEntity)
+    private readonly petRepo: Repository<PetsEntity>,
   ) {
     super(rewardItemRepo, RewardItemEntity.name);
   }
@@ -132,6 +136,28 @@ export class RewardItemService extends BaseService<RewardItemEntity> {
         );
       }
 
+      case RewardItemType.PET: {
+        if (!dto.pet_rarity || !dto.pet_species || !dto.pet_type) {
+          throw new BadRequestException(
+            'Rarity, species and pet_type are required when type is PET',
+          );
+        }
+        const pet = await this.petRepo.findOne({
+          where: {
+            rarity: dto.pet_rarity,
+            species: dto.pet_species,
+            type: dto.pet_type,
+          },
+        });
+        if (!pet) throw new NotFoundException('Pet not found');
+
+        return this.upsertRewardItem(
+          { pet: { id: pet.id }, reward: { id: reward.id } },
+          { reward, type: dto.type, pet },
+          dto.quantity,
+        );
+      }
+
       case RewardItemType.DIAMOND:
       case RewardItemType.GOLD: {
         return this.upsertRewardItem(
@@ -152,7 +178,7 @@ export class RewardItemService extends BaseService<RewardItemEntity> {
   ): Promise<RewardItemEntity> {
     const rewardItem = await this.rewardItemRepo.findOne({
       where: { id },
-      relations: ['reward', 'item', 'food'],
+      relations: ['reward', 'item', 'food', 'pet'],
     });
     if (!rewardItem) throw new NotFoundException('Reward Item not found');
 
@@ -167,11 +193,14 @@ export class RewardItemService extends BaseService<RewardItemEntity> {
           reward: { id: reward.id },
           food: { id: rewardItem.food?.id },
           item: { id: rewardItem.item?.id },
+          pet: { id: rewardItem.pet?.id },
           type: rewardItem.type,
         },
       });
       if (existed_reward_item)
-        throw new NotFoundException(`Reward item with type: ${rewardItem.type} of Reward: ${reward.type} is already existed!`);
+        throw new NotFoundException(
+          `Reward item with type: ${rewardItem.type} of Reward: ${reward.type} is already existed!`,
+        );
       rewardItem.reward = reward;
     }
     rewardItem.quantity = payload.quantity;

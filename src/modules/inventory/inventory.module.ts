@@ -10,6 +10,7 @@ import { InventoryService } from './inventory.service';
 import { FoodModule } from '@modules/food/food.module';
 import { FoodEntity } from '@modules/food/entity/food.entity';
 import { UserModule } from '@modules/user/user.module';
+import { PetPlayersModule } from '@modules/pet-players/pet-players.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { UserModule } from '@modules/user/user.module';
     ItemModule,
     FoodModule,
     UserModule,
+    PetPlayersModule,
   ],
   providers: [InventoryService],
   controllers: [InventoryController],

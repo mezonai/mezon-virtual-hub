@@ -1,12 +1,13 @@
 // dto/quest-response.dto.ts
-import { RewardItemType } from '@enum';
-import { ApiProperty } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
+import { AnimalRarity, PetType, RewardItemType } from '@enum';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Transform, Type } from 'class-transformer';
 import {
   IsArray,
   IsEnum,
   IsNumber,
   IsOptional,
+  IsString,
   IsUUID,
   ValidateNested,
 } from 'class-validator';
@@ -24,7 +25,7 @@ export class RewardItemDto {
   @IsEnum(RewardItemType)
   type: RewardItemType;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'Quantity reward',
     type: Number,
     required: false,
@@ -35,7 +36,7 @@ export class RewardItemDto {
   @Type(() => Number)
   quantity: number = 1;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'Item Id',
     example: '550e8400-e29b-41d4-a716-446655440000',
     type: String,
@@ -45,7 +46,7 @@ export class RewardItemDto {
   @IsOptional()
   item_id?: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'Food Id',
     example: '550e8400-e29b-41d4-a716-446655440000',
     type: String,
@@ -54,6 +55,28 @@ export class RewardItemDto {
   @IsUUID()
   @IsOptional()
   food_id?: string;
+
+  @ApiPropertyOptional()
+  @IsString()
+  @IsOptional()
+  @Transform(({ value }) => (typeof value === 'string' ? value?.trim() : value))
+  pet_species?: string;
+
+  @ApiPropertyOptional({
+    description: 'Rarity of the animal',
+    enum: AnimalRarity,
+  })
+  @IsEnum(AnimalRarity)
+  @IsOptional()
+  pet_rarity?: AnimalRarity;
+
+  @ApiPropertyOptional({
+    description: 'Type of the pet.',
+    enum: PetType,
+  })
+  @IsEnum(PetType)
+  @IsOptional()
+  pet_type?: PetType;
 }
 
 export class UpdateRewardItemDto {
@@ -92,20 +115,28 @@ export class BulkRewardItemsDTO {
     example: [
       {
         reward_id: '550e8400-e29b-41d4-a716-446655440000',
-        type: 'ITEM',
+        type: 'item',
         quantity: 1,
         item_id: '660e8400-e29b-41d4-a716-446655440111',
       },
       {
         reward_id: '550e8400-e29b-41d4-a716-446655440000',
-        type: 'FOOD',
+        type: 'food',
         quantity: 1,
         food_id: '770e8400-e29b-41d4-a716-446655440222',
       },
       {
         reward_id: '550e8400-e29b-41d4-a716-446655440000',
-        type: 'GOLD',
+        type: 'gold',
+        quantity: 10,
+      },
+      {
+        reward_id: '550e8400-e29b-41d4-a716-446655440000',
+        type: 'pet',
         quantity: 1,
+        pet_species: 'Dragon',
+        pet_rarity: AnimalRarity.COMMON,
+        pet_type: PetType.DRAGON,
       },
     ],
   })

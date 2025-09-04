@@ -9,7 +9,15 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import moment from 'moment';
-import { Between, In, MoreThan, Not, Repository } from 'typeorm';
+import {
+  Between,
+  In,
+  IsNull,
+  LessThan,
+  MoreThan,
+  Not,
+  Repository,
+} from 'typeorm';
 import {
   FinishQuestQueryDto,
   NewbieRewardDto,
@@ -31,7 +39,14 @@ export class PlayerQuestService {
   async getPlayerQuests(userId: string) {
     const quests = await this.playerQuestRepo.find({
       where: { user: { id: userId } },
-      relations: { quest: true },
+      relations: [
+        'quest',
+        'quest.reward',
+        'quest.reward.items',
+        'quest.reward.items.pet',
+        'quest.reward.items.food',
+        'quest.reward.items.item',
+      ],
     });
 
     return {
@@ -57,7 +72,14 @@ export class PlayerQuestService {
           ),
         },
       },
-      relations: ['quest', 'quest.reward', 'quest.reward.items'],
+      relations: [
+        'quest',
+        'quest.reward',
+        'quest.reward.items',
+        'quest.reward.items.pet',
+        'quest.reward.items.food',
+        'quest.reward.items.item',
+      ],
       take: limit,
       skip: (page - 1) * limit,
       order: { [sort_by]: order },
@@ -98,7 +120,14 @@ export class PlayerQuestService {
             type: In([QuestType.NEWBIE_LOGIN, QuestType.NEWBIE_LOGIN_SPECIAL]),
           },
         },
-        relations: ['quest', 'quest.reward', 'quest.reward.items'],
+        relations: [
+          'quest',
+          'quest.reward',
+          'quest.reward.items',
+          'quest.reward.items.pet',
+          'quest.reward.items.food',
+          'quest.reward.items.item',
+        ],
         take: limit,
         skip: (page - 1) * limit,
         order: {
@@ -108,29 +137,45 @@ export class PlayerQuestService {
       this.getNextNewbiePlayerQuest(userId),
     ]);
 
-    return quests.map((q) => this.toQuestProgressDto(q, nextQuest));
+    return quests.map((q) =>
+      this.toQuestProgressDto(q, this.isQuestAvailable(q, nextQuest)),
+    );
   }
 
   async getNextNewbiePlayerQuest(userId: string) {
     const now = new Date();
+    const startOfDayUTC = moment.utc(now).startOf('day').toDate();
+    const endOfDayUTC = moment.utc(now).endOf('day').toDate();
 
     return await this.playerQuestRepo.findOne({
-      where: {
-        user: { id: userId },
-        quest: {
-          type: In([QuestType.NEWBIE_LOGIN, QuestType.NEWBIE_LOGIN_SPECIAL]),
+      where: [
+        {
+          user: { id: userId },
+          quest: {
+            type: In([QuestType.NEWBIE_LOGIN, QuestType.NEWBIE_LOGIN_SPECIAL]),
+          },
+          completed_at: IsNull(),
+          end_at: MoreThan(now),
+          start_at: LessThan(now),
         },
-        is_completed: false,
-        end_at: MoreThan(now),
-      },
+        {
+          user: { id: userId },
+          quest: {
+            type: In([QuestType.NEWBIE_LOGIN, QuestType.NEWBIE_LOGIN_SPECIAL]),
+          },
+          completed_at: Between(startOfDayUTC, endOfDayUTC),
+          end_at: MoreThan(now),
+          start_at: LessThan(now),
+        },
+      ],
       relations: ['quest'],
-      order: { quest: { name: 'ASC' } },
+      order: { start_at: 'ASC' },
     });
   }
 
   toQuestProgressDto(
     entity: PlayerQuestEntity,
-    nextQuest?: PlayerQuestEntity | null,
+    isAvailable: boolean,
   ): NewbieRewardDto {
     const { quest } = entity;
     return {
@@ -142,8 +187,17 @@ export class PlayerQuestService {
       quest_type: quest?.type,
       is_claimed: entity.is_claimed,
       rewards: quest.reward?.items,
-      is_available: nextQuest ? nextQuest.id === entity.id : false,
+      is_available: isAvailable,
     };
+  }
+
+  private isQuestAvailable(
+    entity: PlayerQuestEntity,
+    nextQuest?: PlayerQuestEntity | null,
+  ): boolean {
+    if (!nextQuest) return false;
+
+    return nextQuest.id === entity.id && !nextQuest.completed_at;
   }
 
   async deleteLoginQuests(userId: string) {
@@ -151,7 +205,6 @@ export class PlayerQuestService {
       where: {
         user: { id: userId },
       },
-      relations: ['quest', 'quest.reward', 'quest.reward.items'],
     });
 
     if (!quests.length) return [];
@@ -187,7 +240,7 @@ export class PlayerQuestService {
       total_progress: pq.quest.total_progress,
       is_completed: pq.is_completed,
       is_claimed: pq.is_claimed,
-      rewards: pq.quest?.reward?.items
+      rewards: pq.quest?.reward?.items,
     };
   }
 
@@ -330,30 +383,25 @@ export class PlayerQuestService {
       const startOfDayUTC = moment.utc(now).startOf('day').toDate();
       const endOfDayUTC = moment.utc(now).endOf('day').toDate();
 
-      const completedToday = await this.playerQuestRepo.findOne({
-        where: {
-          user: { id: user.id },
-          quest: {
-            type: In([QuestType.NEWBIE_LOGIN, QuestType.NEWBIE_LOGIN_SPECIAL]),
-          },
-          is_completed: true,
-          completed_at: Between(startOfDayUTC, endOfDayUTC),
-        },
-      });
-
       const availableQuest = await this.getNextNewbiePlayerQuest(user.id);
 
-      if (availableQuest && availableQuest.id !== playerQuest.id) {
+      if (!this.isQuestAvailable(playerQuest, availableQuest)) {
         throw new BadRequestException(
           'This login quest is not available. Please finish the next quest in order.',
         );
       }
 
-      if (completedToday) {
+      if (
+        availableQuest &&
+        availableQuest.completed_at &&
+        availableQuest.completed_at.getTime() >= startOfDayUTC.getTime() &&
+        availableQuest.completed_at.getTime() <= endOfDayUTC.getTime()
+      ) {
         throw new BadRequestException(
           'You already completed a login quest today.',
         );
       }
+
       playerQuest.is_completed = true;
       playerQuest.progress = playerQuest.quest.total_progress;
       playerQuest.completed_at = now;
@@ -362,6 +410,8 @@ export class PlayerQuestService {
         user,
         playerQuest.quest.reward.items,
       );
+
+      playerQuest.is_claimed = true;
     }
 
     return await this.playerQuestRepo.save(playerQuest);
