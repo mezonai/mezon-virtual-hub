@@ -1,6 +1,7 @@
 import {
   InventoryType,
   PurchaseMethod,
+  QuestType,
   RewardItemType,
   RewardSlotType,
 } from '@enum';
@@ -25,6 +26,7 @@ import { RewardItemEntity } from '@modules/reward-item/entity/reward-item.entity
 import { Logger } from '@libs/logger';
 import { PetPlayersService } from '@modules/pet-players/pet-players.service';
 import { AdminPetPlayersService } from '@modules/admin/pet-players/pet-players.service';
+import { QuestEventEmitter } from '@modules/player-quest/events/quest.events';
 
 @Injectable()
 export class InventoryService extends BaseService<Inventory> {
@@ -135,7 +137,7 @@ export class InventoryService extends BaseService<Inventory> {
 
       await this.addFoodToInventory(user, food.id, quantity);
       await this.userRepository.save(user);
-
+      QuestEventEmitter.emitProgress(user.id, QuestType.BUY_FOOD, 1);
       return {
         message: 'Food purchased successfully',
         user_balance: {

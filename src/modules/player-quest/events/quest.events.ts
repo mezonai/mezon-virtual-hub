@@ -15,12 +15,10 @@ export interface QuestCompletedPayload {
 
 export const QuestEventEmitter = {
   emitProgress(userId: string, questKey: QuestType, quantity = 1) {
-    console.log(`Quest ${questKey} của user ${userId} đang làm`);
     GlobalEventCommon.emit(EventTypes.QUEST, { userId, questKey, quantity });
   },
 
   emitCompleted(userId: string, questKey: QuestType) {
-    console.log(`Quest ${questKey} của user ${userId} đã hoàn thành`);
     GlobalEventCommon.emit(EventTypes.QUEST_COMPLETED, { userId, questKey });
   },
 };

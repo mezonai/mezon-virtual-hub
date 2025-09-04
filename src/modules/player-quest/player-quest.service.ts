@@ -25,7 +25,6 @@ import {
   UpdatePlayerQuestDto,
 } from './dto/player-quest.dto';
 import { PlayerQuestEntity } from './entity/player-quest.entity';
-import { PlayerQuestProgressService } from './player-quest-progress.service';
 
 @Injectable()
 export class PlayerQuestService {
@@ -35,7 +34,6 @@ export class PlayerQuestService {
     @InjectRepository(QuestEntity)
     private questRepo: Repository<QuestEntity>,
     private inventoryService: InventoryService,
-    private playerQuestProgressService: PlayerQuestProgressService
   ) {}
 
   async getPlayerQuests(userId: string) {
@@ -99,13 +97,32 @@ export class PlayerQuestService {
       );
 
     const grouped = groupByFrequency(quests);
-    if (quests.some(pq => pq.is_completed && !pq.is_claimed)) {
-      this.playerQuestProgressService.notifyHasUnclaimedQuests(userId);
-    }
     return {
-      daily: grouped[QuestFrequency.DAILY] ?? [],
-      weekly: grouped[QuestFrequency.WEEKLY] ?? [],
+      daily: this.sortQuestsByStatusAndId(grouped[QuestFrequency.DAILY] ?? []),
+      weekly: this.sortQuestsByStatusAndId(
+        grouped[QuestFrequency.WEEKLY] ?? [],
+      ),
     };
+  }
+
+  private sortQuestsByStatusAndId(quests: ReturnType<typeof this.mapQuest>[]) {
+    const getOrder = (q: (typeof quests)[number]) => {
+      if (q.is_claimed) return 2;
+      if (q.is_completed) return 0;
+      return 1;
+    };
+
+    return quests.sort((a, b) => {
+      const orderDiff = getOrder(a) - getOrder(b);
+      if (orderDiff !== 0) return orderDiff;
+
+      if (!a.is_completed && !a.is_claimed) {
+        const progressA = a.progress / a.total_progress;
+        const progressB = b.progress / b.total_progress;
+        if (progressA !== progressB) return progressB - progressA;
+      }
+      return a.id.localeCompare(b.id);
+    });
   }
 
   async getNewbieLoginQuests(userId: string, query: PlayerQuestQueryDto) {
@@ -289,23 +306,58 @@ export class PlayerQuestService {
         q.type !== QuestType.NEWBIE_LOGIN_SPECIAL,
     );
 
-    others.forEach((quest) => {
-      const startAt = firstLoginDay.clone().toDate();
-      const endAt =
-        quest.frequency === QuestFrequency.DAILY
-          ? firstLoginDay.clone().endOf('day').toDate()
-          : firstLoginDay.clone().endOf('week').toDate();
+    for (const quest of others) {
+      const existingPQ = await this.playerQuestRepo.findOne({
+        where: { user: { id: userId }, quest: { id: quest.id } },
+      });
 
-      toCreate.push(
-        this.playerQuestRepo.create({
-          user: { id: userId },
-          quest,
-          progress: 0,
-          start_at: startAt,
-          end_at: endAt,
-        }),
-      );
-    });
+      let startAt: Date;
+      let endAt: Date;
+      let progress = 0;
+
+      if (quest.frequency === QuestFrequency.DAILY) {
+        startAt = firstLoginDay.clone().startOf('day').toDate();
+        endAt = firstLoginDay.clone().endOf('day').toDate();
+      } else if (quest.frequency === QuestFrequency.WEEKLY) {
+        startAt = firstLoginDay.clone().startOf('week').toDate();
+        endAt = firstLoginDay.clone().endOf('week').toDate();
+      } else {
+        startAt = firstLoginDay.clone().toDate();
+        endAt = quest.duration_hours
+          ? firstLoginDay.clone().add(quest.duration_hours, 'hours').toDate()
+          : firstLoginDay.clone().endOf('day').toDate();
+      }
+
+      if (existingPQ) {
+        if (existingPQ.end_at && existingPQ.end_at > new Date()) {
+          progress = existingPQ.progress ?? 0;
+          startAt = existingPQ.start_at ?? startAt;
+          endAt = existingPQ.end_at ?? endAt;
+
+          existingPQ.progress = progress;
+          existingPQ.start_at = startAt;
+          existingPQ.end_at = endAt;
+
+          toCreate.push(existingPQ);
+          continue;
+        }
+
+        existingPQ.progress = 0;
+        existingPQ.start_at = startAt;
+        existingPQ.end_at = endAt;
+        toCreate.push(existingPQ);
+      } else {
+        toCreate.push(
+          this.playerQuestRepo.create({
+            user: { id: userId },
+            quest,
+            progress: 0,
+            start_at: startAt,
+            end_at: endAt,
+          }),
+        );
+      }
+    }
 
     if (lastDaily) {
       const startAt = firstLoginDay.clone().add(6, 'days').toDate();
