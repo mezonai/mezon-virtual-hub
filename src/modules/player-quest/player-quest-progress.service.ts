@@ -46,8 +46,8 @@ export class PlayerQuestProgressService {
       const isLoginDays = questType === QuestType.LOGIN_DAYS;
 
       if (
-        (isVisitOffice && this.canAddProgress(pq, now, label)) ||
-        (isLoginDays && this.canAddProgress(pq, now))
+        (isVisitOffice && this.checkLoginAndOfficeQuests(pq, now, label)) ||
+        (isLoginDays && this.checkLoginAndOfficeQuests(pq, now))
       ) {
         pq.progress_history.push({
           timestamp: now,
@@ -79,7 +79,7 @@ export class PlayerQuestProgressService {
     }
   }
 
-  canAddProgress(
+  checkLoginAndOfficeQuests(
     pq: PlayerQuestEntity,
     now: Date = new Date(),
     label?: string,
