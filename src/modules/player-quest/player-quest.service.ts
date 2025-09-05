@@ -215,7 +215,7 @@ export class PlayerQuestService extends BaseService<PlayerQuestEntity> {
 
   mapQuest(pq: PlayerQuestEntity): PlayerQuestFrequencyDto {
     return {
-      id: pq.quest.id,
+      id: pq.id,
       name: pq.quest.name,
       description: pq.quest.description,
       frequency: pq.quest.frequency,

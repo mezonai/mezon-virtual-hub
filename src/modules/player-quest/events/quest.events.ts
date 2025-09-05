@@ -6,6 +6,7 @@ export interface QuestProgressPayload {
   userId: string;
   questKey: string;
   quantity?: number;
+  label?: string;
 }
 
 export interface QuestCompletedPayload {
@@ -14,8 +15,8 @@ export interface QuestCompletedPayload {
 }
 
 export const QuestEventEmitter = {
-  emitProgress(userId: string, questKey: QuestType, quantity = 1) {
-    GlobalEventCommon.emit(EventTypes.QUEST, { userId, questKey, quantity });
+  emitProgress(userId: string, questKey: QuestType, quantity = 1, nameOffice?: string) {
+    GlobalEventCommon.emit(EventTypes.QUEST, { userId, questKey, quantity, label: nameOffice });
   },
 
   emitCompleted(userId: string, questKey: QuestType) {

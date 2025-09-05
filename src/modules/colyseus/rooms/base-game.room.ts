@@ -152,6 +152,9 @@ export class BaseGameRoom extends Room<RoomState> {
     console.log(`User ${user.username} is allowed in ${this.roomId}`);
     client.userData = userWithPets;
     PlayerSessionManager.register(client.userData.id, client);
+    if (client?.userData?.id) {
+      QuestEventEmitter.emitProgress(client.userData.id, QuestType.LOGIN_DAYS, 1);
+    }
     return true;
   }
 

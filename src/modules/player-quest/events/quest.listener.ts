@@ -14,6 +14,7 @@ export class QuestListener implements OnModuleInit {
         data.userId,
         data.questKey as any,
         data.quantity ?? 1,
+        data.label,
       ).catch(err => console.error('Quest progress update failed', err));
     });
 
