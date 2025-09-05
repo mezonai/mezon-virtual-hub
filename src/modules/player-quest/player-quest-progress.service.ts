@@ -46,19 +46,16 @@ export class PlayerQuestProgressService {
       const isLoginDays = questType === QuestType.LOGIN_DAYS;
 
       if (
-        (isVisitOffice && this.checkLoginAndOfficeQuests(pq, now, label)) ||
-        (isLoginDays && this.checkLoginAndOfficeQuests(pq, now))
+        (isVisitOffice && !this.checkLoginAndOfficeQuests(pq, now, label)) ||
+        (isLoginDays && !this.checkLoginAndOfficeQuests(pq, now))
       ) {
-        pq.progress_history.push({
-          timestamp: now,
-          ...(label ? { label } : {}),
-        });
-      } else if (!isVisitOffice && !isLoginDays) {
-         // Add `amount` entries
-        for (let i = 0; i < amount; i++) {
-          pq.progress_history.push({ timestamp: now });
-        }
+        continue;
       }
+
+      pq.progress_history.push({
+        timestamp: now,
+        ...(label ? { label } : {}),
+      });
 
       // Check completion based on history length
       if (pq.progress_history.length >= pq.quest.total_progress) {
