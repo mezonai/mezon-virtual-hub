@@ -21,44 +21,26 @@ export class PlayerQuestProgressService {
 
     const now = new Date();
     const questsToSave: PlayerQuestEntity[] = [];
-    const completedQuests: PlayerQuestEntity[] = [];
 
+    let hasCompleted = false;
     for (const pq of playerQuests) {
       if (pq.completed_at || this.isQuestExpired(pq)) continue;
-      pq.progress = Math.max(0, Math.min(pq.progress + amount, pq.quest.total_progress));
+      pq.progress = Math.max(0, Math.min(pq.progress + amount, pq.quest.total_progress),
+      );
       if (pq.progress >= pq.quest.total_progress) {
         pq.completed_at = now;
         pq.is_completed = true;
-        completedQuests.push(pq);
+        hasCompleted = true;
       }
       questsToSave.push(pq);
     }
-    if (questsToSave.length) await this.playerQuestRepo.save(questsToSave);
-    completedQuests.forEach((pq) =>
-      QuestEventEmitter.emitCompleted(userId, pq.quest.type),
-    );
-    await this.notifyHasUnclaimedQuests(userId);
+    if (questsToSave?.length > 0) await this.playerQuestRepo.save(questsToSave);
+    if (hasCompleted) await this.notifyHasUnclaimedQuests(userId);
   }
 
   public async notifyHasUnclaimedQuests(userId: string) {
-    const playerQuests = await this.playerQuestRepo.find({
-      where: {
-        user: { id: userId },
-        quest: {
-          type: Not(
-            In([QuestType.NEWBIE_LOGIN, QuestType.NEWBIE_LOGIN_SPECIAL]),
-          ),
-        },
-      },
-      relations: ['quest'],
-    });
-
-    const hasUnclaimed = playerQuests.some(
-      (pq) => pq.is_completed && !pq.is_claimed,
-    );
-    if (!hasUnclaimed) return;
     const client = PlayerSessionManager.getClient(userId);
-    if (client && hasUnclaimed) {
+    if (client) {
       client.send(MessageTypes.NOTIFY_MISSION, {
         sessionId: client.sessionId,
         message: 'Notify mission',
