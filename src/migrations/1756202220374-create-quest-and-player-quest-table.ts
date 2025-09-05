@@ -38,10 +38,10 @@ export class CreateQuestAndPlayerQuestTable1756202220374
       `ALTER TABLE "quests" ADD CONSTRAINT "FK_quests_reward_id" FOREIGN KEY ("reward_id") REFERENCES "rewards"("id") ON DELETE SET NULL ON UPDATE NO ACTION`,
     );
     await queryRunner.query(
-      `ALTER TABLE "player_quests" ADD CONSTRAINT "FK_player_quests_quest_id" FOREIGN KEY ("quest_id") REFERENCES "quests"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`,
+      `ALTER TABLE "player_quests" ADD CONSTRAINT "FK_player_quests_quest_id" FOREIGN KEY ("quest_id") REFERENCES "quests"("id") ON DELETE CASCADE ON UPDATE NO ACTION`,
     );
     await queryRunner.query(
-      `ALTER TABLE "player_quests" ADD CONSTRAINT "FK_player_quests_user_id" FOREIGN KEY ("user_id") REFERENCES "user"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`,
+      `ALTER TABLE "player_quests" ADD CONSTRAINT "FK_player_quests_user_id" FOREIGN KEY ("user_id") REFERENCES "user"("id") ON DELETE CASCADE ON UPDATE NO ACTION`,
     );
   }
 

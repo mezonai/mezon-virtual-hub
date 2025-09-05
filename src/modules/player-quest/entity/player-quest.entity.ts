@@ -19,7 +19,7 @@ export class PlayerQuestEntity {
   id: string;
 
   @ApiProperty({ type: () => QuestEntity })
-  @ManyToOne(() => QuestEntity, (quest) => quest.player_quests, { eager: true })
+@ManyToOne(() => QuestEntity, (quest) => quest.player_quests, { eager: true, onDelete: 'CASCADE' })
   @JoinColumn({
     name: 'quest_id',
     foreignKeyConstraintName: 'FK_player_quests_quest_id',
@@ -34,11 +34,15 @@ export class PlayerQuestEntity {
   })
   user: UserEntity;
 
-  @ApiProperty()
-  @Column({ type: 'int', default: 0 })
-  @IsInt()
-  @Min(0)
-  progress: number;
+  @ApiProperty({
+    description: 'Progress entries with timestamp and optional label',
+    example: [
+      { timestamp: '2025-09-05T10:00:00Z', label: 'collected_sword' },
+      { timestamp: '2025-09-05T12:00:00Z', label: 'defeated_dragon' },
+    ],
+  })
+  @Column({ type: 'json', default: () => "'[]'" })
+  progress_history: { timestamp: Date; label?: string }[];
 
   @ApiProperty()
   @Column({ type: 'boolean', default: false })
