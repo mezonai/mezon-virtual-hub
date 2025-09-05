@@ -21,6 +21,7 @@ import {
 import {
   FinishQuestQueryDto,
   NewbieRewardDto,
+  PlayerQuestFrequencyDto,
   PlayerQuestQueryDto,
   UpdatePlayerQuestDto,
 } from './dto/player-quest.dto';
@@ -133,7 +134,7 @@ export class PlayerQuestService {
       order = 'DESC',
     } = query;
 
-    const [quests, nextQuest] = await Promise.all([
+    const [quests] = await Promise.all([
       this.playerQuestRepo.find({
         where: {
           user: { id: userId },
@@ -155,50 +156,18 @@ export class PlayerQuestService {
           [sort_by]: order,
         },
       }),
-      this.getNextNewbiePlayerQuest(userId),
     ]);
 
-    return quests.map((q) =>
-      this.toQuestProgressDto(q, this.isQuestAvailable(q, nextQuest)),
-    );
+    return quests.map((q) => this.toQuestProgressDto(q));
   }
 
-  async getNextNewbiePlayerQuest(userId: string) {
+  toQuestProgressDto(entity: PlayerQuestEntity): NewbieRewardDto {
+    const { quest, start_at, end_at } = entity;
     const now = new Date();
-    const startOfDayUTC = moment.utc(now).startOf('day').toDate();
-    const endOfDayUTC = moment.utc(now).endOf('day').toDate();
 
-    return await this.playerQuestRepo.findOne({
-      where: [
-        {
-          user: { id: userId },
-          quest: {
-            type: In([QuestType.NEWBIE_LOGIN, QuestType.NEWBIE_LOGIN_SPECIAL]),
-          },
-          completed_at: IsNull(),
-          end_at: MoreThan(now),
-          start_at: LessThan(now),
-        },
-        {
-          user: { id: userId },
-          quest: {
-            type: In([QuestType.NEWBIE_LOGIN, QuestType.NEWBIE_LOGIN_SPECIAL]),
-          },
-          completed_at: Between(startOfDayUTC, endOfDayUTC),
-          end_at: MoreThan(now),
-          start_at: LessThan(now),
-        },
-      ],
-      relations: ['quest'],
-      order: { start_at: 'ASC' },
-    });
-  }
+    const isAvailable =
+      (!start_at || now >= start_at) && (!end_at || now <= end_at);
 
-  toQuestProgressDto(
-    entity: PlayerQuestEntity,
-    isAvailable: boolean,
-  ): NewbieRewardDto {
-    const { quest } = entity;
     return {
       id: entity.id,
       end_at: entity.end_at,
@@ -210,15 +179,6 @@ export class PlayerQuestService {
       rewards: quest.reward?.items,
       is_available: isAvailable,
     };
-  }
-
-  private isQuestAvailable(
-    entity: PlayerQuestEntity,
-    nextQuest?: PlayerQuestEntity | null,
-  ): boolean {
-    if (!nextQuest) return false;
-
-    return nextQuest.id === entity.id && !nextQuest.completed_at;
   }
 
   async deleteLoginQuests(userId: string) {
@@ -243,7 +203,6 @@ export class PlayerQuestService {
     });
 
     if (!playerQuest) throw new NotFoundException('Player quest not found');
-    if (dto.progress !== undefined) playerQuest.progress = dto.progress;
     if (dto.is_completed !== undefined) {
       playerQuest.is_completed = dto.is_completed;
     }
@@ -251,13 +210,13 @@ export class PlayerQuestService {
     return this.playerQuestRepo.save(playerQuest);
   }
 
-  mapQuest(pq: PlayerQuestEntity) {
+  mapQuest(pq: PlayerQuestEntity): PlayerQuestFrequencyDto {
     return {
       id: pq.quest.id,
       name: pq.quest.name,
       description: pq.quest.description,
       frequency: pq.quest.frequency,
-      progress: pq.progress,
+      progress: pq.progress_history.length,
       total_progress: pq.quest.total_progress,
       is_completed: pq.is_completed,
       is_claimed: pq.is_claimed,
@@ -293,7 +252,6 @@ export class PlayerQuestService {
         this.playerQuestRepo.create({
           user: { id: userId },
           quest,
-          progress: 0,
           start_at: startAt,
           end_at: endAt,
         }),
@@ -313,7 +271,6 @@ export class PlayerQuestService {
 
       let startAt: Date;
       let endAt: Date;
-      let progress = 0;
 
       if (quest.frequency === QuestFrequency.DAILY) {
         startAt = firstLoginDay.clone().startOf('day').toDate();
@@ -330,11 +287,9 @@ export class PlayerQuestService {
 
       if (existingPQ) {
         if (existingPQ.end_at && existingPQ.end_at > new Date()) {
-          progress = existingPQ.progress ?? 0;
           startAt = existingPQ.start_at ?? startAt;
           endAt = existingPQ.end_at ?? endAt;
 
-          existingPQ.progress = progress;
           existingPQ.start_at = startAt;
           existingPQ.end_at = endAt;
 
@@ -342,7 +297,6 @@ export class PlayerQuestService {
           continue;
         }
 
-        existingPQ.progress = 0;
         existingPQ.start_at = startAt;
         existingPQ.end_at = endAt;
         toCreate.push(existingPQ);
@@ -351,7 +305,6 @@ export class PlayerQuestService {
           this.playerQuestRepo.create({
             user: { id: userId },
             quest,
-            progress: 0,
             start_at: startAt,
             end_at: endAt,
           }),
@@ -367,7 +320,6 @@ export class PlayerQuestService {
         this.playerQuestRepo.create({
           user: { id: userId },
           quest: lastDaily,
-          progress: 0,
           start_at: startAt,
           end_at: endAt,
         }),
@@ -410,8 +362,12 @@ export class PlayerQuestService {
       throw new NotFoundException('Quest not found for player.');
     }
 
-    if (playerQuest.is_completed) {
-      throw new BadRequestException('Quest already completed.');
+    if (!playerQuest.is_completed) {
+      throw new BadRequestException('Quest not completed yet.');
+    }
+
+    if (playerQuest.is_claimed) {
+      throw new BadRequestException('Quest is claimed.');
     }
 
     const now = new Date();
@@ -431,44 +387,12 @@ export class PlayerQuestService {
       throw new BadRequestException('This quest has expired.');
     }
 
-    // Check newbie login daily rule
-    if (
-      playerQuest.quest.type === QuestType.NEWBIE_LOGIN ||
-      playerQuest.quest.type === QuestType.NEWBIE_LOGIN_SPECIAL
-    ) {
-      const startOfDayUTC = moment.utc(now).startOf('day').toDate();
-      const endOfDayUTC = moment.utc(now).endOf('day').toDate();
+    await this.inventoryService.processRewardItems(
+      user,
+      playerQuest.quest.reward.items,
+    );
 
-      const availableQuest = await this.getNextNewbiePlayerQuest(user.id);
-
-      if (!this.isQuestAvailable(playerQuest, availableQuest)) {
-        throw new BadRequestException(
-          'This login quest is not available. Please finish the next quest in order.',
-        );
-      }
-
-      if (
-        availableQuest &&
-        availableQuest.completed_at &&
-        availableQuest.completed_at.getTime() >= startOfDayUTC.getTime() &&
-        availableQuest.completed_at.getTime() <= endOfDayUTC.getTime()
-      ) {
-        throw new BadRequestException(
-          'You already completed a login quest today.',
-        );
-      }
-
-      playerQuest.is_completed = true;
-      playerQuest.progress = playerQuest.quest.total_progress;
-      playerQuest.completed_at = now;
-
-      await this.inventoryService.processRewardItems(
-        user,
-        playerQuest.quest.reward.items,
-      );
-
-      playerQuest.is_claimed = true;
-    }
+    playerQuest.is_claimed = true;
 
     return await this.playerQuestRepo.save(playerQuest);
   }

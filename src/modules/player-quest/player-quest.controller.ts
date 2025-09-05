@@ -43,14 +43,14 @@ export class PlayerQuestController {
     description: 'Get player quests grouped by daily and weekly',
     type: PlayerQuestsResponseDto,
   })
-  async getPlayerQuests(): Promise<PlayerQuestsResponseDto> {
+  async getPlayerQuests() {
     const user = this.cls.get<UserEntity>(USER_TOKEN);
     return this.playerQuestService.getPlayerQuests(user.id);
   }
 
   @Get('get-quests-frequency')
   @ApiOperation({ summary: 'get Player Quests By Frequency' })
-  async getPlayerQuestsByFrequency(@Query() query: PlayerQuestQueryDto): Promise<PlayerQuestsResponseDto> {
+  async getPlayerQuestsByFrequency(@Query() query: PlayerQuestQueryDto) {
     const user = this.cls.get<UserEntity>(USER_TOKEN);
     return this.playerQuestService.getPlayerQuestsByFrequency(user.id, query);
   }

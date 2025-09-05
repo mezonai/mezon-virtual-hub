@@ -42,12 +42,6 @@ export class UpdatePlayerQuestDto {
   @ApiProperty({ description: 'ID của PlayerQuest' })
   @IsUUID()
   quest_id: string;
-
-  @ApiProperty({ required: false })
-  @IsOptional()
-  @IsInt()
-  progress?: number;
-
   @ApiProperty({ required: false })
   @IsOptional()
   @IsBoolean()
@@ -137,5 +131,17 @@ export class NewbieRewardDto {
   quest_type: QuestType;
   is_claimed: boolean;
   is_available: boolean;
+  rewards: RewardItemEntity[];
+}
+
+export class PlayerQuestFrequencyDto {
+  id: string;
+  name: string;
+  description: string | undefined;
+  frequency: string;
+  progress: number;
+  total_progress: number;
+  is_completed: boolean;
+  is_claimed: boolean;
   rewards: RewardItemEntity[];
 }
