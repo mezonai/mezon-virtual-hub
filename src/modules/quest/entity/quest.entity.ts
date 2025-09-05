@@ -72,11 +72,6 @@ export class QuestEntity {
   @Type(() => Number)
   total_progress: number = 1;
 
-  @ApiProperty()
-  @Column({ type: 'boolean', default: true })
-  @IsOptional()
-  auto_renew: boolean;
-
   @OneToMany(() => PlayerQuestEntity, (pq) => pq.quest)
   player_quests: PlayerQuestEntity[] | null;
 }

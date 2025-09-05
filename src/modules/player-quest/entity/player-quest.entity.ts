@@ -19,7 +19,10 @@ export class PlayerQuestEntity {
   id: string;
 
   @ApiProperty({ type: () => QuestEntity })
-@ManyToOne(() => QuestEntity, (quest) => quest.player_quests, { eager: true, onDelete: 'CASCADE' })
+  @ManyToOne(() => QuestEntity, (quest) => quest.player_quests, {
+    eager: true,
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({
     name: 'quest_id',
     foreignKeyConstraintName: 'FK_player_quests_quest_id',

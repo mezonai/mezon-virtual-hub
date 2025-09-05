@@ -24,6 +24,8 @@ import {
 import { JwtPayload } from './dtos/response';
 import { OAuth2Service } from './oauth2.service';
 import { NEW_USER_GOLD_REWARD } from '@constant';
+import { QuestEventEmitter } from '@modules/player-quest/events/quest.events';
+import { QuestType } from '@enum';
 
 @Injectable()
 export class AuthService {
@@ -202,6 +204,7 @@ export class AuthService {
 
     if (user) {
       const tokens = await this.generateAccessAndRefreshTokens(user);
+      QuestEventEmitter.emitProgress(user.id, QuestType.NEWBIE_LOGIN);
       return tokens;
     }
 
@@ -214,6 +217,7 @@ export class AuthService {
     });
 
     const tokens = await this.generateAccessAndRefreshTokens(newUser);
+    QuestEventEmitter.emitProgress(newUser.id, QuestType.NEWBIE_LOGIN);
     return tokens;
   }
 }
