@@ -1,6 +1,6 @@
 import { configEnv } from '@config/env.config';
 import { NEW_USER_FOOD_REWARD_QUANTITY } from '@constant';
-import { FoodType, Gender, RewardSlotType } from '@enum';
+import { FoodType, Gender, QuestType, RewardSlotType } from '@enum';
 import { FoodEntity } from '@modules/food/entity/food.entity';
 import { FoodService } from '@modules/food/food.service';
 import { InventoryService } from '@modules/inventory/inventory.service';
@@ -12,7 +12,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { AwardResponseDto, RewardDataType } from './dto/game.dto';
 import { PlayerQuestService } from '@modules/player-quest/player-quest.service';
-
+import { QuestEventEmitter } from '@modules/player-quest/events/quest.events';
 @Injectable()
 export class GameService {
   private readonly itemPercent: number;
@@ -61,7 +61,7 @@ export class GameService {
     const rewards = await this.generateRandomRewards(availableItems);
 
     const { result, user_gold } = await this.processRewards(user, rewards);
-
+    QuestEventEmitter.emitProgress(user.id, QuestType.SPIN_LUCKY_WHEEL, 1);
     return { rewards: result, user_gold };
   }
 

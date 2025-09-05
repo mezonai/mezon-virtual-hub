@@ -2,10 +2,11 @@ import { Client } from "colyseus";
 import { BaseGameRoom, RoomState } from "./base-game.room";
 import { AuthenticatedClient, PetState, PlayerBattleInfo as PlayerBattleState, SkillState } from "@types";
 import { MessageTypes } from "../MessageTypes";
-import { EviromentType as EnvironmentType, PetType, SkillCode, SkillType } from "@enum";
+import { EviromentType as EnvironmentType, PetType, QuestType, SkillCode, SkillType } from "@enum";
 import { isAttackAction, PlayerAction } from "../battle/PlayerAction";
 import { SkillHandlerFactory } from "../battle/SkillHandlerFactory";
 import { BattlePetPlayersDto } from "@modules/pet-players/dto/pet-players.dto";
+import { QuestEventEmitter } from "@modules/player-quest/events/quest.events";
 
 enum BattleState {
     READY,     // Chờ cả 2 người chọn hành động
@@ -445,6 +446,8 @@ export class BattleRoom extends BaseGameRoom {
                 currentPets: result.winners,
                 isWinner: true,
             });
+            QuestEventEmitter.emitProgress(loserClient?.userData?.id, QuestType.PET_BATTLE, 1);
+            QuestEventEmitter.emitProgress(winnerClient?.userData?.id, QuestType.PET_BATTLE, 1);
 
         } catch (err) {
             this.sendMessageError();
