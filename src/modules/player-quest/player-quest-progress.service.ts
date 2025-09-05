@@ -5,11 +5,13 @@ import { QuestEventEmitter } from './events/quest.events';
 import { PlayerSessionManager } from '@modules/colyseus/player/PlayerSessionManager';
 import { InjectRepository } from '@nestjs/typeorm';
 import { MessageTypes } from '@modules/colyseus/MessageTypes';
+import { PlayerQuestService } from './player-quest.service';
+import { Inject } from '@nestjs/common';
 
 export class PlayerQuestProgressService {
   constructor(
-    @InjectRepository(PlayerQuestEntity)
-    private readonly playerQuestRepo: Repository<PlayerQuestEntity>,
+    @Inject()
+    private readonly playerQuestService: PlayerQuestService,
   ) {}
 
   async addProgress(
@@ -18,20 +20,24 @@ export class PlayerQuestProgressService {
     amount = 1,
     label?: string,
   ) {
-    const playerQuests = await this.playerQuestRepo.find({
+    const playerQuests = await this.playerQuestService.find({
       where: { user: { id: userId }, quest: { type: questType } },
       relations: ['quest'],
     });
+
     if (!playerQuests.length) return;
 
     const now = new Date();
     const questsToSave: PlayerQuestEntity[] = [];
 
+    if (this.playerQuestService.hasCompletedNewbieLoginToday(playerQuests)) {
+      return;
+    }
+
     let hasCompleted = false;
     for (const pq of playerQuests) {
-      if (pq.completed_at || this.isQuestExpired(pq)) continue;
+      if (pq.completed_at || this.isAvailableQuest(pq)) continue;
 
-      // Ensure progress_history is initialized
       if (!pq.progress_history) {
         pq.progress_history = [];
       }
@@ -55,7 +61,7 @@ export class PlayerQuestProgressService {
     }
 
     if (questsToSave.length) {
-      await this.playerQuestRepo.save(questsToSave);
+      await this.playerQuestService.saveAll(questsToSave);
     }
 
     if (hasCompleted) {
@@ -73,15 +79,20 @@ export class PlayerQuestProgressService {
     }
   }
 
-  private isQuestExpired(pq: PlayerQuestEntity): boolean {
+  private isAvailableQuest(pq: PlayerQuestEntity): boolean {
     if (!pq.start_at) return false;
     const now = new Date();
+    const startAt = new Date(pq.start_at);
+
+    if (startAt.getTime() > now.getTime()) {
+      return true;
+    }
 
     switch (pq.quest.frequency) {
       case QuestFrequency.DAILY: {
         const startOfDay = new Date(pq.start_at);
         startOfDay.setHours(0, 0, 0, 0);
-        const endOfDay = new Date(startOfDay);
+        const endOfDay = new Date(pq.end_at ?? startOfDay);
         endOfDay.setHours(23, 59, 59, 999);
         return now > endOfDay;
       }
