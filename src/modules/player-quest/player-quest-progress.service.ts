@@ -42,13 +42,20 @@ export class PlayerQuestProgressService {
         pq.progress_history = [];
       }
 
-      // Add `amount` entries
-      for (let i = 0; i < amount; i++) {
-        pq.progress_history.push({
-          timestamp: now,
-          ...(label ? { label } : {}),
-        });
+      const isVisitOffice = questType === QuestType.VISIT_OFFICE && label;
+      const isLoginDays = questType === QuestType.LOGIN_DAYS;
+
+      if (
+        (isVisitOffice && !this.checkLoginAndOfficeQuests(pq, now, label)) ||
+        (isLoginDays && !this.checkLoginAndOfficeQuests(pq, now))
+      ) {
+        continue;
       }
+
+      pq.progress_history.push({
+        timestamp: now,
+        ...(label ? { label } : {}),
+      });
 
       // Check completion based on history length
       if (pq.progress_history.length >= pq.quest.total_progress) {
@@ -67,6 +74,19 @@ export class PlayerQuestProgressService {
     if (hasCompleted) {
       await this.notifyHasUnclaimedQuests(userId);
     }
+  }
+
+  checkLoginAndOfficeQuests(
+    pq: PlayerQuestEntity,
+    now: Date = new Date(),
+    label?: string,
+  ) {
+    const today = now.toDateString();
+    return !pq.progress_history.some(
+      (p) =>
+        (!label || p.label === label) &&
+        new Date(p.timestamp).toDateString() === today,
+    );
   }
 
   public async notifyHasUnclaimedQuests(userId: string) {
