@@ -13,12 +13,6 @@ export class AwardResponseDto {
   type: RewardSlotType;
 
   @ApiPropertyOptional({
-    description: 'Amount of gold awarded (if applicable)',
-    example: 10,
-  })
-  amount?: number;
-
-  @ApiPropertyOptional({
     type: () => ItemDto,
     description: 'Item awarded (if applicable)',
   })

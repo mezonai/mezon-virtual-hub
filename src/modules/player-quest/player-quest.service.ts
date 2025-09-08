@@ -1,4 +1,5 @@
 import { QuestFrequency, QuestType } from '@enum';
+import { BaseService } from '@libs/base/base.service';
 import { InventoryService } from '@modules/inventory/inventory.service';
 import { QuestEntity } from '@modules/quest/entity/quest.entity';
 import { UserEntity } from '@modules/user/entity/user.entity';
@@ -10,13 +11,11 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import moment from 'moment';
 import {
-  Between,
   In,
-  IsNull,
-  LessThan,
+  LessThanOrEqual,
   MoreThan,
   Not,
-  Repository,
+  Repository
 } from 'typeorm';
 import {
   FinishQuestQueryDto,
@@ -26,7 +25,6 @@ import {
   UpdatePlayerQuestDto,
 } from './dto/player-quest.dto';
 import { PlayerQuestEntity } from './entity/player-quest.entity';
-import { BaseService } from '@libs/base/base.service';
 
 @Injectable()
 export class PlayerQuestService extends BaseService<PlayerQuestEntity> {
@@ -232,100 +230,65 @@ export class PlayerQuestService extends BaseService<PlayerQuestEntity> {
     { timezone = 'Asia/Ho_Chi_Minh' }: FinishQuestQueryDto,
   ): Promise<{ message?: string; has_unclaimed: boolean }> {
     const missingQuests = await this.findMissingQuestsForPlayer(userId);
-
-    if (!missingQuests.length) {
-      return {
-        message: 'No missing quests to initialize',
-        has_unclaimed: false,
-      };
-    }
-
     const firstLoginDay = moment.tz(timezone).startOf('day');
-    const toSave: PlayerQuestEntity[] = [];
-
-    // --- Normal daily newbie login quests ---
-    const normalDailies = missingQuests.filter(
-      (q) => q.type === QuestType.NEWBIE_LOGIN,
-    );
-
-    normalDailies.forEach((quest, idx) => {
-      const startAt = firstLoginDay.clone().add(idx, 'days').toDate();
-      const endAt = firstLoginDay.clone().add(9, 'days').endOf('day').toDate();
-
-      toSave.push(
-        this.playerQuestRepo.create({
-          user: { id: userId },
-          quest,
-          start_at: startAt,
-          end_at: endAt,
-        }),
-      );
-    });
-
-    const lastDaily = missingQuests.find(
-      (q) => q.type === QuestType.NEWBIE_LOGIN_SPECIAL,
-    );
-
-    if (lastDaily) {
-      const startAt = firstLoginDay.clone().add(6, 'days').toDate();
-      const endAt = firstLoginDay.clone().add(9, 'days').endOf('day').toDate();
-
-      toSave.push(
-        this.playerQuestRepo.create({
-          user: { id: userId },
-          quest: lastDaily,
-          start_at: startAt,
-          end_at: endAt,
-        }),
-      );
-    }
-
-    const others = missingQuests.filter(
-      (q) =>
-        q.type !== QuestType.NEWBIE_LOGIN &&
-        q.type !== QuestType.NEWBIE_LOGIN_SPECIAL,
-    );
-
     const now = new Date();
 
-    for (const quest of others) {
-      let startAt: Date;
-      let endAt: Date;
+    const toSave: PlayerQuestEntity[] = [];
 
-      if (quest.frequency === QuestFrequency.DAILY) {
-        startAt = firstLoginDay.clone().startOf('day').toDate();
-        endAt = firstLoginDay.clone().endOf('day').toDate();
-      } else if (quest.frequency === QuestFrequency.WEEKLY) {
-        startAt = firstLoginDay.clone().startOf('week').toDate();
-        endAt = firstLoginDay.clone().endOf('week').toDate();
-      } else {
-        startAt = firstLoginDay.clone().toDate();
-        endAt = quest.duration_hours
-          ? firstLoginDay.clone().add(quest.duration_hours, 'hours').toDate()
-          : firstLoginDay.clone().endOf('day').toDate();
-      }
+    if (missingQuests.length) {
+      // --- Normal daily newbie login quests ---
+      const normalDailies = missingQuests.filter(
+        (q) => q.type === QuestType.NEWBIE_LOGIN,
+      );
 
-      let existingPQ = await this.playerQuestRepo.findOne({
-        where: { user: { id: userId }, quest: { id: quest.id } },
+      normalDailies.forEach((quest, idx) => {
+        const startAt = firstLoginDay.clone().add(idx, 'days').toDate();
+        const endAt = firstLoginDay
+          .clone()
+          .add(9, 'days')
+          .endOf('day')
+          .toDate();
+
+        toSave.push(
+          this.playerQuestRepo.create({
+            user: { id: userId },
+            quest,
+            start_at: startAt,
+            end_at: endAt,
+          }),
+        );
       });
 
-      if (existingPQ) {
-        // ✅ Not expired → do nothing
-        if (existingPQ.end_at && existingPQ.end_at.getTime() > now.getTime()) {
-          continue; // skip this quest
-        }
+      const lastDaily = missingQuests.find(
+        (q) => q.type === QuestType.NEWBIE_LOGIN_SPECIAL,
+      );
 
-        // ❌ Expired → renew
-        existingPQ.start_at = startAt;
-        existingPQ.end_at = endAt;
-        existingPQ.is_completed = false;
-        existingPQ.completed_at = null;
-        existingPQ.is_claimed = false;
-        existingPQ.progress_history = [];
+      if (lastDaily) {
+        const startAt = firstLoginDay.clone().add(6, 'days').toDate();
+        const endAt = firstLoginDay
+          .clone()
+          .add(9, 'days')
+          .endOf('day')
+          .toDate();
 
-        toSave.push(existingPQ);
-      } else {
-        // No quest yet → create new
+        toSave.push(
+          this.playerQuestRepo.create({
+            user: { id: userId },
+            quest: lastDaily,
+            start_at: startAt,
+            end_at: endAt,
+          }),
+        );
+      }
+
+      const others = missingQuests.filter(
+        (q) =>
+          q.type !== QuestType.NEWBIE_LOGIN &&
+          q.type !== QuestType.NEWBIE_LOGIN_SPECIAL,
+      );
+
+      for (const quest of others) {
+        const { startAt, endAt } = this.calcQuestDuration(firstLoginDay, quest);
         toSave.push(
           this.playerQuestRepo.create({
             user: { id: userId },
@@ -335,6 +298,35 @@ export class PlayerQuestService extends BaseService<PlayerQuestEntity> {
           }),
         );
       }
+    }
+
+    const expiredQuests = await this.playerQuestRepo.find({
+      where: {
+        quest: {
+          type: Not(
+            In([QuestType.NEWBIE_LOGIN, QuestType.NEWBIE_LOGIN_SPECIAL]),
+          ),
+        },
+        user: { id: userId },
+        end_at: LessThanOrEqual(now),
+      },
+      relations: { quest: true },
+    });
+
+    for (const pq of expiredQuests) {
+      const { startAt, endAt } = this.calcQuestDuration(
+        firstLoginDay,
+        pq.quest,
+      );
+
+      pq.start_at = startAt;
+      pq.end_at = endAt;
+      pq.is_completed = false;
+      pq.completed_at = null;
+      pq.is_claimed = false;
+      pq.progress_history = [];
+
+      toSave.push(pq);
     }
 
     if (toSave.length) {
@@ -438,5 +430,29 @@ export class PlayerQuestService extends BaseService<PlayerQuestEntity> {
       pq.quest.type === QuestType.NEWBIE_LOGIN ||
       pq.quest.type === QuestType.NEWBIE_LOGIN_SPECIAL
     );
+  }
+
+  calcQuestDuration(base: moment.Moment, quest: QuestEntity) {
+    let startAt: Date;
+    let endAt: Date;
+
+    if (quest.type === QuestType.NEWBIE_LOGIN) {
+      // handled separately
+      startAt = base.toDate();
+      endAt = base.clone().endOf('day').toDate();
+    } else if (quest.frequency === QuestFrequency.DAILY) {
+      startAt = base.clone().startOf('day').toDate();
+      endAt = base.clone().endOf('day').toDate();
+    } else if (quest.frequency === QuestFrequency.WEEKLY) {
+      startAt = base.clone().startOf('week').toDate();
+      endAt = base.clone().endOf('week').toDate();
+    } else {
+      startAt = base.clone().toDate();
+      endAt = quest.duration_hours
+        ? base.clone().add(quest.duration_hours, 'hours').toDate()
+        : base.clone().endOf('day').toDate();
+    }
+
+    return { startAt, endAt };
   }
 }

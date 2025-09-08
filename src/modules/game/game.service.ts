@@ -27,7 +27,6 @@ export class GameService {
     @InjectRepository(UserEntity)
     private readonly userRepository: Repository<UserEntity>,
     private readonly foodService: FoodService,
-    private readonly playerQuestService: PlayerQuestService,
   ) {
     this.itemPercent = configEnv().REWARD_ITEM_PERCENT;
     this.coinPercent = configEnv().REWARD_COIN_PERCENT;
@@ -138,7 +137,7 @@ export class GameService {
         }
 
         user.gold += coinReward;
-        result.push({ type: RewardSlotType.GOLD, amount: coinReward });
+        result.push({ type: RewardSlotType.GOLD, quantity: coinReward });
       } else if (reward instanceof ItemEntity) {
         let inventoryItem = await this.inventoryService.getUserInventoryItem(
           user.id,
@@ -183,10 +182,6 @@ export class GameService {
   }
 
   async giveInitialReward(user: UserEntity) {
-    const initQuestPromise = this.playerQuestService.initQuest(user.id, {
-      timezone: 'Asia/Ho_Chi_Minh',
-    });
-
     if (user.has_first_reward) {
       return {
         success: false,
@@ -219,7 +214,6 @@ export class GameService {
       },
     ];
 
-    await initQuestPromise;
     return { rewards };
   }
 
