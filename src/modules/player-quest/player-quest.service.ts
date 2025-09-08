@@ -10,13 +10,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import moment from 'moment';
-import {
-  In,
-  LessThanOrEqual,
-  MoreThan,
-  Not,
-  Repository
-} from 'typeorm';
+import { In, LessThanOrEqual, MoreThan, Not, Repository } from 'typeorm';
 import {
   FinishQuestQueryDto,
   NewbieRewardDto,
@@ -25,6 +19,7 @@ import {
   UpdatePlayerQuestDto,
 } from './dto/player-quest.dto';
 import { PlayerQuestEntity } from './entity/player-quest.entity';
+import { QuestEventEmitter } from './events/quest.events';
 
 @Injectable()
 export class PlayerQuestService extends BaseService<PlayerQuestEntity> {
@@ -339,11 +334,18 @@ export class PlayerQuestService extends BaseService<PlayerQuestEntity> {
         user: { id: userId },
         is_claimed: false,
         is_completed: true,
+        quest: {
+          type: Not(
+            In([QuestType.NEWBIE_LOGIN, QuestType.NEWBIE_LOGIN_SPECIAL]),
+          ),
+        },
         end_at: MoreThan(now),
       },
     });
 
     const has_unclaimed = countUnclaimed > 0;
+
+    QuestEventEmitter.emitProgress(userId, QuestType.NEWBIE_LOGIN);
 
     return {
       message: toSave.length ? undefined : 'No quests to initialize or renew',

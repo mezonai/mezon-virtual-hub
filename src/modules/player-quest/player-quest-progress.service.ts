@@ -1,4 +1,4 @@
-import { Repository, In, Not } from 'typeorm';
+import { Repository, In, Not, LessThanOrEqual, MoreThanOrEqual } from 'typeorm';
 import { QuestFrequency, QuestType } from '@enum';
 import { PlayerQuestEntity } from './entity/player-quest.entity';
 import { QuestEventEmitter } from './events/quest.events';
@@ -20,14 +20,21 @@ export class PlayerQuestProgressService {
     amount = 1,
     label?: string,
   ) {
+    const now = new Date();
+
     const playerQuests = await this.playerQuestService.find({
-      where: { user: { id: userId }, quest: { type: questType } },
+      where: {
+        user: { id: userId },
+        quest: { type: questType },
+        is_completed: false,
+        start_at: LessThanOrEqual(now),
+        end_at: MoreThanOrEqual(now),
+      },
       relations: ['quest'],
     });
 
     if (!playerQuests.length) return;
 
-    const now = new Date();
     const questsToSave: PlayerQuestEntity[] = [];
 
     if (this.playerQuestService.hasCompletedNewbieLoginToday(playerQuests)) {
@@ -52,10 +59,12 @@ export class PlayerQuestProgressService {
         continue;
       }
 
-      pq.progress_history.push({
-        timestamp: now,
-        ...(label ? { label } : {}),
-      });
+      for (let i = 0; i < amount; i++) {
+        pq.progress_history.push({
+          timestamp: now,
+          ...(label ? { label } : {}),
+        });
+      }
 
       // Check completion based on history length
       if (pq.progress_history.length >= pq.quest.total_progress) {
