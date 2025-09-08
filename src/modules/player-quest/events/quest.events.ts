@@ -18,8 +18,4 @@ export const QuestEventEmitter = {
   emitProgress(userId: string, questKey: QuestType, quantity = 1, nameOffice?: string) {
     GlobalEventCommon.emit(EventTypes.QUEST, { userId, questKey, quantity, label: nameOffice });
   },
-
-  emitCompleted(userId: string, questKey: QuestType) {
-    GlobalEventCommon.emit(EventTypes.QUEST_COMPLETED, { userId, questKey });
-  },
 };

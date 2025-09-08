@@ -17,9 +17,5 @@ export class QuestListener implements OnModuleInit {
         data.label,
       ).catch(err => console.error('Quest progress update failed', err));
     });
-
-    GlobalEventCommon.on(EventTypes.QUEST_COMPLETED, (data: QuestCompletedPayload) => {
-      this.questProgressService.notifyHasUnclaimedQuests(data.userId);
-    });
   }
 }
