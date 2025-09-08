@@ -80,7 +80,8 @@ export class PlayerQuestProgressService {
       await this.playerQuestService.saveAll(questsToSave);
     }
 
-    if (hasCompleted) {
+    if ( hasCompleted && ![QuestType.NEWBIE_LOGIN, QuestType.NEWBIE_LOGIN_SPECIAL].includes(questType,)
+    ) {
       await this.notifyHasUnclaimedQuests(userId);
     }
   }
