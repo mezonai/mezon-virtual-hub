@@ -137,6 +137,7 @@ export class PlayerQuestService extends BaseService<PlayerQuestEntity> {
           quest: {
             type: In([QuestType.NEWBIE_LOGIN, QuestType.NEWBIE_LOGIN_SPECIAL]),
           },
+          end_at: MoreThan(new Date())
         },
         relations: [
           'quest',
