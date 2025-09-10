@@ -33,7 +33,9 @@ import { getExpForNextLevel, serializeDto } from '@libs/utils';
 
 @Injectable()
 export class PetPlayersService extends BaseService<PetPlayersEntity> {
-  private readonly catchChanceBase;
+  private readonly catchChanceBase: number;
+  private readonly unlockSkillSlot3Level: number;
+  private readonly unlockSkillSlot4Level: number;
   constructor(
     @InjectRepository(PetPlayersEntity)
     private readonly petPlayersRepository: Repository<PetPlayersEntity>,
@@ -45,6 +47,8 @@ export class PetPlayersService extends BaseService<PetPlayersEntity> {
   ) {
     super(petPlayersRepository, PetPlayersEntity.name);
     this.catchChanceBase = configEnv().CATCH_CHANCE_BASE;
+    this.unlockSkillSlot3Level = configEnv().PET_UNLOCK_SKILL_SLOT_LEVEL_3;
+    this.unlockSkillSlot4Level = configEnv().PET_UNLOCK_SKILL_SLOT_LEVEL_4;
   }
 
   async findPetPlayersByUserId(user_id: string) {
@@ -517,7 +521,7 @@ export class PetPlayersService extends BaseService<PetPlayersEntity> {
     return BASE_EXP_MAP[rarity] ?? fallback;
   }
 
-  recalculateStats(petPlayer: PetPlayersEntity, expGain: number = 0): void {
+  async recalculateStats(petPlayer: PetPlayersEntity, expGain: number = 0) {
     const base = petPlayer.pet; // assuming `pet` relation has base stats
 
     if (!base) return;
@@ -547,6 +551,43 @@ export class PetPlayersService extends BaseService<PetPlayersEntity> {
     petPlayer.speed =
       base.base_speed +
       Math.floor(((base.base_speed * 2 + iv) * level) / 100 + 5);
+
+    if (level >= this.unlockSkillSlot3Level || level >= this.unlockSkillSlot4Level) {
+      const pet = await this.petsRepository.findOne({
+        where: {
+          id: base.id
+        },
+        relations: ['skill_usages', 'skill_usages.skill'],
+      });
+
+      if (!pet) {
+        throw new NotFoundException(
+          `Pet ${base}  not found`,
+        );
+      }
+
+      if (!pet.skill_usages?.length) {
+        throw new BadRequestException(
+          `Pet ${base.species} did not set up any skills`,
+        );
+      }
+
+      const skill3 = pet.skill_usages.find(
+        ({ skill_index }) => skill_index === 3,
+      )?.skill;
+
+      const skill4 = pet.skill_usages.find(
+        ({ skill_index }) => skill_index === 4,
+      )?.skill;
+
+      if (skill3) {
+        petPlayer.skill_slot_3 = skill3;
+      }
+
+      if (skill4 && level >= this.unlockSkillSlot4Level) {
+        petPlayer.skill_slot_4 = skill4;
+      }
+    }
   }
 
   generateIndividualValue(): number {
