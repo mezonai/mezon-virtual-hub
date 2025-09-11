@@ -62,11 +62,11 @@ export class PlayerQuestController {
     return this.playerQuestService.getNewbieLoginQuests(user.id, query);
   }
 
-  @Put('init-quest')
-  @ApiOperation({ summary: 'Init quest player' })
-  async initQuest(@Query() query: FinishQuestQueryDto) {
+  @Get('check-unclaimed-quest')
+  @ApiOperation({ summary: 'Check-Unclaimed-Quest' })
+  async checkUnclaimedQuest() {
     const user = this.cls.get<UserEntity>(USER_TOKEN);
-    return this.playerQuestService.initQuest(user.id, query);
+    return this.playerQuestService.checkUnclaimedQuest(user.id);
   }
 
   @Put(':player_quest_id/finish-quest')

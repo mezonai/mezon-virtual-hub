@@ -32,6 +32,7 @@ import { plainToInstance } from 'class-transformer';
 import { MessageTypes } from '../MessageTypes';
 import { PlayerSessionManager } from '../player/PlayerSessionManager';
 import { QuestEventEmitter } from '@modules/player-quest/events/quest.events';
+import { PlayerQuestService } from '@modules/player-quest/player-quest.service';
 
 export class Item extends Schema {
   @type('number') x: number = 0;
@@ -82,6 +83,7 @@ export class BaseGameRoom extends Room<RoomState> {
     @Inject() private readonly mezonService: MezonService,
     @Inject() private readonly gameEventService: GameEventService,
     @Inject() readonly petPlayersService: PetPlayersService,
+    @Inject() readonly playerQuestService: PlayerQuestService,
   ) {
     super();
     this.logger.log(`GameRoom created : ${this.roomName}`);
@@ -153,6 +155,8 @@ export class BaseGameRoom extends Room<RoomState> {
     client.userData = userWithPets;
     PlayerSessionManager.register(client.userData.id, client);
     if (client?.userData?.id) {
+      await this.playerQuestService.initQuest(client.userData.id, { timezone : 'Asia/Ho_Chi_Minh' });
+      QuestEventEmitter.emitProgress(client.userData.id, QuestType.NEWBIE_LOGIN);
       QuestEventEmitter.emitProgress(client.userData.id, QuestType.LOGIN_DAYS, 1);
     }
     return true;

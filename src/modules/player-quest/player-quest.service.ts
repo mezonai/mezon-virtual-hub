@@ -137,6 +137,7 @@ export class PlayerQuestService extends BaseService<PlayerQuestEntity> {
           quest: {
             type: In([QuestType.NEWBIE_LOGIN, QuestType.NEWBIE_LOGIN_SPECIAL]),
           },
+          end_at: MoreThan(new Date())
         },
         relations: [
           'quest',
@@ -223,11 +224,10 @@ export class PlayerQuestService extends BaseService<PlayerQuestEntity> {
   async initQuest(
     userId: string,
     { timezone = 'Asia/Ho_Chi_Minh' }: FinishQuestQueryDto,
-  ): Promise<{ message?: string; has_unclaimed: boolean }> {
+  ): Promise<{ message?: string;}> {
     const missingQuests = await this.findMissingQuestsForPlayer(userId);
-    const firstLoginDay = moment.tz(timezone).startOf('day');
+    const firstLoginDay = moment.tz(timezone).startOf('day'); 
     const now = new Date();
-
     const toSave: PlayerQuestEntity[] = [];
 
     if (missingQuests.length) {
@@ -327,7 +327,15 @@ export class PlayerQuestService extends BaseService<PlayerQuestEntity> {
     if (toSave.length) {
       await this.playerQuestRepo.save(toSave);
     }
+    return {
+      message: toSave.length ? undefined : 'No quests to initialize or renew',
+    };
+  }
 
+  async checkUnclaimedQuest(
+    userId: string,
+  ): Promise<{ has_unclaimed: boolean }> {
+   
     // ✅ Check if user has any unclaimed and unexpired quests
     const countUnclaimed = await this.playerQuestRepo.count({
       where: {
@@ -339,16 +347,12 @@ export class PlayerQuestService extends BaseService<PlayerQuestEntity> {
             In([QuestType.NEWBIE_LOGIN, QuestType.NEWBIE_LOGIN_SPECIAL]),
           ),
         },
-        end_at: MoreThan(now),
+        end_at: MoreThan(new Date()),
       },
     });
 
     const has_unclaimed = countUnclaimed > 0;
-
-    QuestEventEmitter.emitProgress(userId, QuestType.NEWBIE_LOGIN);
-
     return {
-      message: toSave.length ? undefined : 'No quests to initialize or renew',
       has_unclaimed,
     };
   }
@@ -446,8 +450,8 @@ export class PlayerQuestService extends BaseService<PlayerQuestEntity> {
       startAt = base.clone().startOf('day').toDate();
       endAt = base.clone().endOf('day').toDate();
     } else if (quest.frequency === QuestFrequency.WEEKLY) {
-      startAt = base.clone().startOf('week').toDate();
-      endAt = base.clone().endOf('week').toDate();
+      startAt = base.clone().startOf('isoWeek').toDate();
+      endAt = base.clone().endOf('isoWeek').toDate();
     } else {
       startAt = base.clone().toDate();
       endAt = quest.duration_hours
