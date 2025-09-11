@@ -1,18 +1,18 @@
 import { configEnv } from '@config/env.config';
 import { NEW_USER_FOOD_REWARD_QUANTITY } from '@constant';
-import { FoodType, Gender, QuestType, RewardSlotType } from '@enum';
+import { FoodType, Gender, QuestType, RewardConfig, RewardSlotType } from '@enum';
 import { FoodEntity } from '@modules/food/entity/food.entity';
 import { FoodService } from '@modules/food/food.service';
 import { InventoryService } from '@modules/inventory/inventory.service';
 import { ItemEntity } from '@modules/item/entity/item.entity';
 import { ItemService } from '@modules/item/item.service';
+import { QuestEventEmitter } from '@modules/player-quest/events/quest.events';
 import { UserEntity } from '@modules/user/entity/user.entity';
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { AwardResponseDto, RewardDataType } from './dto/game.dto';
-import { PlayerQuestService } from '@modules/player-quest/player-quest.service';
-import { QuestEventEmitter } from '@modules/player-quest/events/quest.events';
+
 @Injectable()
 export class GameService {
   private readonly itemPercent: number;
@@ -38,7 +38,7 @@ export class GameService {
   }
 
   private readonly SLOT_COUNT = 3;
-  private readonly SPIN_COST = 10;
+  private readonly SPIN_COST = 100;
 
   async spinForRewards(user: UserEntity) {
     if (user.gold < this.SPIN_COST) {
@@ -131,9 +131,17 @@ export class GameService {
         let coinReward = 0;
 
         if (coinRand < this.highCoinPercent) {
-          coinReward = Math.floor(Math.random() * 10) + 11;
+          coinReward =
+            Math.floor(
+              Math.random() *
+              (RewardConfig.HIGH_COIN_MAX - RewardConfig.HIGH_COIN_MIN + 1)
+            ) + RewardConfig.HIGH_COIN_MIN;
         } else {
-          coinReward = Math.floor(Math.random() * 10) + 1;
+          coinReward =
+            Math.floor(
+              Math.random() *
+              (RewardConfig.LOW_COIN_MAX - RewardConfig.LOW_COIN_MIN + 1)
+            ) + RewardConfig.LOW_COIN_MIN;
         }
 
         user.gold += coinReward;
@@ -232,6 +240,7 @@ export class GameService {
       premiumFood: this.foodPremiumPercent,
       ultraFood: this.foodUltraPercent,
       none: 100 - totalRewardPercent,
+      spinCost: this.SPIN_COST,
     };
   }
 }
