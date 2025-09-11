@@ -23,6 +23,8 @@ export enum MessageTypes {
     CONFIRM_END_TURN = "Confirm_end_turn",
     TIME_REMAINING_USING_SKILL = "Time_remaining_using_skill",
     AUTO_ATTACK = "Auto_attack",
-    NOTIFY_MISSION = 'notify_mission'
-    
+    NOTIFY_MISSION = 'notify_mission',
+    CATCH_TARGET_USER = "catchTargetUser",
+    UPDATE_PROGRESS_CATCH_TARGET_USER = "update_progress_catch_target_user"
+
 }

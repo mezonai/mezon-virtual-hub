@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { plainToInstance } from 'class-transformer';
-import { LessThan, MoreThan, Repository } from 'typeorm';
+import { DataSource, LessThan, MoreThan, Repository } from 'typeorm';
 import { GameEventResDto, SaveEventGameDto } from './dto/game-event.dto';
 import { GameEventEntity } from './entity/game-event.entity';
 
@@ -18,6 +18,7 @@ export class GameEventService extends BaseService<GameEventEntity> {
     private readonly gameEventRepository: Repository<GameEventEntity>,
     @InjectRepository(UserEntity)
     private readonly userRepository: Repository<UserEntity>,
+    private readonly dataSource: DataSource,
   ) {
     super(gameEventRepository, GameEventService.name);
   }
@@ -65,38 +66,32 @@ export class GameEventService extends BaseService<GameEventEntity> {
     await this.gameEventRepository.save(event);
   }
 
-  async completeEvent(eventId: string, user: UserEntity) {
-    const event = await this.gameEventRepository.findOne({
-      where: { id: eventId },
-      relations: ['completed_users'],
+  async completeEvent(eventId: string, user: UserEntity): Promise<boolean> {
+    return this.dataSource.transaction(async (manager) => {
+      const event = await manager.getRepository(GameEventEntity).findOne({
+        where: { id: eventId },
+        relations: ['completed_users'],
+        lock: { mode: 'pessimistic_write', tables: ['game_event'] },
+      });
+
+      if (!event) return false;
+
+      const now = new Date();
+      if (now < event.start_time || now > event.end_time) return false;
+
+      if (event.completed_users.length >= event.max_completed_users) {
+        return false;
+      }
+
+      event.completed_users.push(user);
+
+      if (event.completed_users.length === event.max_completed_users) {
+        event.is_completed = true;
+      }
+
+      await manager.getRepository(GameEventEntity).save(event);
+      return true;
     });
-
-    if (!event) {
-      throw new NotFoundException('Event not found');
-    }
-
-    const now = new Date();
-    if (now < event.start_time) {
-      throw new BadRequestException('Event has not started yet');
-    }
-
-    if (now > event.end_time) {
-      throw new BadRequestException('Event has already ended');
-    }
-
-    event.completed_users = [...event.completed_users, user];
-
-    if (event.completed_users?.length === event.max_completed_users) {
-      event.is_completed = true;
-    }
-
-    if (event.completed_users.length > event.max_completed_users) {
-      throw new BadRequestException(
-        `Event has already reached the maximum number of completed users`,
-      );
-    }
-
-    await this.gameEventRepository.save(event);
   }
 
   async findOneUpcoming() {
@@ -123,7 +118,7 @@ export class GameEventService extends BaseService<GameEventEntity> {
       .orderBy('event.is_completed', 'ASC')
       .addOrderBy('event.created_at', 'DESC')
       .getOne();
-  
+
     return plainToInstance(GameEventResDto, event);
   }
 

@@ -312,10 +312,19 @@ export class BaseGameRoom extends Room<RoomState> {
       });
     });
 
-    this.onMessage('catchTargetUser', async (client, data) => {
-      this.broadcastToAllRooms('updateProgresCatchTargetUser', {
-        sessionId: client.sessionId,
-      });
+    this.onMessage(MessageTypes.CATCH_TARGET_USER, async (client, data) => {
+      const { event_Id } = data;
+      const user = client.userData;
+      if (user) {
+        const completed = await this.gameEventService.completeEvent(event_Id, user);
+        if (completed) {
+          this.broadcastToAllRooms(MessageTypes.UPDATE_PROGRESS_CATCH_TARGET_USER, {
+            sessionId: client.sessionId,
+          });
+          return;
+        }
+      }
+      this.sendMessageToTarget(client, ActionKey.CatchUser.toString(), 'Lỗi bất định');
     });
 
     this.onMessage('onPlayerUpdateGold', (client, data) => {

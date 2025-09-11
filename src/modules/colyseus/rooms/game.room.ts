@@ -61,7 +61,6 @@ export class GameRoom extends BaseGameRoom {
     this.logger.log(
       `Player ${userData?.username} joined GameRoom ${this.roomName}, id: ${this.roomId}`,
     );
-
     // Create player object and set position based on found room or user data
     const player = new Player();
     player.id = client.sessionId;
@@ -86,7 +85,7 @@ export class GameRoom extends BaseGameRoom {
       `Player ${userData?.username} has position ${player.x} ${player.y}`,
     );
     if (userData?.id) {
-      QuestEventEmitter.emitProgress( userData.id, QuestType.VISIT_OFFICE, 1, this.roomName);
+      QuestEventEmitter.emitProgress(userData.id, QuestType.VISIT_OFFICE, 1, this.roomName);
     }
   }
 
