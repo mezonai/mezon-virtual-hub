@@ -15,7 +15,7 @@ export const dataSourceOption: DataSourceOptions = {
   migrations: ['dist/migrations/*.{js,ts}'],
   subscribers: [],
   schema: configEnv().DB_SCHEMA,
-  migrationsRun: false,
+  migrationsRun: configEnv().NODE_ENV === 'production',
 };
 
 export default new DataSource(dataSourceOption);
