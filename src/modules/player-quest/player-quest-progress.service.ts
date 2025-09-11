@@ -1,18 +1,19 @@
-import { Repository, In, Not, LessThanOrEqual, MoreThanOrEqual } from 'typeorm';
 import { QuestFrequency, QuestType } from '@enum';
-import { PlayerQuestEntity } from './entity/player-quest.entity';
-import { QuestEventEmitter } from './events/quest.events';
-import { PlayerSessionManager } from '@modules/colyseus/player/PlayerSessionManager';
-import { InjectRepository } from '@nestjs/typeorm';
+import { Logger } from '@libs/logger';
 import { MessageTypes } from '@modules/colyseus/MessageTypes';
-import { PlayerQuestService } from './player-quest.service';
+import { PlayerSessionManager } from '@modules/colyseus/player/PlayerSessionManager';
 import { Inject } from '@nestjs/common';
+import moment from 'moment';
+import { LessThanOrEqual, MoreThanOrEqual } from 'typeorm';
+import { PlayerQuestEntity } from './entity/player-quest.entity';
+import { PlayerQuestService } from './player-quest.service';
 
 export class PlayerQuestProgressService {
   constructor(
     @Inject()
     private readonly playerQuestService: PlayerQuestService,
-  ) {}
+    private readonly logger: Logger,
+  ) { }
 
   async addProgress(
     userId: string,
@@ -80,8 +81,9 @@ export class PlayerQuestProgressService {
       await this.playerQuestService.saveAll(questsToSave);
     }
 
-    if ( hasCompleted && ![QuestType.NEWBIE_LOGIN, QuestType.NEWBIE_LOGIN_SPECIAL].includes(questType,)
+    if (hasCompleted && ![QuestType.NEWBIE_LOGIN, QuestType.NEWBIE_LOGIN_SPECIAL].includes(questType)
     ) {
+      this.logger.log(`User ${userId} has complete ${questType}`)
       await this.notifyHasUnclaimedQuests(userId);
     }
   }
@@ -102,6 +104,7 @@ export class PlayerQuestProgressService {
   public async notifyHasUnclaimedQuests(userId: string) {
     const client = PlayerSessionManager.getClient(userId);
     if (client) {
+      this.logger.log(`Send ${MessageTypes.NOTIFY_MISSION} to client: ${client.sessionId} at ${moment().tz('Asia/Ho_Chi_Minh').format('YYYY-MM-DD HH:mm:ss')}`)
       client.send(MessageTypes.NOTIFY_MISSION, {
         sessionId: client.sessionId,
         message: 'Notify mission',
