@@ -30,6 +30,9 @@ import { PetsModule } from '@modules/pets/pets.module';
 import { RouterModule } from '@nestjs/core';
 import { ClsModule } from 'nestjs-cls';
 import { dataSourceOption } from './config/data-source.config';
+import { PlayerQuestModule } from '@modules/player-quest/player-quest.module';
+import { RewardModule } from '@modules/reward/reward.module';
+import { RewardItemModule } from '@modules/reward-item/reward-item.module';
 
 @Module({
   imports: [
@@ -60,6 +63,9 @@ import { dataSourceOption } from './config/data-source.config';
     PetPlayersModule,
     PetSkillsModule,
     AdminModule,
+    PlayerQuestModule,
+    RewardModule,
+    RewardItemModule,
     RouterModule.register([
       {
         path: 'admin',

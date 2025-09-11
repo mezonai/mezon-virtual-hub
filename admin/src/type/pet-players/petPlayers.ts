@@ -78,3 +78,53 @@ export interface PetPlayersFilterParams {
   species: string;
   is_caught: boolean;
 }
+
+export interface PetSkillsResponseDto {
+  element_type: string;
+  skill_type: string;
+  skill_code: string;
+  name: string;
+  damage: number;
+  accuracy: number;
+  power_points: number;
+  description: string;
+}
+
+export interface PetPlayersDetail {
+  id: string;
+  name: string | null;
+  level: number;
+  exp: number;
+  stars: number;
+  hp: number;
+  attack: number;
+  defense: number;
+  speed: number;
+  is_brought: boolean;
+  is_caught: boolean;
+  battle_slot: number;
+  individual_value: number;
+  room_code: string | null;
+  skill_slot_1: PetSkillsResponseDto;
+  skill_slot_2: PetSkillsResponseDto;
+  skill_slot_3: PetSkillsResponseDto | null;
+  skill_slot_4: PetSkillsResponseDto | null;
+  equipped_skill_codes: (SkillCode | null)[];
+  user: UserDto | null;
+  pet: PetsDto;
+}
+
+export enum MapKey {
+  HN1 = 'hn1',
+  HN2 = 'hn2',
+  HN3 = 'hn3',
+  VINH = 'vinh',
+  DN = 'dn',
+  QN = 'qn',
+  SG = 'sg',
+}
+export enum SubMap {
+  OFFICE = 'office',
+  OFFICE_MEETING_ROOM1 = 'office-meeting-room1',
+  SHOP1 = 'shop1',
+}

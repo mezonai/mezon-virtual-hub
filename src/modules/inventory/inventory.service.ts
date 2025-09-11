@@ -1,4 +1,10 @@
-import { InventoryType, PurchaseMethod } from '@enum';
+import {
+  InventoryType,
+  PurchaseMethod,
+  QuestType,
+  RewardItemType,
+  RewardSlotType,
+} from '@enum';
 import { BaseService } from '@libs/base/base.service';
 import { FoodEntity } from '@modules/food/entity/food.entity';
 import { FoodService } from '@modules/food/food.service';
@@ -15,9 +21,16 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { plainToInstance } from 'class-transformer';
 import { Repository } from 'typeorm';
 import { FoodInventoryResDto, ItemInventoryResDto } from './dto/inventory.dto';
+import { RewardDataType, AwardResponseDto } from '@modules/game/dto/game.dto';
+import { RewardItemEntity } from '@modules/reward-item/entity/reward-item.entity';
+import { Logger } from '@libs/logger';
+import { PetPlayersService } from '@modules/pet-players/pet-players.service';
+import { AdminPetPlayersService } from '@modules/admin/pet-players/pet-players.service';
+import { QuestEventEmitter } from '@modules/player-quest/events/quest.events';
 
 @Injectable()
 export class InventoryService extends BaseService<Inventory> {
+  private readonly logger = new Logger(InventoryService.name);
   constructor(
     @InjectRepository(Inventory)
     private readonly inventoryRepository: Repository<Inventory>,
@@ -27,6 +40,7 @@ export class InventoryService extends BaseService<Inventory> {
     @InjectRepository(ItemEntity)
     private readonly itemRepository: Repository<ItemEntity>,
     private readonly foodService: FoodService,
+    private readonly petPlayerService: PetPlayersService,
   ) {
     super(inventoryRepository, Inventory.name);
   }
@@ -70,7 +84,7 @@ export class InventoryService extends BaseService<Inventory> {
         inventory.quantity += quantity;
         await this.inventoryRepository.update(inventory.id, inventory);
       } else {
-        inventory = await this.addItemToInventory(user, item, quantity);
+        inventory = await this.addItemToInventory(user, item.id, quantity);
       }
 
       user.gold -= item.gold;
@@ -121,9 +135,9 @@ export class InventoryService extends BaseService<Inventory> {
         user.diamond -= price;
       }
 
-      await this.addFoodToInventory(user, food, quantity);
+      await this.addFoodToInventory(user, food.id, quantity);
       await this.userRepository.save(user);
-
+      QuestEventEmitter.emitProgress(user.id, QuestType.BUY_FOOD, 1);
       return {
         message: 'Food purchased successfully',
         user_balance: {
@@ -156,12 +170,12 @@ export class InventoryService extends BaseService<Inventory> {
 
   async addItemToInventory(
     user: UserEntity,
-    item: ItemEntity,
+    itemId: string,
     quantity = 1,
   ): Promise<Inventory> {
     const newInventoryItem = this.inventoryRepository.create({
       user,
-      item,
+      item: { id: itemId },
       quantity,
       inventory_type: InventoryType.ITEM,
     });
@@ -170,13 +184,13 @@ export class InventoryService extends BaseService<Inventory> {
 
   async addFoodToInventory(
     user: UserEntity,
-    food: FoodEntity,
+    foodId: string,
     quantity = 1,
   ): Promise<Inventory> {
     let inventory = await this.inventoryRepository.findOne({
       where: {
         user: { id: user.id },
-        food: { id: food.id },
+        food: { id: foodId },
         inventory_type: InventoryType.FOOD,
       },
     });
@@ -184,7 +198,7 @@ export class InventoryService extends BaseService<Inventory> {
     if (!inventory) {
       inventory = this.inventoryRepository.create({
         user,
-        food,
+        food: { id: foodId },
         quantity,
         inventory_type: InventoryType.FOOD,
       });
@@ -221,5 +235,111 @@ export class InventoryService extends BaseService<Inventory> {
     });
 
     return plainToInstance(ItemInventoryResDto, inventory);
+  }
+
+  async processRewardItems(user: UserEntity, rewards: RewardItemEntity[]) {
+    let diamondDelta = 0;
+    let goldDelta = 0;
+
+    for (const reward of rewards) {
+      switch (reward.type) {
+        case RewardItemType.DIAMOND: {
+          diamondDelta += reward.quantity;
+          break;
+        }
+
+        case RewardItemType.GOLD: {
+          goldDelta += reward.quantity;
+          break;
+        }
+
+        case RewardItemType.ITEM: {
+          if (!reward.item_id) {
+            this.logger.warn(
+              `Reward ITEM missing item_id for user=${user.username}, rewardId=${reward.id}`,
+            );
+            break;
+          }
+
+          const item = await this.itemRepository.findOne({
+            where: { id: reward.item_id },
+          });
+
+          if (!item) {
+            this.logger.warn(
+              `Item not found: item_id=${reward.item_id}, user=${user.username}`,
+            );
+            break;
+          }
+
+          let inventoryItem = await this.getUserInventoryItem(
+            user.id,
+            reward.item_id,
+          );
+
+          if (!inventoryItem) {
+            await this.addItemToInventory(user, item.id);
+          } else if (item.is_stackable) {
+            inventoryItem.quantity += reward.quantity;
+            await this.save(inventoryItem);
+          }
+          break;
+        }
+
+        case RewardItemType.FOOD: {
+          if (!reward.food_id) {
+            this.logger.warn(
+              `Reward FOOD missing food_id for user=${user.username}, rewardId=${reward.id}`,
+            );
+            break;
+          }
+
+          const addedFood = await this.addFoodToInventory(user, reward.food_id);
+          if (!addedFood) {
+            this.logger.warn(
+              `Food not found: food_id=${reward.food_id}, user=${user.username}`,
+            );
+          }
+          break;
+        }
+
+        case RewardItemType.PET: {
+          if (!reward.pet_id) {
+            this.logger.warn(
+              `Reward PET missing pet_id for user=${user.username}, rewardId=${reward.id}`,
+            );
+            break;
+          }
+
+          const pet = await this.petPlayerService.createPetPlayers({
+            user_id: user.id,
+            pet_id: reward.pet_id,
+          });
+
+          if (!pet) {
+            this.logger.warn(
+              `Pet not found: pet_id=${reward.pet_id}, user=${user.username}`,
+            );
+          }
+          break;
+        }
+
+        default: {
+          this.logger.warn(
+            `Unknown reward type=${reward.type}, user=${user.username}, rewardId=${reward.id}`,
+          );
+          break;
+        }
+      }
+    }
+
+    if (diamondDelta || goldDelta) {
+      user.diamond += diamondDelta;
+      user.gold += goldDelta;
+      await this.userRepository.update(user.id, {
+        diamond: user.diamond,
+        gold: user.gold,
+      });
+    }
   }
 }

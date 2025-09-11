@@ -6,6 +6,8 @@ import { BaseGameRoom, Item } from './base-game.room';
 import { configEnv } from '@config/env.config';
 import { cleanAndStringifyJson, isValidJsonQuiz } from '@libs/utils';
 import { GoogleGenAI } from '@google/genai';
+import { QuestEventEmitter } from '@modules/player-quest/events/quest.events';
+import { QuestType } from '@enum';
 
 @Injectable()
 export class GameRoom extends BaseGameRoom {
@@ -83,7 +85,9 @@ export class GameRoom extends BaseGameRoom {
     this.logger.log(
       `Player ${userData?.username} has position ${player.x} ${player.y}`,
     );
-
+    if (userData?.id) {
+      QuestEventEmitter.emitProgress( userData.id, QuestType.VISIT_OFFICE, 1, this.roomName);
+    }
   }
 
 

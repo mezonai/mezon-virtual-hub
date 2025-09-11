@@ -54,10 +54,11 @@ export const Toast = ({ type, message }: ToastProps) => {
     icon: false,
     style: {
       background: backgroundType(type),
-      padding: '15px',
+      padding: '20px',
       borderRadius: '4px',
       fontSize: '14px',
       fontWeight: 500,
+      marginTop: '10px',
     },
   });
 };

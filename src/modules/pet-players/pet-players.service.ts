@@ -28,12 +28,14 @@ import {
 } from './dto/pet-players.dto';
 import { PetPlayersEntity } from './entity/pet-players.entity';
 import { BASE_EXP_MAP } from '@constant';
-import { AnimalRarity } from '@enum';
+import { AnimalRarity, SkillCode } from '@enum';
 import { getExpForNextLevel, serializeDto } from '@libs/utils';
 
 @Injectable()
 export class PetPlayersService extends BaseService<PetPlayersEntity> {
-  private readonly catchChanceBase;
+  private readonly catchChanceBase: number;
+  private readonly unlockSkillSlot3Level: number;
+  private readonly unlockSkillSlot4Level: number;
   constructor(
     @InjectRepository(PetPlayersEntity)
     private readonly petPlayersRepository: Repository<PetPlayersEntity>,
@@ -45,6 +47,8 @@ export class PetPlayersService extends BaseService<PetPlayersEntity> {
   ) {
     super(petPlayersRepository, PetPlayersEntity.name);
     this.catchChanceBase = configEnv().CATCH_CHANCE_BASE;
+    this.unlockSkillSlot3Level = configEnv().PET_UNLOCK_SKILL_SLOT_LEVEL_3;
+    this.unlockSkillSlot4Level = configEnv().PET_UNLOCK_SKILL_SLOT_LEVEL_4;
   }
 
   async findPetPlayersByUserId(user_id: string) {
@@ -60,6 +64,65 @@ export class PetPlayersService extends BaseService<PetPlayersEntity> {
     });
 
     return plainToInstance(PetPlayersInfoDto, pets);
+  }
+
+  async createPetPlayers(payload: Partial<SpawnPetPlayersDto>, quantity = 1) {
+    const pet = await this.petsRepository.findOne({
+      where: {
+        ...(payload.pet_id
+          ? { id: payload.pet_id }
+          : {
+              species: payload.species,
+              rarity: payload.rarity,
+              type: payload.type,
+            }),
+      },
+      relations: ['skill_usages', 'skill_usages.skill'],
+    });
+
+    if (!pet) {
+      throw new NotFoundException(
+        `Pet ${payload.species} with Rarity: ${payload.rarity} and Type ${payload.type} or Id: ${payload.pet_id} not found`,
+      );
+    }
+
+    if (!pet.skill_usages?.length) {
+      throw new BadRequestException(
+        `Pet ${payload.species} did not set up any skills`,
+      );
+    }
+
+    const skill1 = pet.skill_usages.find(
+      ({ skill_index }) => skill_index === 1,
+    );
+    const skill2 = pet.skill_usages.find(
+      ({ skill_index }) => skill_index === 2,
+    );
+
+    const petPlayers: PetPlayersEntity[] = [];
+
+    for (let i = 0; i < quantity; i++) {
+      const newPetPlayer = this.petPlayersRepository.create({
+        pet,
+        name: pet.species,
+        skill_slot_1: { skill_code: skill1?.skill.skill_code },
+        skill_slot_2: { skill_code: skill2?.skill.skill_code },
+        equipped_skill_codes: [
+          skill1?.skill.skill_code ?? null,
+          skill2?.skill.skill_code ?? null,
+        ],
+        individual_value: this.generateIndividualValue(),
+        room_code: payload.room_code,
+        ...(payload.user_id && {
+          user: { id: payload.user_id },
+          is_caught: true,
+        }),
+      });
+      this.recalculateStats(newPetPlayer);
+      petPlayers.push(newPetPlayer);
+    }
+
+    return await this.petPlayersRepository.save(petPlayers);
   }
 
   async findPetPlayersWithPet(where: FindOptionsWhere<PetPlayersEntity>) {
@@ -334,6 +397,15 @@ export class PetPlayersService extends BaseService<PetPlayersEntity> {
       throw new NotFoundException('Pet-player not found');
     }
 
+    this.checkIsValidSkills(petPlayer, equipped_skill_codes);
+
+    return await this.save({ ...petPlayer, equipped_skill_codes });
+  }
+
+  checkIsValidSkills(
+    petPlayer: PetPlayersEntity,
+    equippedSkills: (SkillCode | null)[],
+  ) {
     const allowedCodes = [
       petPlayer.skill_slot_1?.skill_code,
       petPlayer.skill_slot_2?.skill_code,
@@ -341,15 +413,13 @@ export class PetPlayersService extends BaseService<PetPlayersEntity> {
       petPlayer.skill_slot_4?.skill_code,
     ].filter(Boolean);
 
-    for (const skillCode of equipped_skill_codes) {
+    for (const skillCode of equippedSkills) {
       if (skillCode && !allowedCodes.includes(skillCode)) {
         throw new BadRequestException(
           `Skill code ${skillCode} is not assigned to this pet`,
         );
       }
     }
-
-    return await this.save({ ...petPlayer, equipped_skill_codes });
   }
 
   async getPetsForBattle(userId: string) {
@@ -451,7 +521,7 @@ export class PetPlayersService extends BaseService<PetPlayersEntity> {
     return BASE_EXP_MAP[rarity] ?? fallback;
   }
 
-  recalculateStats(petPlayer: PetPlayersEntity, expGain: number = 0): void {
+  async recalculateStats(petPlayer: PetPlayersEntity, expGain: number = 0) {
     const base = petPlayer.pet; // assuming `pet` relation has base stats
 
     if (!base) return;
@@ -466,21 +536,58 @@ export class PetPlayersService extends BaseService<PetPlayersEntity> {
 
     const level = petPlayer.level;
     // 📌 Recalculate stats with formulas
-    petPlayer.hp = base.base_hp + Math.floor(
-      ((base.base_hp * 2 + iv) * level) / 100 + level + 10,
-    );
+    petPlayer.hp =
+      base.base_hp +
+      Math.floor(((base.base_hp * 2 + iv) * level) / 100 + level + 10);
 
-    petPlayer.attack = base.base_attack + Math.floor(
-      ((base.base_attack * 2 + iv) * level) / 100 + 5,
-    );
+    petPlayer.attack =
+      base.base_attack +
+      Math.floor(((base.base_attack * 2 + iv) * level) / 100 + 5);
 
-    petPlayer.defense = base.base_defense + Math.floor(
-      ((base.base_defense * 2 + iv) * level) / 100 + 5,
-    );
+    petPlayer.defense =
+      base.base_defense +
+      Math.floor(((base.base_defense * 2 + iv) * level) / 100 + 5);
 
-    petPlayer.speed = base.base_speed + Math.floor(
-      ((base.base_speed * 2 + iv) * level) / 100 + 5,
-    );
+    petPlayer.speed =
+      base.base_speed +
+      Math.floor(((base.base_speed * 2 + iv) * level) / 100 + 5);
+
+    if (level >= this.unlockSkillSlot3Level || level >= this.unlockSkillSlot4Level) {
+      const pet = await this.petsRepository.findOne({
+        where: {
+          id: base.id
+        },
+        relations: ['skill_usages', 'skill_usages.skill'],
+      });
+
+      if (!pet) {
+        throw new NotFoundException(
+          `Pet ${base}  not found`,
+        );
+      }
+
+      if (!pet.skill_usages?.length) {
+        throw new BadRequestException(
+          `Pet ${base.species} did not set up any skills`,
+        );
+      }
+
+      const skill3 = pet.skill_usages.find(
+        ({ skill_index }) => skill_index === 3,
+      )?.skill;
+
+      const skill4 = pet.skill_usages.find(
+        ({ skill_index }) => skill_index === 4,
+      )?.skill;
+
+      if (skill3) {
+        petPlayer.skill_slot_3 = skill3;
+      }
+
+      if (skill4 && level >= this.unlockSkillSlot4Level) {
+        petPlayer.skill_slot_4 = skill4;
+      }
+    }
   }
 
   generateIndividualValue(): number {

@@ -10,6 +10,7 @@ import { UserEntity } from '@modules/user/entity/user.entity';
 import { InventoryModule } from '@modules/inventory/inventory.module';
 import { ItemModule } from '@modules/item/item.module';
 import { FoodModule } from '@modules/food/food.module';
+import { PlayerQuestModule } from '@modules/player-quest/player-quest.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { FoodModule } from '@modules/food/food.module';
     InventoryModule,
     FoodModule,
     ItemModule,
+    PlayerQuestModule
   ],
   controllers: [GameController],
   providers: [GameService],

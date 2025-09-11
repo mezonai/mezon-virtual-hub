@@ -1,5 +1,5 @@
 import { SkillCode } from '@enum';
-import { IsNullableEnumArray } from '@libs/decorator';
+import { IsNullableEnumArray, IsValidRoomCode } from '@libs/decorator';
 import { PetSkillsResponseDto } from '@modules/pet-skills/dto/pet-skills.dto';
 import { PetSkillsEntity } from '@modules/pet-skills/entity/pet-skills.entity';
 import { PetsEntity } from '@modules/pets/entity/pets.entity';
@@ -105,8 +105,8 @@ export class PetPlayersEntity extends AuditEntity {
 
   @Column({ type: 'varchar', length: 255, nullable: true })
   @ApiProperty()
-  @IsOptional()
   @IsString()
+  @IsValidRoomCode()
   room_code: string | null;
 
   @ManyToOne(() => PetSkillsEntity, (skill) => skill.skill_usages, {

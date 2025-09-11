@@ -36,18 +36,42 @@ export const UserFormModal = ({
   const { control, handleSubmit, reset, formState } = useForm<UserInfo>({
     resolver: zodResolver(userSchema),
     mode: 'onTouched',
-    defaultValues: selectedUser,
+    defaultValues: {
+      role: selectedUser?.role,
+      diamond: selectedUser?.diamond ?? 0,
+      display_name: selectedUser?.display_name ?? '',
+      gender: selectedUser?.gender ?? '',
+      gold: selectedUser?.gold ?? 0,
+      has_first_reward: selectedUser?.has_first_reward,
+      mezon_id: selectedUser?.mezon_id ?? '',
+    },
   });
 
   useEffect(() => {
     if (selectedUser) {
-      reset(selectedUser);
+      reset({
+        role: selectedUser?.role,
+        diamond: selectedUser?.diamond ?? 0,
+        display_name: selectedUser?.display_name ?? '',
+        gender: selectedUser?.gender ?? '',
+        gold: selectedUser?.gold ?? 0,
+        has_first_reward: selectedUser?.has_first_reward,
+        mezon_id: selectedUser?.mezon_id ?? '',
+      });
     }
-  }, [selectedUser, reset]);
+  }, [selectedUser]);
 
   const handleClose = () => {
     closeFormModal?.();
-    reset(selectedUser);
+    reset({
+      role: selectedUser?.role ?? 0,
+      diamond: selectedUser?.diamond ?? 0,
+      display_name: selectedUser?.display_name ?? '',
+      gender: selectedUser?.gender ?? '',
+      gold: selectedUser?.gold ?? 0,
+      has_first_reward: selectedUser?.has_first_reward ?? false,
+      mezon_id: selectedUser?.mezon_id ?? '',
+    });
   };
 
   const onSubmit = (data: UserInfo) => {

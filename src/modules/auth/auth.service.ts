@@ -24,6 +24,8 @@ import {
 import { JwtPayload } from './dtos/response';
 import { OAuth2Service } from './oauth2.service';
 import { NEW_USER_GOLD_REWARD } from '@constant';
+import { QuestEventEmitter } from '@modules/player-quest/events/quest.events';
+import { QuestType } from '@enum';
 
 @Injectable()
 export class AuthService {

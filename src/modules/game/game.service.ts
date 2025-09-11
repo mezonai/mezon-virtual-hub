@@ -1,6 +1,6 @@
 import { configEnv } from '@config/env.config';
 import { NEW_USER_FOOD_REWARD_QUANTITY } from '@constant';
-import { FoodType, Gender, RewardType } from '@enum';
+import { FoodType, Gender, QuestType, RewardSlotType } from '@enum';
 import { FoodEntity } from '@modules/food/entity/food.entity';
 import { FoodService } from '@modules/food/food.service';
 import { InventoryService } from '@modules/inventory/inventory.service';
@@ -11,7 +11,8 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { AwardResponseDto, RewardDataType } from './dto/game.dto';
-
+import { PlayerQuestService } from '@modules/player-quest/player-quest.service';
+import { QuestEventEmitter } from '@modules/player-quest/events/quest.events';
 @Injectable()
 export class GameService {
   private readonly itemPercent: number;
@@ -59,7 +60,7 @@ export class GameService {
     const rewards = await this.generateRandomRewards(availableItems);
 
     const { result, user_gold } = await this.processRewards(user, rewards);
-
+    QuestEventEmitter.emitProgress(user.id, QuestType.SPIN_LUCKY_WHEEL, 1);
     return { rewards: result, user_gold };
   }
 
@@ -121,7 +122,7 @@ export class GameService {
     return rewards;
   }
 
-  private async processRewards(user: UserEntity, rewards: RewardDataType) {
+  async processRewards(user: UserEntity, rewards: RewardDataType) {
     const result: (AwardResponseDto | null)[] = [];
 
     for (const reward of rewards) {
@@ -136,7 +137,7 @@ export class GameService {
         }
 
         user.gold += coinReward;
-        result.push({ type: RewardType.GOLD, amount: coinReward });
+        result.push({ type: RewardSlotType.GOLD, quantity: coinReward });
       } else if (reward instanceof ItemEntity) {
         let inventoryItem = await this.inventoryService.getUserInventoryItem(
           user.id,
@@ -146,14 +147,14 @@ export class GameService {
         if (!inventoryItem) {
           inventoryItem = await this.inventoryService.addItemToInventory(
             user,
-            reward,
+            reward.id,
           );
-          result.push({ type: RewardType.ITEM, item: reward, quantity: 1 });
+          result.push({ type: RewardSlotType.ITEM, item: reward, quantity: 1 });
         } else if (reward.is_stackable) {
           inventoryItem.quantity += 1;
           await this.inventoryService.save(inventoryItem);
           result.push({
-            type: RewardType.ITEM,
+            type: RewardSlotType.ITEM,
             item: reward,
             quantity: inventoryItem.quantity,
           });
@@ -163,11 +164,11 @@ export class GameService {
       } else if (reward instanceof FoodEntity) {
         const inventoryFood = await this.inventoryService.addFoodToInventory(
           user,
-          reward,
+          reward.id,
         );
 
         result.push({
-          type: RewardType.FOOD,
+          type: RewardSlotType.FOOD,
           food: reward,
           quantity: inventoryFood.quantity,
         });
@@ -189,30 +190,31 @@ export class GameService {
     }
 
     const foodReward = await this.foodService.findOne({
-      where: {
-        type: FoodType.NORMAL,
-      },
+      where: { type: FoodType.NORMAL },
     });
 
-    if (foodReward) {
-      await this.inventoryService.addFoodToInventory(
-        user,
-        foodReward,
-        NEW_USER_FOOD_REWARD_QUANTITY,
-      );
-
-      user.has_first_reward = true;
-      await this.userRepository.save(user);
-
-      const rewards: (AwardResponseDto | null)[] = [
-        {
-          type: RewardType.FOOD,
-          quantity: NEW_USER_FOOD_REWARD_QUANTITY,
-          food: foodReward,
-        },
-      ];
-      return { rewards };
+    if (!foodReward) {
+      return { success: false, message: 'No food reward available.' };
     }
+
+    await this.inventoryService.addFoodToInventory(
+      user,
+      foodReward.id,
+      NEW_USER_FOOD_REWARD_QUANTITY,
+    );
+
+    user.has_first_reward = true;
+    await this.userRepository.save(user);
+
+    const rewards: AwardResponseDto[] = [
+      {
+        type: RewardSlotType.FOOD,
+        quantity: NEW_USER_FOOD_REWARD_QUANTITY,
+        food: foodReward,
+      },
+    ];
+
+    return { rewards };
   }
 
   getRewardPercent() {

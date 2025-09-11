@@ -1,14 +1,10 @@
-import { configEnv } from '@config/env.config';
-import { BASE_EXP_MAP } from '@constant';
-import { AnimalRarity } from '@enum';
 import { BaseService } from '@libs/base/base.service';
-import { serializeDto } from '@libs/utils';
-import { Inventory } from '@modules/inventory/entity/inventory.entity';
+import { PetPlayersEntity } from '@modules/pet-players/entity/pet-players.entity';
+import { PetPlayersService } from '@modules/pet-players/pet-players.service';
 import { PetsEntity } from '@modules/pets/entity/pets.entity';
-import { UserEntity } from '@modules/user/entity/user.entity';
+import { UserService } from '@modules/user/user.service';
 import {
   BadRequestException,
-  ConflictException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -16,14 +12,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Pageable } from '@types';
 import { plainToInstance } from 'class-transformer';
 import { isNumber } from 'class-validator';
-import { error } from 'node:console';
-import {
-  EntityManager,
-  FindOptionsWhere,
-  ILike,
-  In,
-  Repository,
-} from 'typeorm';
+import { EntityManager, FindOptionsWhere, ILike, Repository } from 'typeorm';
 import {
   PetPlayersInfoDto,
   PetPlayersListDto,
@@ -31,8 +20,6 @@ import {
   SpawnPetPlayersDto,
   UpdatePetPlayersDto,
 } from './dto/pet-players.dto';
-import { PetPlayersEntity } from '@modules/pet-players/entity/pet-players.entity';
-import { PetPlayersService } from '@modules/pet-players/pet-players.service';
 
 @Injectable()
 export class AdminPetPlayersService extends BaseService<PetPlayersEntity> {
@@ -42,6 +29,7 @@ export class AdminPetPlayersService extends BaseService<PetPlayersEntity> {
     @InjectRepository(PetsEntity)
     private readonly petsRepository: Repository<PetsEntity>,
     private readonly petPlayersService: PetPlayersService,
+    private readonly userService: UserService,
     private manager: EntityManager,
   ) {
     super(petPlayersRepository, PetPlayersEntity.name);
@@ -161,77 +149,55 @@ export class AdminPetPlayersService extends BaseService<PetPlayersEntity> {
   }
 
   async createPetPlayers(payload: Partial<SpawnPetPlayersDto>, quantity = 1) {
-    const pet = await this.petsRepository.findOne({
-      where: {
-        species: payload.species,
-        rarity: payload.rarity,
-        type: payload.type,
-      },
-      relations: ['skill_usages', 'skill_usages.skill'],
-    });
-
-    if (!pet) {
-      throw new NotFoundException(
-        `Pet ${payload.species} with Rarity: ${payload.rarity} and Type ${payload.type} not found`,
-      );
-    }
-
-    if (!pet.skill_usages?.length) {
-      throw new BadRequestException(
-        `Pet ${payload.species} did not set up any skills`,
-      );
-    }
-
-    const skill1 = pet.skill_usages.find(
-      ({ skill_index }) => skill_index === 1,
-    );
-    const skill2 = pet.skill_usages.find(
-      ({ skill_index }) => skill_index === 2,
-    );
-
-    const petPlayers: PetPlayersEntity[] = [];
-
-    for (let i = 0; i < quantity; i++) {
-      const newPetPlayer = this.petPlayersRepository.create({
-        pet,
-        name: pet.species,
-        skill_slot_1: { skill_code: skill1?.skill.skill_code },
-        skill_slot_2: { skill_code: skill2?.skill.skill_code },
-        equipped_skill_codes: [skill1?.skill.skill_code ?? null, skill2?.skill.skill_code ?? null],
-        individual_value: this.petPlayersService.generateIndividualValue(),
-        room_code: `${payload.map}${payload.sub_map ? `-${payload.sub_map}` : ''}`,
-      });
-      this.petPlayersService.recalculateStats(newPetPlayer);
-      petPlayers.push(newPetPlayer);
-    }
-
-    return await this.petPlayersRepository.save(petPlayers);
+    return await this.petPlayersService.createPetPlayers(payload, quantity);
   }
 
   async updatePetPlayers(
     updatePetPlayers: UpdatePetPlayersDto,
     pet_id: string,
   ) {
-    const { map, sub_map, ...restUpdate } = updatePetPlayers;
+    const { user, ...payload } = updatePetPlayers;
     const existedPetPlayers = await this.petPlayersRepository.findOne({
       where: {
         id: pet_id,
       },
+      relations: [
+        'skill_slot_1',
+        'skill_slot_2',
+        'skill_slot_3',
+        'skill_slot_4',
+        'user',
+      ],
     });
 
     if (!existedPetPlayers) {
       throw new NotFoundException(`Pet-player ${pet_id} not found`);
     }
 
-    Object.assign(existedPetPlayers, updatePetPlayers);
+    if (user?.username && user.username !== existedPetPlayers.user?.username) {
+      const addedUser = await this.userService.findOne({
+        where: { username: user.username },
+      });
 
-    const updatedPet = await this.petPlayersRepository.save({
-      ...existedPetPlayers,
-      ...restUpdate,
-      room_code: `${map}${sub_map ? `-${sub_map}` : ''}`,
-    });
+      if (!addedUser) {
+        throw new NotFoundException(`User ${user.username} not found`);
+      }
 
-    return plainToInstance(PetPlayersListDto, updatedPet);
+      existedPetPlayers.user = addedUser;
+    }
+
+    if (!!payload.equipped_skill_codes.length) {
+      this.petPlayersService.checkIsValidSkills(
+        existedPetPlayers,
+        payload.equipped_skill_codes,
+      );
+    }
+
+    Object.assign(existedPetPlayers, payload);
+
+    const updatedPet = await this.petPlayersRepository.save(existedPetPlayers);
+
+    return plainToInstance(PetPlayersInfoDto, updatedPet);
   }
 
   async deletePetPlayers(id: string) {

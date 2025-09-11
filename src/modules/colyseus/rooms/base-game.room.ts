@@ -1,7 +1,7 @@
 import { MapSchema, Schema, type } from '@colyseus/schema';
 import { configEnv } from '@config/env.config';
 import { BATTLE_MAX_FEE, BATTLE_MIN_FEE, EXCHANGERATE, RPS_FEE, SYSTEM_ERROR } from '@constant';
-import { ActionKey, MapKey } from '@enum';
+import { ActionKey, MapKey, QuestType } from '@enum';
 import { Logger } from '@libs/logger';
 import { JwtPayload } from '@modules/auth/dtos/response';
 import { GameEventService } from '@modules/game-event/game-event.service';
@@ -30,6 +30,9 @@ import { UserService } from '@modules/user/user.service';
 import { UserWithPetPlayers } from '@modules/user/dto/user.dto';
 import { plainToInstance } from 'class-transformer';
 import { MessageTypes } from '../MessageTypes';
+import { PlayerSessionManager } from '../player/PlayerSessionManager';
+import { QuestEventEmitter } from '@modules/player-quest/events/quest.events';
+import { PlayerQuestService } from '@modules/player-quest/player-quest.service';
 
 export class Item extends Schema {
   @type('number') x: number = 0;
@@ -80,6 +83,7 @@ export class BaseGameRoom extends Room<RoomState> {
     @Inject() private readonly mezonService: MezonService,
     @Inject() private readonly gameEventService: GameEventService,
     @Inject() readonly petPlayersService: PetPlayersService,
+    @Inject() readonly playerQuestService: PlayerQuestService,
   ) {
     super();
     this.logger.log(`GameRoom created : ${this.roomName}`);
@@ -149,6 +153,12 @@ export class BaseGameRoom extends Room<RoomState> {
 
     console.log(`User ${user.username} is allowed in ${this.roomId}`);
     client.userData = userWithPets;
+    PlayerSessionManager.register(client.userData.id, client);
+    if (client?.userData?.id) {
+      await this.playerQuestService.initQuest(client.userData.id, { timezone : 'Asia/Ho_Chi_Minh' });
+      QuestEventEmitter.emitProgress(client.userData.id, QuestType.NEWBIE_LOGIN);
+      QuestEventEmitter.emitProgress(client.userData.id, QuestType.LOGIN_DAYS, 1);
+    }
     return true;
   }
 
@@ -640,7 +650,8 @@ export class BaseGameRoom extends Room<RoomState> {
             fromDiamond: fromPlayer?.userData?.diamond,
             toDiamond: toPlayer?.userData?.diamond,
           });
-
+          QuestEventEmitter.emitProgress(fromPlayer?.userData?.id, QuestType.PLAY_RPS, 1);
+          QuestEventEmitter.emitProgress(toPlayer?.userData?.id, QuestType.PLAY_RPS, 1);
           this.minigameResultDict.delete(gameKey);
         }
       } else {
@@ -693,6 +704,7 @@ export class BaseGameRoom extends Room<RoomState> {
         message,
         this.removePet.bind(this),
       );
+      QuestEventEmitter.emitProgress(client.userData.id, QuestType.CATCH_PETS, 1);
     });
     this.onMessage('sendPetFollowPlayer', async (client, data) => {
       const { pets } = data;
