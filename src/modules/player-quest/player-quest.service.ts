@@ -257,24 +257,18 @@ export class PlayerQuestService extends BaseService<PlayerQuestEntity> {
       );
 
       const nowTimezone = moment().tz(timezone);
-      const endAt = nowTimezone.clone().add(10, 'days').toDate();
+      const endAt = nowTimezone.clone().add(9, 'days').toDate();
 
       normalDailies.forEach((quest, idx) => {
-        const newPlayerQuest = this.playerQuestRepo.create({
-          user: { id: userId },
-          quest,
-        });
-
-        if (idx === 1) {
-          newPlayerQuest.start_at = nowTimezone.toDate();
-        } else {
-          const startAt = firstLoginDay.clone().add(idx, 'days').toDate();
-          newPlayerQuest.start_at = startAt;
-        }
-
-        newPlayerQuest.end_at = endAt;
-
-        toSave.push(newPlayerQuest);
+        const startAt = firstLoginDay.clone().add(idx, 'days').toDate();
+        toSave.push(
+          this.playerQuestRepo.create({
+            user: { id: userId },
+            quest,
+            start_at: startAt,
+            end_at: endAt,
+          }),
+        );
       });
 
       const lastDaily = missingQuests.find(
@@ -282,7 +276,7 @@ export class PlayerQuestService extends BaseService<PlayerQuestEntity> {
       );
 
       if (lastDaily) {
-        const startAt = firstLoginDay.clone().add(7, 'days').toDate();
+        const startAt = firstLoginDay.clone().add(6, 'days').toDate();
 
         toSave.push(
           this.playerQuestRepo.create({
@@ -617,19 +611,14 @@ export class PlayerQuestService extends BaseService<PlayerQuestEntity> {
     const nowTimezone = moment().tz(timezone);
     const startOfDay = nowTimezone.startOf('day');
 
-    const endAt = nowTimezone.clone().add(10, 'days').toDate();
+    const endAt = nowTimezone.clone().add(9, 'days').toDate();
     const normalDailies = missingQuests.filter(
       (q) => q.quest.type === QuestType.NEWBIE_LOGIN,
     );
 
     normalDailies.forEach((quest, idx) => {
-      if (idx === 1) {
-        quest.start_at = nowTimezone.toDate();
-      } else {
-        const startAt = startOfDay.clone().add(idx, 'days').toDate();
-        quest.start_at = startAt;
-      }
-
+      const startAt = startOfDay.clone().add(idx, 'days').toDate();
+      quest.start_at = startAt;
       quest.end_at = endAt;
       toSave.push(quest);
     });
@@ -639,7 +628,7 @@ export class PlayerQuestService extends BaseService<PlayerQuestEntity> {
     );
 
     if (lastDaily) {
-      const startAt = startOfDay.clone().add(7, 'days').toDate();
+      const startAt = startOfDay.clone().add(6, 'days').toDate();
       lastDaily.start_at = startAt;
       lastDaily.end_at = endAt;
       toSave.push(lastDaily);
