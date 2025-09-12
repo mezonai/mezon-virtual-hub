@@ -242,7 +242,7 @@ export class PlayerQuestService extends BaseService<PlayerQuestEntity> {
       rewards: pq.quest?.reward?.items,
     };
   }
-  async initQuest(
+  async initQuests(
     userId: string,
     { timezone = 'Asia/Ho_Chi_Minh' }: FinishQuestQueryDto,
   ): Promise<{ message?: string }> {
@@ -334,12 +334,12 @@ export class PlayerQuestService extends BaseService<PlayerQuestEntity> {
   ): Promise<void> {
     const toSave: PlayerQuestEntity[] = [];
 
-    const [unsetTimeQuests, expiredQuests] = await Promise.all([
-      this.findUnsetTimeNewbieLoginQuest(userId, timezone),
+    const [newbieLogins, expiredQuests] = await Promise.all([
+      this.assignUnsetNewbieLoginQuestTimes(userId, timezone),
       this.findExpiredQuests(userId, timezone),
     ]);
 
-    toSave.push(...expiredQuests, ...unsetTimeQuests);
+    toSave.push(...expiredQuests, ...newbieLogins);
 
     if (!toSave.length) return;
 
@@ -589,7 +589,7 @@ export class PlayerQuestService extends BaseService<PlayerQuestEntity> {
     return await this.playerQuestRepo.save(playerQuest);
   }
 
-  async findUnsetTimeNewbieLoginQuest(
+  async assignUnsetNewbieLoginQuestTimes(
     userId: string,
     timezone: string,
   ): Promise<PlayerQuestEntity[]> {

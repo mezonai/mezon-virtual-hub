@@ -218,7 +218,7 @@ export class AuthService {
       gold: NEW_USER_GOLD_REWARD,
     });
 
-    await this.playerQuestService.initQuest(newUser.id, {
+    await this.playerQuestService.initQuests(newUser.id, {
       timezone: 'Asia/Ho_Chi_Minh',
     });
 
