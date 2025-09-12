@@ -242,7 +242,7 @@ export class PlayerQuestService extends BaseService<PlayerQuestEntity> {
       rewards: pq.quest?.reward?.items,
     };
   }
-  async initQuest(
+  async initQuests(
     userId: string,
     { timezone = 'Asia/Ho_Chi_Minh' }: FinishQuestQueryDto,
   ): Promise<{ message?: string }> {
@@ -256,22 +256,25 @@ export class PlayerQuestService extends BaseService<PlayerQuestEntity> {
         (q) => q.type === QuestType.NEWBIE_LOGIN,
       );
 
-      normalDailies.forEach((quest, idx) => {
-        const startAt = firstLoginDay.clone().add(idx, 'days').toDate();
-        const endAt = firstLoginDay
-          .clone()
-          .add(9, 'days')
-          .endOf('day')
-          .toDate();
+      const nowTimezone = moment().tz(timezone);
+      const endAt = nowTimezone.clone().add(10, 'days').toDate();
 
-        toSave.push(
-          this.playerQuestRepo.create({
-            user: { id: userId },
-            quest,
-            start_at: startAt,
-            end_at: endAt,
-          }),
-        );
+      normalDailies.forEach((quest, idx) => {
+        const newPlayerQuest = this.playerQuestRepo.create({
+          user: { id: userId },
+          quest,
+        });
+
+        if (idx === 1) {
+          newPlayerQuest.start_at = nowTimezone.toDate();
+        } else {
+          const startAt = firstLoginDay.clone().add(idx, 'days').toDate();
+          newPlayerQuest.start_at = startAt;
+        }
+
+        newPlayerQuest.end_at = endAt;
+
+        toSave.push(newPlayerQuest);
       });
 
       const lastDaily = missingQuests.find(
@@ -279,12 +282,7 @@ export class PlayerQuestService extends BaseService<PlayerQuestEntity> {
       );
 
       if (lastDaily) {
-        const startAt = firstLoginDay.clone().add(6, 'days').toDate();
-        const endAt = firstLoginDay
-          .clone()
-          .add(9, 'days')
-          .endOf('day')
-          .toDate();
+        const startAt = firstLoginDay.clone().add(7, 'days').toDate();
 
         toSave.push(
           this.playerQuestRepo.create({
@@ -334,12 +332,12 @@ export class PlayerQuestService extends BaseService<PlayerQuestEntity> {
   ): Promise<void> {
     const toSave: PlayerQuestEntity[] = [];
 
-    const [unsetTimeQuests, expiredQuests] = await Promise.all([
-      this.findUnsetTimeNewbieLoginQuest(userId, timezone),
+    const [newbieLogins, expiredQuests] = await Promise.all([
+      this.assignUnsetNewbieLoginTimes(userId, timezone),
       this.findExpiredQuests(userId, timezone),
     ]);
 
-    toSave.push(...expiredQuests, ...unsetTimeQuests);
+    toSave.push(...expiredQuests, ...newbieLogins);
 
     if (!toSave.length) return;
 
@@ -589,7 +587,7 @@ export class PlayerQuestService extends BaseService<PlayerQuestEntity> {
     return await this.playerQuestRepo.save(playerQuest);
   }
 
-  async findUnsetTimeNewbieLoginQuest(
+  async assignUnsetNewbieLoginTimes(
     userId: string,
     timezone: string,
   ): Promise<PlayerQuestEntity[]> {
@@ -616,17 +614,22 @@ export class PlayerQuestService extends BaseService<PlayerQuestEntity> {
     if (!missingQuests.length) return [];
 
     const toSave: PlayerQuestEntity[] = [];
+    const nowTimezone = moment().tz(timezone);
+    const startOfDay = nowTimezone.startOf('day');
 
-    const firstLoginDay = moment.tz(timezone).startOf('day');
+    const endAt = nowTimezone.clone().add(10, 'days').toDate();
     const normalDailies = missingQuests.filter(
       (q) => q.quest.type === QuestType.NEWBIE_LOGIN,
     );
 
     normalDailies.forEach((quest, idx) => {
-      const startAt = firstLoginDay.clone().add(idx, 'days').toDate();
-      const endAt = firstLoginDay.clone().add(9, 'days').endOf('day').toDate();
+      if (idx === 1) {
+        quest.start_at = nowTimezone.toDate();
+      } else {
+        const startAt = startOfDay.clone().add(idx, 'days').toDate();
+        quest.start_at = startAt;
+      }
 
-      quest.start_at = startAt;
       quest.end_at = endAt;
       toSave.push(quest);
     });
@@ -636,8 +639,7 @@ export class PlayerQuestService extends BaseService<PlayerQuestEntity> {
     );
 
     if (lastDaily) {
-      const startAt = firstLoginDay.clone().add(6, 'days').toDate();
-      const endAt = firstLoginDay.clone().add(9, 'days').endOf('day').toDate();
+      const startAt = startOfDay.clone().add(7, 'days').toDate();
       lastDaily.start_at = startAt;
       lastDaily.end_at = endAt;
       toSave.push(lastDaily);
