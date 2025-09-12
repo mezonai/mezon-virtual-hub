@@ -151,12 +151,11 @@ export class BaseGameRoom extends Room<RoomState> {
       },
     );
 
-    console.log(`User ${user.username} is allowed in ${this.roomId}`);
+    this.logger.log(`User ${user.username} is allowed in ${this.roomId}`);
     client.userData = userWithPets;
     PlayerSessionManager.register(client.userData.id, client);
     if (client?.userData?.id) {
-      await this.playerQuestService.initQuest(client.userData.id, { timezone : 'Asia/Ho_Chi_Minh' });
-      QuestEventEmitter.emitProgress(client.userData.id, QuestType.NEWBIE_LOGIN);
+      QuestEventEmitter.emitNewbieLogin(client.userData.id);
       QuestEventEmitter.emitProgress(client.userData.id, QuestType.LOGIN_DAYS, 1);
     }
     return true;
