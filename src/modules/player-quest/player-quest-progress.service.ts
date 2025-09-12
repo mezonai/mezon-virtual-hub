@@ -4,7 +4,7 @@ import { MessageTypes } from '@modules/colyseus/MessageTypes';
 import { PlayerSessionManager } from '@modules/colyseus/player/PlayerSessionManager';
 import { Inject } from '@nestjs/common';
 import moment from 'moment';
-import { LessThanOrEqual, MoreThanOrEqual } from 'typeorm';
+import { In, LessThanOrEqual, MoreThanOrEqual } from 'typeorm';
 import { PlayerQuestEntity } from './entity/player-quest.entity';
 import { PlayerQuestService } from './player-quest.service';
 
@@ -13,7 +13,7 @@ export class PlayerQuestProgressService {
     @Inject()
     private readonly playerQuestService: PlayerQuestService,
     private readonly logger: Logger,
-  ) { }
+  ) {}
 
   async addProgress(
     userId: string,
@@ -21,13 +21,21 @@ export class PlayerQuestProgressService {
     amount = 1,
     label?: string,
   ) {
+    if (
+      [QuestType.NEWBIE_LOGIN, QuestType.NEWBIE_LOGIN_SPECIAL].includes(
+        questType,
+      )
+    ) {
+      return;
+    }
     const now = new Date();
 
     const playerQuests = await this.playerQuestService.find({
       where: {
         user: { id: userId },
-        quest: { type: questType },
-        is_completed: false,
+        quest: {
+          type: questType,
+        },
         start_at: LessThanOrEqual(now),
         end_at: MoreThanOrEqual(now),
       },
@@ -37,14 +45,10 @@ export class PlayerQuestProgressService {
     if (!playerQuests.length) return;
 
     const questsToSave: PlayerQuestEntity[] = [];
-
-    if (this.playerQuestService.hasCompletedNewbieLoginToday(playerQuests)) {
-      return;
-    }
-
     let hasCompleted = false;
+
     for (const pq of playerQuests) {
-      if (pq.completed_at || this.isAvailableQuest(pq)) continue;
+      if (pq.completed_at || this.isUnavailableQuest(pq)) continue;
 
       if (!pq.progress_history) {
         pq.progress_history = [];
@@ -81,11 +85,50 @@ export class PlayerQuestProgressService {
       await this.playerQuestService.saveAll(questsToSave);
     }
 
-    if (hasCompleted && ![QuestType.NEWBIE_LOGIN, QuestType.NEWBIE_LOGIN_SPECIAL].includes(questType)
-    ) {
-      this.logger.log(`User ${userId} has complete ${questType}`)
+    if (hasCompleted) {
+      this.logger.log(`User ${userId} has complete ${questType}`);
       await this.notifyHasUnclaimedQuests(userId);
     }
+  }
+
+  async completeNewbieLogin(userId: string) {
+    const now = new Date();
+    const playerQuests = await this.playerQuestService.find({
+      where: {
+        user: { id: userId },
+        quest: {
+          type: In([QuestType.NEWBIE_LOGIN, QuestType.NEWBIE_LOGIN_SPECIAL]),
+        },
+        start_at: LessThanOrEqual(now),
+        end_at: MoreThanOrEqual(now),
+      },
+      relations: ['quest'],
+      order: { end_at: 'ASC' },
+    });
+
+    if (!playerQuests.length) return;
+
+    // If any quest already completed today → stop
+    if (this.playerQuestService.hasCompletedNewbieLoginToday(playerQuests)) {
+      return;
+    }
+
+    // Pick the first uncompleted quest (already sorted by end_at)
+    const questToComplete = playerQuests.find((pq) => !pq.completed_at);
+    if (!questToComplete) return;
+
+    if (!questToComplete.progress_history) {
+      questToComplete.progress_history = [];
+    }
+
+    questToComplete.progress_history.push({ timestamp: now });
+    questToComplete.completed_at = now;
+    questToComplete.is_completed = true;
+
+    await this.playerQuestService.saveAll([questToComplete]);
+    this.logger.log(
+      `User ${userId} has completed newbie login quest: ${questToComplete.quest.type}`,
+    );
   }
 
   checkLoginAndOfficeQuests(
@@ -104,7 +147,9 @@ export class PlayerQuestProgressService {
   public async notifyHasUnclaimedQuests(userId: string) {
     const client = PlayerSessionManager.getClient(userId);
     if (client) {
-      this.logger.log(`Send ${MessageTypes.NOTIFY_MISSION} to client: ${client.sessionId} at ${moment().tz('Asia/Ho_Chi_Minh').format('YYYY-MM-DD HH:mm:ss')}`)
+      this.logger.log(
+        `Send ${MessageTypes.NOTIFY_MISSION} to client: ${client.sessionId} at ${moment().tz('Asia/Ho_Chi_Minh').format('YYYY-MM-DD HH:mm:ss')}`,
+      );
       client.send(MessageTypes.NOTIFY_MISSION, {
         sessionId: client.sessionId,
         message: 'Notify mission',
@@ -112,7 +157,7 @@ export class PlayerQuestProgressService {
     }
   }
 
-  private isAvailableQuest(pq: PlayerQuestEntity): boolean {
+  private isUnavailableQuest(pq: PlayerQuestEntity): boolean {
     if (!pq.start_at) return false;
     const now = new Date();
     const startAt = new Date(pq.start_at);
