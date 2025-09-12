@@ -30,8 +30,6 @@ export const QuestEventEmitter = {
   },
 
   emitNewbieLogin(userId: string) {
-    GlobalEventCommon.emit(EventTypes.NEWBIE_LOGIN, {
-      userId,
-    });
+    GlobalEventCommon.emit(EventTypes.NEWBIE_LOGIN, userId);
   },
 };
