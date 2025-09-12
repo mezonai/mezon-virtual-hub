@@ -9,11 +9,17 @@ import {
   BadRequestException,
   Injectable,
   NotFoundException,
-  OnModuleInit,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import moment from 'moment';
-import { In, LessThanOrEqual, MoreThan, Not, Repository } from 'typeorm';
+import {
+  In,
+  IsNull,
+  LessThanOrEqual,
+  MoreThan,
+  Not,
+  Repository,
+} from 'typeorm';
 import {
   FinishQuestQueryDto,
   NewbieRewardDto,
@@ -24,7 +30,7 @@ import {
 import { PlayerQuestEntity } from './entity/player-quest.entity';
 
 @Injectable()
-export class PlayerQuestService extends BaseService<PlayerQuestEntity> implements OnModuleInit {
+export class PlayerQuestService extends BaseService<PlayerQuestEntity> {
   constructor(
     @InjectRepository(PlayerQuestEntity)
     private readonly playerQuestRepo: Repository<PlayerQuestEntity>,
@@ -38,9 +44,15 @@ export class PlayerQuestService extends BaseService<PlayerQuestEntity> implement
   }
 
   async onModuleInit() {
-    this.logger.log('QuestService initialized → creating missing quests for all users...');
-    const { initialized, renewed, skipped } = await this.initQuestsForAllUsers({ timezone: 'Asia/Ho_Chi_Minh' });
-    this.logger.log(`Create done - initialized: ${initialized}, renewed: ${renewed}, skipped: ${skipped}`);
+    this.logger.log(
+      'QuestService initialized → creating missing quests for all users...',
+    );
+    const { initialized, renewed, skipped } = await this.initQuestsForAllUsers({
+      timezone: 'Asia/Ho_Chi_Minh',
+    });
+    this.logger.log(
+      `Create done - initialized: ${initialized}, renewed: ${renewed}, skipped: ${skipped}`,
+    );
   }
 
   async getPlayerQuests(userId: string) {
@@ -147,7 +159,7 @@ export class PlayerQuestService extends BaseService<PlayerQuestEntity> implement
           quest: {
             type: In([QuestType.NEWBIE_LOGIN, QuestType.NEWBIE_LOGIN_SPECIAL]),
           },
-          end_at: MoreThan(new Date())
+          end_at: MoreThan(new Date()),
         },
         relations: [
           'quest',
@@ -233,10 +245,9 @@ export class PlayerQuestService extends BaseService<PlayerQuestEntity> implement
   async initQuest(
     userId: string,
     { timezone = 'Asia/Ho_Chi_Minh' }: FinishQuestQueryDto,
-  ): Promise<{ message?: string; }> {
+  ): Promise<{ message?: string }> {
     const missingQuests = await this.findMissingQuestsForPlayer(userId);
     const firstLoginDay = moment.tz(timezone).startOf('day');
-    const now = new Date();
     const toSave: PlayerQuestEntity[] = [];
 
     if (missingQuests.length) {
@@ -304,6 +315,43 @@ export class PlayerQuestService extends BaseService<PlayerQuestEntity> implement
       }
     }
 
+    const expiredQuests = await this.findExpiredQuests(userId, timezone);
+
+    toSave.push(...expiredQuests);
+
+    if (toSave.length) {
+      await this.playerQuestRepo.save(toSave);
+    }
+
+    return {
+      message: toSave.length ? undefined : 'No quests to initialize or renew',
+    };
+  }
+
+  async renewQuests(
+    userId: string,
+    { timezone = 'Asia/Ho_Chi_Minh' }: FinishQuestQueryDto,
+  ): Promise<void> {
+    const toSave: PlayerQuestEntity[] = [];
+
+    const [unsetTimeQuests, expiredQuests] = await Promise.all([
+      this.findUnsetTimeNewbieLoginQuest(userId, timezone),
+      this.findExpiredQuests(userId, timezone),
+    ]);
+
+    toSave.push(...expiredQuests, ...unsetTimeQuests);
+
+    if (!toSave.length) return;
+
+    await this.playerQuestRepo.save(toSave);
+  }
+
+  async findExpiredQuests(
+    userId: string,
+    timezone = 'Asia/Ho_Chi_Minh',
+  ): Promise<PlayerQuestEntity[]> {
+    const firstLoginDay = moment.tz(timezone).startOf('day');
+    const now = new Date();
     const expiredQuests = await this.playerQuestRepo.find({
       where: {
         quest: {
@@ -316,6 +364,10 @@ export class PlayerQuestService extends BaseService<PlayerQuestEntity> implement
       },
       relations: { quest: true },
     });
+
+    if (!expiredQuests.length) return [];
+
+    const toSave: PlayerQuestEntity[] = [];
 
     for (const pq of expiredQuests) {
       const { startAt, endAt } = this.calcQuestDuration(
@@ -333,17 +385,16 @@ export class PlayerQuestService extends BaseService<PlayerQuestEntity> implement
       toSave.push(pq);
     }
 
-    if (toSave.length) {
-      await this.playerQuestRepo.save(toSave);
-    }
-    return {
-      message: toSave.length ? undefined : 'No quests to initialize or renew',
-    };
+    return toSave;
   }
 
-  async initQuestsForAllUsers(
-    { timezone = 'Asia/Ho_Chi_Minh' }: FinishQuestQueryDto,
-  ): Promise<{ initialized: number; renewed: number; skipped: number }> {
+  async initQuestsForAllUsers({
+    timezone = 'Asia/Ho_Chi_Minh',
+  }: FinishQuestQueryDto): Promise<{
+    initialized: number;
+    renewed: number;
+    skipped: number;
+  }> {
     const users = await this.userService.find({ select: ['id'] });
     const firstLoginDay = moment.tz(timezone).startOf('day');
     const now = new Date();
@@ -365,19 +416,10 @@ export class PlayerQuestService extends BaseService<PlayerQuestEntity> implement
         );
 
         normalDailies.forEach((quest, idx) => {
-          const startAt = firstLoginDay.clone().add(idx, 'days').toDate();
-          const endAt = firstLoginDay
-            .clone()
-            .add(9, 'days')
-            .endOf('day')
-            .toDate();
-
           toSave.push(
             this.playerQuestRepo.create({
               user: { id: userId },
               quest,
-              start_at: startAt,
-              end_at: endAt,
             }),
           );
         });
@@ -387,19 +429,10 @@ export class PlayerQuestService extends BaseService<PlayerQuestEntity> implement
         );
 
         if (lastDaily) {
-          const startAt = firstLoginDay.clone().add(6, 'days').toDate();
-          const endAt = firstLoginDay
-            .clone()
-            .add(9, 'days')
-            .endOf('day')
-            .toDate();
-
           toSave.push(
             this.playerQuestRepo.create({
               user: { id: userId },
               quest: lastDaily,
-              start_at: startAt,
-              end_at: endAt,
             }),
           );
         }
@@ -411,7 +444,10 @@ export class PlayerQuestService extends BaseService<PlayerQuestEntity> implement
         );
 
         for (const quest of others) {
-          const { startAt, endAt } = this.calcQuestDuration(firstLoginDay, quest);
+          const { startAt, endAt } = this.calcQuestDuration(
+            firstLoginDay,
+            quest,
+          );
           toSave.push(
             this.playerQuestRepo.create({
               user: { id: userId },
@@ -467,7 +503,6 @@ export class PlayerQuestService extends BaseService<PlayerQuestEntity> implement
   async checkUnclaimedQuest(
     userId: string,
   ): Promise<{ has_unclaimed: boolean }> {
-
     // ✅ Check if user has any unclaimed and unexpired quests
     const countUnclaimed = await this.playerQuestRepo.count({
       where: {
@@ -554,13 +589,76 @@ export class PlayerQuestService extends BaseService<PlayerQuestEntity> implement
     return await this.playerQuestRepo.save(playerQuest);
   }
 
+  async findUnsetTimeNewbieLoginQuest(
+    userId: string,
+    timezone: string,
+  ): Promise<PlayerQuestEntity[]> {
+    const missingQuests = await this.playerQuestRepo.find({
+      where: [
+        {
+          quest: {
+            type: In([QuestType.NEWBIE_LOGIN, QuestType.NEWBIE_LOGIN_SPECIAL]),
+          },
+          user: { id: userId },
+          start_at: IsNull(),
+        },
+        {
+          quest: {
+            type: In([QuestType.NEWBIE_LOGIN, QuestType.NEWBIE_LOGIN_SPECIAL]),
+          },
+          user: { id: userId },
+          end_at: IsNull(),
+        },
+      ],
+      relations: { quest: true },
+    });
+
+    if (!missingQuests.length) return [];
+
+    const toSave: PlayerQuestEntity[] = [];
+
+    const firstLoginDay = moment.tz(timezone).startOf('day');
+    const normalDailies = missingQuests.filter(
+      (q) => q.quest.type === QuestType.NEWBIE_LOGIN,
+    );
+
+    normalDailies.forEach((quest, idx) => {
+      const startAt = firstLoginDay.clone().add(idx, 'days').toDate();
+      const endAt = firstLoginDay.clone().add(9, 'days').endOf('day').toDate();
+
+      quest.start_at = startAt;
+      quest.end_at = endAt;
+      toSave.push(quest);
+    });
+
+    const lastDaily = missingQuests.find(
+      (q) => q.quest.type === QuestType.NEWBIE_LOGIN_SPECIAL,
+    );
+
+    if (lastDaily) {
+      const startAt = firstLoginDay.clone().add(6, 'days').toDate();
+      const endAt = firstLoginDay.clone().add(9, 'days').endOf('day').toDate();
+      lastDaily.start_at = startAt;
+      lastDaily.end_at = endAt;
+      toSave.push(lastDaily);
+    }
+
+    return toSave;
+  }
+
   hasCompletedNewbieLoginToday(quests: PlayerQuestEntity[]): boolean {
-    const startToDay = new Date(new Date().setHours(0, 0, 0, 0));
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+
+    const endOfToday = new Date();
+    endOfToday.setHours(23, 59, 59, 999);
+
     return quests.some(
       (pq) =>
         this.isNewbieLoginQuest(pq) &&
         pq.completed_at &&
-        pq.completed_at.getTime() >= startToDay.getTime(),
+        pq.completed_at >= startOfToday &&
+        pq.completed_at <= endOfToday,
     );
   }
 
