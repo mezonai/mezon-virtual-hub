@@ -1,6 +1,6 @@
-import { QuestType } from "@enum";
-import { GlobalEventCommon } from "@modules/shared/events/event-common";
-import { EventTypes } from "@modules/shared/events/event-types.enum";
+import { QuestType } from '@enum';
+import { GlobalEventCommon } from '@modules/shared/events/event-common';
+import { EventTypes } from '@modules/shared/events/event-types.enum';
 
 export interface QuestProgressPayload {
   userId: string;
@@ -15,7 +15,21 @@ export interface QuestCompletedPayload {
 }
 
 export const QuestEventEmitter = {
-  emitProgress(userId: string, questKey: QuestType, quantity = 1, nameOffice?: string) {
-    GlobalEventCommon.emit(EventTypes.QUEST, { userId, questKey, quantity, label: nameOffice });
+  emitProgress(
+    userId: string,
+    questKey: QuestType,
+    quantity = 1,
+    nameOffice?: string,
+  ) {
+    GlobalEventCommon.emit(EventTypes.QUEST, {
+      userId,
+      questKey,
+      quantity,
+      label: nameOffice,
+    });
+  },
+
+  emitNewbieLogin(userId: string) {
+    GlobalEventCommon.emit(EventTypes.NEWBIE_LOGIN, userId);
   },
 };

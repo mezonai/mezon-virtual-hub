@@ -8,8 +8,10 @@ import {
 import { EntityManager } from 'typeorm';
 
 import { configEnv } from '@config/env.config';
+import { NEW_USER_GOLD_REWARD } from '@constant';
 import { GenericRepository } from '@libs/repository/genericRepository';
 import { generateMezonHash } from '@libs/utils/hash';
+import { PlayerQuestService } from '@modules/player-quest/player-quest.service';
 import { UserEntity } from '@modules/user/entity/user.entity';
 import { JwtService } from '@nestjs/jwt';
 import { isEmail } from 'class-validator';
@@ -23,9 +25,6 @@ import {
 } from './dtos/request';
 import { JwtPayload } from './dtos/response';
 import { OAuth2Service } from './oauth2.service';
-import { NEW_USER_GOLD_REWARD } from '@constant';
-import { QuestEventEmitter } from '@modules/player-quest/events/quest.events';
-import { QuestType } from '@enum';
 
 @Injectable()
 export class AuthService {
@@ -34,6 +33,7 @@ export class AuthService {
     private manager: EntityManager,
     private readonly jwtService: JwtService,
     private readonly oauth2Service: OAuth2Service,
+    private readonly playerQuestService: PlayerQuestService,
   ) {
     this.userRepository = new GenericRepository(UserEntity, manager);
   }
@@ -204,6 +204,9 @@ export class AuthService {
 
     if (user) {
       const tokens = await this.generateAccessAndRefreshTokens(user);
+      await this.playerQuestService.renewQuests(user.id, {
+        timezone: 'Asia/Ho_Chi_Minh',
+      });
       return tokens;
     }
 
@@ -213,6 +216,10 @@ export class AuthService {
       avatar_url,
       email: mezon_id,
       gold: NEW_USER_GOLD_REWARD,
+    });
+
+    await this.playerQuestService.initQuests(newUser.id, {
+      timezone: 'Asia/Ho_Chi_Minh',
     });
 
     const tokens = await this.generateAccessAndRefreshTokens(newUser);
