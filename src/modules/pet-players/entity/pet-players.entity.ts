@@ -11,7 +11,6 @@ import {
   ArrayMaxSize,
   ArrayNotEmpty,
   IsBoolean,
-  IsEnum,
   IsInt,
   IsOptional,
   IsString,
@@ -46,6 +45,8 @@ export class PetPlayersEntity extends AuditEntity {
   @Column({ type: 'int', default: 1 })
   @ApiProperty()
   @IsInt()
+  @Min(1)
+  @Max(3)
   @Type(() => Number)
   stars: number = 1;
 

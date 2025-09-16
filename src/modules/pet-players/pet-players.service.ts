@@ -15,10 +15,18 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { plainToInstance } from 'class-transformer';
 import { error } from 'node:console';
-import { EntityManager, FindOptionsWhere, In, Not, Repository } from 'typeorm';
+import {
+  DataSource,
+  EntityManager,
+  FindOptionsWhere,
+  In,
+  Not,
+  Repository,
+} from 'typeorm';
 import {
   BattlePetPlayersDto,
   BringPetPlayersDtoList,
+  MergePetsDto,
   PetPlayersInfoDto,
   PetPlayersWithSpeciesDto,
   SpawnPetPlayersDto,
@@ -27,7 +35,7 @@ import {
   UpdatePetPlayersDto,
 } from './dto/pet-players.dto';
 import { PetPlayersEntity } from './entity/pet-players.entity';
-import { BASE_EXP_MAP } from '@constant';
+import { BASE_EXP_MAP, STAR_BONUS } from '@constant';
 import { AnimalRarity, SkillCode } from '@enum';
 import { getExpForNextLevel, serializeDto } from '@libs/utils';
 
@@ -43,6 +51,7 @@ export class PetPlayersService extends BaseService<PetPlayersEntity> {
     private readonly petsRepository: Repository<PetsEntity>,
     @InjectRepository(Inventory)
     private readonly inventoryRepository: Repository<Inventory>,
+    private readonly dataSource: DataSource,
     private manager: EntityManager,
   ) {
     super(petPlayersRepository, PetPlayersEntity.name);
@@ -536,34 +545,42 @@ export class PetPlayersService extends BaseService<PetPlayersEntity> {
 
     const level = petPlayer.level;
     // 📌 Recalculate stats with formulas
-    petPlayer.hp =
+    let hp =
       base.base_hp +
       Math.floor(((base.base_hp * 2 + iv) * level) / 100 + level + 10);
 
-    petPlayer.attack =
+    let attack =
       base.base_attack +
       Math.floor(((base.base_attack * 2 + iv) * level) / 100 + 5);
 
-    petPlayer.defense =
+    let defense =
       base.base_defense +
       Math.floor(((base.base_defense * 2 + iv) * level) / 100 + 5);
 
-    petPlayer.speed =
+    let speed =
       base.base_speed +
       Math.floor(((base.base_speed * 2 + iv) * level) / 100 + 5);
 
-    if (level >= this.unlockSkillSlot3Level || level >= this.unlockSkillSlot4Level) {
+    // 📌 Apply star bonus multiplier
+    const multiplier = STAR_BONUS[petPlayer.stars] ?? 1.0;
+    petPlayer.hp = Math.floor(hp * multiplier);
+    petPlayer.attack = Math.floor(attack * multiplier);
+    petPlayer.defense = Math.floor(defense * multiplier);
+    petPlayer.speed = Math.floor(speed * multiplier);
+
+    if (
+      level >= this.unlockSkillSlot3Level ||
+      level >= this.unlockSkillSlot4Level
+    ) {
       const pet = await this.petsRepository.findOne({
         where: {
-          id: base.id
+          id: base.id,
         },
         relations: ['skill_usages', 'skill_usages.skill'],
       });
 
       if (!pet) {
-        throw new NotFoundException(
-          `Pet ${base}  not found`,
-        );
+        throw new NotFoundException(`Pet ${base}  not found`);
       }
 
       if (!pet.skill_usages?.length) {
@@ -588,6 +605,65 @@ export class PetPlayersService extends BaseService<PetPlayersEntity> {
         petPlayer.skill_slot_4 = skill4;
       }
     }
+  }
+
+  async mergePets(userId: string, dto: MergePetsDto) {
+    const { pet_ids, keep_individual_value } = dto;
+
+    return this.dataSource.transaction(async (manager) => {
+      // 1. Find pets with a pessimistic lock
+      const pets = await manager.getRepository(PetPlayersEntity).find({
+        where: { id: In(pet_ids), user: { id: userId } },
+        relations: ['pet'],
+        lock: { mode: 'pessimistic_write', tables: ['pet_players'] },
+      });
+
+      if (pets.length !== 3) {
+        throw new BadRequestException(
+          'You must provide exactly 3 valid pets belonging to the user.',
+        );
+      }
+
+      // 2. Choose one as the "base" pet (keep the first one)
+      const basePet = pets[0];
+
+      // 3. Check they are the same pet type
+      const petTypeId = basePet.pet.id;
+      if (!pets.every((p) => p.pet.id === petTypeId)) {
+        throw new BadRequestException('All pets must be of the same type.');
+      }
+
+      // 4. Check they all have the same stars
+      const baseStars = basePet.stars;
+      if (!pets.every((p) => p.stars === baseStars)) {
+        throw new BadRequestException(
+          'All pets must have the same star level.',
+        );
+      }
+
+      // 5. Prevent exceeding max stars
+      if (baseStars >= 3) {
+        throw new BadRequestException('Base pet already has max stars (3).');
+      }
+
+      // 6. Delete the other two
+      const removeIds = pets.slice(1).map((p) => p.id);
+      await manager.getRepository(PetPlayersEntity).softDelete(removeIds);
+
+      // 7. Increase stars of base pet
+      basePet.stars += 1;
+
+      if (!keep_individual_value) {
+        basePet.individual_value = this.generateIndividualValue();
+      }
+
+      // 8. Recalculate stats inside transaction
+      await this.recalculateStats(basePet);
+
+      await manager.getRepository(PetPlayersEntity).save(basePet);
+
+      return basePet;
+    });
   }
 
   generateIndividualValue(): number {

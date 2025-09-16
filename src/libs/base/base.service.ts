@@ -13,7 +13,7 @@ export abstract class BaseService<T extends ObjectLiteral> {
   protected constructor(
     protected readonly repository: Repository<T>,
     private readonly entityName: string,
-  ) { }
+  ) {}
 
   create(dto: DeepPartial<T>): T {
     return this.repository.create(dto);
@@ -49,7 +49,16 @@ export abstract class BaseService<T extends ObjectLiteral> {
     return entity;
   }
 
-  async delete(id: number | string): Promise<void> {
+  async delete(
+    id:
+      | string
+      | string[]
+      | number
+      | number[]
+      | Date
+      | Date[]
+      | FindOptionsWhere<T>,
+  ): Promise<void> {
     await this.repository.delete(id);
   }
 
@@ -67,15 +76,26 @@ export abstract class BaseService<T extends ObjectLiteral> {
     return await this.repository.findOne(options);
   }
 
-  async update(criteria: string | string[] | number | number[], partialEntity: QueryDeepPartialEntity<T>) {
+  async update(
+    criteria: string | string[] | number | number[],
+    partialEntity: QueryDeepPartialEntity<T>,
+  ) {
     return await this.repository.update(criteria, partialEntity);
   }
 
-  async increment(conditions: FindOptionsWhere<T>, propertyPath: string, value: number | string) {
-    return await this.repository.increment(conditions, propertyPath, value)
+  async increment(
+    conditions: FindOptionsWhere<T>,
+    propertyPath: string,
+    value: number | string,
+  ) {
+    return await this.repository.increment(conditions, propertyPath, value);
   }
 
-  async decrement(conditions: FindOptionsWhere<T>, propertyPath: string, value: number | string) {
-    return await this.repository.decrement(conditions, propertyPath, value)
+  async decrement(
+    conditions: FindOptionsWhere<T>,
+    propertyPath: string,
+    value: number | string,
+  ) {
+    return await this.repository.decrement(conditions, propertyPath, value);
   }
 }
