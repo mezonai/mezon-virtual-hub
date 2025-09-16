@@ -6,7 +6,7 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
-  Query
+  Query,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -28,6 +28,7 @@ import { UserService } from '../user/user.service';
 import {
   BringPetPlayersDtoList,
   BulkUpdateBattleSlotsDto,
+  MergePetsDto,
   SpawnPetPlayersDto,
   UpdateBattleSkillsDto,
 } from './dto/pet-players.dto';
@@ -88,6 +89,16 @@ export class PetPlayersController {
   async bulkUpdateBattleSlots(@Body() { pets }: BulkUpdateBattleSlotsDto) {
     const user = this.cls.get<UserEntity>(USER_TOKEN);
     return await this.petPlayersService.bulkUpdateBattleSlots(user.id, pets);
+  }
+
+  @Post('merge')
+  @ApiOperation({
+    summary: 'Merging 3 pets having the same star',
+  })
+  @ApiBody({ type: MergePetsDto })
+  async mergePets(@Body() dto: MergePetsDto) {
+    const user = this.cls.get<UserEntity>(USER_TOKEN);
+    return this.petPlayersService.mergePets(user.id, dto);
   }
 
   @Put(':pet_player_id')
