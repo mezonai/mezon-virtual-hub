@@ -249,5 +249,5 @@ export class MergePetsDto {
   })
   @IsOptional()
   @IsBoolean()
-  keep_individual_value?: boolean;
+  keep_highest_iv?: boolean;
 }

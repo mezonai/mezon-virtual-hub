@@ -499,13 +499,15 @@ export class PetPlayersService extends BaseService<PetPlayersEntity> {
     const expPerWinner = Math.floor(totalExp / winners.length);
 
     for (const winner of winners) {
-      this.recalculateStats(winner, expPerWinner);
+      await this.recalculateStats(winner, expPerWinner);
+      await this.updateUnlockedSkills(winner);
     }
 
     // Give losers half of expPerWinner each
     const expPerLoser = Math.floor(expPerWinner / 2);
     for (const loser of losers) {
-      this.recalculateStats(loser, expPerLoser);
+      await this.recalculateStats(loser, expPerLoser);
+      await this.updateUnlockedSkills(loser);
     }
 
     await this.petPlayersRepository.save([...winners, ...losers]);
@@ -530,7 +532,7 @@ export class PetPlayersService extends BaseService<PetPlayersEntity> {
     return BASE_EXP_MAP[rarity] ?? fallback;
   }
 
-  async recalculateStats(petPlayer: PetPlayersEntity, expGain: number = 0) {
+  recalculateStats(petPlayer: PetPlayersEntity, expGain: number = 0) {
     const base = petPlayer.pet; // assuming `pet` relation has base stats
 
     if (!base) return;
@@ -567,48 +569,56 @@ export class PetPlayersService extends BaseService<PetPlayersEntity> {
     petPlayer.attack = Math.floor(attack * multiplier);
     petPlayer.defense = Math.floor(defense * multiplier);
     petPlayer.speed = Math.floor(speed * multiplier);
+  }
 
+  async updateUnlockedSkills(petPlayer: PetPlayersEntity) {
+    const level = petPlayer.level;
+    const base = petPlayer.pet;
+    if (!base) return;
+
+    // Only check skills if level is high enough
     if (
-      level >= this.unlockSkillSlot3Level ||
-      level >= this.unlockSkillSlot4Level
+      level < this.unlockSkillSlot3Level &&
+      level < this.unlockSkillSlot4Level
     ) {
-      const pet = await this.petsRepository.findOne({
-        where: {
-          id: base.id,
-        },
-        relations: ['skill_usages', 'skill_usages.skill'],
-      });
+      return;
+    }
 
-      if (!pet) {
-        throw new NotFoundException(`Pet ${base}  not found`);
-      }
+    const pet = await this.petsRepository.findOne({
+      where: { id: base.id },
+      relations: ['skill_usages', 'skill_usages.skill'],
+    });
 
-      if (!pet.skill_usages?.length) {
-        throw new BadRequestException(
-          `Pet ${base.species} did not set up any skills`,
-        );
-      }
+    if (!pet) {
+      throw new NotFoundException(`Pet ${base.id} not found`);
+    }
 
-      const skill3 = pet.skill_usages.find(
-        ({ skill_index }) => skill_index === 3,
-      )?.skill;
+    if (!pet.skill_usages?.length) {
+      throw new BadRequestException(
+        `Pet ${base.species} did not set up any skills`,
+      );
+    }
 
-      const skill4 = pet.skill_usages.find(
-        ({ skill_index }) => skill_index === 4,
-      )?.skill;
+    // Assign skill slots
+    const skill3 = pet.skill_usages.find(
+      ({ skill_index }) => skill_index === 3,
+    )?.skill;
 
-      if (skill3) {
-        petPlayer.skill_slot_3 = skill3;
-      }
+    const skill4 = pet.skill_usages.find(
+      ({ skill_index }) => skill_index === 4,
+    )?.skill;
 
-      if (skill4 && level >= this.unlockSkillSlot4Level) {
-        petPlayer.skill_slot_4 = skill4;
-      }
+    if (skill3 && level >= this.unlockSkillSlot3Level) {
+      petPlayer.skill_slot_3 = skill3;
+    }
+
+    if (skill4 && level >= this.unlockSkillSlot4Level) {
+      petPlayer.skill_slot_4 = skill4;
     }
   }
 
   async mergePets(userId: string, dto: MergePetsDto) {
-    const { pet_ids, keep_individual_value } = dto;
+    const { pet_ids, keep_highest_iv } = dto;
 
     return this.dataSource.transaction(async (manager) => {
       // 1. Find pets with a pessimistic lock
@@ -624,16 +634,23 @@ export class PetPlayersService extends BaseService<PetPlayersEntity> {
         );
       }
 
-      // 2. Choose one as the "base" pet (keep the first one)
-      const basePet = pets[0];
+      // 3. Choose base pet using the first pet id in payload
+      const basePetId = pet_ids[0];
+      const basePet = pets.find((p) => p.id === basePetId);
 
-      // 3. Check they are the same pet type
+      if (!basePet) {
+        throw new BadRequestException(
+          `Base pet with id ${basePetId} not found or does not belong to user.`,
+        );
+      }
+
+      // 4. Validate same pet type
       const petTypeId = basePet.pet.id;
       if (!pets.every((p) => p.pet.id === petTypeId)) {
         throw new BadRequestException('All pets must be of the same type.');
       }
 
-      // 4. Check they all have the same stars
+      // 5. Validate same stars
       const baseStars = basePet.stars;
       if (!pets.every((p) => p.stars === baseStars)) {
         throw new BadRequestException(
@@ -641,26 +658,52 @@ export class PetPlayersService extends BaseService<PetPlayersEntity> {
         );
       }
 
-      // 5. Prevent exceeding max stars
+      // 6. Prevent exceeding max stars
       if (baseStars >= 3) {
         throw new BadRequestException('Base pet already has max stars (3).');
       }
 
-      // 6. Delete the other two
-      const removeIds = pets.slice(1).map((p) => p.id);
-      await manager.getRepository(PetPlayersEntity).softDelete(removeIds);
+      // 7. Handle IV + diamonds
+      if (keep_highest_iv) {
+        // 2. Lock user row
+        const user = await manager.getRepository(UserEntity).findOne({
+          where: { id: userId },
+          lock: { mode: 'pessimistic_write', tables: ['user'] },
+        });
 
-      // 7. Increase stars of base pet
-      basePet.stars += 1;
+        if (!user) {
+          throw new NotFoundException('User not found.');
+        }
+        const highestIv = Math.max(...pets.map((p) => p.individual_value));
 
-      if (!keep_individual_value) {
-        basePet.individual_value = this.generateIndividualValue();
+        if (user.diamond < 10000) {
+          throw new BadRequestException(
+            'Not enough diamonds to keep highest IV (requires 10,000).',
+          );
+        }
+
+        user.diamond -= 10000;
+        await manager.getRepository(UserEntity).save(user);
+        basePet.individual_value = highestIv;
       }
 
-      // 8. Recalculate stats inside transaction
-      await this.recalculateStats(basePet);
+      // 8. Find other two pet ids will be deleted
+      const removeIds = pet_ids.slice(1);
 
-      await manager.getRepository(PetPlayersEntity).save(basePet);
+      // 9. Increase stars
+      basePet.stars += 1;
+
+      // 10. Recalculate stats
+      this.recalculateStats(basePet);
+
+      // 11. Save and remove pet synchronously
+
+      console.log('basePet', basePet.id);
+
+      await Promise.all([
+        manager.getRepository(PetPlayersEntity).save(basePet),
+        manager.getRepository(PetPlayersEntity).softDelete(removeIds),
+      ]);
 
       return basePet;
     });
