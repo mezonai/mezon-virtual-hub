@@ -20,12 +20,14 @@ import {
   EntityManager,
   FindOptionsWhere,
   In,
+  MoreThan,
   Not,
   Repository,
 } from 'typeorm';
 import {
   BattlePetPlayersDto,
   BringPetPlayersDtoList,
+  MergedPetPlayerDto,
   MergePetsDto,
   PetPlayersInfoDto,
   PetPlayersWithSpeciesDto,
@@ -35,9 +37,16 @@ import {
   UpdatePetPlayersDto,
 } from './dto/pet-players.dto';
 import { PetPlayersEntity } from './entity/pet-players.entity';
-import { BASE_EXP_MAP, STAR_BONUS } from '@constant';
+import {
+  BASE_EXP_MAP,
+  RARITY_CARD_REQUIREMENTS,
+  RARITY_ORDER,
+  RARITY_UPGRADE_RATES,
+  STAR_BONUS,
+} from '@constant';
 import { AnimalRarity, SkillCode } from '@enum';
 import { getExpForNextLevel, serializeDto } from '@libs/utils';
+import { Logger } from '@libs/logger';
 
 @Injectable()
 export class PetPlayersService extends BaseService<PetPlayersEntity> {
@@ -53,6 +62,7 @@ export class PetPlayersService extends BaseService<PetPlayersEntity> {
     private readonly inventoryRepository: Repository<Inventory>,
     private readonly dataSource: DataSource,
     private manager: EntityManager,
+    private readonly logger: Logger,
   ) {
     super(petPlayersRepository, PetPlayersEntity.name);
     this.catchChanceBase = configEnv().CATCH_CHANCE_BASE;
@@ -663,26 +673,30 @@ export class PetPlayersService extends BaseService<PetPlayersEntity> {
         throw new BadRequestException('Base pet already has max stars (3).');
       }
 
+      const user = await manager.getRepository(UserEntity).findOne({
+        where: { id: userId },
+        lock: { mode: 'pessimistic_write', tables: ['user'] },
+      });
+
+      if (!user) {
+        throw new NotFoundException('User not found.');
+      }
+
+      let updatedDiamond: number = user.diamond;
+
       // 7. Handle IV + diamonds
       if (keep_highest_iv) {
-        // 2. Lock user row
-        const user = await manager.getRepository(UserEntity).findOne({
-          where: { id: userId },
-          lock: { mode: 'pessimistic_write', tables: ['user'] },
-        });
-
-        if (!user) {
-          throw new NotFoundException('User not found.');
-        }
         const highestIv = Math.max(...pets.map((p) => p.individual_value));
+        const diamondCost = 10000;
 
-        if (user.diamond < 10000) {
+        if (user.diamond < diamondCost) {
           throw new BadRequestException(
             'Not enough diamonds to keep highest IV (requires 10,000).',
           );
         }
 
-        user.diamond -= 10000;
+        user.diamond -= diamondCost;
+        updatedDiamond = user.diamond;
         await manager.getRepository(UserEntity).save(user);
         basePet.individual_value = highestIv;
       }
@@ -698,14 +712,132 @@ export class PetPlayersService extends BaseService<PetPlayersEntity> {
 
       // 11. Save and remove pet synchronously
 
-      console.log('basePet', basePet.id);
-
       await Promise.all([
         manager.getRepository(PetPlayersEntity).save(basePet),
         manager.getRepository(PetPlayersEntity).softDelete(removeIds),
       ]);
 
-      return basePet;
+      return plainToInstance(MergedPetPlayerDto, {
+        pet: basePet,
+        user_diamond: updatedDiamond,
+      });
+    });
+  }
+
+  async upgradePetPlayerRarity(userId: string, petPlayerId: string) {
+    return this.dataSource.transaction(async (manager) => {
+      const petPlayerRepo = manager.getRepository(PetPlayersEntity);
+      const petsRepo = manager.getRepository(PetsEntity);
+      const inventoryTransactionRepo = manager.getRepository(Inventory);
+
+      // 1. Find pet player (with pet relation)
+      const petPlayer = await petPlayerRepo.findOne({
+        where: { id: petPlayerId, user: { id: userId } },
+        relations: ['pet'],
+        lock: { mode: 'pessimistic_write', tables: ['pet_players'] },
+      });
+
+      if (!petPlayer) {
+        throw new NotFoundException('Pet player not found');
+      }
+
+      // 2. Must have 3 stars
+      if (petPlayer.stars < 3) {
+        throw new BadRequestException(
+          'Pet must reach 3 stars before upgrading',
+        );
+      }
+
+      const currentPet = petPlayer.pet;
+      if (!currentPet) {
+        throw new BadRequestException('Pet player has no base pet');
+      }
+
+      // 3. Determine next rarity
+      const currentIdx = RARITY_ORDER.indexOf(currentPet.rarity);
+      if (currentIdx === -1 || currentIdx === RARITY_ORDER.length - 1) {
+        throw new BadRequestException('Pet is already at max rarity');
+      }
+
+      const nextRarity = RARITY_ORDER[currentIdx + 1];
+
+      if (
+        RARITY_ORDER.indexOf(nextRarity) >
+        RARITY_ORDER.indexOf(currentPet.max_rarity)
+      ) {
+        throw new BadRequestException(
+          `This pet cannot be upgraded beyond ${currentPet.max_rarity}`,
+        );
+      }
+
+      // 4. Check required item
+      const requiredItemCode = RARITY_CARD_REQUIREMENTS[nextRarity];
+      if (!requiredItemCode) {
+        throw new BadRequestException(
+          `No rarity card requirement defined for ${nextRarity}`,
+        );
+      }
+
+      // Deduct one card in a separate transaction (committed no matter what)
+      await this.dataSource
+        .getRepository(Inventory)
+        .manager.transaction(async (tx) => {
+          const inventoryItem = await tx.findOne(Inventory, {
+            where: {
+              user: { id: userId },
+              item: { item_code: requiredItemCode },
+              quantity: MoreThan(0),
+            },
+            relations: ['item'],
+            lock: { mode: 'pessimistic_write', tables: ['inventory'] },
+          });
+
+          if (!inventoryItem) {
+            throw new BadRequestException(
+              `You need a ${requiredItemCode} to upgrade to ${nextRarity}`,
+            );
+          }
+
+          inventoryItem.quantity -= 1;
+          await tx.save(inventoryItem);
+        });
+
+      // Roll success
+      const successRate = RARITY_UPGRADE_RATES[currentPet.rarity];
+      const roll = Math.random(); // 0.0 - 1.0
+
+      if (roll > successRate) {
+        throw new BadRequestException(
+          `Upgrade failed! (${Math.round(successRate * 100)}% chance)`,
+        );
+      }
+
+      // 5. Find the upgraded pet species with next rarity
+      const upgradedPet = await petsRepo.findOne({
+        where: {
+          species: currentPet.species,
+          type: currentPet.type,
+          rarity: nextRarity,
+        },
+      });
+
+      if (!upgradedPet) {
+        this.logger.warn(
+          `Pet with species=${currentPet.species}, type=${currentPet.type}, rarity=${nextRarity} wasn't created`,
+        );
+        throw new BadRequestException(
+          `No pet found for species=${currentPet.species}, type=${currentPet.type}, rarity=${nextRarity}`,
+        );
+      }
+
+      // 6. Update PetPlayer
+      petPlayer.pet = upgradedPet;
+      petPlayer.stars = 1;
+      this.recalculateStats(petPlayer);
+
+      await petPlayerRepo.save(petPlayer);
+
+      return plainToInstance(PetPlayersInfoDto, petPlayer);
     });
   }
 

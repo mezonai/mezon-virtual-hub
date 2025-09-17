@@ -43,7 +43,10 @@ export class TransactionsEntity {
   extra_attribute: string | null;
 
   @ManyToOne(() => Inventory, { nullable: true })
-  @JoinColumn({ name: 'inventory_id' })
+  @JoinColumn({
+    name: 'inventory_id',
+    foreignKeyConstraintName: 'FK_transactions_inventory',
+  })
   inventory?: Inventory | null;
 
   @CreateDateColumn({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })

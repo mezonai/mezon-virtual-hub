@@ -185,6 +185,22 @@ export class PetPlayersController {
     );
   }
 
+  @Post(':pet_player_id/upgrade-rarity')
+  @ApiParam({
+    name: 'pet_player_id',
+    example: '91bea29f-0e87-42a5-b851-d9d0386ac32f',
+  })
+  @ApiOperation({
+    summary: 'Upgrade rarity of pet player',
+  })
+  async upgradePetPlayerRarity(
+    @Param('pet_player_id', ParseUUIDPipe)
+    petPlayerId: string,
+  ) {
+    const user = this.cls.get<UserEntity>(USER_TOKEN);
+    return this.petPlayersService.upgradePetPlayerRarity(user.id, petPlayerId);
+  }
+
   @Post('bring-pets')
   @ApiOperation({
     summary: 'Bring multiple pets with the player',

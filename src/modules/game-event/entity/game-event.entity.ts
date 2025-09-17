@@ -33,10 +33,15 @@ export class GameEventEntity extends AuditEntity {
   @ManyToMany(() => UserEntity, { eager: true })
   @JoinTable({
     name: 'event_completed_users',
-    joinColumn: { name: 'event_id', referencedColumnName: 'id' },
+    joinColumn: {
+      name: 'event_id',
+      referencedColumnName: 'id',
+      foreignKeyConstraintName: 'FK_event_completed_event',
+    },
     inverseJoinColumn: {
       name: 'completed_user_id',
       referencedColumnName: 'id',
+      foreignKeyConstraintName: 'FK_event_completed_user',
     },
   })
   completed_users: UserEntity[];

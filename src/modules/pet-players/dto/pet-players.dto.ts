@@ -251,3 +251,13 @@ export class MergePetsDto {
   @IsBoolean()
   keep_highest_iv?: boolean;
 }
+
+export class MergedPetPlayerDto {
+  @Expose()
+  @Type(() => PetPlayersInfoDto)
+  pet: PetPlayersInfoDto;
+
+  @Expose()
+  @Type(() => Number)
+  user_diamond: number;
+}
