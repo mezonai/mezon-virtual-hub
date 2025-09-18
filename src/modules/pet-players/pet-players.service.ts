@@ -39,6 +39,7 @@ import {
 import { PetPlayersEntity } from './entity/pet-players.entity';
 import {
   BASE_EXP_MAP,
+  MERGE_PET_DIAMOND_COST,
   RARITY_CARD_REQUIREMENTS,
   RARITY_ORDER,
   RARITY_UPGRADE_RATES,
@@ -687,15 +688,14 @@ export class PetPlayersService extends BaseService<PetPlayersEntity> {
       // 7. Handle IV + diamonds
       if (keep_highest_iv) {
         const highestIv = Math.max(...pets.map((p) => p.individual_value));
-        const diamondCost = 10000;
 
-        if (user.diamond < diamondCost) {
+        if (user.diamond < MERGE_PET_DIAMOND_COST) {
           throw new BadRequestException(
             'Not enough diamonds to keep highest IV (requires 10,000).',
           );
         }
 
-        user.diamond -= diamondCost;
+        user.diamond -= MERGE_PET_DIAMOND_COST;
         updatedDiamond = user.diamond;
         await manager.getRepository(UserEntity).save(user);
         basePet.individual_value = highestIv;
@@ -728,7 +728,6 @@ export class PetPlayersService extends BaseService<PetPlayersEntity> {
     return this.dataSource.transaction(async (manager) => {
       const petPlayerRepo = manager.getRepository(PetPlayersEntity);
       const petsRepo = manager.getRepository(PetsEntity);
-      const inventoryTransactionRepo = manager.getRepository(Inventory);
 
       // 1. Find pet player (with pet relation)
       const petPlayer = await petPlayerRepo.findOne({
