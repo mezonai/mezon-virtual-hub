@@ -75,7 +75,7 @@ export class GameController {
             },
           ],
           user_gold: 100,
-        }
+        },
       },
       noReward: {
         summary: 'Example response with no rewards',
@@ -96,9 +96,9 @@ export class GameController {
     return this.gameService.giveInitialReward(user);
   }
 
-  @Get('reward-percent')
-  @ApiOperation({ summary: 'Get the percentage of reward slot machine' })
-  async getRewardPercent() {
-    return this.gameService.getRewardPercent();
+  @Get('config')
+  @ApiOperation({ summary: 'Get game configuration (rewards & costs)' })
+  async getGameConfig() {
+    return this.gameService.getGameConfig();
   }
 }

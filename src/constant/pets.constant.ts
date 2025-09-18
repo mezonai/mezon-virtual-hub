@@ -35,3 +35,5 @@ export const RARITY_UPGRADE_RATES: Record<AnimalRarity, number> = {
   [AnimalRarity.EPIC]: 0.6, // 60%
   [AnimalRarity.LEGENDARY]: 0.4, // 40%
 };
+
+export const MERGE_PET_DIAMOND_COST = 10000;

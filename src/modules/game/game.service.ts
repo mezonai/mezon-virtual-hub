@@ -1,6 +1,15 @@
 import { configEnv } from '@config/env.config';
-import { NEW_USER_FOOD_REWARD_QUANTITY } from '@constant';
-import { FoodType, Gender, QuestType, RewardConfig, RewardSlotType } from '@enum';
+import {
+  MERGE_PET_DIAMOND_COST,
+  NEW_USER_FOOD_REWARD_QUANTITY,
+} from '@constant';
+import {
+  FoodType,
+  Gender,
+  QuestType,
+  RewardConfig,
+  RewardSlotType,
+} from '@enum';
 import { FoodEntity } from '@modules/food/entity/food.entity';
 import { FoodService } from '@modules/food/food.service';
 import { InventoryService } from '@modules/inventory/inventory.service';
@@ -134,13 +143,13 @@ export class GameService {
           coinReward =
             Math.floor(
               Math.random() *
-              (RewardConfig.HIGH_COIN_MAX - RewardConfig.HIGH_COIN_MIN + 1)
+                (RewardConfig.HIGH_COIN_MAX - RewardConfig.HIGH_COIN_MIN + 1),
             ) + RewardConfig.HIGH_COIN_MIN;
         } else {
           coinReward =
             Math.floor(
               Math.random() *
-              (RewardConfig.LOW_COIN_MAX - RewardConfig.LOW_COIN_MIN + 1)
+                (RewardConfig.LOW_COIN_MAX - RewardConfig.LOW_COIN_MIN + 1),
             ) + RewardConfig.LOW_COIN_MIN;
         }
 
@@ -225,7 +234,7 @@ export class GameService {
     return { rewards };
   }
 
-  getRewardPercent() {
+  getGameConfig() {
     const totalRewardPercent =
       this.itemPercent +
       this.coinPercent +
@@ -234,13 +243,20 @@ export class GameService {
       this.foodUltraPercent;
 
     return {
-      item: this.itemPercent,
-      gold: this.coinPercent,
-      normalFood: this.foodNormalPercent,
-      premiumFood: this.foodPremiumPercent,
-      ultraFood: this.foodUltraPercent,
-      none: 100 - totalRewardPercent,
-      spinCost: this.SPIN_COST,
+      spinRewardsPercent: {
+        item: this.itemPercent,
+        gold: this.coinPercent,
+        food: {
+          normal: this.foodNormalPercent,
+          premium: this.foodPremiumPercent,
+          ultra: this.foodUltraPercent,
+        },
+        none: 100 - totalRewardPercent,
+      },
+      costs: {
+        spin: this.SPIN_COST,
+        mergePetDiamond: MERGE_PET_DIAMOND_COST,
+      },
     };
   }
 }
