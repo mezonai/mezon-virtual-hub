@@ -12,12 +12,6 @@ export class ItemDto {
   name: string;
 
   @Expose()
-  is_equippable: boolean;
-
-  @Expose()
-  is_static: boolean;
-
-  @Expose()
   gold?: number;
 
   @Expose()

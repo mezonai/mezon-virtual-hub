@@ -1,6 +1,11 @@
-import { SkillCode } from '@enum';
+import { AnimalRarity, SkillCode } from '@enum';
 import { PetSkillUsageEntity } from '@modules/pet-skill-usages/entity/pet-skill-usages.entity';
-import { ApiProperty, OmitType, PickType } from '@nestjs/swagger';
+import {
+  ApiProperty,
+  ApiPropertyOptional,
+  OmitType,
+  PickType,
+} from '@nestjs/swagger';
 import { Exclude, Type } from 'class-transformer';
 import {
   ArrayMaxSize,

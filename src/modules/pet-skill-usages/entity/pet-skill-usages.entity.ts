@@ -11,8 +11,8 @@ import { PetsEntity } from '@modules/pets/entity/pets.entity';
 import { PetSkillsEntity } from '@modules/pet-skills/entity/pet-skills.entity';
 
 @Entity('pet_skill_usages')
-@Index(['pet', 'skill'], { unique: true })
-@Index(['pet', 'skill_index'], { unique: true })
+@Unique('IDX_pet_skill_usages_skill_code', ['pet', 'skill'])
+@Unique('UQ_pet_skill_usages_pet_index', ['pet', 'skill_index'])
 export class PetSkillUsageEntity {
   @PrimaryGeneratedColumn()
   id: number;
@@ -20,13 +20,19 @@ export class PetSkillUsageEntity {
   @ManyToOne(() => PetsEntity, (pet) => pet.skill_usages, {
     onDelete: 'CASCADE',
   })
-  @JoinColumn({ name: 'pet_id' })
+  @JoinColumn({
+    name: 'pet_id',
+    foreignKeyConstraintName: 'FK_pet_skill_usages_pet_id',
+  })
   pet: PetsEntity;
 
   @ManyToOne(() => PetSkillsEntity, (skill) => skill.skill_usages, {
     eager: true,
   })
-  @JoinColumn({ name: 'skill_code' })
+  @JoinColumn({
+    name: 'skill_code',
+    foreignKeyConstraintName: 'FK_pet_skill_usages_skill_code',
+  })
   skill: PetSkillsEntity;
 
   @Column({ type: 'int' })
