@@ -260,4 +260,19 @@ export class MergedPetPlayerDto {
   @Expose()
   @Type(() => Number)
   user_diamond: number;
+
+  @Expose()
+  @Type(() => Boolean)
+  success: boolean;
 }
+
+export class UpgradedRarityPetPlayerDto {
+  @Expose()
+  @Type(() => PetPlayersInfoDto)
+  pet: PetPlayersInfoDto;
+
+  @Expose()
+  @Type(() => Boolean)
+  success: boolean;
+}
+
