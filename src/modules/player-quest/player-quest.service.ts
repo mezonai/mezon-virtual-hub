@@ -181,11 +181,9 @@ export class PlayerQuestService extends BaseService<PlayerQuestEntity> {
   }
 
   toQuestProgressDto(entity: PlayerQuestEntity): NewbieRewardDto {
-    const { quest, start_at, end_at } = entity;
-    const now = new Date();
+    const { quest } = entity;
 
-    const isAvailable =
-      (!start_at || now >= start_at) && (!end_at || now <= end_at);
+    const isAvailable = entity.is_completed;
 
     return {
       id: entity.id,
