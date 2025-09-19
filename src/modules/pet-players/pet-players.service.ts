@@ -35,6 +35,7 @@ import {
   UpdateBattleSkillsDto,
   UpdatePetBattleSlotDto,
   UpdatePetPlayersDto,
+  UpgradedRarityPetPlayerDto,
 } from './dto/pet-players.dto';
 import { PetPlayersEntity } from './entity/pet-players.entity';
 import {
@@ -628,7 +629,10 @@ export class PetPlayersService extends BaseService<PetPlayersEntity> {
     }
   }
 
-  async mergePets(userId: string, dto: MergePetsDto) {
+  async mergePets(
+    userId: string,
+    dto: MergePetsDto,
+  ): Promise<MergedPetPlayerDto> {
     const { pet_ids, keep_highest_iv } = dto;
 
     return this.dataSource.transaction(async (manager) => {
@@ -701,8 +705,21 @@ export class PetPlayersService extends BaseService<PetPlayersEntity> {
         basePet.individual_value = highestIv;
       }
 
+      const successRate = RARITY_UPGRADE_RATES[basePet.pet.rarity];
+      const roll = Math.random();
+
       // 8. Find other two pet ids will be deleted
       const removeIds = pet_ids.slice(1);
+
+      if (roll > successRate) {
+        await manager.getRepository(PetPlayersEntity).softDelete(removeIds);
+
+        return plainToInstance(MergedPetPlayerDto, {
+          pet: basePet,
+          user_diamond: updatedDiamond,
+          success: false,
+        });
+      }
 
       // 9. Increase stars
       basePet.stars += 1;
@@ -720,14 +737,19 @@ export class PetPlayersService extends BaseService<PetPlayersEntity> {
       return plainToInstance(MergedPetPlayerDto, {
         pet: basePet,
         user_diamond: updatedDiamond,
+        success: true,
       });
     });
   }
 
-  async upgradePetPlayerRarity(userId: string, petPlayerId: string) {
+  async upgradePetPlayerRarity(
+    userId: string,
+    petPlayerId: string,
+  ): Promise<UpgradedRarityPetPlayerDto> {
     return this.dataSource.transaction(async (manager) => {
       const petPlayerRepo = manager.getRepository(PetPlayersEntity);
       const petsRepo = manager.getRepository(PetsEntity);
+      const inventoryRepo = manager.getRepository(Inventory);
 
       // 1. Find pet player (with pet relation)
       const petPlayer = await petPlayerRepo.findOne({
@@ -778,37 +800,33 @@ export class PetPlayersService extends BaseService<PetPlayersEntity> {
       }
 
       // Deduct one card in a separate transaction (committed no matter what)
-      await this.dataSource
-        .getRepository(Inventory)
-        .manager.transaction(async (tx) => {
-          const inventoryItem = await tx.findOne(Inventory, {
-            where: {
-              user: { id: userId },
-              item: { item_code: requiredItemCode },
-              quantity: MoreThan(0),
-            },
-            relations: ['item'],
-            lock: { mode: 'pessimistic_write', tables: ['inventory'] },
-          });
+      const inventoryItem = await inventoryRepo.findOne({
+        where: {
+          user: { id: userId },
+          item: { item_code: requiredItemCode },
+          quantity: MoreThan(0),
+        },
+        relations: ['item'],
+        lock: { mode: 'pessimistic_write', tables: ['inventory'] },
+      });
 
-          if (!inventoryItem) {
-            throw new BadRequestException(
-              `You need a ${requiredItemCode} to upgrade to ${nextRarity}`,
-            );
-          }
+      if (!inventoryItem) {
+        throw new BadRequestException(
+          `You need a ${requiredItemCode} to upgrade to ${nextRarity}`,
+        );
+      }
 
-          inventoryItem.quantity -= 1;
-          await tx.save(inventoryItem);
-        });
-
+      inventoryItem.quantity -= 1;
+      await inventoryRepo.save(inventoryItem);
       // Roll success
       const successRate = RARITY_UPGRADE_RATES[currentPet.rarity];
       const roll = Math.random(); // 0.0 - 1.0
 
       if (roll > successRate) {
-        throw new BadRequestException(
-          `Upgrade failed! (${Math.round(successRate * 100)}% chance)`,
-        );
+        return plainToInstance(UpgradedRarityPetPlayerDto, {
+          pet: petPlayer,
+          success: false,
+        });
       }
 
       // 5. Find the upgraded pet species with next rarity
@@ -824,9 +842,10 @@ export class PetPlayersService extends BaseService<PetPlayersEntity> {
         this.logger.warn(
           `Pet with species=${currentPet.species}, type=${currentPet.type}, rarity=${nextRarity} wasn't created`,
         );
-        throw new BadRequestException(
-          `No pet found for species=${currentPet.species}, type=${currentPet.type}, rarity=${nextRarity}`,
-        );
+        return plainToInstance(UpgradedRarityPetPlayerDto, {
+          pet: petPlayer,
+          success: false,
+        });
       }
 
       // 6. Update PetPlayer
@@ -836,7 +855,10 @@ export class PetPlayersService extends BaseService<PetPlayersEntity> {
 
       await petPlayerRepo.save(petPlayer);
 
-      return plainToInstance(PetPlayersInfoDto, petPlayer);
+      return plainToInstance(UpgradedRarityPetPlayerDto, {
+        pet: petPlayer,
+        success: true,
+      });
     });
   }
 
