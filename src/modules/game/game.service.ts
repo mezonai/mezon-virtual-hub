@@ -2,6 +2,7 @@ import { configEnv } from '@config/env.config';
 import {
   MERGE_PET_DIAMOND_COST,
   NEW_USER_FOOD_REWARD_QUANTITY,
+  UPGRADE_PET_RATES,
 } from '@constant';
 import {
   FoodType,
@@ -15,6 +16,7 @@ import { FoodService } from '@modules/food/food.service';
 import { InventoryService } from '@modules/inventory/inventory.service';
 import { ItemEntity } from '@modules/item/entity/item.entity';
 import { ItemService } from '@modules/item/item.service';
+import { GameConfigResponseDto } from '@modules/pet-players/dto/pet-players.dto';
 import { QuestEventEmitter } from '@modules/player-quest/events/quest.events';
 import { UserEntity } from '@modules/user/entity/user.entity';
 import { BadRequestException, Injectable } from '@nestjs/common';
@@ -234,7 +236,7 @@ export class GameService {
     return { rewards };
   }
 
-  getGameConfig() {
+  getGameConfig(): GameConfigResponseDto {
     const totalRewardPercent =
       this.itemPercent +
       this.coinPercent +
@@ -243,19 +245,32 @@ export class GameService {
       this.foodUltraPercent;
 
     return {
-      spinRewardsPercent: {
-        item: this.itemPercent,
-        gold: this.coinPercent,
-        food: {
-          normal: this.foodNormalPercent,
-          premium: this.foodPremiumPercent,
-          ultra: this.foodUltraPercent,
-        },
-        none: 100 - totalRewardPercent,
-      },
       costs: {
-        spin: this.SPIN_COST,
-        mergePetDiamond: MERGE_PET_DIAMOND_COST,
+        spinGold: this.SPIN_COST,
+        upgradeStarsDiamond: MERGE_PET_DIAMOND_COST,
+      },
+      percent: {
+        upgradeStars: {
+          common: UPGRADE_PET_RATES.common,
+          rare: UPGRADE_PET_RATES.rare,
+          epic: UPGRADE_PET_RATES.epic,
+          legendary: UPGRADE_PET_RATES.legendary,
+        },
+        upgradeRarity: {
+          rare: UPGRADE_PET_RATES.rare,
+          epic: UPGRADE_PET_RATES.epic,
+          legendary: UPGRADE_PET_RATES.legendary,
+        },
+        spinRewards: {
+          item: this.itemPercent,
+          gold: this.coinPercent,
+          food: {
+            normal: this.foodNormalPercent,
+            premium: this.foodPremiumPercent,
+            ultra: this.foodUltraPercent,
+          },
+          none: 100 - totalRewardPercent,
+        },
       },
     };
   }
