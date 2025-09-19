@@ -29,11 +29,11 @@ export const RARITY_CARD_REQUIREMENTS: Record<AnimalRarity, ItemCode | null> = {
   [AnimalRarity.LEGENDARY]: ItemCode.RARITY_CARD_LEGENDARY,
 };
 
-export const RARITY_UPGRADE_RATES: Record<AnimalRarity, number> = {
-  [AnimalRarity.COMMON]: 1.0, // 100%
-  [AnimalRarity.RARE]: 0.8, // 80%
-  [AnimalRarity.EPIC]: 0.6, // 60%
-  [AnimalRarity.LEGENDARY]: 0.4, // 40%
+export const UPGRADE_PET_RATES: Record<AnimalRarity, number> = {
+  [AnimalRarity.COMMON]: 100,
+  [AnimalRarity.RARE]: 80,
+  [AnimalRarity.EPIC]: 60,
+  [AnimalRarity.LEGENDARY]: 40,
 };
 
 export const MERGE_PET_DIAMOND_COST = 10000;

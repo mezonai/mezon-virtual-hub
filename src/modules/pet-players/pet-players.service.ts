@@ -43,7 +43,7 @@ import {
   MERGE_PET_DIAMOND_COST,
   RARITY_CARD_REQUIREMENTS,
   RARITY_ORDER,
-  RARITY_UPGRADE_RATES,
+  UPGRADE_PET_RATES,
   STAR_BONUS,
 } from '@constant';
 import { AnimalRarity, SkillCode } from '@enum';
@@ -705,8 +705,8 @@ export class PetPlayersService extends BaseService<PetPlayersEntity> {
         basePet.individual_value = highestIv;
       }
 
-      const successRate = RARITY_UPGRADE_RATES[basePet.pet.rarity];
-      const roll = Math.random();
+      const successRate = UPGRADE_PET_RATES[basePet.pet.rarity];
+      const roll = Math.random() * 100;
 
       // 8. Find other two pet ids will be deleted
       const removeIds = pet_ids.slice(1);
@@ -819,8 +819,8 @@ export class PetPlayersService extends BaseService<PetPlayersEntity> {
       inventoryItem.quantity -= 1;
       await inventoryRepo.save(inventoryItem);
       // Roll success
-      const successRate = RARITY_UPGRADE_RATES[currentPet.rarity];
-      const roll = Math.random(); // 0.0 - 1.0
+      const successRate = UPGRADE_PET_RATES[currentPet.rarity];
+      const roll = Math.random() * 100;
 
       if (roll > successRate) {
         return plainToInstance(UpgradedRarityPetPlayerDto, {

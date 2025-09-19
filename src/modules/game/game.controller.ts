@@ -1,22 +1,18 @@
+import { USER_TOKEN } from '@constant';
+import { Public } from '@libs/decorator';
+import { GameConfigResponseDto } from '@modules/pet-players/dto/pet-players.dto';
+import { UserEntity } from '@modules/user/entity/user.entity';
+import { Controller, Get, Post } from '@nestjs/common';
 import {
-  Controller,
-  Post,
-  Body,
-  BadRequestException,
-  Get,
-  Logger,
-} from '@nestjs/common';
-import { GameService } from './game.service';
-import {
-  ApiTags,
-  ApiOperation,
   ApiBearerAuth,
+  ApiOkResponse,
+  ApiOperation,
   ApiResponse,
+  ApiTags,
 } from '@nestjs/swagger';
 import { ClsService } from 'nestjs-cls';
-import { USER_TOKEN } from '@constant';
-import { UserEntity } from '@modules/user/entity/user.entity';
 import { AwardResponseDto } from './dto/game.dto';
+import { GameService } from './game.service';
 
 @ApiTags('Game')
 @Controller('game')
@@ -97,7 +93,12 @@ export class GameController {
   }
 
   @Get('config')
+  @Public()
   @ApiOperation({ summary: 'Get game configuration (rewards & costs)' })
+  @ApiOkResponse({
+    description: 'Get game configuration (costs & percentages)',
+    type: GameConfigResponseDto,
+  })
   async getGameConfig() {
     return this.gameService.getGameConfig();
   }

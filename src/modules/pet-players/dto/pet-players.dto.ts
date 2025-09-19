@@ -276,3 +276,54 @@ export class UpgradedRarityPetPlayerDto {
   success: boolean;
 }
 
+export class GameConfigResponseDto {
+  @ApiProperty({
+    example: { spin: 100, spinGold: 500 },
+    description: 'Game costs configuration',
+  })
+  costs: {
+    spinGold: number;
+    upgradeStarsDiamond: number;
+  };
+
+  @ApiProperty({
+    example: {
+      upgradeStars: {
+        common: 0.7,
+        rare: 0.5,
+        epic: 0.3,
+        legendary: 0.1,
+      },
+      upgradeRarity: {
+        rare: 0.5,
+        epic: 0.3,
+        legendary: 0.1,
+      },
+      spinRewards: {
+        item: 15,
+        gold: 10,
+        food: {
+          normal: 40,
+          premium: 25,
+          ultra: 10,
+        },
+        none: 0,
+      },
+    },
+    description: 'Game percentage configuration',
+  })
+  percent: {
+    upgradeStars: Record<AnimalRarity, number>;
+    upgradeRarity: Partial<Record<AnimalRarity, number>>;
+    spinRewards: {
+      item: number;
+      gold: number;
+      food: {
+        normal: number;
+        premium: number;
+        ultra: number;
+      };
+      none: number;
+    };
+  };
+}
