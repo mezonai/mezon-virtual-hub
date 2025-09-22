@@ -43,7 +43,6 @@ export class ItemEntity extends AuditEntity {
     length: 100,
     nullable: true,
     unique: true,
-    
   })
   @ApiProperty({
     example: ItemCode.RARITY_CARD_EPIC,
@@ -60,4 +59,11 @@ export class ItemEntity extends AuditEntity {
 
   @Column({ type: 'boolean', default: false })
   is_stackable: boolean;
+
+  @Column({ type: 'boolean', default: true })
+  @ApiProperty({
+    example: true,
+    description: 'Indicates whether this item can be purchased',
+  })
+  is_purchasable: boolean;
 }

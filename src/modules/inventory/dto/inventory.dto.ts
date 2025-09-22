@@ -10,9 +10,6 @@ export class InventoryDto {
   id: string;
 
   @Exclude()
-  equipped: boolean;
-
-  @Exclude()
   item_id: boolean;
 
   @Exclude()

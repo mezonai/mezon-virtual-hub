@@ -1,13 +1,14 @@
 import { USER_TOKEN } from '@constant';
-import { InventoryType } from '@enum';
+import { InventoryType, ItemType } from '@enum';
 import { UserEntity } from '@modules/user/entity/user.entity';
 import {
   Controller,
   Get,
   Param,
+  ParseEnumPipe,
   ParseUUIDPipe,
   Post,
-  Query
+  Query,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -74,5 +75,21 @@ export class InventoryController {
   async getAllItemsOfUser() {
     const user = this.cls.get<UserEntity>(USER_TOKEN);
     return await this.inventoryService.getAllItemsOfUser(user);
+  }
+
+  @Get('item-type/:type')
+  @ApiParam({
+    name: 'type',
+    enum: ItemType,
+    description: 'Type of Item (must be one of ItemType enum values)',
+  })
+  @ApiOperation({
+    summary: 'Get items of user with specific item type',
+  })
+  async getItemsByType(
+    @Param('type', new ParseEnumPipe(ItemType)) type: ItemType,
+  ) {
+    const user = this.cls.get<UserEntity>(USER_TOKEN);
+    return await this.inventoryService.getItemsByType(user, type);
   }
 }
