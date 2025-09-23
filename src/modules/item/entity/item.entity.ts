@@ -16,7 +16,6 @@ export class ItemEntity extends AuditEntity {
     type: 'varchar',
     length: 20,
     nullable: true,
-    unique: true,
   })
   @ApiProperty({
     example: Gender.FEMALE,
@@ -34,7 +33,23 @@ export class ItemEntity extends AuditEntity {
   @Column({ type: 'int', default: 0 })
   gold: number;
 
-  @Column({ type: 'int' })
+  @Column({
+    name: 'type',
+    type: 'varchar',
+    length: 50,
+    nullable: false,
+  })
+  @ApiProperty({
+    example: ItemType.FACE,
+    enum: ItemType,
+  })
+  @IsString()
+  @Transform(({ value }) =>
+    typeof value === 'string' ? value.trim().toUpperCase() : value,
+  )
+  @Matches(/^\S+$/, {
+    message: 'type must not contain spaces',
+  })
   type: ItemType;
 
   @Column({

@@ -1,10 +1,11 @@
 import { Exclude, Expose } from 'class-transformer';
 import { ItemEntity } from '../entity/item.entity';
-import { Gender, ItemType } from '@enum';
-import { ApiProperty } from '@nestjs/swagger';
+import { Gender, ItemCode, ItemType } from '@enum';
+import { ApiProperty, PickType } from '@nestjs/swagger';
 import { IsString, IsOptional, IsNumber } from 'class-validator';
 
-export class ItemDto {
+@Exclude()
+export class ItemDto implements Partial<ItemEntity> {
   @Expose()
   id: string;
 
@@ -12,22 +13,10 @@ export class ItemDto {
   name: string;
 
   @Expose()
-  gold?: number;
+  type: ItemType;
 
   @Expose()
-  type: number;
-
-  @Expose()
-  gender: Gender;
-
-  @Exclude()
-  deleted_at: Date | null;
-
-  @Exclude()
-  updated_at: Date | null;
-
-  @Exclude()
-  created_at: Date | null;
+  item_code: ItemCode | null;
 }
 
 export class ItemDtoRequest {
@@ -60,29 +49,8 @@ export class ItemDtoRequest {
     description:
       'Type of the item (e.g., 1 for ACCESSORY, 2 for Shirt, 3 for Hair,...)',
     enum: ItemType,
-    example: ItemType.Face,
+    example: ItemType.EYES,
   })
   @IsNumber()
-  type: number;
-
-  @ApiProperty({
-    description: 'Indicates if the item is equippable',
-    example: true,
-  })
-  @IsOptional()
-  is_equippable?: boolean;
-
-  @ApiProperty({
-    description: 'Indicates if the item is static (non-movable)',
-    example: false,
-  })
-  @IsOptional()
-  is_static?: boolean;
-
-  @ApiProperty({
-    description: 'Indicates if the item is owned once or stack',
-    example: false,
-  })
-  @IsOptional()
-  is_stackable?: boolean;
+  type: ItemType;
 }
