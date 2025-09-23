@@ -7,11 +7,11 @@ export class SeedItemData1742788855483 implements MigrationInterface {
     await queryRunner.query(`
       INSERT INTO "item" ("name", "gold", "is_equippable", "is_static", "gender", "type")
       VALUES
-      ('Spiky Hair', 1, true, false, '${Gender.MALE}', ${ItemType.Hair}),
-      ('Blue Tank Top', 1, true, false, '${Gender.MALE}', ${ItemType.Upper}),
-      ('Blue Short', 1, true, false, '${Gender.MALE}', ${ItemType.Lower}),
-      ('V-Line Face', 1, true, false, '${Gender.NOT_SPECIFIED}', ${ItemType.Face}),
-      ('Fat Face', 1, true, false, '${Gender.NOT_SPECIFIED}', ${ItemType.Face});
+      ('Spiky Hair', 1, true, false, '${Gender.MALE}', ${ItemType.HAIR}),
+      ('Blue Tank Top', 1, true, false, '${Gender.MALE}', ${ItemType.UPPER}),
+      ('Blue Short', 1, true, false, '${Gender.MALE}', ${ItemType.LOWER}),
+      ('V-Line Face', 1, true, false, '${Gender.NOT_SPECIFIED}', ${ItemType.FACE}),
+      ('Fat Face', 1, true, false, '${Gender.NOT_SPECIFIED}', ${ItemType.FACE});
     `);
   }
 

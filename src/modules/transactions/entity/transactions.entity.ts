@@ -26,10 +26,18 @@ export class TransactionsEntity {
   @Column({ name: 'amount', type: 'numeric' })
   amount: number;
 
-  @Column({ type: 'enum', enum: TransactionType })
+  @Column({
+    type: 'enum',
+    enum: TransactionType,
+    enumName: 'transaction_type_enum',
+  })
   type: TransactionType;
 
-  @Column({ type: 'enum', enum: TransactionCurrency })
+  @Column({
+    type: 'enum',
+    enum: TransactionCurrency,
+    enumName: 'transaction_currency_enum',
+  })
   currency: TransactionCurrency;
 
   @ManyToOne(() => UserEntity, { eager: false })

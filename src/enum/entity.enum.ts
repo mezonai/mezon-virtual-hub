@@ -15,14 +15,15 @@ export enum SubMap {
 }
 
 export enum ItemType {
-  Hair = 1,
-  Hat = 2,
-  Face = 3,
-  Eyes = 4,
-  Upper = 5,
-  Lower = 6,
-  Glasses = 7,
-  UpgradeCard = 8,
+  HAIR = 'hair',
+  HAT = 'hat',
+  FACE = 'face',
+  EYES = 'eyes',
+  UPPER = 'upper',
+  LOWER = 'lower',
+  GLASSES = 'glasses',
+  PET_CARD = 'pet_card',
+  PET_FOOD = 'pet_food',
 }
 
 export enum ItemCode {
