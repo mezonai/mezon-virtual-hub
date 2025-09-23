@@ -3,12 +3,7 @@ import { FoodEntity } from '@modules/food/entity/food.entity';
 import { ItemEntity } from '@modules/item/entity/item.entity';
 import { UserEntity } from '@modules/user/entity/user.entity';
 import { AuditEntity } from '@types';
-import {
-  Column,
-  Entity,
-  JoinColumn,
-  ManyToOne,
-} from 'typeorm';
+import { Column, Entity, JoinColumn, ManyToOne } from 'typeorm';
 
 @Entity({ name: 'inventory' })
 export class Inventory extends AuditEntity {
@@ -22,6 +17,7 @@ export class Inventory extends AuditEntity {
     name: 'inventory_type',
     type: 'enum',
     enum: InventoryType,
+    enumName: 'inventory_type_enum',
   })
   inventory_type: InventoryType;
 

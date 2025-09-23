@@ -11,7 +11,12 @@ export class FoodEntity extends AuditEntity {
   @Column({ type: 'varchar', unique: true })
   type: FoodType;
 
-  @Column({ type: 'enum', enum: PurchaseMethod, name: 'purchase_method' })
+  @Column({
+    type: 'enum',
+    enum: PurchaseMethod,
+    name: 'purchase_method',
+    enumName: 'purchase_method_enum',
+  })
   purchase_method: PurchaseMethod;
 
   @Column({ type: 'int', default: 0 })

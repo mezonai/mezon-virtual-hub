@@ -1,4 +1,3 @@
-import { PETS_RARITY_ENUM } from '@constant';
 import { AnimalRarity, PetType } from '@enum';
 import { PetSkillUsageEntity } from '@modules/pet-skill-usages/entity/pet-skill-usages.entity';
 import { PetSkillsEntity } from '@modules/pet-skills/entity/pet-skills.entity';
@@ -14,6 +13,8 @@ import {
   OneToMany,
   Unique,
 } from 'typeorm';
+
+export const PETS_RARITY_ENUM = 'pets_rarity_enum';
 
 @Entity('pets')
 @Unique('UQ_pets_species_rarity_type', ['species', 'rarity', 'type'])
@@ -64,6 +65,7 @@ export class PetsEntity extends AuditEntity {
     type: 'enum',
     enum: AnimalRarity,
     default: AnimalRarity.COMMON,
+    enumName: PETS_RARITY_ENUM,
   })
   @ApiPropertyOptional({
     description: 'Rarity of the animal',
@@ -78,6 +80,7 @@ export class PetsEntity extends AuditEntity {
     type: 'enum',
     enum: AnimalRarity,
     default: AnimalRarity.LEGENDARY,
+    enumName: PETS_RARITY_ENUM,
   })
   @ApiPropertyOptional({
     description: 'Maximum rarity this pet species can reach',

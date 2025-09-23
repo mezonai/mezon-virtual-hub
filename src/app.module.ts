@@ -16,7 +16,6 @@ import { InterceptorModule } from '@libs/interceptor';
 import { LoggerModule } from '@libs/logger';
 import { AdminModule } from '@modules/admin/admin.module';
 import { TransactionsModule } from '@modules/admin/transactions/transactions.module';
-import { AnimalModule } from '@modules/animal/animal.module';
 import { FoodModule } from '@modules/food/food.module';
 import { GameEventModule } from '@modules/game-event/game-event.module';
 import { GameModule } from '@modules/game/game.module';
@@ -57,7 +56,6 @@ import { RewardItemModule } from '@modules/reward-item/reward-item.module';
     GameModule,
     GameEventModule,
     TransactionsModule,
-    AnimalModule,
     FoodModule,
     PetsModule,
     PetPlayersModule,
