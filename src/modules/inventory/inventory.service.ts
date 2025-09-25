@@ -345,19 +345,24 @@ export class InventoryService extends BaseService<Inventory> {
   }
 
   async getItemsByType(user: UserEntity, type: ItemType) {
+    if (type === ItemType.PET_FOOD) {
+      const inventory = await this.find({
+        where: {
+          user: { id: user.id },
+          inventory_type: InventoryType.FOOD,
+        },
+        relations: ['food'],
+      });
+      return plainToInstance(FoodInventoryResDto, inventory);
+    }
     const inventory = await this.find({
       where: {
-        user: {
-          id: user.id,
-        },
-        item: {
-          type,
-        },
+        user: { id: user.id },
+        item: { type },
         inventory_type: InventoryType.ITEM,
       },
       relations: ['item'],
     });
-
     return plainToInstance(ItemInventoryResDto, inventory);
   }
 }

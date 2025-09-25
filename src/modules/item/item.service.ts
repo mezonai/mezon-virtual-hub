@@ -22,7 +22,11 @@ export class ItemService extends BaseService<ItemEntity> {
   }
 
   async getAllItems() {
-    const items = await this.find();
+    const items = await this.find( {
+      where: {
+        is_purchasable: true,
+      },
+    });
     return plainToInstance(ItemDto, items);
   }
 

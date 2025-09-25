@@ -16,6 +16,12 @@ export class ItemDto implements Partial<ItemEntity> {
   type: ItemType;
 
   @Expose()
+  gold?: number;
+
+  @Expose()
+  gender: Gender;
+
+  @Expose()
   item_code: ItemCode | null;
 }
 
