@@ -23,7 +23,7 @@ export class ItemEntity extends AuditEntity {
   })
   @IsString()
   @Transform(({ value }) =>
-    typeof value === 'string' ? value.trim().toUpperCase() : value,
+    typeof value === 'string' ? value.trim().toLowerCase() : value,
   )
   @Matches(/^\S+$/, {
     message: 'gender must not contain spaces',
@@ -45,7 +45,7 @@ export class ItemEntity extends AuditEntity {
   })
   @IsString()
   @Transform(({ value }) =>
-    typeof value === 'string' ? value.trim().toUpperCase() : value,
+    typeof value === 'string' ? value.trim().toLowerCase() : value,
   )
   @Matches(/^\S+$/, {
     message: 'type must not contain spaces',
@@ -65,7 +65,7 @@ export class ItemEntity extends AuditEntity {
   })
   @IsString()
   @Transform(({ value }) =>
-    typeof value === 'string' ? value.trim().toUpperCase() : value,
+    typeof value === 'string' ? value.trim().toLowerCase() : value,
   )
   @Matches(/^\S+$/, {
     message: 'item_code must not contain spaces',
