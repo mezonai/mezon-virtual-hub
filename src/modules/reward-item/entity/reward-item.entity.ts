@@ -8,7 +8,7 @@ import {
 } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 import { IsEnum, IsInt, Min } from 'class-validator';
-import { RewardItemType } from '@enum';
+import { AnimalRarity, RewardItemType } from '@enum';
 import { ItemEntity } from '@modules/item/entity/item.entity';
 import { FoodEntity } from '@modules/food/entity/food.entity';
 import { RewardEntity } from '@modules/reward/entity/reward.entity';
@@ -87,4 +87,7 @@ export class RewardItemEntity {
   })
   @Type(() => PetsDtoResponse)
   pet: PetsDtoResponse | null;
+
+  @Column({ type: 'jsonb', nullable: true })
+  metadata: Record<string, any> | { rarity: AnimalRarity } | null;
 }

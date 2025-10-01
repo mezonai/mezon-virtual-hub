@@ -45,6 +45,7 @@ import {
   RARITY_ORDER,
   UPGRADE_PET_RATES,
   STAR_BONUS,
+  RARITY_MULTIPLIER,
 } from '@constant';
 import { AnimalRarity, SkillCode } from '@enum';
 import { getExpForNextLevel, serializeDto } from '@libs/utils';
@@ -94,7 +95,6 @@ export class PetPlayersService extends BaseService<PetPlayersEntity> {
           ? { id: payload.pet_id }
           : {
               species: payload.species,
-              rarity: payload.rarity,
               type: payload.type,
             }),
       },
@@ -125,6 +125,7 @@ export class PetPlayersService extends BaseService<PetPlayersEntity> {
     for (let i = 0; i < quantity; i++) {
       const newPetPlayer = this.petPlayersRepository.create({
         pet,
+        current_rarity: payload.rarity,
         name: pet.species,
         skill_slot_1: { skill_code: skill1?.skill.skill_code },
         skill_slot_2: { skill_code: skill2?.skill.skill_code },
@@ -575,12 +576,21 @@ export class PetPlayersService extends BaseService<PetPlayersEntity> {
       base.base_speed +
       Math.floor(((base.base_speed * 2 + iv) * level) / 100 + 5);
 
-    // 📌 Apply star bonus multiplier
-    const multiplier = STAR_BONUS[petPlayer.stars] ?? 1.0;
-    petPlayer.hp = Math.floor(hp * multiplier);
-    petPlayer.attack = Math.floor(attack * multiplier);
-    petPlayer.defense = Math.floor(defense * multiplier);
-    petPlayer.speed = Math.floor(speed * multiplier);
+    // 📌 Apply multipliers
+    const starMultiplier = STAR_BONUS[petPlayer.stars] ?? 1.0;
+    const baseRarityMultiplier = RARITY_MULTIPLIER[petPlayer.pet.rarity] ?? 1.0;
+
+    const currentRarityMultiplier =
+      RARITY_MULTIPLIER[petPlayer.current_rarity] ?? 1.0;
+
+    const rarityRatio = currentRarityMultiplier / baseRarityMultiplier;
+
+    const totalMultiplier = starMultiplier * rarityRatio;
+    // 📌 Final stats
+    petPlayer.hp = Math.floor(hp * totalMultiplier);
+    petPlayer.attack = Math.floor(attack * totalMultiplier);
+    petPlayer.defense = Math.floor(defense * totalMultiplier);
+    petPlayer.speed = Math.floor(speed * totalMultiplier);
   }
 
   async updateUnlockedSkills(petPlayer: PetPlayersEntity) {
@@ -748,7 +758,6 @@ export class PetPlayersService extends BaseService<PetPlayersEntity> {
   ): Promise<UpgradedRarityPetPlayerDto> {
     return this.dataSource.transaction(async (manager) => {
       const petPlayerRepo = manager.getRepository(PetPlayersEntity);
-      const petsRepo = manager.getRepository(PetsEntity);
       const inventoryRepo = manager.getRepository(Inventory);
 
       // 1. Find pet player (with pet relation)
@@ -829,27 +838,8 @@ export class PetPlayersService extends BaseService<PetPlayersEntity> {
         });
       }
 
-      // 5. Find the upgraded pet species with next rarity
-      const upgradedPet = await petsRepo.findOne({
-        where: {
-          species: currentPet.species,
-          type: currentPet.type,
-          rarity: nextRarity,
-        },
-      });
-
-      if (!upgradedPet) {
-        this.logger.warn(
-          `Pet with species=${currentPet.species}, type=${currentPet.type}, rarity=${nextRarity} wasn't created`,
-        );
-        return plainToInstance(UpgradedRarityPetPlayerDto, {
-          pet: petPlayer,
-          success: false,
-        });
-      }
-
-      // 6. Update PetPlayer
-      petPlayer.pet = upgradedPet;
+      // 6. Apply upgrade
+      petPlayer.current_rarity = nextRarity;
       petPlayer.stars = 1;
       this.recalculateStats(petPlayer);
 
