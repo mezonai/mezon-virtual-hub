@@ -44,7 +44,7 @@ import {
   RARITY_CARD_REQUIREMENTS,
   RARITY_ORDER,
   UPGRADE_PET_RATES,
-  STAR_BONUS,
+  STAR_MULTIPLIER,
   RARITY_MULTIPLIER,
 } from '@constant';
 import { AnimalRarity, SkillCode } from '@enum';
@@ -577,7 +577,7 @@ export class PetPlayersService extends BaseService<PetPlayersEntity> {
       Math.floor(((base.base_speed * 2 + iv) * level) / 100 + 5);
 
     // 📌 Apply multipliers
-    const starMultiplier = STAR_BONUS[petPlayer.stars] ?? 1.0;
+    const starMultiplier = STAR_MULTIPLIER[petPlayer.stars] ?? 1.0;
     const baseRarityMultiplier = RARITY_MULTIPLIER[petPlayer.pet.rarity] ?? 1.0;
 
     const currentRarityMultiplier =
