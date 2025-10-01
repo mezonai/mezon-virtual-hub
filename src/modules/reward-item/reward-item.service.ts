@@ -1,3 +1,9 @@
+import { RewardItemType } from '@enum';
+import { BaseService } from '@libs/base/base.service';
+import { FoodEntity } from '@modules/food/entity/food.entity';
+import { ItemEntity } from '@modules/item/entity/item.entity';
+import { PetsEntity } from '@modules/pets/entity/pets.entity';
+import { RewardEntity } from '@modules/reward/entity/reward.entity';
 import {
   BadRequestException,
   Injectable,
@@ -5,14 +11,8 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { FindOptionsWhere, Repository } from 'typeorm';
-import { RewardItemEntity } from './entity/reward-item.entity';
-import { RewardEntity } from '@modules/reward/entity/reward.entity';
-import { ItemEntity } from '@modules/item/entity/item.entity';
-import { FoodEntity } from '@modules/food/entity/food.entity';
-import { BaseService } from '@libs/base/base.service';
 import { RewardItemDto, UpdateRewardItemDto } from './dto/reward-item.dto';
-import { RewardItemType } from '@enum';
-import { PetsEntity } from '@modules/pets/entity/pets.entity';
+import { RewardItemEntity } from './entity/reward-item.entity';
 
 @Injectable()
 export class RewardItemService extends BaseService<RewardItemEntity> {
@@ -113,7 +113,11 @@ export class RewardItemService extends BaseService<RewardItemEntity> {
 
         return this.upsertRewardItem(
           { item: { id: dto.item_id }, reward: { id: reward.id } },
-          { reward, type: dto.type, item },
+          {
+            reward,
+            type: dto.type,
+            item,
+          },
           dto.quantity,
         );
       }
@@ -144,7 +148,6 @@ export class RewardItemService extends BaseService<RewardItemEntity> {
         }
         const pet = await this.petRepo.findOne({
           where: {
-            rarity: dto.pet_rarity,
             species: dto.pet_species,
             type: dto.pet_type,
           },
@@ -153,7 +156,7 @@ export class RewardItemService extends BaseService<RewardItemEntity> {
 
         return this.upsertRewardItem(
           { pet: { id: pet.id }, reward: { id: reward.id } },
-          { reward, type: dto.type, pet },
+          { reward, type: dto.type, pet, metadata: { rarity: dto.pet_rarity } },
           dto.quantity,
         );
       }

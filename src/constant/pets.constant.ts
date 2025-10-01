@@ -22,6 +22,13 @@ export const RARITY_ORDER = [
   AnimalRarity.LEGENDARY,
 ];
 
+export const RARITY_MULTIPLIER: Record<AnimalRarity, number> = {
+  common: 1.0,
+  rare: 1.15,
+  epic: 1.35,
+  legendary: 1.6,
+};
+
 export const RARITY_CARD_REQUIREMENTS: Record<AnimalRarity, ItemCode | null> = {
   [AnimalRarity.COMMON]: null,
   [AnimalRarity.RARE]: ItemCode.RARITY_CARD_RARE,
