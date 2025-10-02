@@ -15,13 +15,22 @@ export enum SubMap {
 }
 
 export enum ItemType {
-  Hair = 1,
-  Hat = 2,
-  Face = 3,
-  Eyes = 4,
-  Upper = 5,
-  Lower = 6,
-  Glasses = 7,
+  HAIR = 'hair',
+  HAT = 'hat',
+  FACE = 'face',
+  EYES = 'eyes',
+  UPPER = 'upper',
+  LOWER = 'lower',
+  GLASSES = 'glasses',
+  PET_CARD = 'pet_card',
+  PET_FOOD = 'pet_food',
+}
+
+export enum ItemCode {
+  RARITY_CARD_RARE = 'rarity_card_rare',
+  RARITY_CARD_EPIC = 'rarity_card_epic',
+  RARITY_CARD_LEGENDARY = 'rarity_card_legendary',
+  // Cosmetic items ....
 }
 
 export enum Gender {
@@ -141,11 +150,11 @@ export enum QuestType {
   NEWBIE_LOGIN_SPECIAL = 'newbie_login_special',
   VISIT_OFFICE = 'visit_office',
   SPIN_LUCKY_WHEEL = 'spin_lucky_wheel',
-  BUY_FOOD = 'buy_food', 
+  BUY_FOOD = 'buy_food',
   CATCH_PETS = 'catch_pet',
   PLAY_RPS = 'play_rps',
   PET_BATTLE = 'pet_battle',
-  LOGIN_DAYS = 'login_days'
+  LOGIN_DAYS = 'login_days',
 }
 
 export enum RewardType {

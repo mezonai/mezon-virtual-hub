@@ -1,3 +1,4 @@
+import { PETS_RARITY_ENUM } from '@constant';
 import { AnimalRarity } from '@enum';
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
@@ -6,7 +7,7 @@ export class CreatePetsTable1752048034495 implements MigrationInterface {
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`
-      CREATE TYPE "public"."pets_rarity_enum" AS ENUM (
+      CREATE TYPE "public"."${PETS_RARITY_ENUM}" AS ENUM (
         '${AnimalRarity.COMMON}',
         '${AnimalRarity.EPIC}',
         '${AnimalRarity.LEGENDARY}',
@@ -27,7 +28,7 @@ export class CreatePetsTable1752048034495 implements MigrationInterface {
         "base_defense" integer NOT NULL DEFAULT 0,
         "base_speed" integer NOT NULL DEFAULT 0,
         "type" character varying(50) NOT NULL DEFAULT 'normal',
-        "rarity" "public"."pets_rarity_enum" NOT NULL DEFAULT 'common',
+        "rarity" "public"."${PETS_RARITY_ENUM}" NOT NULL DEFAULT 'common',
         CONSTRAINT "PK_7931ba42b915405a93d35f33f34" PRIMARY KEY ("id"),
         CONSTRAINT "UQ_30d2c0e21103e01d3161ea3f92a" UNIQUE ("species", "rarity")
       )
@@ -45,7 +46,7 @@ export class CreatePetsTable1752048034495 implements MigrationInterface {
     `);
 
     await queryRunner.query(`
-      DROP TYPE "public"."pets_rarity_enum"
+      DROP TYPE "public"."${PETS_RARITY_ENUM}"
     `);
   }
 }

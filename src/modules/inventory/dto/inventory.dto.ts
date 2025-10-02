@@ -10,9 +10,6 @@ export class InventoryDto {
   id: string;
 
   @Exclude()
-  equipped: boolean;
-
-  @Exclude()
   item_id: boolean;
 
   @Exclude()
@@ -24,22 +21,24 @@ export class InventoryDto {
   @Exclude()
   created_at: Date | null;
 
-  @Type(() => ItemDto)
   @Expose()
+  @Type(() => ItemDto)
   item: ItemDto;
 
-  @Type(() => FoodDto)
   @Expose()
+  @Type(() => FoodDto)
   food: FoodDto;
 }
 
 export class FoodInventoryResDto extends OmitType(InventoryDto, ['item']) {
   @Exclude()
+  @Type(() => ItemDto)
   item: ItemDto;
 }
 
 export class ItemInventoryResDto extends OmitType(InventoryDto, ['food']) {
   @Exclude()
+  @Type(() => FoodDto)
   food: FoodDto;
 }
 
@@ -61,7 +60,7 @@ export class BuyRequestQuery {
     enum: InventoryType,
     required: false,
     description: 'Type of inventory to buy (item or food)',
-    default: InventoryType.ITEM
+    default: InventoryType.ITEM,
   })
   @IsOptional()
   @IsEnum(InventoryType)

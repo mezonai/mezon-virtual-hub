@@ -1,4 +1,4 @@
-import { SkillCode } from '@enum';
+import { AnimalRarity, SkillCode } from '@enum';
 import { IsNullableEnumArray, IsValidRoomCode } from '@libs/decorator';
 import { PetSkillsResponseDto } from '@modules/pet-skills/dto/pet-skills.dto';
 import { PetSkillsEntity } from '@modules/pet-skills/entity/pet-skills.entity';
@@ -46,6 +46,8 @@ export class PetPlayersEntity extends AuditEntity {
   @Column({ type: 'int', default: 1 })
   @ApiProperty()
   @IsInt()
+  @Min(1)
+  @Max(3)
   @Type(() => Number)
   stars: number = 1;
 
@@ -149,6 +151,21 @@ export class PetPlayersEntity extends AuditEntity {
   @ArrayNotEmpty()
   @ArrayMaxSize(2)
   equipped_skill_codes: (SkillCode | null)[];
+
+  @Column({
+    name: 'current_rarity',
+    type: 'enum',
+    enum: AnimalRarity,
+    default: AnimalRarity.COMMON,
+    enumName: 'pets_rarity_enum',
+  })
+  @ApiPropertyOptional({
+    description: 'Current rarity of the pet player (migrated from PetsEntity)',
+    enum: AnimalRarity,
+  })
+  @IsOptional()
+  @IsEnum(AnimalRarity)
+  current_rarity: AnimalRarity = AnimalRarity.COMMON;
 
   @ManyToOne(() => UserEntity, { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'user_id' })

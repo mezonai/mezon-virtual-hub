@@ -3,8 +3,11 @@ import { PetsDtoResponse } from '@modules/pets/dto/pets.dto';
 import { ApiProperty, ApiPropertyOptional, PickType } from '@nestjs/swagger';
 import { Exclude, Expose, Transform, Type } from 'class-transformer';
 import {
+  ArrayMaxSize,
+  ArrayMinSize,
   ArrayNotEmpty,
   IsArray,
+  IsBoolean,
   IsEnum,
   IsNumber,
   IsOptional,
@@ -220,4 +223,107 @@ export class BattlePetPlayersDto extends PetPlayersEntity {
   get max_exp(): number {
     return getExpForNextLevel(this.level);
   }
+}
+
+export class MergePetsDto {
+  @ApiProperty({
+    description: 'IDs of the 3 pets to merge',
+    type: [String],
+    example: [
+      '91bea29f-0e87-42a5-b851-d9d0386ac32f',
+      '3439e988-f9ff-450c-87bf-3f824e332e90',
+      '6c46748a-484c-44a2-9df1-2079d22be456',
+    ],
+  })
+  @IsArray()
+  @ArrayMinSize(3)
+  @ArrayMaxSize(3)
+  @IsUUID('all', { each: true })
+  pet_ids: string[];
+
+  @ApiProperty({
+    description:
+      'If true, keep base pet individual_value without recalculation',
+    example: true,
+    required: false,
+  })
+  @IsOptional()
+  @IsBoolean()
+  keep_highest_iv?: boolean;
+}
+
+export class MergedPetPlayerDto {
+  @Expose()
+  @Type(() => PetPlayersInfoDto)
+  pet: PetPlayersInfoDto;
+
+  @Expose()
+  @Type(() => Number)
+  user_diamond: number;
+
+  @Expose()
+  @Type(() => Boolean)
+  success: boolean;
+}
+
+export class UpgradedRarityPetPlayerDto {
+  @Expose()
+  @Type(() => PetPlayersInfoDto)
+  pet: PetPlayersInfoDto;
+
+  @Expose()
+  @Type(() => Boolean)
+  success: boolean;
+}
+
+export class GameConfigResponseDto {
+  @ApiProperty({
+    example: { spin: 100, spinGold: 500 },
+    description: 'Game costs configuration',
+  })
+  costs: {
+    spinGold: number;
+    upgradeStarsDiamond: number;
+  };
+
+  @ApiProperty({
+    example: {
+      upgradeStars: {
+        common: 0.7,
+        rare: 0.5,
+        epic: 0.3,
+        legendary: 0.1,
+      },
+      upgradeRarity: {
+        rare: 0.5,
+        epic: 0.3,
+        legendary: 0.1,
+      },
+      spinRewards: {
+        item: 15,
+        gold: 10,
+        food: {
+          normal: 40,
+          premium: 25,
+          ultra: 10,
+        },
+        none: 0,
+      },
+    },
+    description: 'Game percentage configuration',
+  })
+  percent: {
+    upgradeStars: Record<AnimalRarity, number>;
+    upgradeRarity: Partial<Record<AnimalRarity, number>>;
+    spinRewards: {
+      item: number;
+      gold: number;
+      food: {
+        normal: number;
+        premium: number;
+        ultra: number;
+      };
+      none: number;
+    };
+  };
 }

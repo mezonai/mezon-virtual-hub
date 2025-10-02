@@ -1,18 +1,29 @@
 import { configEnv } from '@config/env.config';
-import { NEW_USER_FOOD_REWARD_QUANTITY } from '@constant';
-import { FoodType, Gender, QuestType, RewardSlotType } from '@enum';
+import {
+  MERGE_PET_DIAMOND_COST,
+  NEW_USER_FOOD_REWARD_QUANTITY,
+  UPGRADE_PET_RATES,
+} from '@constant';
+import {
+  FoodType,
+  Gender,
+  QuestType,
+  RewardConfig,
+  RewardSlotType,
+} from '@enum';
 import { FoodEntity } from '@modules/food/entity/food.entity';
 import { FoodService } from '@modules/food/food.service';
 import { InventoryService } from '@modules/inventory/inventory.service';
 import { ItemEntity } from '@modules/item/entity/item.entity';
 import { ItemService } from '@modules/item/item.service';
+import { GameConfigResponseDto } from '@modules/pet-players/dto/pet-players.dto';
+import { QuestEventEmitter } from '@modules/player-quest/events/quest.events';
 import { UserEntity } from '@modules/user/entity/user.entity';
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { AwardResponseDto, RewardDataType } from './dto/game.dto';
-import { PlayerQuestService } from '@modules/player-quest/player-quest.service';
-import { QuestEventEmitter } from '@modules/player-quest/events/quest.events';
+
 @Injectable()
 export class GameService {
   private readonly itemPercent: number;
@@ -27,6 +38,7 @@ export class GameService {
     @InjectRepository(UserEntity)
     private readonly userRepository: Repository<UserEntity>,
     private readonly foodService: FoodService,
+    private readonly dataSource: DataSource,
   ) {
     this.itemPercent = configEnv().REWARD_ITEM_PERCENT;
     this.coinPercent = configEnv().REWARD_COIN_PERCENT;
@@ -38,21 +50,20 @@ export class GameService {
   }
 
   private readonly SLOT_COUNT = 3;
-  private readonly SPIN_COST = 10;
+  private readonly SPIN_COST = 100;
 
   async spinForRewards(user: UserEntity) {
     if (user.gold < this.SPIN_COST) {
       throw new BadRequestException('Not enough coins to spin');
     }
-
     user.gold -= this.SPIN_COST;
-    await this.userRepository.update(user.id, user);
+    await this.userRepository.save(user);
 
     const inventoryItems = await this.inventoryService.getUserInventory(
       user.id,
     );
 
-    const availableItems = await this.itemService.getAvailableItems(
+    const availableItems = await this.itemService.getSpinAvailableItems(
       user.gender ?? Gender.MALE,
       inventoryItems,
     );
@@ -60,7 +71,9 @@ export class GameService {
     const rewards = await this.generateRandomRewards(availableItems);
 
     const { result, user_gold } = await this.processRewards(user, rewards);
+
     QuestEventEmitter.emitProgress(user.id, QuestType.SPIN_LUCKY_WHEEL, 1);
+
     return { rewards: result, user_gold };
   }
 
@@ -131,9 +144,17 @@ export class GameService {
         let coinReward = 0;
 
         if (coinRand < this.highCoinPercent) {
-          coinReward = Math.floor(Math.random() * 10) + 11;
+          coinReward =
+            Math.floor(
+              Math.random() *
+                (RewardConfig.HIGH_COIN_MAX - RewardConfig.HIGH_COIN_MIN + 1),
+            ) + RewardConfig.HIGH_COIN_MIN;
         } else {
-          coinReward = Math.floor(Math.random() * 10) + 1;
+          coinReward =
+            Math.floor(
+              Math.random() *
+                (RewardConfig.LOW_COIN_MAX - RewardConfig.LOW_COIN_MIN + 1),
+            ) + RewardConfig.LOW_COIN_MIN;
         }
 
         user.gold += coinReward;
@@ -217,7 +238,7 @@ export class GameService {
     return { rewards };
   }
 
-  getRewardPercent() {
+  getGameConfig(): GameConfigResponseDto {
     const totalRewardPercent =
       this.itemPercent +
       this.coinPercent +
@@ -226,12 +247,33 @@ export class GameService {
       this.foodUltraPercent;
 
     return {
-      item: this.itemPercent,
-      gold: this.coinPercent,
-      normalFood: this.foodNormalPercent,
-      premiumFood: this.foodPremiumPercent,
-      ultraFood: this.foodUltraPercent,
-      none: 100 - totalRewardPercent,
+      costs: {
+        spinGold: this.SPIN_COST,
+        upgradeStarsDiamond: MERGE_PET_DIAMOND_COST,
+      },
+      percent: {
+        upgradeStars: {
+          common: UPGRADE_PET_RATES.common,
+          rare: UPGRADE_PET_RATES.rare,
+          epic: UPGRADE_PET_RATES.epic,
+          legendary: UPGRADE_PET_RATES.legendary,
+        },
+        upgradeRarity: {
+          rare: UPGRADE_PET_RATES.rare,
+          epic: UPGRADE_PET_RATES.epic,
+          legendary: UPGRADE_PET_RATES.legendary,
+        },
+        spinRewards: {
+          item: this.itemPercent,
+          gold: this.coinPercent,
+          food: {
+            normal: this.foodNormalPercent,
+            premium: this.foodPremiumPercent,
+            ultra: this.foodUltraPercent,
+          },
+          none: 100 - totalRewardPercent,
+        },
+      },
     };
   }
 }

@@ -1,15 +1,18 @@
 import {
   InventoryType,
+  ItemType,
   PurchaseMethod,
   QuestType,
-  RewardItemType,
-  RewardSlotType,
+  RewardItemType
 } from '@enum';
 import { BaseService } from '@libs/base/base.service';
-import { FoodEntity } from '@modules/food/entity/food.entity';
+import { Logger } from '@libs/logger';
 import { FoodService } from '@modules/food/food.service';
 import { Inventory } from '@modules/inventory/entity/inventory.entity';
 import { ItemEntity } from '@modules/item/entity/item.entity';
+import { PetPlayersService } from '@modules/pet-players/pet-players.service';
+import { QuestEventEmitter } from '@modules/player-quest/events/quest.events';
+import { RewardItemEntity } from '@modules/reward-item/entity/reward-item.entity';
 import { UserEntity } from '@modules/user/entity/user.entity';
 import { UserService } from '@modules/user/user.service';
 import {
@@ -21,12 +24,6 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { plainToInstance } from 'class-transformer';
 import { Repository } from 'typeorm';
 import { FoodInventoryResDto, ItemInventoryResDto } from './dto/inventory.dto';
-import { RewardDataType, AwardResponseDto } from '@modules/game/dto/game.dto';
-import { RewardItemEntity } from '@modules/reward-item/entity/reward-item.entity';
-import { Logger } from '@libs/logger';
-import { PetPlayersService } from '@modules/pet-players/pet-players.service';
-import { AdminPetPlayersService } from '@modules/admin/pet-players/pet-players.service';
-import { QuestEventEmitter } from '@modules/player-quest/events/quest.events';
 
 @Injectable()
 export class InventoryService extends BaseService<Inventory> {
@@ -56,6 +53,10 @@ export class InventoryService extends BaseService<Inventory> {
       });
       if (!item) {
         throw new NotFoundException('Item not found');
+      }
+
+      if (!item.is_purchasable) {
+        throw new BadRequestException('Item cannot be purchased');
       }
 
       if (user.gold < item.gold * quantity) {
@@ -341,5 +342,27 @@ export class InventoryService extends BaseService<Inventory> {
         gold: user.gold,
       });
     }
+  }
+
+  async getItemsByType(user: UserEntity, type: ItemType) {
+    if (type === ItemType.PET_FOOD) {
+      const inventory = await this.find({
+        where: {
+          user: { id: user.id },
+          inventory_type: InventoryType.FOOD,
+        },
+        relations: ['food'],
+      });
+      return plainToInstance(FoodInventoryResDto, inventory);
+    }
+    const inventory = await this.find({
+      where: {
+        user: { id: user.id },
+        item: { type },
+        inventory_type: InventoryType.ITEM,
+      },
+      relations: ['item'],
+    });
+    return plainToInstance(ItemInventoryResDto, inventory);
   }
 }

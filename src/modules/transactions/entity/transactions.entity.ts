@@ -26,10 +26,18 @@ export class TransactionsEntity {
   @Column({ name: 'amount', type: 'numeric' })
   amount: number;
 
-  @Column({ type: 'enum', enum: TransactionType })
+  @Column({
+    type: 'enum',
+    enum: TransactionType,
+    enumName: 'transaction_type_enum',
+  })
   type: TransactionType;
 
-  @Column({ type: 'enum', enum: TransactionCurrency })
+  @Column({
+    type: 'enum',
+    enum: TransactionCurrency,
+    enumName: 'transaction_currency_enum',
+  })
   currency: TransactionCurrency;
 
   @ManyToOne(() => UserEntity, { eager: false })
@@ -43,7 +51,10 @@ export class TransactionsEntity {
   extra_attribute: string | null;
 
   @ManyToOne(() => Inventory, { nullable: true })
-  @JoinColumn({ name: 'inventory_id' })
+  @JoinColumn({
+    name: 'inventory_id',
+    foreignKeyConstraintName: 'FK_transactions_inventory',
+  })
   inventory?: Inventory | null;
 
   @CreateDateColumn({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })

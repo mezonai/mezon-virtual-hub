@@ -5,7 +5,16 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { AuditEntity } from '@types';
 import { Transform, Type } from 'class-transformer';
 import { IsEnum, IsInt, IsOptional, IsString } from 'class-validator';
-import { Column, Entity, JoinTable, ManyToMany, OneToMany, Unique } from 'typeorm';
+import {
+  Column,
+  Entity,
+  JoinTable,
+  ManyToMany,
+  OneToMany,
+  Unique,
+} from 'typeorm';
+
+export const PETS_RARITY_ENUM = 'pets_rarity_enum';
 
 @Entity('pets')
 @Unique('UQ_pets_species_rarity_type', ['species', 'rarity', 'type'])
@@ -56,6 +65,7 @@ export class PetsEntity extends AuditEntity {
     type: 'enum',
     enum: AnimalRarity,
     default: AnimalRarity.COMMON,
+    enumName: PETS_RARITY_ENUM,
   })
   @ApiPropertyOptional({
     description: 'Rarity of the animal',
@@ -64,6 +74,21 @@ export class PetsEntity extends AuditEntity {
   @IsOptional()
   @IsEnum(AnimalRarity)
   rarity: AnimalRarity = AnimalRarity.COMMON;
+
+  @Column({
+    name: 'max_rarity',
+    type: 'enum',
+    enum: AnimalRarity,
+    default: AnimalRarity.LEGENDARY,
+    enumName: PETS_RARITY_ENUM,
+  })
+  @ApiPropertyOptional({
+    description: 'Maximum rarity this pet species can reach',
+    enum: AnimalRarity,
+  })
+  @IsOptional()
+  @IsEnum(AnimalRarity)
+  max_rarity: AnimalRarity = AnimalRarity.LEGENDARY;
 
   @ManyToMany(() => PetSkillsEntity, (skill) => skill.pets, {
     eager: false,

@@ -36,6 +36,9 @@ export class CreateGameEventTable1744563634800 implements MigrationInterface {
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
+    await queryRunner.query(
+      `ALTER TABLE "event_completed_users" DROP CONSTRAINT "FK_event_completed_user"`,
+    );
     await queryRunner.query(`DROP TABLE "event_completed_users"`);
     await queryRunner.query(`DROP TABLE "game_event"`);
   }

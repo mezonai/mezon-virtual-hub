@@ -6,7 +6,7 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
-  Query
+  Query,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -28,6 +28,7 @@ import { UserService } from '../user/user.service';
 import {
   BringPetPlayersDtoList,
   BulkUpdateBattleSlotsDto,
+  MergePetsDto,
   SpawnPetPlayersDto,
   UpdateBattleSkillsDto,
 } from './dto/pet-players.dto';
@@ -88,6 +89,16 @@ export class PetPlayersController {
   async bulkUpdateBattleSlots(@Body() { pets }: BulkUpdateBattleSlotsDto) {
     const user = this.cls.get<UserEntity>(USER_TOKEN);
     return await this.petPlayersService.bulkUpdateBattleSlots(user.id, pets);
+  }
+
+  @Post('merge')
+  @ApiOperation({
+    summary: 'Merging 3 pets having the same star',
+  })
+  @ApiBody({ type: MergePetsDto })
+  async mergePets(@Body() dto: MergePetsDto) {
+    const user = this.cls.get<UserEntity>(USER_TOKEN);
+    return this.petPlayersService.mergePets(user.id, dto);
   }
 
   @Put(':pet_player_id')
@@ -172,6 +183,22 @@ export class PetPlayersController {
       petId,
       battleSlot,
     );
+  }
+
+  @Post(':pet_player_id/upgrade-rarity')
+  @ApiParam({
+    name: 'pet_player_id',
+    example: '91bea29f-0e87-42a5-b851-d9d0386ac32f',
+  })
+  @ApiOperation({
+    summary: 'Upgrade rarity of pet player',
+  })
+  async upgradePetPlayerRarity(
+    @Param('pet_player_id', ParseUUIDPipe)
+    petPlayerId: string,
+  ) {
+    const user = this.cls.get<UserEntity>(USER_TOKEN);
+    return this.petPlayersService.upgradePetPlayerRarity(user.id, petPlayerId);
   }
 
   @Post('bring-pets')
