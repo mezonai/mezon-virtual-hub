@@ -1,10 +1,7 @@
-import { Gender } from '@enum';
+import { Gender, ItemCode } from '@enum';
 import { BaseService } from '@libs/base/base.service';
 import { Inventory } from '@modules/inventory/entity/inventory.entity';
-import {
-  Injectable,
-  NotFoundException
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { plainToInstance } from 'class-transformer';
 import { EntityManager, In, Not, Repository } from 'typeorm';
@@ -22,7 +19,7 @@ export class ItemService extends BaseService<ItemEntity> {
   }
 
   async getAllItems() {
-    const items = await this.find( {
+    const items = await this.find({
       where: {
         is_purchasable: true,
       },
@@ -70,18 +67,25 @@ export class ItemService extends BaseService<ItemEntity> {
     return { deleted: true };
   }
 
-  async getAvailableItems(
+  async getSpinAvailableItems(
     gender: Gender,
     ownedItems: Inventory[],
   ): Promise<ItemEntity[]> {
     const ownedItemIds = ownedItems
-      .map(inv => inv.item?.id)
-      .filter(id => id !== undefined && id !== null);
+      .map((inv) => inv.item?.id)
+      .filter((id) => id !== undefined && id !== null);
 
     return await this.itemRepository.find({
       where: {
         gender: In([gender, Gender.NOT_SPECIFIED]),
         id: Not(In(ownedItemIds)),
+        item_code: Not(
+          In([
+            ItemCode.RARITY_CARD_EPIC,
+            ItemCode.RARITY_CARD_LEGENDARY,
+            ItemCode.RARITY_CARD_RARE,
+          ]),
+        ),
       },
     });
   }
