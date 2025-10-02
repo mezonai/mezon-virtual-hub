@@ -21,7 +21,7 @@ import { QuestEventEmitter } from '@modules/player-quest/events/quest.events';
 import { UserEntity } from '@modules/user/entity/user.entity';
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { AwardResponseDto, RewardDataType } from './dto/game.dto';
 
 @Injectable()
@@ -38,6 +38,7 @@ export class GameService {
     @InjectRepository(UserEntity)
     private readonly userRepository: Repository<UserEntity>,
     private readonly foodService: FoodService,
+    private readonly dataSource: DataSource,
   ) {
     this.itemPercent = configEnv().REWARD_ITEM_PERCENT;
     this.coinPercent = configEnv().REWARD_COIN_PERCENT;
@@ -52,27 +53,47 @@ export class GameService {
   private readonly SPIN_COST = 100;
 
   async spinForRewards(user: UserEntity) {
-    if (user.gold < this.SPIN_COST) {
-      throw new BadRequestException('Not enough coins to spin');
-    }
+    return await this.dataSource.transaction(async (manager) => {
+      const lockedUser = await manager.findOne(UserEntity, {
+        where: { id: user.id },
+        lock: { mode: 'pessimistic_write', tables: ['user'] },
+      });
 
-    user.gold -= this.SPIN_COST;
-    await this.userRepository.update(user.id, user);
+      if (!lockedUser) {
+        throw new BadRequestException('User not found');
+      }
 
-    const inventoryItems = await this.inventoryService.getUserInventory(
-      user.id,
-    );
+      if (lockedUser.gold < this.SPIN_COST) {
+        throw new BadRequestException('Not enough coins to spin');
+      }
 
-    const availableItems = await this.itemService.getAvailableItems(
-      user.gender ?? Gender.MALE,
-      inventoryItems,
-    );
+      lockedUser.gold -= this.SPIN_COST;
+      await manager.save(lockedUser);
 
-    const rewards = await this.generateRandomRewards(availableItems);
+      const inventoryItems = await this.inventoryService.getUserInventory(
+        lockedUser.id,
+      );
 
-    const { result, user_gold } = await this.processRewards(user, rewards);
-    QuestEventEmitter.emitProgress(user.id, QuestType.SPIN_LUCKY_WHEEL, 1);
-    return { rewards: result, user_gold };
+      const availableItems = await this.itemService.getSpinAvailableItems(
+        lockedUser.gender ?? Gender.MALE,
+        inventoryItems,
+      );
+
+      const rewards = await this.generateRandomRewards(availableItems);
+
+      const { result, user_gold } = await this.processRewards(
+        lockedUser,
+        rewards,
+      );
+
+      QuestEventEmitter.emitProgress(
+        lockedUser.id,
+        QuestType.SPIN_LUCKY_WHEEL,
+        1,
+      );
+
+      return { rewards: result, user_gold };
+    });
   }
 
   private async generateRandomRewards(
