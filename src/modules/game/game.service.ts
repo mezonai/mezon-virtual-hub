@@ -53,47 +53,28 @@ export class GameService {
   private readonly SPIN_COST = 100;
 
   async spinForRewards(user: UserEntity) {
-    return await this.dataSource.transaction(async (manager) => {
-      const lockedUser = await manager.findOne(UserEntity, {
-        where: { id: user.id },
-        lock: { mode: 'pessimistic_write', tables: ['user'] },
-      });
+    if (user.gold < this.SPIN_COST) {
+      throw new BadRequestException('Not enough coins to spin');
+    }
+    user.gold -= this.SPIN_COST;
+    await this.userRepository.save(user);
 
-      if (!lockedUser) {
-        throw new BadRequestException('User not found');
-      }
+    const inventoryItems = await this.inventoryService.getUserInventory(
+      user.id,
+    );
 
-      if (lockedUser.gold < this.SPIN_COST) {
-        throw new BadRequestException('Not enough coins to spin');
-      }
+    const availableItems = await this.itemService.getSpinAvailableItems(
+      user.gender ?? Gender.MALE,
+      inventoryItems,
+    );
 
-      lockedUser.gold -= this.SPIN_COST;
-      await manager.save(lockedUser);
+    const rewards = await this.generateRandomRewards(availableItems);
 
-      const inventoryItems = await this.inventoryService.getUserInventory(
-        lockedUser.id,
-      );
+    const { result, user_gold } = await this.processRewards(user, rewards);
 
-      const availableItems = await this.itemService.getSpinAvailableItems(
-        lockedUser.gender ?? Gender.MALE,
-        inventoryItems,
-      );
+    QuestEventEmitter.emitProgress(user.id, QuestType.SPIN_LUCKY_WHEEL, 1);
 
-      const rewards = await this.generateRandomRewards(availableItems);
-
-      const { result, user_gold } = await this.processRewards(
-        lockedUser,
-        rewards,
-      );
-
-      QuestEventEmitter.emitProgress(
-        lockedUser.id,
-        QuestType.SPIN_LUCKY_WHEEL,
-        1,
-      );
-
-      return { rewards: result, user_gold };
-    });
+    return { rewards: result, user_gold };
   }
 
   private async generateRandomRewards(
