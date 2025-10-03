@@ -1,16 +1,25 @@
 import { configEnv } from '@config/env.config';
+import {
+  BASE_EXP_MAP,
+  MERGE_PET_DIAMOND_COST,
+  RARITY_CARD_REQUIREMENTS,
+  RARITY_ORDER,
+  STAR_MULTIPLIER,
+  UPGRADE_PET_RATES
+} from '@constant';
+import { AnimalRarity, SkillCode } from '@enum';
 import { BaseService } from '@libs/base/base.service';
+import { Logger } from '@libs/logger';
+import { getExpForNextLevel, getRarityUpgradeMultiplier, serializeDto } from '@libs/utils';
 import { Inventory } from '@modules/inventory/entity/inventory.entity';
-import { PetSkillUsageEntity } from '@modules/pet-skill-usages/entity/pet-skill-usages.entity';
 import { PetSkillsResponseDto } from '@modules/pet-skills/dto/pet-skills.dto';
 import { PetsEntity } from '@modules/pets/entity/pets.entity';
 import { UserEntity } from '@modules/user/entity/user.entity';
 import {
   BadRequestException,
   ConflictException,
-  ForbiddenException,
   Injectable,
-  NotFoundException,
+  NotFoundException
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { plainToInstance } from 'class-transformer';
@@ -38,18 +47,6 @@ import {
   UpgradedRarityPetPlayerDto,
 } from './dto/pet-players.dto';
 import { PetPlayersEntity } from './entity/pet-players.entity';
-import {
-  BASE_EXP_MAP,
-  MERGE_PET_DIAMOND_COST,
-  RARITY_CARD_REQUIREMENTS,
-  RARITY_ORDER,
-  UPGRADE_PET_RATES,
-  STAR_MULTIPLIER,
-  RARITY_MULTIPLIER,
-} from '@constant';
-import { AnimalRarity, SkillCode } from '@enum';
-import { getExpForNextLevel, serializeDto } from '@libs/utils';
-import { Logger } from '@libs/logger';
 
 @Injectable()
 export class PetPlayersService extends BaseService<PetPlayersEntity> {
@@ -94,9 +91,9 @@ export class PetPlayersService extends BaseService<PetPlayersEntity> {
         ...(payload.pet_id
           ? { id: payload.pet_id }
           : {
-              species: payload.species,
-              type: payload.type,
-            }),
+            species: payload.species,
+            type: payload.type,
+          }),
       },
       relations: ['skill_usages', 'skill_usages.skill'],
     });
@@ -546,51 +543,48 @@ export class PetPlayersService extends BaseService<PetPlayersEntity> {
   }
 
   recalculateStats(petPlayer: PetPlayersEntity, expGain: number = 0) {
-    const base = petPlayer.pet; // assuming `pet` relation has base stats
-
+    const base = petPlayer.pet; // base stats from pet relation
     if (!base) return;
+
     const iv = petPlayer.individual_value ?? 0;
 
+    // 1️⃣ Add experience and handle level ups
     petPlayer.exp += expGain;
-    // 📌 Handle level up and exp rollover
     while (petPlayer.exp >= getExpForNextLevel(petPlayer.level)) {
-      petPlayer.exp -= getExpForNextLevel(petPlayer.level); // keep residual exp
+      petPlayer.exp -= getExpForNextLevel(petPlayer.level);
       petPlayer.level++;
     }
 
     const level = petPlayer.level;
-    // 📌 Recalculate stats with formulas
-    let hp =
+
+    // 2️⃣ Base stat formulas (Pokémon style)
+    const hp =
       base.base_hp +
       Math.floor(((base.base_hp * 2 + iv) * level) / 100 + level + 10);
-
-    let attack =
+    const attack =
       base.base_attack +
       Math.floor(((base.base_attack * 2 + iv) * level) / 100 + 5);
-
-    let defense =
+    const defense =
       base.base_defense +
       Math.floor(((base.base_defense * 2 + iv) * level) / 100 + 5);
-
-    let speed =
+    const speed =
       base.base_speed +
       Math.floor(((base.base_speed * 2 + iv) * level) / 100 + 5);
 
-    // 📌 Apply multipliers
+    const rarityMultiplier = getRarityUpgradeMultiplier(
+      petPlayer.pet.rarity,
+      petPlayer.current_rarity,
+      petPlayer.stars,
+    );
+
     const starMultiplier = STAR_MULTIPLIER[petPlayer.stars] ?? 1.0;
-    const baseRarityMultiplier = RARITY_MULTIPLIER[petPlayer.pet.rarity] ?? 1.0;
 
-    const currentRarityMultiplier =
-      RARITY_MULTIPLIER[petPlayer.current_rarity] ?? 1.0;
+    const multiplier = rarityMultiplier * starMultiplier;
 
-    const rarityRatio = currentRarityMultiplier / baseRarityMultiplier;
-
-    const totalMultiplier = starMultiplier * rarityRatio;
-    // 📌 Final stats
-    petPlayer.hp = Math.floor(hp * totalMultiplier);
-    petPlayer.attack = Math.floor(attack * totalMultiplier);
-    petPlayer.defense = Math.floor(defense * totalMultiplier);
-    petPlayer.speed = Math.floor(speed * totalMultiplier);
+    petPlayer.hp = Math.floor(hp * multiplier);
+    petPlayer.attack = Math.floor(attack * multiplier);
+    petPlayer.defense = Math.floor(defense * multiplier);
+    petPlayer.speed = Math.floor(speed * multiplier);
   }
 
   async updateUnlockedSkills(petPlayer: PetPlayersEntity) {
@@ -778,13 +772,13 @@ export class PetPlayersService extends BaseService<PetPlayersEntity> {
         );
       }
 
-      const currentPet = petPlayer.pet;
-      if (!currentPet) {
+      const basePet = petPlayer.pet;
+      if (!basePet) {
         throw new BadRequestException('Pet player has no base pet');
       }
 
       // 3. Determine next rarity
-      const currentIdx = RARITY_ORDER.indexOf(currentPet.rarity);
+      const currentIdx = RARITY_ORDER.indexOf(petPlayer.current_rarity);
       if (currentIdx === -1 || currentIdx === RARITY_ORDER.length - 1) {
         throw new BadRequestException('Pet is already at max rarity');
       }
@@ -793,10 +787,10 @@ export class PetPlayersService extends BaseService<PetPlayersEntity> {
 
       if (
         RARITY_ORDER.indexOf(nextRarity) >
-        RARITY_ORDER.indexOf(currentPet.max_rarity)
+        RARITY_ORDER.indexOf(basePet.max_rarity)
       ) {
         throw new BadRequestException(
-          `This pet cannot be upgraded beyond ${currentPet.max_rarity}`,
+          `This pet cannot be upgraded beyond ${basePet.max_rarity}`,
         );
       }
 
@@ -828,10 +822,10 @@ export class PetPlayersService extends BaseService<PetPlayersEntity> {
       inventoryItem.quantity -= 1;
       await inventoryRepo.save(inventoryItem);
       // Roll success
-      const successRate = UPGRADE_PET_RATES[currentPet.rarity];
+      const nextRaritySuccessRate = UPGRADE_PET_RATES[nextRarity];
       const roll = Math.random() * 100;
 
-      if (roll > successRate) {
+      if (roll > nextRaritySuccessRate) {
         return plainToInstance(UpgradedRarityPetPlayerDto, {
           pet: petPlayer,
           success: false,
