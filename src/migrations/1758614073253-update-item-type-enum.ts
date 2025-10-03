@@ -1,4 +1,4 @@
-import { ItemType } from '@enum';
+import { Gender, ItemCode, ItemType } from '@enum';
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
 export class UpdateItemTypeEnum1758614073253 implements MigrationInterface {
@@ -8,6 +8,14 @@ export class UpdateItemTypeEnum1758614073253 implements MigrationInterface {
     await queryRunner.query(`
       ALTER TABLE item 
       ALTER COLUMN type TYPE varchar(50) USING type::varchar;
+    `);
+
+    await queryRunner.query(`
+      INSERT INTO "item" ("name", "gender", "gold", "type", "item_code", "is_stackable", "is_purchasable")
+      VALUES
+        ('Thẻ Nâng Cấp Hiếm Thường', ${Gender.NOT_SPECIFIED}, 0, ${ItemType.PET_CARD}, '${ItemCode.RARITY_CARD_RARE}', true, false),
+        ('Thẻ Nâng Cấp Hiếm', ${Gender.NOT_SPECIFIED}, 0, ${ItemType.PET_CARD}, '${ItemCode.RARITY_CARD_EPIC}', true, false),
+        ('Thẻ Nâng Cấp Siêu Hiếm', ${Gender.NOT_SPECIFIED}, 0, ${ItemType.PET_CARD}, '${ItemCode.RARITY_CARD_LEGENDARY}', true, false)
     `);
 
     await queryRunner.query(`
