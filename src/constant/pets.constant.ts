@@ -35,6 +35,21 @@ export const RARITY_MULTIPLIER: Record<AnimalRarity, number> = {
   epic: STAR_MULTIPLIER[3] + RARITY_TIER_BONUS['epic'], // > rare3★
   legendary: STAR_MULTIPLIER[3] + RARITY_TIER_BONUS['legendary'], // > epic3★
 };
+// Dynamically calculate the base multiplier for each rarity (1★)
+export const RARITY_BASE: Record<AnimalRarity, number> = {} as any;
+
+RARITY_ORDER.forEach((rarity, index) => {
+  if (index === 0) {
+    // Common starts at 1.0
+    RARITY_BASE[rarity] = 1.0;
+  } else {
+    const prevRarity = RARITY_ORDER[index - 1];
+    // Previous rarity max 3★
+    const prevMax3Star = RARITY_BASE[prevRarity] * STAR_MULTIPLIER[3];
+    // Current rarity 1★ = previous 3★ + tier bonus
+    RARITY_BASE[rarity] = prevMax3Star + RARITY_TIER_BONUS[rarity];
+  }
+});
 
 export const RARITY_CARD_REQUIREMENTS: Record<AnimalRarity, ItemCode | null> = {
   [AnimalRarity.COMMON]: null,
