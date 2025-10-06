@@ -20,38 +20,6 @@ export class SeedRarityCardItem1758102859820 implements MigrationInterface {
     await queryRunner.query(
       `ALTER TABLE "item" ALTER COLUMN "updated_at" SET NOT NULL`,
     );
-
-    await queryRunner.manager
-      .createQueryBuilder()
-      .insert()
-      .into<ItemEntity>('item')
-      .values([
-        {
-          name: 'Thẻ Nâng Cấp Hiếm Thường',
-          gender: Gender.NOT_SPECIFIED,
-          gold: 0,
-          type: ItemType.PET_CARD,
-          item_code: ItemCode.RARITY_CARD_RARE,
-          is_stackable: true,
-        },
-        {
-          name: 'Thẻ Nâng Cấp Hiếm',
-          gender: Gender.NOT_SPECIFIED,
-          gold: 0,
-          type: ItemType.PET_CARD,
-          item_code: ItemCode.RARITY_CARD_EPIC,
-          is_stackable: true,
-        },
-        {
-          name: 'Thẻ Nâng Cấp Siêu Hiếm',
-          gender: Gender.NOT_SPECIFIED,
-          gold: 0,
-          type: ItemType.PET_CARD,
-          item_code: ItemCode.RARITY_CARD_LEGENDARY,
-          is_stackable: true,
-        },
-      ])
-      .execute();
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
