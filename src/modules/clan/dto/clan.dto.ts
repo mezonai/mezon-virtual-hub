@@ -1,0 +1,96 @@
+import {
+  ApiProperty,
+  ApiPropertyOptional,
+  OmitType,
+  PickType,
+} from '@nestjs/swagger';
+import { Exclude, Expose, Type } from 'class-transformer';
+import { ClanEntity } from '../entity/clan.entity';
+import {
+  IsBoolean,
+  IsEnum,
+  IsNumber,
+  IsOptional,
+  IsString,
+} from 'class-validator';
+import { MapKey } from '@enum';
+import { UserPublicDto } from '@modules/user/dto/user.dto';
+import { QueryParamsDto } from '@types';
+
+export class CreateMapDto {
+  readonly name: string;
+  readonly map_key?: string;
+  readonly width: number;
+  readonly height: number;
+}
+
+export class UpdateClanDto {
+  @ApiProperty({
+    description: 'The name of the map',
+    type: String,
+    required: false,
+    nullable: true,
+  })
+  @IsOptional()
+  @IsString()
+  name?: string | null;
+
+  @ApiProperty({
+    description: 'The width of the map',
+    type: Number,
+    required: false,
+    nullable: true,
+  })
+  @IsOptional()
+  @IsNumber()
+  width?: number | null;
+
+  @ApiProperty({
+    description: 'The height of the map',
+    type: Number,
+    required: false,
+    nullable: true,
+  })
+  @IsOptional()
+  @IsNumber()
+  height?: number | null;
+
+  @ApiProperty({
+    description: 'Lock the map',
+    required: false,
+    nullable: true,
+  })
+  @IsOptional()
+  @IsBoolean()
+  is_locked?: boolean;
+}
+
+export class ClanListDto extends ClanEntity {}
+
+export class ClanInfoResponseDto extends OmitType(ClanEntity, [
+  'leader',
+  'vice_leader',
+]) {
+  @ApiProperty({ type: () => UserPublicDto })
+  @Type(() => UserPublicDto)
+  leader: UserPublicDto | null;
+
+  @ApiProperty({ type: () => UserPublicDto })
+  @Type(() => UserPublicDto)
+  vice_leader: UserPublicDto | null;
+}
+
+export class ClansQueryDto extends OmitType(QueryParamsDto, [
+  'search',
+  'limit',
+]) {
+  @ApiPropertyOptional({
+    description: 'Number of results per page',
+    example: 30,
+    default: 30,
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  limit?: number = 30;
+}

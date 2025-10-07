@@ -98,4 +98,9 @@ export abstract class BaseService<T extends ObjectLiteral> {
   ) {
     return await this.repository.decrement(conditions, propertyPath, value);
   }
+
+  createQueryBuilder() {
+    const alias = this.repository.metadata.tableName;
+    return this.repository.createQueryBuilder(alias);
+  }
 }

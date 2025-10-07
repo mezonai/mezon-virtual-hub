@@ -1,6 +1,6 @@
 import { Gender, Role } from '@enum';
 import { Inventory } from '@modules/inventory/entity/inventory.entity';
-import { MapEntity } from '@modules/map/entity/map.entity';
+import { ClanEntity } from '@modules/clan/entity/clan.entity';
 import { ApiProperty } from '@nestjs/swagger';
 import { AuditEntity } from '@types';
 import { Exclude, Type } from 'class-transformer';
@@ -87,9 +87,13 @@ export class UserEntity extends AuditEntity {
   @Column('text', { array: true, nullable: true })
   skin_set: string[];
 
-  @ManyToOne(() => MapEntity, { nullable: true })
-  @JoinColumn({ name: 'map_id' })
-  map: MapEntity | null;
+  @ManyToOne(() => ClanEntity, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'clan_id', foreignKeyConstraintName: 'FK_user_clan' })
+  clan: ClanEntity | null;
+
+  @Column({ type: 'uuid', nullable: true })
+  @Exclude()
+  clan_id: string | null;
 
   @OneToMany(() => Inventory, (inventory) => inventory.user)
   inventories: Inventory[];

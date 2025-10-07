@@ -1,7 +1,8 @@
-import { Gender, SortOrder } from '@enum';
+import { Gender } from '@enum';
+import { ClanInfoResponseDto } from '@modules/clan/dto/clan.dto';
 import { InventoryDto } from '@modules/inventory/dto/inventory.dto';
-import { MapDtoResponse } from '@modules/map/dto/map.dto';
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { PetPlayersWithSpeciesDto } from '@modules/pet-players/dto/pet-players.dto';
+import { ApiProperty, ApiPropertyOptional, OmitType } from '@nestjs/swagger';
 import { Exclude, Expose, Type } from 'class-transformer';
 import {
   IsArray,
@@ -13,9 +14,9 @@ import {
 } from 'class-validator';
 import { UUID } from 'typeorm/driver/mongodb/bson.typings';
 import { UserEntity } from '../entity/user.entity';
-import { PetPlayersWithSpeciesDto } from '@modules/pet-players/dto/pet-players.dto';
+import { QueryParamsDto } from '@types';
 
-export class UserExcludeResponse {
+export class UserPrivateDto {
   @Exclude()
   deleted_at: Date | null;
 
@@ -36,17 +37,25 @@ export class UserExcludeResponse {
 
   @Exclude()
   role: number;
+
+  @Type(() => ClanInfoResponseDto)
+  @Expose()
+  clan: ClanInfoResponseDto | null;
+
+  @Type(() => InventoryDto)
+  @Expose()
+  inventories: InventoryDto[];
 }
 
 export class UpdateInfoDto {
   @ApiProperty({
-    description: 'The map_id of the user',
+    description: 'The clan_id of the user',
     type: UUID,
     required: false,
   })
   @IsUUID()
   @IsOptional()
-  map_id?: string;
+  clan_id?: string;
 
   @ApiProperty({
     description: 'position_x of the user',
@@ -95,21 +104,51 @@ export class UpdateInfoDto {
   skin_set?: string[];
 }
 
-export class UserInformationDto {
-  @Expose()
-  @Type(() => UserExcludeResponse)
-  user: UserExcludeResponse;
-
-  @Type(() => InventoryDto)
-  @Expose()
-  inventories: InventoryDto[];
-
-  @Type(() => MapDtoResponse)
-  @Expose()
-  map: MapDtoResponse | null;
-}
+export class UserInformationDto extends UserPrivateDto {}
 
 export class UserWithPetPlayers extends UserEntity {
   pet_players: PetPlayersWithSpeciesDto[];
 }
 
+@Exclude()
+export class UserPublicDto {
+  @Expose()
+  id: string;
+
+  @Expose()
+  username: string;
+
+  @Expose()
+  display_name: string | null;
+
+  @Expose()
+  avatar_url: string | null;
+
+  @Expose()
+  gender: Gender | null;
+}
+
+export class UsersClanQueryDto extends OmitType(QueryParamsDto, [
+  'search',
+  'sort_by',
+  'limit',
+]) {
+  @ApiPropertyOptional({
+    description: 'Field name to sort by',
+    example: 'username',
+    default: 'username',
+  })
+  @IsOptional()
+  @IsString()
+  sort_by?: string = 'username';
+
+  @ApiPropertyOptional({
+    description: 'Number of results per page',
+    example: 30,
+    default: 30,
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  limit?: number = 30;
+}

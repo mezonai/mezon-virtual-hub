@@ -36,13 +36,13 @@ export class UpdateUserDto extends PickType(UserEntity, [
   'mezon_id',
 ]) {
   @ApiProperty({
-    description: 'The map_id of the user',
+    description: 'The clan_id of the user',
     type: UUID,
     required: false,
   })
   @IsUUID()
   @IsOptional()
-  map_id?: string;
+  clan_id?: string;
 
   @ApiProperty({
     description: 'position_x of the user',
