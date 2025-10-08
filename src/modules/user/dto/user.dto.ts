@@ -129,7 +129,6 @@ export class UserPublicDto {
 }
 
 export class UsersClanQueryDto extends OmitType(QueryParamsDto, [
-  'search',
   'sort_by',
   'limit',
 ]) {

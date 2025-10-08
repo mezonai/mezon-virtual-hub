@@ -1,21 +1,9 @@
-import {
-  ApiProperty,
-  ApiPropertyOptional,
-  OmitType,
-  PickType,
-} from '@nestjs/swagger';
-import { Exclude, Expose, Type } from 'class-transformer';
-import { ClanEntity } from '../entity/clan.entity';
-import {
-  IsBoolean,
-  IsEnum,
-  IsNumber,
-  IsOptional,
-  IsString,
-} from 'class-validator';
-import { MapKey } from '@enum';
 import { UserPublicDto } from '@modules/user/dto/user.dto';
+import { ApiProperty, ApiPropertyOptional, OmitType } from '@nestjs/swagger';
 import { QueryParamsDto } from '@types';
+import { Expose, Type } from 'class-transformer';
+import { IsBoolean, IsNumber, IsOptional, IsString } from 'class-validator';
+import { ClanEntity } from '../entity/clan.entity';
 
 export class CreateMapDto {
   readonly name: string;
@@ -65,7 +53,10 @@ export class UpdateClanDto {
   is_locked?: boolean;
 }
 
-export class ClanListDto extends ClanEntity {}
+export class ClanListDto extends ClanEntity {
+  @Type(() => Number)
+  member_count: number;
+}
 
 export class ClanInfoResponseDto extends OmitType(ClanEntity, [
   'leader',
@@ -78,6 +69,10 @@ export class ClanInfoResponseDto extends OmitType(ClanEntity, [
   @ApiProperty({ type: () => UserPublicDto })
   @Type(() => UserPublicDto)
   vice_leader: UserPublicDto | null;
+
+  @Expose()
+  @Type(() => Number)
+  member_count: number;
 }
 
 export class ClansQueryDto extends OmitType(QueryParamsDto, [

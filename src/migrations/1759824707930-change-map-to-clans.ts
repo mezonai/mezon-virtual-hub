@@ -21,6 +21,8 @@ export class ChangeMapToClans1759824707930 implements MigrationInterface {
       ON DELETE SET NULL ON UPDATE NO ACTION;
     `);
 
+    await queryRunner.query(`ALTER TABLE "clans" ADD "description" text`);
+
     await queryRunner.query(`
       ALTER TABLE "clans"
       ADD COLUMN "fund" integer NOT NULL DEFAULT 0;
@@ -88,6 +90,10 @@ export class ChangeMapToClans1759824707930 implements MigrationInterface {
 
     await queryRunner.query(`
       ALTER TABLE "clans" DROP COLUMN IF EXISTS "fund";
+    `);
+
+    await queryRunner.query(`
+      ALTER TABLE "clans" DROP COLUMN IF EXISTS "description";
     `);
 
     await queryRunner.query(`
