@@ -32,7 +32,6 @@ import { RewardModule } from '@modules/reward/reward.module';
 import { RouterModule } from '@nestjs/core';
 import { ClsModule } from 'nestjs-cls';
 import { dataSourceOption } from './config/data-source.config';
-import { FarmModule } from './modules/farm/farm.module';
 
 @Module({
   imports: [
@@ -75,7 +74,6 @@ import { FarmModule } from './modules/farm/farm.module';
       global: true,
       middleware: { mount: true },
     }),
-    FarmModule,
   ],
 })
 export class AppModule {}
