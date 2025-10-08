@@ -9,7 +9,6 @@ import { AuthService } from './auth.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { OAuth2Service } from './oauth2.service';
 import { UserEntity } from '@modules/user/entity/user.entity';
-import { PlayerQuestService } from '@modules/player-quest/player-quest.service';
 import { PlayerQuestModule } from '@modules/player-quest/player-quest.module';
 
 @Module({

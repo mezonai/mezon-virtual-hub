@@ -4,7 +4,7 @@ import {
   envFilePath,
 } from '@config/env.config';
 import { AuthModule } from '@modules/auth/auth.module';
-import { MapModule } from '@modules/map/map.module';
+import { ClanModule } from '@modules/clan/clan.module';
 import { UserModule } from '@modules/user/user.module';
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
@@ -26,12 +26,13 @@ import { MezonModule } from '@modules/mezon/mezon.module';
 import { PetPlayersModule } from '@modules/pet-players/pet-players.module';
 import { PetSkillsModule } from '@modules/pet-skills/pet-skills.module';
 import { PetsModule } from '@modules/pets/pets.module';
+import { PlayerQuestModule } from '@modules/player-quest/player-quest.module';
+import { RewardItemModule } from '@modules/reward-item/reward-item.module';
+import { RewardModule } from '@modules/reward/reward.module';
 import { RouterModule } from '@nestjs/core';
 import { ClsModule } from 'nestjs-cls';
 import { dataSourceOption } from './config/data-source.config';
-import { PlayerQuestModule } from '@modules/player-quest/player-quest.module';
-import { RewardModule } from '@modules/reward/reward.module';
-import { RewardItemModule } from '@modules/reward-item/reward-item.module';
+import { FarmModule } from './modules/farm/farm.module';
 
 @Module({
   imports: [
@@ -46,7 +47,7 @@ import { RewardItemModule } from '@modules/reward-item/reward-item.module';
     UserModule,
     ItemModule,
     InventoryModule,
-    MapModule,
+    ClanModule,
     LogViewerModule,
     LoggerModule,
     FilterModule,
@@ -74,6 +75,7 @@ import { RewardItemModule } from '@modules/reward-item/reward-item.module';
       global: true,
       middleware: { mount: true },
     }),
+    FarmModule,
   ],
 })
 export class AppModule {}
