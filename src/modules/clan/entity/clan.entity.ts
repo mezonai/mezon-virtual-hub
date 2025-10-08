@@ -18,6 +18,10 @@ export class ClanEntity extends AuditEntity {
   @Column({ type: 'varchar' })
   name: string;
 
+  @Column({ type: 'text', nullable: true })
+  @Type(() => String)
+  description?: string;
+
   @Column({ type: 'int', default: 0 })
   @ApiProperty()
   @IsInt()

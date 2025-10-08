@@ -13,7 +13,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Pageable } from '@types';
 import { plainToInstance } from 'class-transformer';
-import { EntityManager, Repository } from 'typeorm';
+import { EntityManager, ILike, Repository } from 'typeorm';
 import {
   ClanInfoResponseDto,
   ClanListDto,
@@ -58,28 +58,32 @@ export class ClanService extends BaseService<ClanEntity> {
   }
 
   async getClanById(clanId: string) {
-    const clan = await this.findOne({
-      where: { id: clanId },
-      relations: ['vice_leader', 'leader'],
-    });
+    const clanWithCount = await this.createQueryBuilder()
+      .leftJoinAndSelect('clans.leader', 'leader')
+      .leftJoinAndSelect('clans.vice_leader', 'vice_leader')
+      .leftJoin('clans.members', 'members')
+      .where('clans.id = :clanId', { clanId })
+      .loadRelationCountAndMap('clans.member_count', 'clans.members')
+      .getOne();
 
-    if (!clan) {
+    if (!clanWithCount) {
       throw new NotFoundException('Clan not found');
     }
 
-    return plainToInstance(ClanInfoResponseDto, clan);
+    return plainToInstance(ClanInfoResponseDto, clanWithCount);
   }
 
   async getUsersByClanId(clanId: string, query: UsersClanQueryDto) {
     const {
       page = 1,
       limit = 30,
+      search,
       sort_by = 'username',
       order = 'DESC',
     } = query;
 
     const [users, total] = await this.userRepository.findAndCount({
-      where: { clan_id: clanId },
+      where: { clan_id: clanId, username: ILike(`%${search}%`) },
       take: limit,
       skip: (page - 1) * limit,
       order: {
@@ -136,7 +140,7 @@ export class ClanService extends BaseService<ClanEntity> {
   }
 
   async leaveClan(user: UserEntity, clanId: string) {
-    if (!user.clan || user.clan.id !== clanId) {
+    if (!user.clan_id || user.clan_id !== clanId) {
       throw new BadRequestException('User is not a member of this clan');
     }
 
