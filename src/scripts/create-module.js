@@ -12,7 +12,12 @@ if (!moduleName) {
 
 const basePath = `src/modules/${moduleName}`;
 const entitiesPath = `${basePath}/entity`;
-const className = capitalize(moduleName);
+
+// ✨ Use helper functions
+const className = toClassName(moduleName);
+const camelName = toCamelCase(moduleName);
+const snakeName = toSnakeCase(moduleName);
+
 const entityName = `${className}Entity`;
 const serviceName = `${className}Service`;
 const controllerName = `${className}Controller`;
@@ -45,9 +50,9 @@ const entityFile = `${entitiesPath}/${moduleName}.entity.ts`;
 if (!fs.existsSync(entityFile)) {
   const entityContent = `import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
 
-@Entity({ name: '${moduleName}s' })
+@Entity({ name: '${snakeName}s' })
 export class ${entityName} {
-  @PrimaryGeneratedColumn('uuid', { primaryKeyConstraintName: 'PK_${moduleName}s_id' })
+  @PrimaryGeneratedColumn('uuid', { primaryKeyConstraintName: 'PK_${snakeName}s_id' })
   id: string;
 
   @Column({ type: 'varchar', nullable: true })
@@ -70,11 +75,11 @@ import { ${entityName} } from './entity/${moduleName}.entity';
 export class ${serviceName} {
   constructor(
     @InjectRepository(${entityName})
-    private readonly ${moduleName}Repo: Repository<${entityName}>,
+    private readonly ${camelName}Repo: Repository<${entityName}>,
   ) {}
 
   async findAll() {
-    return this.${moduleName}Repo.find();
+    return this.${camelName}Repo.find();
   }
 }
 `;
@@ -95,13 +100,13 @@ import { ClsService } from 'nestjs-cls';
 @Controller('${moduleName}s')
 export class ${controllerName} {
   constructor(
-    private readonly ${moduleName}Service: ${serviceName},
+    private readonly ${camelName}Service: ${serviceName},
     private readonly clsService: ClsService,
   ) {}
 
   @Get()
   async findAll() {
-    return this.${moduleName}Service.findAll();
+    return this.${camelName}Service.findAll();
   }
 }
 `;
@@ -109,7 +114,7 @@ export class ${controllerName} {
   console.log(`✅ Updated controller: ${controllerFile}`);
 }
 
-// 8 Update module file
+// 8️⃣ Update module file
 const moduleFile = `${basePath}/${moduleName}.module.ts`;
 if (fs.existsSync(moduleFile)) {
   const moduleContent = `import { Module } from '@nestjs/common';
@@ -120,19 +125,37 @@ import { ${controllerName} } from './${moduleName}.controller';
 import { ${serviceName} } from './${moduleName}.service';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([ ${entityName}]), ClsModule],
+  imports: [TypeOrmModule.forFeature([${entityName}]), ClsModule],
   providers: [${serviceName}],
   controllers: [${controllerName}],
 })
 export class ${className}Module {}
 `;
   fs.writeFileSync(moduleFile, moduleContent);
-  console.log(`✅ Updated module: ${controllerFile}`);
+  console.log(`✅ Updated module: ${moduleFile}`);
 }
 
 console.log(`🎉 Module "${moduleName}" created successfully!`);
 
-// 🔠 Helper function
-function capitalize(str) {
-  return str.charAt(0).toUpperCase() + str.slice(1);
+// 🔠 Helper functions
+function toCamelCase(str) {
+  const parts = str.split('-');
+  if (parts.length === 1) return parts[0];
+  return parts
+    .map((word, index) =>
+      index === 0 ? word : word.charAt(0).toUpperCase() + word.slice(1),
+    )
+    .join('');
+}
+
+function toClassName(str) {
+  const camel = toCamelCase(str);
+  return camel.charAt(0).toUpperCase() + camel.slice(1);
+}
+
+function toSnakeCase(str) {
+  return str
+    .replace(/-/g, '_')
+    .replace(/([a-z])([A-Z])/g, '$1_$2')
+    .toLowerCase();
 }

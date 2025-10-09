@@ -83,7 +83,10 @@ export class ClanService extends BaseService<ClanEntity> {
     } = query;
 
     const [users, total] = await this.userRepository.findAndCount({
-      where: { clan_id: clanId, username: ILike(`%${search}%`) },
+      where: {
+        clan_id: clanId,
+        ...(search && { username: ILike(`%${search}%`) }),
+      },
       take: limit,
       skip: (page - 1) * limit,
       order: {

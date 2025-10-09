@@ -32,6 +32,7 @@ import { RewardModule } from '@modules/reward/reward.module';
 import { RouterModule } from '@nestjs/core';
 import { ClsModule } from 'nestjs-cls';
 import { dataSourceOption } from './config/data-source.config';
+import { ClanFundModule } from './modules/clan-fund/clan-fund.module';
 
 @Module({
   imports: [
@@ -74,6 +75,7 @@ import { dataSourceOption } from './config/data-source.config';
       global: true,
       middleware: { mount: true },
     }),
+    ClanFundModule,
   ],
 })
 export class AppModule {}

@@ -191,3 +191,8 @@ export enum RewardItemType {
   ITEM = 'item',
   PET = 'pet',
 }
+
+export enum ClanFundType {
+  GOLD = 'gold',
+  DIAMOND = 'diamond',
+}
