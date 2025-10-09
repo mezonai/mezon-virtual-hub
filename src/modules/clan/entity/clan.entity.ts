@@ -1,3 +1,4 @@
+import { ClanFundEntity } from '@modules/clan-fund/entity/clan-fund.entity';
 import { UserEntity } from '@modules/user/entity/user.entity';
 import { ApiProperty } from '@nestjs/swagger';
 import { AuditEntity } from '@types';
@@ -84,4 +85,7 @@ export class ClanEntity extends AuditEntity {
 
   @OneToMany(() => UserEntity, (user) => user.clan)
   members: UserEntity[];
+
+  @OneToMany(() => ClanFundEntity, (fund) => fund.clan)
+  funds: ClanFundEntity[];
 }
