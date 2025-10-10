@@ -13,16 +13,17 @@ import { UserEntity } from '@modules/user/entity/user.entity';
 import { Logger } from '@libs/logger';
 import { UserService } from '@modules/user/user.service';
 import { configEnv } from '@config/env.config';
+import { APISentTokenRequest } from 'mezon-sdk';
 
 @Injectable()
 export class TransactionsService {
-  private readonly logger = new Logger(TransactionsService.name)
+  private readonly logger = new Logger(TransactionsService.name);
   constructor(
     @InjectRepository(TransactionsEntity)
     private readonly transactionRepository: Repository<TransactionsEntity>,
     private readonly userService: UserService,
     private manager: EntityManager,
-  ) { }
+  ) {}
 
   async getAllTransaction(query: TransactionsQueryDto) {
     const {
@@ -74,7 +75,14 @@ export class TransactionsService {
   }
 
   async handleDepositTransaction(data: MezonTokenSentEvent): Promise<boolean> {
-    const { transaction_id, amount, extra_attribute, receiver_id, sender_id, sender_name } = data;
+    const {
+      transaction_id,
+      amount,
+      extra_attribute,
+      receiver_id,
+      sender_id,
+      sender_name,
+    } = data;
 
     const [user, bot] = await Promise.all([
       this.userService.findOne({
@@ -140,12 +148,12 @@ export class TransactionsService {
     }
   }
 
-  async handleWithdrawTransaction(data: { amount: number, extra_attribute?: string }, user: UserEntity) {
+  async handleWithdrawTransaction(data: APISentTokenRequest, user: UserEntity) {
     const { amount, extra_attribute } = data;
     try {
       const transaction = this.transactionRepository.create({
         amount,
-        extra_attribute,
+        extra_attribute: JSON.stringify(extra_attribute),
         receiver_id: configEnv().MEZON_TOKEN_RECEIVER_APP_ID,
         user,
         currency: TransactionCurrency.TOKEN,
