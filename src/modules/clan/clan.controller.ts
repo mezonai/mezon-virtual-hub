@@ -15,7 +15,7 @@ import { Public, RequireAdmin } from '@libs/decorator';
 import { Body, Delete, Param, Put } from '@nestjs/common';
 import { ClsService } from 'nestjs-cls';
 import { UserService } from '../user/user.service';
-import { ClansQueryDto, UpdateClanDto } from './dto/clan.dto';
+import { ClansQueryDto, UpdateClanDescriptionDto, UpdateClanDto } from './dto/clan.dto';
 import { ClanService } from './clan.service';
 import { USER_TOKEN } from '@constant';
 import { UserEntity } from '@modules/user/entity/user.entity';
@@ -108,5 +108,13 @@ export class ClanController {
   async leaveClan(@Param('id', ParseUUIDPipe) clanId: string) {
     const user = this.clsService.get<UserEntity>(USER_TOKEN);
     return await this.clanService.leaveClan(user, clanId);
+  }
+
+  @Post(':id/description')
+  async updateDescription(
+    @Param('id') clanId: string,
+    @Body() dto: UpdateClanDescriptionDto,
+  ) {
+    return this.clanService.updateClanDescription(clanId, dto);
   }
 }
