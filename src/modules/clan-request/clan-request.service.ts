@@ -1,3 +1,7 @@
+import { ClanRequestStatus } from '@enum';
+import { BaseService } from '@libs/base/base.service';
+import { ClanEntity } from '@modules/clan/entity/clan.entity';
+import { UserEntity } from '@modules/user/entity/user.entity';
 import {
   BadRequestException,
   ForbiddenException,
@@ -5,12 +9,15 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Pageable } from '@types';
+import { plainToInstance } from 'class-transformer';
+import { ILike, Repository } from 'typeorm';
+import { ClanBroadcastService } from './clan-broadcast.service';
+import {
+  ClanRequestListDto,
+  PendingRequestQueryDto,
+} from './dto/clan-request.dto';
 import { ClanRequestEntity } from './entity/clan-request.entity';
-import { ClanRequestStatus } from '@enum';
-import { UserEntity } from '@modules/user/entity/user.entity';
-import { ClanEntity } from '@modules/clan/entity/clan.entity';
-import { BaseService } from '@libs/base/base.service';
 
 @Injectable()
 export class ClanRequestService extends BaseService<ClanRequestEntity> {
@@ -19,9 +26,9 @@ export class ClanRequestService extends BaseService<ClanRequestEntity> {
     @InjectRepository(ClanRequestEntity)
     private readonly clanRequestRepo: Repository<ClanRequestEntity>,
     @InjectRepository(ClanEntity)
-    private readonly clanRepo: Repository<ClanEntity>,
     @InjectRepository(UserEntity)
     private readonly userRepo: Repository<UserEntity>,
+    private readonly clanBroadcastService: ClanBroadcastService,
   ) {
     super(clanRequestRepo, ClanRequestEntity.name);
   }
@@ -44,9 +51,12 @@ export class ClanRequestService extends BaseService<ClanRequestEntity> {
     }
 
     const request = this.clanRequestRepo.create({
-      user_id: clan.id,
+      user_id: user.id,
+      clan_id: clan.id,
       status: ClanRequestStatus.PENDING,
     });
+
+    this.clanBroadcastService.broadcastJoinRequestReceived(clan, user);
 
     return await this.clanRequestRepo.save(request);
   }
@@ -92,11 +102,15 @@ export class ClanRequestService extends BaseService<ClanRequestEntity> {
           .andWhere('status = :status', { status: ClanRequestStatus.PENDING })
           .execute(),
       ]);
+
+      await this.clanRequestRepo.save(request);
+      this.clanBroadcastService.broadcastJoinApproved(request);
+      return;
     } else {
       request.status = ClanRequestStatus.REJECTED;
+      await this.clanRequestRepo.save(request);
+      this.clanBroadcastService.broadcastJoinRejected(request);
     }
-
-    return await this.clanRequestRepo.save(request);
   }
 
   async cancelJoinRequest(userId: string, clanId: string) {
@@ -132,10 +146,36 @@ export class ClanRequestService extends BaseService<ClanRequestEntity> {
     await this.clanRequestRepo.save(request);
   }
 
-  async getPendingRequests(clanId: string) {
-    return this.clanRequestRepo.find({
-      where: { clan_id: clanId, status: ClanRequestStatus.PENDING },
-      relations: ['user'],
+  async getPendingRequests(query: PendingRequestQueryDto) {
+    const {
+      page = 1,
+      limit = 30,
+      sort_by = 'created_at',
+      order = 'DESC',
+      search,
+    } = query;
+
+    const [requests, total] = await this.clanRequestRepo.findAndCount({
+      where: {
+        clan_id: query.clan_id,
+        status: ClanRequestStatus.PENDING,
+        ...(search && { username: ILike(`%${search}%`) }),
+      },
+      select: {
+        clan: { name: true },
+      },
+      relations: ['user', 'clan'],
+      take: limit,
+      skip: (page - 1) * limit,
+      order: {
+        [sort_by]: order,
+      },
+    });
+
+    return new Pageable(plainToInstance(ClanRequestListDto, requests), {
+      size: limit,
+      page,
+      total,
     });
   }
 }
