@@ -33,6 +33,7 @@ import { RouterModule } from '@nestjs/core';
 import { ClsModule } from 'nestjs-cls';
 import { dataSourceOption } from './config/data-source.config';
 import { ClanFundModule } from './modules/clan-fund/clan-fund.module';
+import { ClanRequestModule } from './modules/clan-request/clan-request.module';
 
 @Module({
   imports: [
@@ -76,6 +77,7 @@ import { ClanFundModule } from './modules/clan-fund/clan-fund.module';
       middleware: { mount: true },
     }),
     ClanFundModule,
+    ClanRequestModule,
   ],
 })
 export class AppModule {}

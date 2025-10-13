@@ -11,7 +11,7 @@ import {
 } from '@nestjs/common';
 import { MezonTokenSentEvent, WithdrawMezonPayload, WithdrawMezonResult } from '@types';
 import axios from 'axios';
-import { Events, MezonClient, TokenSentEvent } from 'mezon-sdk';
+import { APISentTokenRequest, Events, MezonClient, TokenSentEvent } from 'mezon-sdk';
 import moment from 'moment';
 import { EntityManager } from 'typeorm';
 
@@ -79,7 +79,7 @@ export class MezonService implements OnModuleInit, OnModuleDestroy {
     }
 
     try {
-      const payloadWithdraw: TokenSentEvent = {
+      const payloadWithdraw: APISentTokenRequest = {
         ...sendTokenData,
         receiver_id: user.mezon_id,
         sender_id: configEnv().MEZON_TOKEN_RECEIVER_APP_ID,

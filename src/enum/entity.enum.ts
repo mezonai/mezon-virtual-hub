@@ -196,3 +196,10 @@ export enum ClanFundType {
   GOLD = 'gold',
   DIAMOND = 'diamond',
 }
+
+export enum ClanRequestStatus {
+  PENDING = 'pending',
+  APPROVED = 'approved',
+  REJECTED = 'rejected',
+  CANCELLED = 'cancel',
+}
