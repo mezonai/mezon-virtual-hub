@@ -7,13 +7,15 @@ import { ClanController } from './clan.controller';
 import { ClanService } from './clan.service';
 import { ClanEntity } from './entity/clan.entity';
 import { UserEntity } from '@modules/user/entity/user.entity';
+import { ClanRequestModule } from '@modules/clan-request/clan-request.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([ClanEntity, UserEntity]), 
-    ClsModule, 
+    TypeOrmModule.forFeature([ClanEntity, UserEntity]),
+    ClsModule,
     JwtModule,
     forwardRef(() => UserModule),
+    ClanRequestModule,
   ],
   providers: [ClanService],
   controllers: [ClanController],

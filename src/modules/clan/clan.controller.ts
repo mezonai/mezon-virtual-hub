@@ -43,7 +43,7 @@ export class ClanController {
     return await this.clanService.getAllClansWithMemberCount(query);
   }
 
-  @Get(':id')
+  @Get(':clan_id')
   @ApiOperation({
     summary: 'Get clan details by id',
   })
@@ -51,16 +51,7 @@ export class ClanController {
     return await this.clanService.getClanById(id);
   }
 
-  // @Post('')
-  // @ApiOperation({
-  //   summary: 'Create a new clan',
-  // })
-  // async createClan(@Body() createClanDto: CreateClanDto) {
-  //   return await this.ClanService.createClan(createClanDto);
-  // }
-
-  @Put(':id')
-  @RequireAdmin()
+  @Put(':clan_id')
   @ApiOperation({
     summary: 'Update an existing clan',
   })
@@ -75,7 +66,7 @@ export class ClanController {
     return await this.clanService.updateClan(id, updateClanDto);
   }
 
-  @Delete(':id')
+  @Delete(':clan_id')
   @RequireAdmin()
   @ApiOperation({
     summary: 'Delete a clan',
@@ -84,7 +75,7 @@ export class ClanController {
     return await this.clanService.deleteClan(id);
   }
 
-  @Get(':id/users')
+  @Get(':clan_id/users')
   @Public()
   @ApiOperation({
     summary: 'Get all users from a clan',
@@ -96,14 +87,21 @@ export class ClanController {
     return await this.clanService.getUsersByClanId(id, query);
   }
 
-  @Post(':id/join')
+  @Post(':clan_id/request-join')
   @ApiOperation({ summary: 'Join a clan by id' })
   async joinClan(@Param('id', ParseUUIDPipe) clanId: string) {
     const user = this.clsService.get<UserEntity>(USER_TOKEN);
     return await this.clanService.joinClan(user, clanId);
   }
 
-  @Post(':id/leave')
+  @Post(':clan_id/cancel-join')
+  @ApiOperation({ summary: 'Cancel join a clan by id' })
+  async cancelJoinClan(@Param('id', ParseUUIDPipe) clanId: string) {
+    const user = this.clsService.get<UserEntity>(USER_TOKEN);
+    return await this.clanService.cancelJoinClan(user, clanId);
+  }
+
+  @Post(':clan_id/leave')
   @ApiOperation({ summary: 'Leave a clan by id' })
   async leaveClan(@Param('id', ParseUUIDPipe) clanId: string) {
     const user = this.clsService.get<UserEntity>(USER_TOKEN);
