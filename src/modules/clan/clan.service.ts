@@ -22,6 +22,7 @@ import {
   UpdateClanDto,
 } from './dto/clan.dto';
 import { ClanEntity } from './entity/clan.entity';
+import { ClanRequestService } from '@modules/clan-request/clan-request.service';
 
 @Injectable()
 export class ClanService extends BaseService<ClanEntity> {
@@ -30,6 +31,7 @@ export class ClanService extends BaseService<ClanEntity> {
     private readonly clanRepository: Repository<ClanEntity>,
     @InjectRepository(UserEntity)
     private readonly userRepository: Repository<UserEntity>,
+    private readonly clanRequestService: ClanRequestService,
     private manager: EntityManager,
   ) {
     super(clanRepository, ClanEntity.name);
@@ -142,11 +144,15 @@ export class ClanService extends BaseService<ClanEntity> {
     if (!clan) {
       throw new NotFoundException('Clan not found');
     }
+    await this.clanRequestService.requestToJoin(user, clan);
+  }
 
-    user.clan = clan;
-    await this.userRepository.update(user.id, { clan });
-
-    return plainToInstance(UserInformationDto, user);
+  async cancelJoinClan(user: UserEntity, clanId: string) {
+    const clan = await this.findById(clanId);
+    if (!clan) {
+      throw new NotFoundException('Clan not found');
+    }
+    await this.clanRequestService.requestToJoin(user, clan);
   }
 
   async leaveClan(user: UserEntity, clanId: string) {
