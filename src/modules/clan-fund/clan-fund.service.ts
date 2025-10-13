@@ -13,7 +13,6 @@ import {
 import { ClanFundTransactionEntity } from './entity/clan-fund-transaction.entity';
 import { UserEntity } from '@modules/user/entity/user.entity';
 import { ClanEntity } from '@modules/clan/entity/clan.entity';
-import { ClanRole } from '@enum/role.enum';
 import { Pageable } from '@types';
 
 @Injectable()
