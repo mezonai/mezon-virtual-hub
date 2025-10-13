@@ -47,7 +47,7 @@ export class ClanController {
   @ApiOperation({
     summary: 'Get clan details by id',
   })
-  async getClanById(@Param('id', ParseUUIDPipe) id: string) {
+  async getClanById(@Param('clan_id', ParseUUIDPipe) id: string) {
     return await this.clanService.getClanById(id);
   }
 
@@ -60,7 +60,7 @@ export class ClanController {
     type: UpdateClanDto,
   })
   async updateClan(
-    @Param('id', ParseUUIDPipe) id: string,
+    @Param('clan_id', ParseUUIDPipe) id: string,
     @Body() updateClanDto: UpdateClanDto,
   ) {
     return await this.clanService.updateClan(id, updateClanDto);
@@ -71,7 +71,7 @@ export class ClanController {
   @ApiOperation({
     summary: 'Delete a clan',
   })
-  async deleteClan(@Param('id', ParseUUIDPipe) id: string) {
+  async deleteClan(@Param('clan_id', ParseUUIDPipe) id: string) {
     return await this.clanService.deleteClan(id);
   }
 
@@ -81,7 +81,7 @@ export class ClanController {
     summary: 'Get all users from a clan',
   })
   async getUsersFromClan(
-    @Param('id', ParseUUIDPipe) id: string,
+    @Param('clan_id', ParseUUIDPipe) id: string,
     @Query() query: UsersClanQueryDto,
   ) {
     return await this.clanService.getUsersByClanId(id, query);
@@ -89,21 +89,21 @@ export class ClanController {
 
   @Post(':clan_id/request-join')
   @ApiOperation({ summary: 'Join a clan by id' })
-  async joinClan(@Param('id', ParseUUIDPipe) clanId: string) {
+  async joinClan(@Param('clan_id', ParseUUIDPipe) clanId: string) {
     const user = this.clsService.get<UserEntity>(USER_TOKEN);
     return await this.clanService.joinClan(user, clanId);
   }
 
   @Post(':clan_id/cancel-join')
   @ApiOperation({ summary: 'Cancel join a clan by id' })
-  async cancelJoinClan(@Param('id', ParseUUIDPipe) clanId: string) {
+  async cancelJoinClan(@Param('clan_id', ParseUUIDPipe) clanId: string) {
     const user = this.clsService.get<UserEntity>(USER_TOKEN);
     return await this.clanService.cancelJoinClan(user, clanId);
   }
 
   @Post(':clan_id/leave')
   @ApiOperation({ summary: 'Leave a clan by id' })
-  async leaveClan(@Param('id', ParseUUIDPipe) clanId: string) {
+  async leaveClan(@Param('clan_id', ParseUUIDPipe) clanId: string) {
     const user = this.clsService.get<UserEntity>(USER_TOKEN);
     return await this.clanService.leaveClan(user, clanId);
   }
