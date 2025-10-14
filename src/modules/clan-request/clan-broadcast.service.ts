@@ -19,7 +19,7 @@ export class ClanBroadcastService {
       .format('YYYY-MM-DD HH:mm:ss');
 
     this.logger.log(
-      `📢 Send ${type} to client: ${client.sessionId} (${userId}) at ${timestamp}`,
+      `Send ${type} to client: ${client.sessionId} (${userId}) at ${timestamp}`,
     );
 
     client.send(type, {
@@ -33,13 +33,13 @@ export class ClanBroadcastService {
 
     for (const userId of leaderIds) {
       if (!userId) return;
-      const message = `📩 ${user.username} has requested to join your clan "${clan.name}".`;
+      const message = `${user.username} đã gửi yêu cầu tham gia văn phòng "${clan.name}".`;
       this.sendToUser(userId, MessageTypes.JOIN_CLAN_REQUEST, message);
     }
   }
 
   public broadcastJoinApproved(clanRequest: ClanRequestEntity) {
-    const message = `🎉 Your request to join "${clanRequest.clan?.name}" has been approved!`;
+    const message = `Yêu cầu tham gia "${clanRequest.clan?.name}" của bạn đã được chấp nhận!`;
     this.sendToUser(
       clanRequest.user_id,
       MessageTypes.JOIN_CLAN_APPROVED,
@@ -48,7 +48,7 @@ export class ClanBroadcastService {
   }
 
   public broadcastJoinRejected(clanRequest: ClanRequestEntity) {
-    const message = `❌ Your request to join "${clanRequest.clan?.name}" was rejected.`;
+    const message = `Yêu cầu tham gia "${clanRequest.clan?.name}"của bạn đã bị từ chối.`;
     this.sendToUser(
       clanRequest.user_id,
       MessageTypes.JOIN_CLAN_REJECTED,

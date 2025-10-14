@@ -76,7 +76,6 @@ export class ClanInfoResponseDto extends OmitType(ClanEntity, [
 }
 
 export class ClansQueryDto extends OmitType(QueryParamsDto, [
-  'search',
   'limit',
 ]) {
   @ApiPropertyOptional({

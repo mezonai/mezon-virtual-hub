@@ -23,6 +23,8 @@ import {
 } from './dto/clan.dto';
 import { ClanEntity } from './entity/clan.entity';
 import { ClanRequestService } from '@modules/clan-request/clan-request.service';
+import { ClanRequestStatus } from '@enum';
+import { ClanRequestEntity } from '@modules/clan-request/entity/clan-request.entity';
 
 @Injectable()
 export class ClanService extends BaseService<ClanEntity> {
@@ -32,6 +34,8 @@ export class ClanService extends BaseService<ClanEntity> {
     @InjectRepository(UserEntity)
     private readonly userRepository: Repository<UserEntity>,
     private readonly clanRequestService: ClanRequestService,
+    @InjectRepository(ClanRequestEntity)
+    private readonly clanRequestRepository: Repository<ClanRequestEntity>,
     private manager: EntityManager,
   ) {
     super(clanRepository, ClanEntity.name);
@@ -43,17 +47,82 @@ export class ClanService extends BaseService<ClanEntity> {
       limit = 30,
       sort_by = 'created_at',
       order = 'DESC',
+      search,
     } = query;
 
-    const [clans, total] = await this.repository
+    const qb = this.repository
       .createQueryBuilder('clans')
-      .loadRelationCountAndMap('clans.member_count', 'clans.members')
+      .loadRelationCountAndMap('clans.member_count', 'clans.members');
+
+    if (search) {
+      qb.where('LOWER(clans.name) LIKE :search', {
+        search: `%${search.toLowerCase()}%`,
+      });
+    }
+
+    const [clans, total] = await qb
       .orderBy(`clans.${sort_by}`, order)
       .skip((page - 1) * limit)
       .take(limit)
       .getManyAndCount();
 
     return new Pageable(plainToInstance(ClanListDto, clans), {
+      size: limit,
+      page,
+      total,
+    });
+  }
+
+  async getAllClansWithMemberRequest(user: UserEntity, query: ClansQueryDto) {
+    const {
+      page = 1,
+      limit = 30,
+      sort_by = 'created_at',
+      order = 'DESC',
+      search,
+    } = query;
+
+    const qb = this.repository
+      .createQueryBuilder('clans')
+      .loadRelationCountAndMap('clans.member_count', 'clans.members');
+
+    if (search) {
+      qb.where('LOWER(clans.name) LIKE :search', {
+        search: `%${search.toLowerCase()}%`,
+      });
+    }
+
+    const [clans, total] = await qb
+      .orderBy(`clans.${sort_by}`, order)
+      .skip((page - 1) * limit)
+      .take(limit)
+      .getManyAndCount();
+
+   
+    let latestRequestMap = new Map<string, ClanRequestStatus>();
+
+    if (user?.id) {
+      const requests = await this.clanRequestRepository
+        .createQueryBuilder('req')
+        .select(['req.clan_id', 'req.status'])
+        .where('req.user_id = :userId', { userId: user.id })
+        .andWhere('req.processed_at IS NULL')
+        .orderBy('req.created_at', 'DESC')
+        .getMany();
+
+      for (const r of requests) {
+        if (!latestRequestMap.has(r.clan_id)) {
+          latestRequestMap.set(r.clan_id, r.status);
+        }
+      }
+    }
+
+    const result = clans.map((clan) => {
+      const join_status = latestRequestMap.get(clan.id) ?? null;
+      return { ...clan, join_status };
+    });
+
+    return new Pageable(plainToInstance(ClanListDto, result), {
       size: limit,
       page,
       total,
@@ -152,7 +221,7 @@ export class ClanService extends BaseService<ClanEntity> {
     if (!clan) {
       throw new NotFoundException('Clan not found');
     }
-    await this.clanRequestService.cancelJoinRequest(user.id, clan.id);
+    return await this.clanRequestService.cancelJoinRequest(user.id, clan.id);
   }
 
   async leaveClan(user: UserEntity, clanId: string) {
@@ -183,7 +252,9 @@ export class ClanService extends BaseService<ClanEntity> {
     const isLeader = clan.leader?.id === user.id;
     const isViceLeader = clan.vice_leader?.id === user.id;
     if (!isLeader && !isViceLeader) {
-      throw new BadRequestException('You do not have permission to edit the clan description.');
+      throw new BadRequestException(
+        'You do not have permission to edit the clan description.',
+      );
     }
 
     clan.description = dto.description;
