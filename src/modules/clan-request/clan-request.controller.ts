@@ -18,6 +18,7 @@ import { ClsService } from 'nestjs-cls';
 import { USER_TOKEN } from '@constant';
 import { UpdateClanDto } from '@modules/clan/dto/clan.dto';
 import { UserEntity } from '@modules/user/entity/user.entity';
+import { PendingRequestQueryDto } from './dto/clan-request.dto';
 
 @ApiBearerAuth()
 @ApiTags('ClanRequestController')
@@ -27,6 +28,12 @@ export class ClanRequestController {
     private readonly clanRequestService: ClanRequestService,
     private readonly clsService: ClsService,
   ) {}
+
+  @Get('pending')
+  @ApiOperation({ summary: 'Get requests join to clan' })
+  async getPendingRequest(@Query() query: PendingRequestQueryDto) {
+    return await this.clanRequestService.getPendingRequests(query);
+  }
 
   @Patch(':clan_request_id/approve')
   @ApiOperation({ summary: 'Approve a request' })

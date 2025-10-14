@@ -145,7 +145,7 @@ export class ClanService extends BaseService<ClanEntity> {
     if (!clan) {
       throw new NotFoundException('Clan not found');
     }
-    await this.clanRequestService.requestToJoin(user, clan);
+    await this.clanRequestService.cancelJoinRequest(user.id, clan.id);
   }
 
   async leaveClan(user: UserEntity, clanId: string) {
