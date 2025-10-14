@@ -1,8 +1,16 @@
 import { ClanRequestStatus } from '@enum';
 import { ClanEntity } from '@modules/clan/entity/clan.entity';
 import { UserEntity } from '@modules/user/entity/user.entity';
+import { Exclude } from 'class-transformer';
 import { IsEnum } from 'class-validator';
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, JoinColumn, ManyToOne } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  JoinColumn,
+  ManyToOne,
+} from 'typeorm';
 
 @Entity({ name: 'clan_requests' })
 export class ClanRequestEntity {
@@ -19,6 +27,7 @@ export class ClanRequestEntity {
   clan: ClanEntity;
 
   @Column({ type: 'uuid' })
+  @Exclude()
   clan_id: string;
 
   @ManyToOne(() => UserEntity, { onDelete: 'CASCADE' })
@@ -29,6 +38,7 @@ export class ClanRequestEntity {
   user: UserEntity;
 
   @Column({ type: 'uuid' })
+  @Exclude()
   user_id: string;
 
   @Column({ type: 'varchar', default: ClanRequestStatus.PENDING })
