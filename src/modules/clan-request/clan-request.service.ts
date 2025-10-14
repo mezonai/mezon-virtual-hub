@@ -25,7 +25,6 @@ export class ClanRequestService extends BaseService<ClanRequestEntity> {
   constructor(
     @InjectRepository(ClanRequestEntity)
     private readonly clanRequestRepo: Repository<ClanRequestEntity>,
-    @InjectRepository(ClanEntity)
     @InjectRepository(UserEntity)
     private readonly userRepo: Repository<UserEntity>,
     private readonly clanBroadcastService: ClanBroadcastService,
@@ -132,11 +131,8 @@ export class ClanRequestService extends BaseService<ClanRequestEntity> {
       now.getTime() - request.created_at.getTime() <
       ClanRequestService.CANCEL_COOLDOWN_MS
     ) {
-      throw new BadRequestException(
-        `Join request can only be canceled after ${
-          ClanRequestService.CANCEL_COOLDOWN_MS / (60 * 60 * 1000)
-        } hours of creation`,
-      );
+      const remainingHours = ClanRequestService.CANCEL_COOLDOWN_MS / (60 * 60 * 1000);
+      return remainingHours;
     }
 
     request.status = ClanRequestStatus.CANCELLED;
@@ -176,6 +172,18 @@ export class ClanRequestService extends BaseService<ClanRequestEntity> {
       size: limit,
       page,
       total,
+    });
+  }
+
+  async findAllRequestsByUser(userId: string) {
+    return await this.clanRequestRepo.find({
+      where: {
+        user_id: userId,
+      },
+      select: ['id', 'clan_id', 'status', 'created_at'],
+      order: {
+        created_at: 'DESC',
+      },
     });
   }
 }

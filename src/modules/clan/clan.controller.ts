@@ -43,6 +43,15 @@ export class ClanController {
     return await this.clanService.getAllClansWithMemberCount(query);
   }
 
+  @Get('clan-requests')
+  @ApiOperation({
+    summary: 'Get all clans with member count and user join/request status',
+  })
+  async getAllClansWithMemberRequest(@Query() query: ClansQueryDto) {
+    const user = this.clsService.get<UserEntity>(USER_TOKEN);
+    return await this.clanService.getAllClansWithMemberRequest(user, query);
+  }
+
   @Get(':clan_id')
   @ApiOperation({
     summary: 'Get clan details by id',
@@ -113,6 +122,7 @@ export class ClanController {
     @Param('id') clanId: string,
     @Body() dto: UpdateClanDescriptionDto,
   ) {
-    return this.clanService.updateClanDescription(clanId, dto);
+    const user = this.clsService.get<UserEntity>(USER_TOKEN);
+    return this.clanService.updateClanDescription(user, clanId, dto);
   }
 }

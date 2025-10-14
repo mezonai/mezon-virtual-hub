@@ -8,10 +8,11 @@ import { ClanService } from './clan.service';
 import { ClanEntity } from './entity/clan.entity';
 import { UserEntity } from '@modules/user/entity/user.entity';
 import { ClanRequestModule } from '@modules/clan-request/clan-request.module';
+import { ClanRequestEntity } from '@modules/clan-request/entity/clan-request.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([ClanEntity, UserEntity]),
+    TypeOrmModule.forFeature([ClanEntity, UserEntity, ClanRequestEntity]),
     ClsModule,
     JwtModule,
     forwardRef(() => UserModule),
