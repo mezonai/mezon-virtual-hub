@@ -166,14 +166,32 @@ export class ClanService extends BaseService<ClanEntity> {
     return plainToInstance(UserInformationDto, user);
   }
 
-  async updateClanDescription(clanId: string, dto: UpdateClanDescriptionDto) {
-    const clan = await this.clanRepository.findOne({ where: { id: clanId } });
+  async updateClanDescription(
+    user: UserEntity,
+    clanId: string,
+    dto: UpdateClanDescriptionDto,
+  ) {
+    const clan = await this.clanRepository.findOne({
+      where: { id: clanId },
+      relations: ['leader', 'vice_leader'],
+    });
+
     if (!clan) {
       throw new NotFoundException(`Clan with ID ${clanId} not found`);
     }
 
+    const isLeader = clan.leader?.id === user.id;
+    const isViceLeader = clan.vice_leader?.id === user.id;
+    if (!isLeader && !isViceLeader) {
+      throw new BadRequestException('You do not have permission to edit the clan description.');
+    }
+
     clan.description = dto.description;
     await this.clanRepository.save(clan);
-    return { success: true, description: clan.description };
+
+    return {
+      success: true,
+      description: clan.description,
+    };
   }
 }
