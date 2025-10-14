@@ -2,7 +2,7 @@ import { UserPublicDto } from '@modules/user/dto/user.dto';
 import { ApiProperty, ApiPropertyOptional, OmitType } from '@nestjs/swagger';
 import { QueryParamsDto } from '@types';
 import { Expose, Type } from 'class-transformer';
-import { IsBoolean, IsNumber, IsOptional, IsString } from 'class-validator';
+import { IsBoolean, IsNumber, IsOptional, IsString, MaxLength } from 'class-validator';
 import { ClanEntity } from '../entity/clan.entity';
 
 export class CreateMapDto {
@@ -88,4 +88,11 @@ export class ClansQueryDto extends OmitType(QueryParamsDto, [
   @Type(() => Number)
   @IsNumber()
   limit?: number = 30;
+}
+
+export class UpdateClanDescriptionDto {
+  @ApiProperty({ description: 'Mô tả mới cho clan' })
+  @IsString()
+  @MaxLength(10000)
+  description: string;
 }

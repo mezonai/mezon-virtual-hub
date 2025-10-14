@@ -18,6 +18,7 @@ import {
   ClanInfoResponseDto,
   ClanListDto,
   ClansQueryDto,
+  UpdateClanDescriptionDto,
   UpdateClanDto,
 } from './dto/clan.dto';
 import { ClanEntity } from './entity/clan.entity';
@@ -64,6 +65,7 @@ export class ClanService extends BaseService<ClanEntity> {
       .leftJoinAndSelect('clans.leader', 'leader')
       .leftJoinAndSelect('clans.vice_leader', 'vice_leader')
       .leftJoin('clans.members', 'members')
+      .leftJoinAndSelect('clans.funds', 'funds')
       .where('clans.id = :clanId', { clanId })
       .loadRelationCountAndMap('clans.member_count', 'clans.members')
       .getOne();
@@ -71,6 +73,11 @@ export class ClanService extends BaseService<ClanEntity> {
     if (!clanWithCount) {
       throw new NotFoundException('Clan not found');
     }
+
+    const totalFund =
+      clanWithCount.funds?.reduce((sum, fund) => sum + (fund.amount || 0), 0) ||
+      0;
+    clanWithCount.fund = totalFund;
 
     return plainToInstance(ClanInfoResponseDto, clanWithCount);
   }
@@ -157,5 +164,34 @@ export class ClanService extends BaseService<ClanEntity> {
     await this.userRepository.update(user.id, { clan: null });
 
     return plainToInstance(UserInformationDto, user);
+  }
+
+  async updateClanDescription(
+    user: UserEntity,
+    clanId: string,
+    dto: UpdateClanDescriptionDto,
+  ) {
+    const clan = await this.clanRepository.findOne({
+      where: { id: clanId },
+      relations: ['leader', 'vice_leader'],
+    });
+
+    if (!clan) {
+      throw new NotFoundException(`Clan with ID ${clanId} not found`);
+    }
+
+    const isLeader = clan.leader?.id === user.id;
+    const isViceLeader = clan.vice_leader?.id === user.id;
+    if (!isLeader && !isViceLeader) {
+      throw new BadRequestException('You do not have permission to edit the clan description.');
+    }
+
+    clan.description = dto.description;
+    await this.clanRepository.save(clan);
+
+    return {
+      success: true,
+      description: clan.description,
+    };
   }
 }
