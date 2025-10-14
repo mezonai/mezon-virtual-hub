@@ -4,14 +4,14 @@ import { Logger } from '@libs/logger';
 import { GenericRepository } from '@libs/repository/genericRepository';
 import { TransactionsService } from '@modules/admin/transactions/transactions.service';
 import { UserEntity } from '@modules/user/entity/user.entity';
+import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import {
-  Injectable,
-  OnModuleDestroy,
-  OnModuleInit,
-} from '@nestjs/common';
-import { MezonTokenSentEvent, WithdrawMezonPayload, WithdrawMezonResult } from '@types';
+  MezonTokenSentEvent,
+  WithdrawMezonPayload,
+  WithdrawMezonResult,
+} from '@types';
 import axios from 'axios';
-import { APISentTokenRequest, Events, MezonClient, TokenSentEvent } from 'mezon-sdk';
+import { APISentTokenRequest, Events, MezonClient } from 'mezon-sdk';
 import moment from 'moment';
 import { EntityManager } from 'typeorm';
 
@@ -25,9 +25,9 @@ export class MezonService implements OnModuleInit, OnModuleDestroy {
 
   constructor(
     private manager: EntityManager,
-    private readonly transactionService: TransactionsService
+    private readonly transactionService: TransactionsService,
   ) {
-    this.userRepository = new GenericRepository(UserEntity, manager)
+    this.userRepository = new GenericRepository(UserEntity, manager);
   }
 
   async onModuleInit() {
@@ -48,7 +48,8 @@ export class MezonService implements OnModuleInit, OnModuleDestroy {
   async transferTokenToDiamond(data: MezonTokenSentEvent) {
     if (data.receiver_id !== configEnv().MEZON_TOKEN_RECEIVER_APP_ID) return;
 
-    const success = await this.transactionService.handleDepositTransaction(data);
+    const success =
+      await this.transactionService.handleDepositTransaction(data);
     if (success) {
       return this.logger.log(
         `Deposit successful | User: ${data?.sender_name} | Amount: ${data.amount} diamond`,
@@ -61,7 +62,7 @@ export class MezonService implements OnModuleInit, OnModuleDestroy {
 
   async withdrawTokenRequest(
     sendTokenData: WithdrawMezonPayload,
-    userId: string
+    userId: string,
   ): Promise<WithdrawMezonResult> {
     const user = await this.userRepository.findOne({
       where: { id: userId },
@@ -74,7 +75,10 @@ export class MezonService implements OnModuleInit, OnModuleDestroy {
     const currentDiamond = user.diamond;
     const amountToWithdraw = sendTokenData.amount;
 
-    if (typeof currentDiamond !== 'number' || currentDiamond < amountToWithdraw) {
+    if (
+      typeof currentDiamond !== 'number' ||
+      currentDiamond < amountToWithdraw
+    ) {
       return { success: false, message: 'Không đủ Diamond để rút' };
     }
 
@@ -85,12 +89,15 @@ export class MezonService implements OnModuleInit, OnModuleDestroy {
         sender_id: configEnv().MEZON_TOKEN_RECEIVER_APP_ID,
         sender_name: 'Virtual-Hub',
         amount: amountToWithdraw,
-      }
+      };
 
-      const success = await this.transactionService.handleWithdrawTransaction(payloadWithdraw, user);
+      const success = await this.transactionService.handleWithdrawTransaction(
+        payloadWithdraw,
+        user,
+      );
 
       if (!success) {
-        return { success: false }
+        return { success: false };
       }
 
       await this.client.sendToken(payloadWithdraw);
@@ -143,7 +150,10 @@ export class MezonService implements OnModuleInit, OnModuleDestroy {
 
   async loginMezon() {
     try {
-      this.client = new MezonClient(configEnv().MEZON_TOKEN_RECEIVER_APP_TOKEN);
+      this.client = new MezonClient({
+        botId: configEnv().MEZON_TOKEN_RECEIVER_APP_ID,
+        token: configEnv().MEZON_TOKEN_RECEIVER_APP_TOKEN,
+      });
       await this.client.login();
 
       this.logger.log('Mezon client authenticated in module init');
