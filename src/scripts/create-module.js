@@ -96,7 +96,7 @@ import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { ClsService } from 'nestjs-cls';
 
 @ApiBearerAuth()
-@ApiTags('${controllerName}')
+@ApiTags('${className}')
 @Controller('${moduleName}s')
 export class ${controllerName} {
   constructor(

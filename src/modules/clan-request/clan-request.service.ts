@@ -1,4 +1,4 @@
-import { ClanRequestStatus } from '@enum';
+import { ClanRequestStatus, ClanRole } from '@enum';
 import { BaseService } from '@libs/base/base.service';
 import { ClanEntity } from '@modules/clan/entity/clan.entity';
 import { UserEntity } from '@modules/user/entity/user.entity';
@@ -74,10 +74,6 @@ export class ClanRequestService extends BaseService<ClanRequestEntity> {
 
     const { clan } = request;
 
-    if (clan.leader_id !== leaderId && clan.vice_leader_id !== leaderId) {
-      throw new ForbiddenException('Only leader or vice leader can approve');
-    }
-
     request.processed_at = new Date();
     request.processed_by = leaderId;
 
@@ -131,7 +127,8 @@ export class ClanRequestService extends BaseService<ClanRequestEntity> {
       now.getTime() - request.created_at.getTime() <
       ClanRequestService.CANCEL_COOLDOWN_MS
     ) {
-      const remainingHours = ClanRequestService.CANCEL_COOLDOWN_MS / (60 * 60 * 1000);
+      const remainingHours =
+        ClanRequestService.CANCEL_COOLDOWN_MS / (60 * 60 * 1000);
       return remainingHours;
     }
 
@@ -142,7 +139,7 @@ export class ClanRequestService extends BaseService<ClanRequestEntity> {
     await this.clanRequestRepo.save(request);
   }
 
-  async getPendingRequests(query: PendingRequestQueryDto) {
+  async getPendingRequests(clanId: string, query: PendingRequestQueryDto) {
     const {
       page = 1,
       limit = 30,
@@ -153,7 +150,7 @@ export class ClanRequestService extends BaseService<ClanRequestEntity> {
 
     const [requests, total] = await this.clanRequestRepo.findAndCount({
       where: {
-        clan_id: query.clan_id,
+        clan_id: clanId,
         status: ClanRequestStatus.PENDING,
         ...(search && { username: ILike(`%${search}%`) }),
       },

@@ -42,7 +42,7 @@ export class UserManagementService extends BaseService<UserEntity> {
 
     const [users, total] = await this.userRepository.findAndCount({
       where: where.length > 0 ? where : undefined,
-      relations: ['map'],
+      relations: ['clan'],
       take: limit,
       skip: (page - 1) * limit,
       order: {
@@ -62,17 +62,17 @@ export class UserManagementService extends BaseService<UserEntity> {
   async updateUserInfo(userId: string, payload: UpdateUserDto) {
     const user = await this.findOneNotDeletedById(userId);
 
-    if (payload.mezon_id && !user.mezon_id) {
-      const existedUser = await this.findOne({
-        where: { mezon_id: payload.mezon_id },
-      });
+    // if (payload.mezon_id && !user.mezon_id) {
+    //   const existedUser = await this.findOne({
+    //     where: { mezon_id: payload.mezon_id },
+    //   });
 
-      if (existedUser) {
-        throw new BadRequestException(
-          `Mezon ID: ${payload.mezon_id} is already existed`,
-        );
-      }
-    }
+    //   if (existedUser) {
+    //     throw new BadRequestException(
+    //       `Mezon ID: ${payload.mezon_id} is already existed`,
+    //     );
+    //   }
+    // }
 
     await this.userRepository.update(userId, payload);
 

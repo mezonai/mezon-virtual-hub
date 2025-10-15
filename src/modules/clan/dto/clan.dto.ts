@@ -2,7 +2,13 @@ import { UserPublicDto } from '@modules/user/dto/user.dto';
 import { ApiProperty, ApiPropertyOptional, OmitType } from '@nestjs/swagger';
 import { QueryParamsDto } from '@types';
 import { Expose, Type } from 'class-transformer';
-import { IsBoolean, IsNumber, IsOptional, IsString, MaxLength } from 'class-validator';
+import {
+  IsBoolean,
+  IsNumber,
+  IsOptional,
+  IsString,
+  MaxLength,
+} from 'class-validator';
 import { ClanEntity } from '../entity/clan.entity';
 
 export class CreateMapDto {
@@ -14,43 +20,14 @@ export class CreateMapDto {
 
 export class UpdateClanDto {
   @ApiProperty({
-    description: 'The name of the map',
+    description: 'The name of the clan',
     type: String,
     required: false,
     nullable: true,
   })
   @IsOptional()
   @IsString()
-  name?: string | null;
-
-  @ApiProperty({
-    description: 'The width of the map',
-    type: Number,
-    required: false,
-    nullable: true,
-  })
-  @IsOptional()
-  @IsNumber()
-  width?: number | null;
-
-  @ApiProperty({
-    description: 'The height of the map',
-    type: Number,
-    required: false,
-    nullable: true,
-  })
-  @IsOptional()
-  @IsNumber()
-  height?: number | null;
-
-  @ApiProperty({
-    description: 'Lock the map',
-    required: false,
-    nullable: true,
-  })
-  @IsOptional()
-  @IsBoolean()
-  is_locked?: boolean;
+  name: string | null;
 }
 
 export class ClanListDto extends ClanEntity {
@@ -58,10 +35,7 @@ export class ClanListDto extends ClanEntity {
   member_count: number;
 }
 
-export class ClanInfoResponseDto extends OmitType(ClanEntity, [
-  'leader',
-  'vice_leader',
-]) {
+export class ClanInfoResponseDto extends OmitType(ClanEntity, []) {
   @ApiProperty({ type: () => UserPublicDto })
   @Type(() => UserPublicDto)
   leader: UserPublicDto | null;
@@ -75,9 +49,7 @@ export class ClanInfoResponseDto extends OmitType(ClanEntity, [
   member_count: number;
 }
 
-export class ClansQueryDto extends OmitType(QueryParamsDto, [
-  'limit',
-]) {
+export class ClansQueryDto extends OmitType(QueryParamsDto, ['limit']) {
   @ApiPropertyOptional({
     description: 'Number of results per page',
     example: 30,
