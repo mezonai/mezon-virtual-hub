@@ -44,15 +44,15 @@ export class PlayerQuestService extends BaseService<PlayerQuestEntity> {
   }
 
   async onModuleInit() {
-    this.logger.log(
-      'QuestService initialized → creating missing quests for all users...',
-    );
-    const { initialized, renewed, skipped } = await this.initQuestsForAllUsers({
-      timezone: 'Asia/Ho_Chi_Minh',
-    });
-    this.logger.log(
-      `Create done - initialized: ${initialized}, renewed: ${renewed}, skipped: ${skipped}`,
-    );
+    // this.logger.log(
+    //   'QuestService initialized → creating missing quests for all users...',
+    // );
+    // const { initialized, renewed, skipped } = await this.initQuestsForAllUsers({
+    //   timezone: 'Asia/Ho_Chi_Minh',
+    // });
+    // this.logger.log(
+    //   `Create done - initialized: ${initialized}, renewed: ${renewed}, skipped: ${skipped}`,
+    // );
   }
 
   async getPlayerQuests(userId: string) {

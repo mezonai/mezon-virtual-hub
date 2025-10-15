@@ -10,6 +10,7 @@ import {
   JoinColumn,
   ManyToOne,
   OneToMany,
+  OneToOne,
   Unique,
 } from 'typeorm';
 
@@ -58,30 +59,6 @@ export class ClanEntity extends AuditEntity {
   @IsInt()
   @Type(() => Number)
   max_members: number = 20;
-
-  @ManyToOne(() => UserEntity, { nullable: true, onDelete: 'SET NULL' })
-  @JoinColumn({
-    name: 'leader_id',
-    foreignKeyConstraintName: 'FK_clans_leader_id',
-  })
-  @ApiProperty({ type: () => UserEntity })
-  leader: UserEntity | null;
-
-  @Column({ type: 'uuid', nullable: true })
-  @Exclude()
-  leader_id: string | null;
-
-  @ManyToOne(() => UserEntity, { nullable: true, onDelete: 'SET NULL' })
-  @JoinColumn({
-    name: 'vice_leader_id',
-    foreignKeyConstraintName: 'FK_clans_vice_leader_id',
-  })
-  @ApiProperty({ type: () => UserEntity })
-  vice_leader: UserEntity | null;
-
-  @Column({ type: 'uuid', nullable: true })
-  @Exclude()
-  vice_leader_id: string | null;
 
   @OneToMany(() => UserEntity, (user) => user.clan)
   members: UserEntity[];

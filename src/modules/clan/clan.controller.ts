@@ -11,11 +11,15 @@ import { ApiBearerAuth, ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
 
 import { Logger } from '@libs/logger';
 
-import { Public, RequireAdmin } from '@libs/decorator';
+import { Public, RequireAdmin, RequireClanRoles } from '@libs/decorator';
 import { Body, Delete, Param, Put } from '@nestjs/common';
 import { ClsService } from 'nestjs-cls';
 import { UserService } from '../user/user.service';
-import { ClansQueryDto, UpdateClanDescriptionDto, UpdateClanDto } from './dto/clan.dto';
+import {
+  ClansQueryDto,
+  UpdateClanDescriptionDto,
+  UpdateClanDto,
+} from './dto/clan.dto';
 import { ClanService } from './clan.service';
 import { USER_TOKEN } from '@constant';
 import { UserEntity } from '@modules/user/entity/user.entity';
@@ -61,6 +65,7 @@ export class ClanController {
   }
 
   @Put(':clan_id')
+  @RequireAdmin()
   @ApiOperation({
     summary: 'Update an existing clan',
   })
@@ -117,9 +122,10 @@ export class ClanController {
     return await this.clanService.leaveClan(user, clanId);
   }
 
-  @Post(':id/description')
+  @Post(':clan_id/description')
+  @RequireClanRoles('LEADER', 'VICE_LEADER')
   async updateDescription(
-    @Param('id') clanId: string,
+    @Param('clan_id') clanId: string,
     @Body() dto: UpdateClanDescriptionDto,
   ) {
     const user = this.clsService.get<UserEntity>(USER_TOKEN);

@@ -25,6 +25,7 @@ import { ClanEntity } from './entity/clan.entity';
 import { ClanRequestService } from '@modules/clan-request/clan-request.service';
 import { ClanRequestStatus } from '@enum';
 import { ClanRequestEntity } from '@modules/clan-request/entity/clan-request.entity';
+import { ClanRole } from '@enum';
 
 @Injectable()
 export class ClanService extends BaseService<ClanEntity> {
@@ -98,7 +99,6 @@ export class ClanService extends BaseService<ClanEntity> {
       .take(limit)
       .getManyAndCount();
 
-   
     let latestRequestMap = new Map<string, ClanRequestStatus>();
 
     if (user?.id) {
@@ -131,12 +131,8 @@ export class ClanService extends BaseService<ClanEntity> {
 
   async getClanById(clanId: string) {
     const clanWithCount = await this.createQueryBuilder()
-      .leftJoinAndSelect('clans.leader', 'leader')
-      .leftJoinAndSelect('clans.vice_leader', 'vice_leader')
-      .leftJoin('clans.members', 'members')
-      .leftJoinAndSelect('clans.funds', 'funds')
-      .where('clans.id = :clanId', { clanId })
       .loadRelationCountAndMap('clans.member_count', 'clans.members')
+      .where('clans.id = :clanId', { clanId })
       .getOne();
 
     if (!clanWithCount) {
@@ -147,6 +143,17 @@ export class ClanService extends BaseService<ClanEntity> {
       clanWithCount.funds?.reduce((sum, fund) => sum + (fund.amount || 0), 0) ||
       0;
     clanWithCount.fund = totalFund;
+
+    const [leader, viceLeader] = await this.userRepository
+      .createQueryBuilder('user')
+      .where('user.clan_id = :clanId', { clanId })
+      .andWhere('user.clan_role IN (:...roles)', {
+        roles: [ClanRole.LEADER, ClanRole.VICE_LEADER],
+      })
+      .getMany();
+
+    clanWithCount['leader'] = leader || null;
+    clanWithCount['vice_leader'] = viceLeader || null;
 
     return plainToInstance(ClanInfoResponseDto, clanWithCount);
   }
@@ -247,14 +254,6 @@ export class ClanService extends BaseService<ClanEntity> {
 
     if (!clan) {
       throw new NotFoundException(`Clan with ID ${clanId} not found`);
-    }
-
-    const isLeader = clan.leader?.id === user.id;
-    const isViceLeader = clan.vice_leader?.id === user.id;
-    if (!isLeader && !isViceLeader) {
-      throw new BadRequestException(
-        'You do not have permission to edit the clan description.',
-      );
     }
 
     clan.description = dto.description;

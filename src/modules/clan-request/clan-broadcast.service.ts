@@ -29,13 +29,13 @@ export class ClanBroadcastService {
   }
 
   public broadcastJoinRequestReceived(clan: ClanEntity, user: UserEntity) {
-    const leaderIds = [clan.leader_id, clan.vice_leader_id].filter(Boolean);
+    // const leaderIds = [clan.leader_id, clan.vice_leader_id].filter(Boolean);
 
-    for (const userId of leaderIds) {
-      if (!userId) return;
-      const message = `${user.username} đã gửi yêu cầu tham gia văn phòng "${clan.name}".`;
-      this.sendToUser(userId, MessageTypes.JOIN_CLAN_REQUEST, message);
-    }
+    // for (const userId of leaderIds) {
+    //   if (!userId) return;
+    //   const message = `${user.username} đã gửi yêu cầu tham gia văn phòng "${clan.name}".`;
+    //   this.sendToUser(userId, MessageTypes.JOIN_CLAN_REQUEST, message);
+    // }
   }
 
   public broadcastJoinApproved(clanRequest: ClanRequestEntity) {

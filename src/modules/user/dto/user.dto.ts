@@ -1,4 +1,4 @@
-import { Gender } from '@enum';
+import { ClanRole, Gender } from '@enum';
 import { ClanInfoResponseDto } from '@modules/clan/dto/clan.dto';
 import { InventoryDto } from '@modules/inventory/dto/inventory.dto';
 import { PetPlayersWithSpeciesDto } from '@modules/pet-players/dto/pet-players.dto';
@@ -126,6 +126,9 @@ export class UserPublicDto {
 
   @Expose()
   gender: Gender | null;
+
+  @Expose()
+  clan_role: ClanRole;
 }
 
 export class UsersClanQueryDto extends OmitType(QueryParamsDto, [
