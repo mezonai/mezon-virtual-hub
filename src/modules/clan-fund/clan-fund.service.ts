@@ -14,6 +14,7 @@ import { ClanFundTransactionEntity } from './entity/clan-fund-transaction.entity
 import { UserEntity } from '@modules/user/entity/user.entity';
 import { ClanEntity } from '@modules/clan/entity/clan.entity';
 import { Pageable } from '@types';
+import { ClanRole } from '@enum';
 
 @Injectable()
 export class ClanFundService {
@@ -130,11 +131,10 @@ export class ClanFundService {
     clanId: string,
     query: ContributorClanFundQueryDto,
   ) {
-    const { search, page = 1, limit = 10, sort_by, order } = query;
+    const { search, page = 1, limit = 10 } = query;
 
     const clan = await this.clanRepo.findOne({
       where: { id: clanId },
-      //relations: ['leader', 'vice_leader'],
     });
 
     if (!clan) {
@@ -143,30 +143,31 @@ export class ClanFundService {
 
     const qb = this.clanFundTransactionRepo
       .createQueryBuilder('tx')
+      .where('tx.clan_id = :clanId', { clanId })
       .select('tx.user_id', 'user_id')
       .addSelect('SUM(tx.amount)', 'total_amount')
       .addSelect('tx.type', 'type')
-      .innerJoin('user', 'u', 'u.id = tx.user_id')
-      .where('tx.clan_id = :clanId', { clanId })
-      .groupBy('tx.user_id, tx.type, u.username')
-      .addSelect('u.username', 'username');
+      .innerJoin('user', 'u', 'u.id = tx.user_id AND u.clan_id = tx.clan_id')
+      .groupBy('tx.user_id, tx.type, u.username, u.clan_role, u.avatar_url')
+      .addSelect('u.username', 'username')
+      .addSelect('u.avatar_url', 'avatar_url')
+      .addSelect('u.clan_role', 'clan_role');
 
     if (search) {
       qb.andWhere('u.username ILIKE :search', { search: `%${search}%` });
     }
-    const orderByField =
-      sort_by === 'username'
-        ? 'u.username'
-        : sort_by === 'gold_total'
-          ? 'gold_total'
-          : sort_by === 'diamond_total'
-            ? 'diamond_total'
-            : 'total_amount';
-    const sortOrder = order || 'DESC';
 
-    qb.orderBy(orderByField, sortOrder as 'ASC' | 'DESC');
+    qb.orderBy(
+      `
+        CASE 
+          WHEN u.clan_role = '${ClanRole.LEADER}' THEN 1
+          WHEN u.clan_role = '${ClanRole.VICE_LEADER}' THEN 2
+          ELSE 3
+        END
+      `,
+      'ASC',
+    ).addOrderBy('total_amount', 'DESC');
 
-    // 📄 Pagination
     qb.skip((page - 1) * limit).take(limit);
 
     const [data, total] = await Promise.all([qb.getRawMany(), qb.getCount()]);

@@ -167,17 +167,28 @@ export class ClanService extends BaseService<ClanEntity> {
       order = 'DESC',
     } = query;
 
-    const [users, total] = await this.userRepository.findAndCount({
-      where: {
-        clan_id: clanId,
-        ...(search && { username: ILike(`%${search}%`) }),
-      },
-      take: limit,
-      skip: (page - 1) * limit,
-      order: {
-        [sort_by]: order,
-      },
-    });
+    const qb = this.userRepository
+      .createQueryBuilder('user')
+      .where('user.clan_id = :clanId', { clanId });
+
+    if (search) {
+      qb.andWhere('user.username ILIKE :search', { search: `%${search}%` });
+    }
+
+    qb.orderBy(
+      `CASE 
+        WHEN user.clan_role = '${ClanRole.LEADER}' THEN 1
+        WHEN user.clan_role = '${ClanRole.VICE_LEADER}' THEN 2
+        ELSE 3 
+      END`,
+      'ASC',
+    );
+
+    qb.addOrderBy(`user.${sort_by}`, order);
+
+    qb.skip((page - 1) * limit).take(limit);
+
+    const [users, total] = await qb.getManyAndCount();
 
     return new Pageable(plainToInstance(UserPublicDto, users), {
       size: limit,

@@ -7,14 +7,13 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 
 import { Logger } from '@libs/logger';
 
 import { Public, RequireAdmin, RequireClanRoles } from '@libs/decorator';
 import { Body, Delete, Param, Put } from '@nestjs/common';
 import { ClsService } from 'nestjs-cls';
-import { UserService } from '../user/user.service';
 import {
   ClansQueryDto,
   UpdateClanDescriptionDto,
@@ -32,13 +31,12 @@ export class ClanController {
   constructor(
     private readonly clsService: ClsService,
     private readonly clanService: ClanService,
-    private readonly userService: UserService,
     private readonly logger: Logger,
   ) {
     this.logger.setContext(ClanController.name);
   }
 
-  @Get('')
+  @Get()
   @Public()
   @ApiOperation({
     summary: 'Get list all clans information',
@@ -60,6 +58,10 @@ export class ClanController {
   @ApiOperation({
     summary: 'Get clan details by id',
   })
+  @ApiParam({
+    name: 'clan_id',
+    example: '91bea29f-0e87-42a5-b851-d9d0386ac32f',
+  })
   async getClanById(@Param('clan_id', ParseUUIDPipe) id: string) {
     return await this.clanService.getClanById(id);
   }
@@ -68,6 +70,10 @@ export class ClanController {
   @RequireAdmin()
   @ApiOperation({
     summary: 'Update an existing clan',
+  })
+  @ApiParam({
+    name: 'clan_id',
+    example: '91bea29f-0e87-42a5-b851-d9d0386ac32f',
   })
   @ApiBody({
     description: 'Fields to update the clan',
@@ -82,6 +88,10 @@ export class ClanController {
 
   @Delete(':clan_id')
   @RequireAdmin()
+  @ApiParam({
+    name: 'clan_id',
+    example: '91bea29f-0e87-42a5-b851-d9d0386ac32f',
+  })
   @ApiOperation({
     summary: 'Delete a clan',
   })
@@ -93,6 +103,10 @@ export class ClanController {
   @ApiOperation({
     summary: 'Get all users from a clan',
   })
+  @ApiParam({
+    name: 'clan_id',
+    example: '91bea29f-0e87-42a5-b851-d9d0386ac32f',
+  })
   async getUsersFromClan(
     @Param('clan_id', ParseUUIDPipe) id: string,
     @Query() query: UsersClanQueryDto,
@@ -102,6 +116,10 @@ export class ClanController {
 
   @Post(':clan_id/request-join')
   @ApiOperation({ summary: 'Join a clan by id' })
+  @ApiParam({
+    name: 'clan_id',
+    example: '91bea29f-0e87-42a5-b851-d9d0386ac32f',
+  })
   async joinClan(@Param('clan_id', ParseUUIDPipe) clanId: string) {
     const user = this.clsService.get<UserEntity>(USER_TOKEN);
     return await this.clanService.joinClan(user, clanId);
@@ -109,23 +127,35 @@ export class ClanController {
 
   @Post(':clan_id/cancel-join')
   @ApiOperation({ summary: 'Cancel join a clan by id' })
+  @ApiParam({
+    name: 'clan_id',
+    example: '91bea29f-0e87-42a5-b851-d9d0386ac32f',
+  })
   async cancelJoinClan(@Param('clan_id', ParseUUIDPipe) clanId: string) {
     const user = this.clsService.get<UserEntity>(USER_TOKEN);
     return await this.clanService.cancelJoinClan(user, clanId);
   }
 
   @Post(':clan_id/leave')
-  @RequireClanRoles('MEMBER')
+  @RequireClanRoles('MEMBER', 'LEADER', 'VICE_LEADER')
   @ApiOperation({ summary: 'Leave a clan by id' })
+  @ApiParam({
+    name: 'clan_id',
+    example: '91bea29f-0e87-42a5-b851-d9d0386ac32f',
+  })
   async leaveClan(@Param('clan_id', ParseUUIDPipe) clanId: string) {
     const user = this.clsService.get<UserEntity>(USER_TOKEN);
     return await this.clanService.leaveClan(user);
   }
 
   @Post(':clan_id/description')
+  @ApiParam({
+    name: 'clan_id',
+    example: '91bea29f-0e87-42a5-b851-d9d0386ac32f',
+  })
   @RequireClanRoles('LEADER', 'VICE_LEADER')
   async updateDescription(
-    @Param('clan_id') clanId: string,
+    @Param('clan_id', ParseUUIDPipe) clanId: string,
     @Body() dto: UpdateClanDescriptionDto,
   ) {
     return this.clanService.updateClanDescription(clanId, dto);
