@@ -231,25 +231,23 @@ export class ClanService extends BaseService<ClanEntity> {
     return await this.clanRequestService.cancelJoinRequest(user.id, clan.id);
   }
 
-  async leaveClan(user: UserEntity, clanId: string) {
-    if (!user.clan_id || user.clan_id !== clanId) {
-      throw new BadRequestException('User is not a member of this clan');
+  async leaveClan(user: UserEntity) {
+    if (user.clan_role === ClanRole.LEADER) {
+      throw new BadRequestException(
+        'Leader must transfer role before leaving the clan.',
+      );
     }
 
     user.clan = null;
+    user.clan_role = ClanRole.MEMBER;
     await this.userRepository.update(user.id, { clan: null });
 
     return plainToInstance(UserInformationDto, user);
   }
 
-  async updateClanDescription(
-    user: UserEntity,
-    clanId: string,
-    dto: UpdateClanDescriptionDto,
-  ) {
+  async updateClanDescription(clanId: string, dto: UpdateClanDescriptionDto) {
     const clan = await this.clanRepository.findOne({
       where: { id: clanId },
-      relations: ['leader', 'vice_leader'],
     });
 
     if (!clan) {

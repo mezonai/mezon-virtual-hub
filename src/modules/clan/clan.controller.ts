@@ -90,7 +90,6 @@ export class ClanController {
   }
 
   @Get(':clan_id/users')
-  @Public()
   @ApiOperation({
     summary: 'Get all users from a clan',
   })
@@ -116,10 +115,11 @@ export class ClanController {
   }
 
   @Post(':clan_id/leave')
+  @RequireClanRoles('MEMBER')
   @ApiOperation({ summary: 'Leave a clan by id' })
   async leaveClan(@Param('clan_id', ParseUUIDPipe) clanId: string) {
     const user = this.clsService.get<UserEntity>(USER_TOKEN);
-    return await this.clanService.leaveClan(user, clanId);
+    return await this.clanService.leaveClan(user);
   }
 
   @Post(':clan_id/description')
@@ -128,7 +128,6 @@ export class ClanController {
     @Param('clan_id') clanId: string,
     @Body() dto: UpdateClanDescriptionDto,
   ) {
-    const user = this.clsService.get<UserEntity>(USER_TOKEN);
-    return this.clanService.updateClanDescription(user, clanId, dto);
+    return this.clanService.updateClanDescription(clanId, dto);
   }
 }

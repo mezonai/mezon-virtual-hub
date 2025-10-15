@@ -1,18 +1,18 @@
-import { ClanRequestStatus, ClanRole } from '@enum';
+import { ClanRequestStatus } from '@enum';
 import { BaseService } from '@libs/base/base.service';
 import { ClanEntity } from '@modules/clan/entity/clan.entity';
+import { ClanBroadcastEventType } from '@modules/shared/events/event-types.enum';
 import { UserEntity } from '@modules/user/entity/user.entity';
 import {
   BadRequestException,
-  ForbiddenException,
   Injectable,
-  NotFoundException,
+  NotFoundException
 } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Pageable } from '@types';
 import { plainToInstance } from 'class-transformer';
 import { ILike, Repository } from 'typeorm';
-import { ClanBroadcastService } from './clan-broadcast.service';
 import {
   ClanRequestListDto,
   PendingRequestQueryDto,
@@ -27,7 +27,7 @@ export class ClanRequestService extends BaseService<ClanRequestEntity> {
     private readonly clanRequestRepo: Repository<ClanRequestEntity>,
     @InjectRepository(UserEntity)
     private readonly userRepo: Repository<UserEntity>,
-    private readonly clanBroadcastService: ClanBroadcastService,
+    private readonly eventEmitter: EventEmitter2,
   ) {
     super(clanRequestRepo, ClanRequestEntity.name);
   }
@@ -55,9 +55,14 @@ export class ClanRequestService extends BaseService<ClanRequestEntity> {
       status: ClanRequestStatus.PENDING,
     });
 
-    this.clanBroadcastService.broadcastJoinRequestReceived(clan, user);
+    const updatedRequest = await this.clanRequestRepo.save(request);
 
-    return await this.clanRequestRepo.save(request);
+    this.eventEmitter.emitAsync(ClanBroadcastEventType.JOIN_REQUEST, {
+      clan,
+      user,
+    });
+
+    return updatedRequest;
   }
 
   async approveRequest(
@@ -99,12 +104,16 @@ export class ClanRequestService extends BaseService<ClanRequestEntity> {
       ]);
 
       await this.clanRequestRepo.save(request);
-      this.clanBroadcastService.broadcastJoinApproved(request);
+      this.eventEmitter.emit(ClanBroadcastEventType.JOIN_APPROVED, {
+        request,
+      });
       return;
     } else {
       request.status = ClanRequestStatus.REJECTED;
       await this.clanRequestRepo.save(request);
-      this.clanBroadcastService.broadcastJoinRejected(request);
+      this.eventEmitter.emit(ClanBroadcastEventType.JOIN_REJECTED, {
+        request,
+      });
     }
   }
 
