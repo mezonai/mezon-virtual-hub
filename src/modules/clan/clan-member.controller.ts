@@ -29,13 +29,13 @@ export class ClanMemberController {
   @ApiOperation({ summary: 'Transfer clan leadership to another member' })
   async transferLeadership(
     @Param('clan_id', ParseUUIDPipe) clanId: string,
-    @Param('target_user_id') userId: string,
+    @Param('target_user_id', ParseUUIDPipe) targetUserId: string,
   ) {
-    const user = this.clsService.get<UserEntity>(USER_TOKEN);
+    const leader = this.clsService.get<UserEntity>(USER_TOKEN);
     return this.clanMemberService.transferLeadership(
       clanId,
-      userId,
-      user,
+      targetUserId,
+      leader,
     );
   }
 
@@ -44,9 +44,9 @@ export class ClanMemberController {
   @ApiOperation({ summary: 'Assign vice leader role to a clan member' })
   async assignViceLeader(
     @Param('clan_id', ParseUUIDPipe) clanId: string,
-    @Param('target_user_id') userId: string,
+    @Param('target_user_id', ParseUUIDPipe) targetUserId: string,
   ) {
-    return this.clanMemberService.assignViceLeader(clanId, userId);
+    return this.clanMemberService.assignViceLeader(clanId, targetUserId);
   }
 
   @Patch(':target_user_id/remove-vice-leader')
@@ -54,10 +54,9 @@ export class ClanMemberController {
   @ApiOperation({ summary: 'Remove vice leader role (demote to member)' })
   async removeViceLeader(
     @Param('clan_id', ParseUUIDPipe) clanId: string,
-
-    @Param('target_user_id') userId: string,
+    @Param('target_user_id', ParseUUIDPipe) targetUserId: string,
   ) {
-    return this.clanMemberService.removeViceLeader(clanId, userId);
+    return this.clanMemberService.removeViceLeader(clanId, targetUserId);
   }
 
   @Delete(':target_user_id')
@@ -65,8 +64,8 @@ export class ClanMemberController {
   @ApiOperation({ summary: 'Remove a member from clan' })
   async removeMember(
     @Param('clan_id', ParseUUIDPipe) clanId: string,
-    @Param('target_user_id', ParseUUIDPipe) userId: string,
+    @Param('target_user_id', ParseUUIDPipe) targetUserId: string,
   ) {
-    return this.clanMemberService.removeMember(clanId, userId);
+    return this.clanMemberService.removeMember(clanId, targetUserId);
   }
 }
