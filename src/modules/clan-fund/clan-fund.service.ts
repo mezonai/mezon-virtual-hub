@@ -134,7 +134,7 @@ export class ClanFundService {
 
     const clan = await this.clanRepo.findOne({
       where: { id: clanId },
-      relations: ['leader', 'vice_leader'],
+      //relations: ['leader', 'vice_leader'],
     });
 
     if (!clan) {

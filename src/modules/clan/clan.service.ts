@@ -249,7 +249,7 @@ export class ClanService extends BaseService<ClanEntity> {
   ) {
     const clan = await this.clanRepository.findOne({
       where: { id: clanId },
-      relations: ['leader', 'vice_leader'],
+      //relations: ['leader', 'vice_leader'],
     });
 
     if (!clan) {
