@@ -1,31 +1,25 @@
+import { USER_TOKEN } from '@constant';
+import { RequireClanRoles } from '@libs/decorator';
+import { UserEntity } from '@modules/user/entity/user.entity';
 import {
-  Body,
   Controller,
   DefaultValuePipe,
   Get,
   Param,
   ParseBoolPipe,
-  ParseIntPipe,
   ParseUUIDPipe,
   Patch,
-  Post,
-  Put,
-  Query,
+  Query
 } from '@nestjs/common';
-import { ClanRequestService } from './clan-request.service';
 import {
   ApiBearerAuth,
-  ApiBody,
   ApiOperation,
   ApiParam,
-  ApiTags,
+  ApiTags
 } from '@nestjs/swagger';
 import { ClsService } from 'nestjs-cls';
-import { USER_TOKEN } from '@constant';
-import { UpdateClanDto } from '@modules/clan/dto/clan.dto';
-import { UserEntity } from '@modules/user/entity/user.entity';
+import { ClanRequestService } from './clan-request.service';
 import { PendingRequestQueryDto } from './dto/clan-request.dto';
-import { RequireClanRoles } from '@libs/decorator';
 
 @ApiBearerAuth()
 @ApiTags('ClanRequestController')
