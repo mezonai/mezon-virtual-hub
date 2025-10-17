@@ -789,14 +789,9 @@ export class BaseGameRoom extends Room<RoomState> {
     this.spawnPetInRoom();
 
     this.onMessage('sendClanFund', async (client, payload) => {
-      console.log('[sendClanFund] payload:', payload);
-
       const { clanId, type, amount } = payload;
       const player = this.state.players.get(client.sessionId);
-      console.log('[sendClanFund] player:', player);
-
       if (!player) {
-        console.log('[sendClanFund] Player not found');
         client.send('onSendClanFundFailed', {
           success: false,
           message: 'Không tìm thấy người chơi',
@@ -807,10 +802,8 @@ export class BaseGameRoom extends Room<RoomState> {
       const user = await this.userRepository.findOne({
         where: { id: player.user_id },
       });
-      console.log('[sendClanFund] user:', user);
 
       if (!user) {
-        console.log('[sendClanFund] User not found');
         client.send('onSendClanFundFailed', {
           success: false,
           message: 'Không tìm thấy thông tin người dùng',
@@ -822,8 +815,6 @@ export class BaseGameRoom extends Room<RoomState> {
         type,
         amount,
       });
-      console.log('[sendClanFund] fundInfo:', fundInfo);
-
       client.send('onSendClanFundSelf', {
         clanId,
         type: fundInfo.type,

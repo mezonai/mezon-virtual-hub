@@ -1,29 +1,37 @@
-import { configEnv } from "@config/env.config";
-import { UserEntity } from "@modules/user/entity/user.entity";
-import { MigrationInterface, QueryRunner } from "typeorm";
+import { configEnv } from '@config/env.config';
+import { UserEntity } from '@modules/user/entity/user.entity';
+import { MigrationInterface, QueryRunner } from 'typeorm';
 
 export class SeedMezonBotUser1755768582534 implements MigrationInterface {
-    name = 'SeedMezonBotUser1755768582534'
+  name = 'SeedMezonBotUser1755768582534';
 
-    public async up(queryRunner: QueryRunner): Promise<void> {
-        const bot: Partial<UserEntity> = {
-            username: 'mezon_bot',
-            mezon_id: configEnv().MEZON_TOKEN_RECEIVER_APP_ID,
-            display_name: 'Virtual-Hub'
-        };
-        await queryRunner.manager
-            .createQueryBuilder()
-            .insert()
-            .into('user')
-            .values(bot)
-            .execute();
+  public async up(queryRunner: QueryRunner): Promise<void> {
+    const mezonId = process.env.MEZON_TOKEN_RECEIVER_APP_ID;
+
+    if (!mezonId) {
+      throw new Error(
+        '⚠️ Missing environment variable: MEZON_TOKEN_RECEIVER_APP_ID',
+      );
     }
 
-    public async down(queryRunner: QueryRunner): Promise<void> {
-        await queryRunner.query(`
+    await queryRunner.query(
+      `
+      INSERT INTO "user" (
+        username,
+        mezon_id,
+        display_name
+      )
+      VALUES ($1, $2, $3)
+      ON CONFLICT (username) DO NOTHING;
+      `,
+      ['mezon_bot', mezonId, 'Virtual-Hub'],
+    );
+  }
+
+  public async down(queryRunner: QueryRunner): Promise<void> {
+    await queryRunner.query(`
             DELETE FROM "user" 
             WHERE username = 'mezon_bot'
         `);
-    }
-
+  }
 }

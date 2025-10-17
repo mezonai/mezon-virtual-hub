@@ -1,4 +1,4 @@
-import { Gender, ItemType } from '@enum';
+import { Gender, ItemType, ItemTypeCloth } from '@enum';
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
 export class SeedItemData1742788855483 implements MigrationInterface {
@@ -7,11 +7,11 @@ export class SeedItemData1742788855483 implements MigrationInterface {
     await queryRunner.query(`
       INSERT INTO "item" ("name", "gold", "is_equippable", "is_static", "gender", "type")
       VALUES
-      ('Spiky Hair', 1, true, false, '${Gender.MALE}', ${ItemType.HAIR}),
-      ('Blue Tank Top', 1, true, false, '${Gender.MALE}', ${ItemType.UPPER}),
-      ('Blue Short', 1, true, false, '${Gender.MALE}', ${ItemType.LOWER}),
-      ('V-Line Face', 1, true, false, '${Gender.NOT_SPECIFIED}', ${ItemType.FACE}),
-      ('Fat Face', 1, true, false, '${Gender.NOT_SPECIFIED}', ${ItemType.FACE});
+      ('Spiky Hair', 1, true, false, '${Gender.MALE}', '${ItemTypeCloth.Hair}'),
+      ('Blue Tank Top', 1, true, false, '${Gender.MALE}', '${ItemTypeCloth.Upper}'),
+      ('Blue Short', 1, true, false, '${Gender.MALE}', '${ItemTypeCloth.Lower}'),
+      ('V-Line Face', 1, true, false, '${Gender.NOT_SPECIFIED}', '${ItemTypeCloth.Face}'),
+      ('Fat Face', 1, true, false, '${Gender.NOT_SPECIFIED}', '${ItemTypeCloth.Face}');
     `);
   }
 
