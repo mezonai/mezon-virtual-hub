@@ -26,6 +26,18 @@ export enum ItemType {
   PET_FOOD = 'pet_food',
 }
 
+export enum ItemTypeCloth {
+  Hair = 1,
+  Hat = 2,
+  Face = 3,
+  Eyes = 4,
+  Upper = 5,
+  Lower = 6,
+  Glasses = 7,
+  UpgradeCard = 8,
+
+}
+
 export enum ItemCode {
   RARITY_CARD_RARE = 'rarity_card_rare',
   RARITY_CARD_EPIC = 'rarity_card_epic',
