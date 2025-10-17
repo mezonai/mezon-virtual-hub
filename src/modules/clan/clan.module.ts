@@ -20,7 +20,7 @@ import { ClanBroadcastEventsListener } from './events/clan-broadcast.listener';
     ClsModule,
     JwtModule,
     forwardRef(() => UserModule),
-    ClanRequestModule,
+    forwardRef(() => ClanRequestModule),
   ],
   providers: [
     ClanService,
@@ -29,6 +29,9 @@ import { ClanBroadcastEventsListener } from './events/clan-broadcast.listener';
     ClanBroadcastEventsListener,
   ],
   controllers: [ClanController, ClanMemberController],
-  exports: [ClanService],
+  exports: [
+    ClanService,
+    ClanBroadcastService,
+  ],
 })
 export class ClanModule {}

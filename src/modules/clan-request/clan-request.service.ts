@@ -107,7 +107,6 @@ export class ClanRequestService extends BaseService<ClanRequestEntity> {
       this.eventEmitter.emit(ClanBroadcastEventType.JOIN_APPROVED, {
         request,
       });
-      return;
     } else {
       request.status = ClanRequestStatus.REJECTED;
       await this.clanRequestRepo.save(request);

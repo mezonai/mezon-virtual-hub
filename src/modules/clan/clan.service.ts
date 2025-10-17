@@ -144,7 +144,7 @@ export class ClanService extends BaseService<ClanEntity> {
       0;
     clanWithCount.fund = totalFund;
 
-    const [leader, viceLeader] = await this.userRepository
+    const users = await this.userRepository
       .createQueryBuilder('user')
       .where('user.clan_id = :clanId', { clanId })
       .andWhere('user.clan_role IN (:...roles)', {
@@ -152,8 +152,11 @@ export class ClanService extends BaseService<ClanEntity> {
       })
       .getMany();
 
-    clanWithCount['leader'] = leader || null;
-    clanWithCount['vice_leader'] = viceLeader || null;
+    const leader = users.find(u => u.clan_role === ClanRole.LEADER) || null;
+    const viceLeader = users.find(u => u.clan_role === ClanRole.VICE_LEADER) || null;
+
+    clanWithCount['leader'] = leader;
+    clanWithCount['vice_leader'] = viceLeader;
 
     return plainToInstance(ClanInfoResponseDto, clanWithCount);
   }

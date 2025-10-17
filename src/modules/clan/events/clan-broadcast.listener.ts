@@ -24,13 +24,13 @@ export class ClanBroadcastEventsListener {
   }
 
   @OnEvent(ClanBroadcastEventType.JOIN_APPROVED, { async: true })
-  async handleJoinApproved(payload: { clanRequest: ClanRequestEntity }) {
-    this.clanBroadcastService.notifyJoinApproved(payload.clanRequest);
+  async handleJoinApproved(payload: { request: ClanRequestEntity }) {
+    this.clanBroadcastService.notifyJoinApproved(payload.request);
   }
 
   @OnEvent(ClanBroadcastEventType.JOIN_REJECTED, { async: true })
-  async handleJoinRejected(payload: { clanRequest: ClanRequestEntity }) {
-    this.clanBroadcastService.notifyJoinRejected(payload.clanRequest);
+  async handleJoinRejected(payload: { request: ClanRequestEntity }) {
+    this.clanBroadcastService.notifyJoinRejected(payload.request);
   }
 
   @OnEvent(ClanBroadcastEventType.NEW_LEADER_ASSIGNED, { async: true })

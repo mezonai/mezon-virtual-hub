@@ -3,10 +3,12 @@ import { ApiProperty, ApiPropertyOptional, OmitType } from '@nestjs/swagger';
 import { QueryParamsDto } from '@types';
 import { Expose, Type } from 'class-transformer';
 import {
+  IsArray,
   IsBoolean,
   IsNumber,
   IsOptional,
   IsString,
+  IsUUID,
   MaxLength,
 } from 'class-validator';
 import { ClanEntity } from '../entity/clan.entity';
@@ -66,4 +68,10 @@ export class UpdateClanDescriptionDto {
   @IsString()
   @MaxLength(10000)
   description: string;
+}
+
+export class RemoveMembersDto {
+  @IsArray()
+  @IsUUID('all', { each: true })
+  targetUserIds: string[];
 }
