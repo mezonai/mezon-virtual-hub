@@ -4,7 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { UserEntity } from '@modules/user/entity/user.entity';
 import { ClanEntity } from '@modules/clan/entity/clan.entity';
 import { ClanRole } from '@enum';
@@ -40,13 +40,16 @@ export class ClanMemberService {
       throw new BadRequestException('Target user is already the leader');
     }
 
-    leader.clan_role = ClanRole.MEMBER;
+    if (targetUser.clan_role === ClanRole.VICE_LEADER) {
+      throw new BadRequestException('Target user is already the vice leader');
+    }
 
+    leader.clan_role = ClanRole.MEMBER;
     targetUser.clan_role = ClanRole.LEADER;
 
     await this.userRepository.save([leader, targetUser]);
     this.eventEmitter.emit(ClanBroadcastEventType.NEW_LEADER_ASSIGNED, {
-      user: leader,
+      user: targetUser,
       clan: targetUser.clan,
     });
   }
@@ -104,27 +107,32 @@ export class ClanMemberService {
     });
   }
 
-  async removeMember(clanId: string, targetUserId: string) {
-    const target = await this.userRepository.findOne({
-      where: { id: targetUserId, clan_id: clanId },
-      relations: ['clan'],
-    });
+  async removeMembers(clanId: string, targetUserIds: string[]) {
+  const targets = await this.userRepository.find({
+    where: { id: In(targetUserIds), clan_id: clanId },
+    relations: ['clan'],
+  });
 
-    if (!target || !target.clan) {
-      throw new NotFoundException('User not found in clan');
-    }
+  if (!targets.length) {
+    throw new NotFoundException('No users found in clan');
+  }
 
-    if (target.clan_role === ClanRole.LEADER) {
-      throw new BadRequestException('Cannot remove the clan leader');
-    }
+  const leaderTargets = targets.filter(t => t.clan_role === ClanRole.LEADER);
+  if (leaderTargets.length > 0) {
+    throw new BadRequestException('Cannot remove the clan leader');
+  }
 
+  for (const target of targets) {
+    const oldClan = target.clan;
     target.clan_id = null;
     target.clan_role = ClanRole.MEMBER;
+    target.clan = null;
     await this.userRepository.save(target);
 
     this.eventEmitter.emit(ClanBroadcastEventType.MEMBER_KICKED, {
       user: target,
-      clan: target.clan,
+      clan: oldClan,
     });
   }
+}
 }

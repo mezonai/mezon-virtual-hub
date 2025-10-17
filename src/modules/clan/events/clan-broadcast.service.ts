@@ -50,7 +50,7 @@ export class ClanBroadcastService {
   }
 
   public notifyJoinApproved(clanRequest: ClanRequestEntity) {
-    const message = `Yêu cầu tham gia "${clanRequest.clan?.name}" của bạn đã được chấp nhận!`;
+    const message = `Yêu cầu tham gia "${clanRequest?.clan?.name}" của bạn đã được chấp nhận!`;
     this.sendToUser(
       clanRequest.user_id,
       MessageTypes.JOIN_CLAN_APPROVED,
@@ -59,7 +59,7 @@ export class ClanBroadcastService {
   }
 
   public notifyJoinRejected(clanRequest: ClanRequestEntity) {
-    const message = `Yêu cầu tham gia "${clanRequest.clan?.name}"của bạn đã bị từ chối.`;
+    const message = `Yêu cầu tham gia "${clanRequest?.clan?.name}"của bạn đã bị từ chối.`;
     this.sendToUser(
       clanRequest.user_id,
       MessageTypes.JOIN_CLAN_REJECTED,
