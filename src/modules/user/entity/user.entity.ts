@@ -1,6 +1,6 @@
-import { Gender, Role } from '@enum';
+import { ClanRole, Gender, Role } from '@enum';
 import { Inventory } from '@modules/inventory/entity/inventory.entity';
-import { MapEntity } from '@modules/map/entity/map.entity';
+import { ClanEntity } from '@modules/clan/entity/clan.entity';
 import { ApiProperty } from '@nestjs/swagger';
 import { AuditEntity } from '@types';
 import { Exclude, Type } from 'class-transformer';
@@ -11,9 +11,24 @@ import {
   IsOptional,
   IsString,
 } from 'class-validator';
-import { Column, Entity, JoinColumn, ManyToOne, OneToMany } from 'typeorm';
+import {
+  Column,
+  Entity,
+  Index,
+  JoinColumn,
+  ManyToOne,
+  OneToMany,
+} from 'typeorm';
 
 @Entity({ name: 'user' })
+@Index('UQ_clan_leader', ['clan_id'], {
+  unique: true,
+  where: `"clan_role" = '${ClanRole.LEADER}' AND "clan_id" IS NOT NULL`,
+})
+@Index('UQ_clan_vice_leader', ['clan_id'], {
+  unique: true,
+  where: `"clan_role" = '${ClanRole.VICE_LEADER}' AND "clan_id" IS NOT NULL`,
+})
 export class UserEntity extends AuditEntity {
   @Column({ type: 'varchar', unique: true, nullable: true })
   @Exclude()
@@ -87,9 +102,13 @@ export class UserEntity extends AuditEntity {
   @Column('text', { array: true, nullable: true })
   skin_set: string[];
 
-  @ManyToOne(() => MapEntity, { nullable: true })
-  @JoinColumn({ name: 'map_id' })
-  map: MapEntity | null;
+  @ManyToOne(() => ClanEntity, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'clan_id', foreignKeyConstraintName: 'FK_user_clan' })
+  clan: ClanEntity | null;
+
+  @Column({ type: 'uuid', nullable: true })
+  @Exclude()
+  clan_id: string | null;
 
   @OneToMany(() => Inventory, (inventory) => inventory.user)
   inventories: Inventory[];
@@ -107,11 +126,25 @@ export class UserEntity extends AuditEntity {
   @Column({ type: 'int', default: Role.USER })
   @ApiProperty({
     enum: Role,
-    enumName: 'Role',
     description: 'Role of the user. 0 = USER, 1 = ADMIN',
     example: Role.USER,
   })
   @IsOptional()
   @IsEnum(Role)
   role: Role;
+
+  @Column({
+    enumName: 'user_clan_role_enum',
+    type: 'enum',
+    enum: ClanRole,
+    default: ClanRole.MEMBER,
+  })
+  @ApiProperty({
+    enum: ClanRole,
+    enumName: 'Role',
+    example: ClanRole.MEMBER,
+  })
+  @IsOptional()
+  @IsEnum(ClanRole)
+  clan_role: ClanRole;
 }

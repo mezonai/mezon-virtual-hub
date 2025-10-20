@@ -33,6 +33,7 @@ import { MessageTypes } from '../MessageTypes';
 import { PlayerSessionManager } from '../player/PlayerSessionManager';
 import { QuestEventEmitter } from '@modules/player-quest/events/quest.events';
 import { PlayerQuestService } from '@modules/player-quest/player-quest.service';
+import { ClanFundService } from '@modules/clan-fund/clan-fund.service';
 
 export class Item extends Schema {
   @type('number') x: number = 0;
@@ -84,6 +85,7 @@ export class BaseGameRoom extends Room<RoomState> {
     @Inject() private readonly gameEventService: GameEventService,
     @Inject() readonly petPlayersService: PetPlayersService,
     @Inject() readonly playerQuestService: PlayerQuestService,
+    @Inject() private readonly clanFundService: ClanFundService,
   ) {
     super();
     this.logger.log(`GameRoom created : ${this.roomName}`);
@@ -132,7 +134,7 @@ export class BaseGameRoom extends Room<RoomState> {
 
     const user = await this.userRepository.findOne({
       where: [{ username }, { email }],
-      relations: ['map'],
+      relations: ['clan'],
     });
 
     if (!user) {
@@ -785,6 +787,47 @@ export class BaseGameRoom extends Room<RoomState> {
       });
     });
     this.spawnPetInRoom();
+
+    this.onMessage('sendClanFund', async (client, payload) => {
+      const { clanId, type, amount } = payload;
+      const player = this.state.players.get(client.sessionId);
+      if (!player) {
+        client.send('onSendClanFundFailed', {
+          success: false,
+          message: 'Không tìm thấy người chơi',
+        });
+        return;
+      }
+
+      const user = await this.userRepository.findOne({
+        where: { id: player.user_id },
+      });
+
+      if (!user) {
+        client.send('onSendClanFundFailed', {
+          success: false,
+          message: 'Không tìm thấy thông tin người dùng',
+        });
+        return;
+      }
+
+      const fundInfo = await this.clanFundService.contribute(clanId, user, {
+        type,
+        amount,
+      });
+      client.send('onSendClanFundSelf', {
+        clanId,
+        type: fundInfo.type,
+        playerAmount: -amount,
+        totalAmount: fundInfo.amount,
+      });
+
+      this.broadcast('onSendClanUpdated', {
+        clanId,
+        type: fundInfo.type,
+        totalAmount: fundInfo.amount,
+      });
+    });
 
     //combat
     this.onMessage('p2pCombatActionAccept', (sender, data) => {

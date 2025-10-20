@@ -26,6 +26,18 @@ export enum ItemType {
   PET_FOOD = 'pet_food',
 }
 
+export enum ItemTypeCloth {
+  Hair = 1,
+  Hat = 2,
+  Face = 3,
+  Eyes = 4,
+  Upper = 5,
+  Lower = 6,
+  Glasses = 7,
+  UpgradeCard = 8,
+
+}
+
 export enum ItemCode {
   RARITY_CARD_RARE = 'rarity_card_rare',
   RARITY_CARD_EPIC = 'rarity_card_epic',
@@ -190,4 +202,16 @@ export enum RewardItemType {
   FOOD = 'food',
   ITEM = 'item',
   PET = 'pet',
+}
+
+export enum ClanFundType {
+  GOLD = 'gold',
+  DIAMOND = 'diamond',
+}
+
+export enum ClanRequestStatus {
+  PENDING = 'pending',
+  APPROVED = 'approved',
+  REJECTED = 'rejected',
+  CANCELLED = 'cancel',
 }

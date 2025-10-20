@@ -9,64 +9,49 @@ export class InsertPetsAndPetSkillsData1754563006670
   name = 'InsertPetsAndPetSkillsData1754563006670';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
-    const skill: Partial<PetSkillsEntity> = {
-      skill_code: SkillCode.WHIP_WIRE,
-      name: 'Vine Whip - Dây roi',
-      skill_type: SkillType.DECREASE_ATTACK,
-      element_type: PetType.GRASS,
-      damage: 0,
-      accuracy: 100,
-      power_points: 2,
-      description:
-        'Pet Tấn công đối thủ làm giảm chỉ số tấn công đối thủ đi 50% ',
-    };
+    await queryRunner.query(`
+      INSERT INTO pet_skills (
+        skill_code,
+        name,
+        skill_type,
+        element_type,
+        damage,
+        accuracy,
+        power_points,
+        description
+      ) VALUES (
+        '${SkillCode.WHIP_WIRE}',
+        'Vine Whip - Dây roi',
+        '${SkillType.DECREASE_ATTACK}',
+        '${PetType.GRASS}',
+        0,
+        100,
+        2,
+        'Pet Tấn công đối thủ làm giảm chỉ số tấn công đối thủ đi 50%'
+      );
 
-    const newPets: Partial<PetsEntity>[] = [
-      {
-        species: 'DragonNormal',
-        rarity: AnimalRarity.LEGENDARY,
-        type: PetType.DRAGON,
-        base_hp: 95,
-        base_attack: 110,
-        base_defense: 105,
-        base_speed: 100,
-        catch_chance: 120,
-      },
-      {
-        species: 'DragonFire',
-        rarity: AnimalRarity.LEGENDARY,
-        type: PetType.FIRE,
-        base_hp: 90,
-        base_attack: 120,
-        base_defense: 115,
-        base_speed: 142,
-        catch_chance: 120,
-      },
-    ];
-
-    await queryRunner.manager
-      .createQueryBuilder()
-      .insert()
-      .into('pet_skills')
-      .values(skill)
-      .execute();
-
-    await queryRunner.manager
-      .createQueryBuilder()
-      .insert()
-      .into('pets')
-      .values(newPets)
-      .execute();
+      INSERT INTO pets (
+        species,
+        rarity,
+        type,
+        base_hp,
+        base_attack,
+        base_defense,
+        base_speed,
+        catch_chance
+      ) VALUES
+        ('DragonNormal', '${AnimalRarity.LEGENDARY}', '${PetType.DRAGON}', 95, 110, 105, 100, 120),
+        ('DragonFire', '${AnimalRarity.LEGENDARY}', '${PetType.FIRE}', 90, 120, 115, 142, 120);
+    `);
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(`DELETE FROM pets WHERE species IN ($1, $2)`, [
-      'DragonNormal',
-      'DragonFire',
-    ]);
+    await queryRunner.query(`
+      DELETE FROM pets
+      WHERE species IN ('DragonNormal', 'DragonFire');
 
-    await queryRunner.query(`DELETE FROM pet_skills WHERE skill_code = $1`, [
-      SkillCode.WHIP_WIRE,
-    ]);
+      DELETE FROM pet_skills
+      WHERE skill_code = '${SkillCode.WHIP_WIRE}';
+    `);
   }
 }

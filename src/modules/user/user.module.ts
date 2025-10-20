@@ -1,6 +1,6 @@
 import { LoggerModule } from '@libs/logger';
 import { Inventory } from '@modules/inventory/entity/inventory.entity';
-import { MapEntity } from '@modules/map/entity/map.entity';
+import { ClanEntity } from '@modules/clan/entity/clan.entity';
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -10,7 +10,7 @@ import { UserService } from './user.service';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([UserEntity, MapEntity, Inventory]),
+    TypeOrmModule.forFeature([UserEntity, ClanEntity, Inventory]),
     JwtModule.register({}),
     LoggerModule,
   ],
