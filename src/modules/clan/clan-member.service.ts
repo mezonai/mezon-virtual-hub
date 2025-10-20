@@ -108,31 +108,37 @@ export class ClanMemberService {
   }
 
   async removeMembers(clanId: string, targetUserIds: string[]) {
-  const targets = await this.userRepository.find({
-    where: { id: In(targetUserIds), clan_id: clanId },
-    relations: ['clan'],
-  });
+    const targets = await this.userRepository.find({
+      where: { id: In(targetUserIds), clan_id: clanId },
+      relations: ['clan'],
+    });
 
-  if (!targets.length) {
-    throw new NotFoundException('No users found in clan');
-  }
+    if (!targets.length) {
+      throw new NotFoundException('No users found in clan');
+    }
 
-  const leaderTargets = targets.filter(t => t.clan_role === ClanRole.LEADER);
-  if (leaderTargets.length > 0) {
-    throw new BadRequestException('Cannot remove the clan leader');
-  }
+    const leaderTargets = targets.filter(
+      (t) => t.clan_role === ClanRole.LEADER,
+    );
+    if (leaderTargets.length > 0) {
+      throw new BadRequestException('Cannot remove the clan leader');
+    }
 
-  for (const target of targets) {
-    const oldClan = target.clan;
-    target.clan_id = null;
-    target.clan_role = ClanRole.MEMBER;
-    target.clan = null;
-    await this.userRepository.save(target);
+    const emitPayloads = targets.map((target) => {
+      const oldClan = target.clan;
+      target.clan_id = null;
+      target.clan_role = ClanRole.MEMBER;
+      target.clan = null;
+      return { target, oldClan };
+    });
 
-    this.eventEmitter.emit(ClanBroadcastEventType.MEMBER_KICKED, {
-      user: target,
-      clan: oldClan,
+    await this.userRepository.save(targets);
+
+    emitPayloads.forEach(({ target, oldClan }) => {
+      this.eventEmitter.emit(ClanBroadcastEventType.MEMBER_KICKED, {
+        user: target,
+        clan: oldClan,
+      });
     });
   }
-}
 }
