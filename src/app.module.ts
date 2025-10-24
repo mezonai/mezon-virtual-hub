@@ -35,6 +35,13 @@ import { dataSourceOption } from './config/data-source.config';
 import { ClanFundModule } from './modules/clan-fund/clan-fund.module';
 import { ClanRequestModule } from './modules/clan-request/clan-request.module';
 import { ColyseusModule } from '@modules/colyseus/colyseus.module';
+import { FarmModule } from '@modules/farm/farm.module';
+import { FarmSlotsModule } from '@modules/farm-slots/farm-slots.module';
+import { PlantModule } from '@modules/plant/plant.module';
+import { PlantStageModule } from '@modules/plant-stage/plant-stage.module';
+import { FarmWarehouseModule } from '@modules/farm-warehouse/farm-warehouse.module';
+import { SlotsPlantModule } from '@modules/slots-plant/slots-plant.module';
+import { UserClantScoreModule } from '@modules/user-clant-score/user-clant-score.module';
 
 @Module({
   imports: [
@@ -80,6 +87,13 @@ import { ColyseusModule } from '@modules/colyseus/colyseus.module';
     ClanFundModule,
     ClanRequestModule,
     ColyseusModule,
+    FarmModule,
+    FarmSlotsModule,
+    PlantModule,
+    PlantStageModule,
+    FarmWarehouseModule,
+    SlotsPlantModule,
+    UserClantScoreModule,
   ],
 })
 export class AppModule {}

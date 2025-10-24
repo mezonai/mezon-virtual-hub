@@ -152,11 +152,24 @@ export class ClanService extends BaseService<ClanEntity> {
       })
       .getMany();
 
-    const leader = users.find(u => u.clan_role === ClanRole.LEADER) || null;
-    const viceLeader = users.find(u => u.clan_role === ClanRole.VICE_LEADER) || null;
+    const leader = users.find((u) => u.clan_role === ClanRole.LEADER) || null;
+    const viceLeader =
+      users.find((u) => u.clan_role === ClanRole.VICE_LEADER) || null;
 
-    clanWithCount['leader'] = leader;
-    clanWithCount['vice_leader'] = viceLeader;
+    // clanWithCount['leader'] = leader;
+    // clanWithCount['vice_leader'] = viceLeader;
+
+    clanWithCount['leader'] = {
+      ...plainToInstance(UserInformationDto, leader),
+      total_score: leader?.scores?.[0]?.total_score ?? 0,
+      weekly_score: leader?.scores?.[0]?.weekly_score ?? 0,
+    };
+
+    clanWithCount['vice_leader'] = {
+      ...plainToInstance(UserInformationDto, viceLeader),
+      total_score: viceLeader?.scores?.[0]?.total_score ?? 0,
+      weekly_score: viceLeader?.scores?.[0]?.weekly_score ?? 0,
+    };
 
     return plainToInstance(ClanInfoResponseDto, clanWithCount);
   }
@@ -193,7 +206,16 @@ export class ClanService extends BaseService<ClanEntity> {
 
     const [users, total] = await qb.getManyAndCount();
 
-    return new Pageable(plainToInstance(UserPublicDto, users), {
+    const usersWithScore = users.map((u) => {
+      const score = u.scores?.[0];
+      return {
+        ...plainToInstance(UserPublicDto, u),
+        total_score: score?.total_score ?? 0,
+        weekly_score: score?.weekly_score ?? 0,
+      };
+    });
+
+    return new Pageable(usersWithScore, {
       size: limit,
       page,
       total,
