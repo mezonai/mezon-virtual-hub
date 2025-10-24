@@ -1,16 +1,10 @@
-import { Room, Server } from '@colyseus/core';
 import { monitor } from '@colyseus/monitor';
-import { WebSocketTransport } from '@colyseus/ws-transport';
 import { swaggerConfig } from '@config';
 import { configEnv } from '@config/env.config';
-import { SUB_GAME_ROOM } from '@constant';
-import { GameRoom } from '@modules/colyseus/rooms/game.room';
-import { INestApplication, Logger, ValidationPipe } from '@nestjs/common';
+import { Logger, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
-import { createServer } from 'http';
 import { AppModule } from './app.module';
-import { MapKey } from './enum/entity.enum';
-import { BattleRoom } from '@modules/colyseus/rooms/battle.room';
+import { ColyseusService } from '@modules/colyseus/colyseus.service';
 
 const logger = new Logger('Bootstrap');
 
@@ -36,75 +30,12 @@ async function setupNestApp() {
   return app;
 }
 
-function defineRoomWithPaths(
-  gameServer: Server,
-  app: INestApplication<any>,
-  baseKey: string,
-  rooms = SUB_GAME_ROOM,
-  parentPath = ""
-) {
-  Object.entries(rooms).forEach(([subPath, config]) => {
-    const roomPath = `${baseKey}${parentPath}${subPath ? `-${subPath}` : ""}`.replace(/\/+/g, "-"); // Ensure proper path format
-
-    gameServer.define(roomPath, injectDeps(app, config.room));
-    logger.log(`Defined game room: ${roomPath} ${config.room.name}`);
-
-    if (config.children) {
-      Object.entries(config.children).forEach(([childKey, childConfig]) => {
-        defineRoomWithPaths(gameServer, app, baseKey, { [childKey]: childConfig }, `${parentPath}/${subPath}`);
-      });
-    }
-
-  });
-
-  gameServer.define('battle-room', injectDeps(app, BattleRoom));
-}
-
-async function setupColyseusServer(app: INestApplication<any>) {
-  const httpServer = createServer();
-  const gameServer = new Server({
-    transport: new WebSocketTransport({
-      server: httpServer,
-      pingInterval: 5000, // Send ping every 5 seconds
-      pingMaxRetries: 3, // Disconnect after 3 failed pings
-    }),
-  });
-
-  // Define GameRoom for all MapKey values
-  Object.values(MapKey).forEach((mapKey) => {
-    defineRoomWithPaths(gameServer, app, mapKey);
-  });
-  return { gameServer, httpServer };
-}
-
-function injectDeps<T extends { new(...args: any[]): Room }>(
-  app: INestApplication,
-  target: T,
-): T {
-  const selfDeps = Reflect.getMetadata('self:paramtypes', target) || [];
-  const dependencies = Reflect.getMetadata('design:paramtypes', target) || [];
-
-  selfDeps.forEach((dep: any) => {
-    dependencies[dep.index] = dep.param;
-  });
-
-  const injectables =
-    dependencies.map((dependency: any) => {
-      return app.get(dependency);
-    }) || [];
-
-  return class extends target {
-    constructor(...args: any[]) {
-      super(...injectables);
-    }
-  };
-}
-
 async function bootstrap() {
   try {
     const env = configEnv();
     const app = await setupNestApp();
-    const { gameServer, httpServer } = await setupColyseusServer(app);
+    const colyseusService = app.get(ColyseusService);
+    const { gameServer, httpServer } =  await colyseusService.initialize(app); 
 
     /**
      * Bind @colyseus/monitor

@@ -34,6 +34,7 @@ import { ClsModule } from 'nestjs-cls';
 import { dataSourceOption } from './config/data-source.config';
 import { ClanFundModule } from './modules/clan-fund/clan-fund.module';
 import { ClanRequestModule } from './modules/clan-request/clan-request.module';
+import { ColyseusModule } from '@modules/colyseus/colyseus.module';
 
 @Module({
   imports: [
@@ -78,6 +79,7 @@ import { ClanRequestModule } from './modules/clan-request/clan-request.module';
     }),
     ClanFundModule,
     ClanRequestModule,
+    ColyseusModule,
   ],
 })
 export class AppModule {}
