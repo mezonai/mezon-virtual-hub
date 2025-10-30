@@ -1,14 +1,6 @@
 import { ApiProperty } from "@nestjs/swagger";
 import { IsNumber, IsOptional, IsString } from "class-validator";
 
-export enum PlantState {
-  NONE = 0,
-  SEED = 1,
-  SMALL = 2,
-  GROWING = 3,
-  HARVESTABLE = 4,
-}
-
 export class CreatePlantDto {
   @ApiProperty({ description: 'Name of the plant', example: 'Tomato' })
   @IsString()

@@ -1,10 +1,11 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Exclude, Type } from 'class-transformer';
-import { IsInt, IsOptional, IsString, IsDate, Max} from 'class-validator';
+import { IsInt, IsOptional, IsString, IsDate, Max, IsEnum, IsBoolean} from 'class-validator';
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, CreateDateColumn, UpdateDateColumn, DeleteDateColumn} from 'typeorm';
 import { FarmSlotEntity } from '@modules/farm-slots/entity/farm-slots.entity';
 import { PlantEntity } from '@modules/plant/entity/plant.entity';
 import { UserEntity } from '@modules/user/entity/user.entity';
+import { PlantState } from '@enum';
 
 @Entity({ name: 'slot_plants' })
 export class SlotsPlantEntity {
@@ -26,23 +27,34 @@ export class SlotsPlantEntity {
 
   @ApiProperty()
   @IsString()
+  @Column({ type: 'varchar' })
+  plant_name: string;
+
+  @ApiProperty({ enum: PlantState, example: PlantState.GROWING })
+  @IsEnum(PlantState)
+  @Column({
+    type: 'enum',
+    enum: PlantState,
+    default: PlantState.SEED,
+  })
+  stage: PlantState;
+
+  @Exclude()
+  @ApiProperty()
+  @IsString()
   @Column({ type: 'uuid' })
   planted_by: string;
 
-  @Column({ nullable: true })
-  last_watered_by?: string;
-
-  @Column({ nullable: true })
-  last_bug_caught_by?: string;
-
+  @Exclude()
   @Column({ nullable: true })
   last_harvested_by?: string;
 
   @ApiProperty()
   @IsInt()
   @Column({ type: 'int' })
-  grow_time_seconds: number;
+  grow_time: number;
 
+  @Exclude()
   @ApiProperty({ type: Date, required: false })
   @IsOptional()
   @IsDate()
@@ -50,42 +62,51 @@ export class SlotsPlantEntity {
   @Column({ type: 'timestamp', nullable: true })
   harvest_at: Date | null;
 
+  @Exclude()
   @ApiProperty()
   @IsInt()
   @Column({ type: 'int', default: 0 })
   total_water_count: number;
 
+  @Exclude()
   @ApiProperty()
   @IsInt()
   @Column({ type: 'int', default: 0 })
   total_bug_caught: number;
 
+  @Exclude()
   @ApiProperty()
   @IsInt()
   @Column({ type: 'int', default: 0 })
   expected_water_count: number;
 
+  @Exclude()
   @ApiProperty()
   @IsInt()
   @Column({ type: 'int', default: 0 })
   expected_bug_count: number;
 
+  @Exclude()
   @Column({ type: 'timestamp', nullable: true })
   last_watered_at: Date | null;
 
+  @Exclude()
   @Column({ type: 'timestamp', nullable: true })
-  need_water_until: Date;
+  need_water_until: Date| null;
 
+  @Exclude()
   @Column({ type: 'timestamp', nullable: true })
   last_bug_caught_at: Date | null;
 
+  @Exclude()
   @Column({ type: 'timestamp', nullable: true })
-  bug_until: Date;
+  bug_until:  Date| null;
 
   @IsInt()
   @Column({ type: 'int', default: 0 })
   harvest_count: number;
 
+  @Exclude()
   @IsInt()
   @Max(10)
   @Column({ type: 'int', default: 10 })
@@ -113,6 +134,7 @@ export class SlotsPlantEntity {
   })
   farmSlot: FarmSlotEntity;
 
+  @Exclude()
   @ManyToOne(() => PlantEntity, (plant) => plant.slotPlants, {
     onDelete: 'CASCADE',
   })

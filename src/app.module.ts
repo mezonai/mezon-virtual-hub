@@ -39,7 +39,7 @@ import { FarmModule } from '@modules/farm/farm.module';
 import { FarmSlotsModule } from '@modules/farm-slots/farm-slots.module';
 import { PlantModule } from '@modules/plant/plant.module';
 import { PlantStageModule } from '@modules/plant-stage/plant-stage.module';
-import { FarmWarehouseModule } from '@modules/farm-warehouse/farm-warehouse.module';
+import { ClanWarehouseModule } from '@modules/clan-warehouse/clan-warehouse.module';
 import { SlotsPlantModule } from '@modules/slots-plant/slots-plant.module';
 import { UserClantScoreModule } from '@modules/user-clant-score/user-clant-score.module';
 
@@ -91,7 +91,7 @@ import { UserClantScoreModule } from '@modules/user-clant-score/user-clant-score
     FarmSlotsModule,
     PlantModule,
     PlantStageModule,
-    FarmWarehouseModule,
+    ClanWarehouseModule,
     SlotsPlantModule,
     UserClantScoreModule,
   ],

@@ -13,7 +13,7 @@ export class PlantService {
 
   async getAllPlants(): Promise<PlantEntity[]> {
     return this.plantRepository.find({
-      relations: ['slotPlants', 'warehouseSlots'],
+      relations: ['slotPlants'],
       order: { name: 'ASC' },
     });
   }
@@ -21,7 +21,7 @@ export class PlantService {
   async getPlantById(id: string): Promise<PlantEntity> {
     const plant = await this.plantRepository.findOne({
       where: { id },
-      relations: ['slotPlants', 'warehouseSlots'],
+      relations: ['slotPlants'],
     });
     if (!plant) throw new NotFoundException('Plant not found');
     return plant;

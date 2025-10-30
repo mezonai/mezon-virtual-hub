@@ -1,5 +1,5 @@
-import { Schema, type } from '@colyseus/schema';
-import { PetType } from '@enum';
+import { ArraySchema, MapSchema, Schema, type } from '@colyseus/schema';
+import { PetType, PlantState } from '@enum';
 import { UserWithPetPlayers } from '@modules/user/dto/user.dto';
 import { Client as ColyseusClient } from 'colyseus';
 import { TokenSentEvent } from 'mezon-sdk/dist/cjs/api/api';
@@ -51,6 +51,28 @@ export class PlayerBattleInfo extends Schema {
   @type([PetState]) pets: PetState[] = [];
   @type("number") activePetIndex: number = 0;
   @type("boolean") isEndTurn = false;
+}
+
+export class PlantDataSchema extends Schema {
+  @type('string') id: string;
+  @type('string') plant_id: string;
+  @type('string') plant_name: string;
+  @type('string') planted_by: string;
+  @type('number') grow_time: number;
+  @type('number') grow_time_remain: number;
+  @type('number') stage: PlantState; 
+  @type('boolean') can_harvest: boolean;
+  @type('boolean') need_water: boolean;
+  @type('boolean') has_bug: boolean;
+  @type('string') harvest_at: string;
+  @type('string') created_at: string;
+  @type('string') updated_at: string;
+}
+
+export class FarmSlotState extends Schema {
+  @type('string') id: string = '';
+  @type('number') slot_index: number = 0;
+  @type(PlantDataSchema) currentPlant: PlantDataSchema | null;;
 }
 
 export interface WithdrawMezonPayload

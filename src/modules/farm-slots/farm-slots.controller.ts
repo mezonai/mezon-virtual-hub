@@ -27,7 +27,7 @@ export class FarmSlotsController {
     return this.farmSlotsService.getFarmWithSlotsByFarm(farm_id);
   }
 
-  @Post(':plant')
+  @Post('/plant')
   @ApiOperation({ summary: 'Plant a crop on a farm slot' })
   async plant(@Body() dto: PlantOnSlotDto) {
     const user = this.clsService.get<UserEntity>(USER_TOKEN);

@@ -19,9 +19,9 @@ export class UserClantScoreController {
     return this.userClantScoreService.findAll();
   }
 
-  @Get(':userId/:clanId')
+  @Get(':user_id/:clan_id')
   @ApiOperation({ summary: 'Get score of a user in a clan' })
-  findByUserAndClan(@Param('userId') userId: string, @Param('clanId') clanId: string) {
+  findByUserAndClan(@Param('user_id') userId: string, @Param('clan_id') clanId: string) {
     return this.userClantScoreService.findByUserAndClan(userId, clanId);
   }
 

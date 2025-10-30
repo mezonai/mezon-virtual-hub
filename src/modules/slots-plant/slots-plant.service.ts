@@ -40,8 +40,6 @@ export class SlotsPlantService {
       harvest_count: p.harvest_count,
       harvest_count_max: p.harvest_count_max,
       harvest_at: p.harvest_at,
-      last_watered_by: p.last_watered_by,
-      last_bug_caught_by: p.last_bug_caught_by,
       last_harvested_by: p.last_harvested_by,
     }));
   }
@@ -125,9 +123,7 @@ export class SlotsPlantService {
         plant_name: p.plant?.name || null,
         planted_by: p.planted_by,
         planted_at: p.created_at,
-        last_watered_by: p.last_watered_by,
         last_watered_at: p.last_watered_at,
-        last_bug_caught_by: p.last_bug_caught_by,
         last_bug_caught_at: p.last_bug_caught_at,
         last_harvested_by: p.last_harvested_by,
         harvest_at: p.harvest_at,

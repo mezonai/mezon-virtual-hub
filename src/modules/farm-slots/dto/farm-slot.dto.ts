@@ -1,4 +1,5 @@
-import { PlantState } from '@modules/plant/dto/plant.dto';
+import { PlantState } from '@enum';
+import { SlotsPlantEntity } from '@modules/slots-plant/entity/slots-plant.entity';
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { IsArray, IsBoolean, IsDate, IsNumber, IsString, IsUUID, ValidateNested } from 'class-validator';
@@ -37,13 +38,7 @@ export class PlantStatusDto {
   @ApiProperty({ example: 4, description: 'Current plant stage (enum PlantState)' })
   stage: PlantState;
 
-  @IsBoolean()
-  @ApiProperty({ example: true, description: 'Does it need water now?' })
-  need_water: boolean;
 
-  @IsBoolean()
-  @ApiProperty({ example: true, description: 'Does it have bug now?' })
-  has_bug: boolean;
 
   @IsDate()
   @ApiProperty({ example: '2025-10-23T21:50:28.720Z', description: 'Harvest date' })
@@ -68,9 +63,9 @@ export class SlotWithStatusDto {
   slot_index: number;
 
   @ValidateNested()
-  @Type(() => PlantStatusDto)
-  @ApiProperty({ type: PlantStatusDto, nullable: true, description: 'Current plant info or null' })
-  currentPlant: PlantStatusDto | null;
+  @Type(() => SlotsPlantEntity)
+  @ApiProperty({ type: SlotsPlantEntity, nullable: true, description: 'Current plant info or null' })
+  currentPlant: SlotsPlantEntity | null;
 }
 
 export class WarehouseSlotDto {
@@ -102,13 +97,8 @@ export class FarmWithSlotsDto {
 
   @IsArray()
   @ValidateNested({ each: true })
-  @Type(() => WarehouseSlotDto)
-  @ApiProperty({ type: [WarehouseSlotDto], description: 'Warehouse slots' })
-  warehouseSlots: WarehouseSlotDto[];
-
-  @IsArray()
-  @ValidateNested({ each: true })
   @Type(() => SlotWithStatusDto)
   @ApiProperty({ type: [SlotWithStatusDto], description: 'Farm slots with status' })
   slots: SlotWithStatusDto[];
 }
+

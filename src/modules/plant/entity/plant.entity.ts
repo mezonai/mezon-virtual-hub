@@ -2,7 +2,8 @@ import { ApiProperty } from '@nestjs/swagger';
 import { IsInt, IsOptional, IsString} from 'class-validator';
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 import { SlotsPlantEntity } from '@modules/slots-plant/entity/slots-plant.entity';
-import { FarmWarehouseEntity } from '@modules/farm-warehouse/entity/farm-warehouse.entity';
+import { ClanWarehouseEntity } from '@modules/clan-warehouse/entity/clan-warehouse.entity';
+import { Exclude } from 'class-transformer';
 
 @Entity({ name: 'plants' })
 export class PlantEntity {
@@ -37,9 +38,11 @@ export class PlantEntity {
   @Column({ type: 'text', nullable: true })
   description: string | null;
 
+  @Exclude()
   @CreateDateColumn({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   created_at: Date;
 
+  @Exclude()
   @UpdateDateColumn({
     type: 'timestamp',
     default: () => 'CURRENT_TIMESTAMP',
@@ -47,9 +50,11 @@ export class PlantEntity {
   })
   updated_at: Date;
 
+  @Exclude()
   @OneToMany(() => SlotsPlantEntity, (slotPlant) => slotPlant.plant)
   slotPlants: SlotsPlantEntity[];
 
-  @OneToMany(() => FarmWarehouseEntity, (wh) => wh.plant)
-  warehouseSlots: FarmWarehouseEntity[];
+  @Exclude()
+  @OneToMany(() => ClanWarehouseEntity, (wh) => wh.plant)
+  warehouseSlots: ClanWarehouseEntity[];
 }

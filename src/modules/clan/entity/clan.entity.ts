@@ -1,6 +1,7 @@
 import { ClanFundEntity } from '@modules/clan-fund/entity/clan-fund.entity';
 import { FarmEntity } from '@modules/farm/entity/farm.entity';
 import { UserEntity } from '@modules/user/entity/user.entity';
+import { ClanWarehouseEntity } from '@modules/clan-warehouse/entity/clan-warehouse.entity';
 import { ApiProperty } from '@nestjs/swagger';
 import { AuditEntity } from '@types';
 import { Exclude, Type } from 'class-transformer';
@@ -69,5 +70,9 @@ export class ClanEntity extends AuditEntity {
   @OneToOne(() => FarmEntity, { cascade: true })
   @JoinColumn({ name: 'farm_id', foreignKeyConstraintName: 'FK_farm_id_clan' })
   farm: FarmEntity;
+
+  @OneToOne(() => ClanWarehouseEntity, (warehouse) => warehouse.clan, { cascade: true })
+  @JoinColumn({ name: 'warehouse_id', foreignKeyConstraintName: 'FK_warehouse_id_clan' })
+  warehouse: ClanWarehouseEntity;
 
 }

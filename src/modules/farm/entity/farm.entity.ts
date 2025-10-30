@@ -2,7 +2,6 @@ import { ApiProperty } from '@nestjs/swagger';
 import { IsInt, IsString, IsOptional } from 'class-validator';
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 import { FarmSlotEntity } from '@modules/farm-slots/entity/farm-slots.entity';
-import { FarmWarehouseEntity } from '@modules/farm-warehouse/entity/farm-warehouse.entity';
 import { Exclude } from 'class-transformer';
 
 @Entity({ name: 'farms' })
@@ -35,7 +34,4 @@ export class FarmEntity {
 
   @OneToMany(() => FarmSlotEntity, (slot) => slot.farm)
   slots: FarmSlotEntity[];
-
-  @OneToMany(() => FarmWarehouseEntity, (wh) => wh.farm)
-  warehouseSlots: FarmWarehouseEntity[];
 }

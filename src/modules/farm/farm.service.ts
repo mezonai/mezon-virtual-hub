@@ -18,7 +18,7 @@ export class FarmService {
     if (!clan_id) throw new NotFoundException('clan_id is required');
     const farm = await this.farmRepo.findOne({
       where: { clan_id },
-      relations: ['slots', 'warehouseSlots'],
+      relations: ['slots'],
     });
     if (!farm) {
       throw new NotFoundException(`Farm for clan_id ${clan_id} not found`);
@@ -30,7 +30,7 @@ export class FarmService {
   async getFarmById(id: string): Promise<FarmEntity> {
     const farm = await this.farmRepo.findOne({
       where: { id },
-      relations: ['slots', 'warehouseSlots'],
+      relations: ['slots'],
     });
     if (!farm) throw new NotFoundException(`Farm with id ${id} not found`);
     return farm;

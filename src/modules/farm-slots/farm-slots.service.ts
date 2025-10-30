@@ -11,13 +11,16 @@ import { UserEntity } from '@modules/user/entity/user.entity';
 import {
   FarmWithSlotsDto,
   PlantOnSlotDto,
-  PlantStatusDto,
+  SlotWithStatusDto,
 } from './dto/farm-slot.dto';
-import { FarmWarehouseEntity } from '@modules/farm-warehouse/entity/farm-warehouse.entity';
 import { PlantEntity } from '@modules/plant/entity/plant.entity';
 import { ClanEntity } from '@modules/clan/entity/clan.entity';
-import { PlantState } from '@modules/plant/dto/plant.dto';
 import { FarmEntity } from '@modules/farm/entity/farm.entity';
+import { ClanWarehouseEntity } from '@modules/clan-warehouse/entity/clan-warehouse.entity';
+import { PlantCareUtils } from '@modules/plant/plant-care.service';
+import { CLanWarehouseService } from '@modules/clan-warehouse/clan-warehouse.service';
+import { PlantState } from '@enum';
+import { CLAN_WAREHOUSE } from '@constant/farm.constant';
 
 @Injectable()
 export class FarmSlotService {
@@ -28,8 +31,9 @@ export class FarmSlotService {
     private readonly slotPlantRepo: Repository<SlotsPlantEntity>,
     @InjectRepository(PlantEntity)
     private readonly plantRepo: Repository<PlantEntity>,
-    @InjectRepository(FarmWarehouseEntity)
-    private readonly warehouseRepo: Repository<FarmWarehouseEntity>,
+    @InjectRepository(ClanWarehouseEntity)
+    private readonly clanWarehouseRepo: Repository<ClanWarehouseEntity>,
+    private readonly clanWarehouseService: CLanWarehouseService,
     @InjectRepository(UserEntity)
     private readonly userRepo: Repository<UserEntity>,
     @InjectRepository(FarmEntity)
@@ -38,38 +42,133 @@ export class FarmSlotService {
     private readonly clanRepo: Repository<ClanEntity>,
   ) {}
 
-  // mốc chuẩn
-  private readonly baseGrowTime = 600; // 10 phút
-  private readonly baseWaterCount = 2;
-  private readonly baseBugCount = 1;
-  private calculateCareNeeds(growTimeSeconds: number) {
-    const totalWater = Math.max(
-      1,
-      Math.round(this.baseWaterCount * (growTimeSeconds / this.baseGrowTime)),
-    );
-    const totalBug = Math.max(
-      1,
-      Math.round(this.baseBugCount * (growTimeSeconds / this.baseGrowTime)),
-    );
-    return { totalWater, totalBug };
+  async getFarmWithSlotsByClan(clan_id: string): Promise<FarmWithSlotsDto> {
+    if (!clan_id) throw new NotFoundException('clan_id is required');
+
+    const farm = await this.farmRepo.findOne({
+      where: { clan_id },
+      relations: [
+        'slots',
+        'slots.currentSlotPlant',
+        'slots.currentSlotPlant.plant',
+      ],
+    });
+
+    if (!farm)
+      throw new NotFoundException(`Farm for clan_id ${clan_id} not found`);
+    farm.slots.sort((a, b) => a.slot_index - b.slot_index);
+    const slotsWithStatus = await this.mapSlotsWithStatus(farm.slots);
+
+    return {
+      farm_id: farm.id,
+      slots: slotsWithStatus,
+    };
   }
 
-  private calculatePlantStage(
-    createdAt: Date,
-    growTimeSeconds: number,
-  ): PlantState {
-    const elapsed = (Date.now() - createdAt.getTime()) / 1000;
-    const ratio = Math.min(elapsed / growTimeSeconds, 1);
+  async getFarmWithSlotsByFarm(farm_id: string): Promise<FarmWithSlotsDto> {
+    if (!farm_id) throw new NotFoundException('farm_id is required');
 
-    if (ratio >= 1.0) return PlantState.HARVESTABLE;
-    if (ratio >= 0.8) return PlantState.GROWING;
-    if (ratio >= 0.3) return PlantState.SMALL;
-    return PlantState.SEED;
+    const farm = await this.farmRepo.findOne({
+      where: { id: farm_id },
+      relations: [
+        'slots',
+        'slots.currentSlotPlant',
+        'slots.currentSlotPlant.plant',
+      ],
+    });
+
+    if (!farm) throw new NotFoundException(`Farm with id ${farm_id} not found`);
+
+    farm.slots.sort((a, b) => a.slot_index - b.slot_index);
+    const slotsWithStatus = await this.mapSlotsWithStatus(farm.slots);
+
+    return {
+      farm_id: farm.id,
+      slots: slotsWithStatus,
+    };
+  }
+
+  private async mapSlotsWithStatus(
+    slots: FarmSlotEntity[],
+  ): Promise<SlotWithStatusDto[]> {
+    const slotDtos = await Promise.all(
+      slots.map(async (slot) => {
+        const p = slot.currentSlotPlant;
+        if (!p) {
+          return {
+            id: slot.id,
+            slot_index: slot.slot_index,
+            currentPlant: null,
+          };
+        }
+
+        const stage = PlantCareUtils.calculatePlantStage(
+          p.created_at,
+          p.grow_time,
+        );
+        const growRemain = PlantCareUtils.calculateGrowRemain(
+          p.created_at,
+          p.grow_time,
+        );
+
+        const { nextWaterTime, needWaterUpdated } =
+          PlantCareUtils.getNextWaterTime(p);
+        const { nextBugTime, hasBugUpdated } = PlantCareUtils.getNextBugTime(p);
+
+        const totalNeed = PlantCareUtils.calculateCareNeeds(p.grow_time);
+        const canHarvest = PlantCareUtils.checkCanHarvest(
+          p.created_at,
+          p.grow_time,
+        );
+
+        const needWater =
+          !canHarvest &&
+          new Date() >= (nextWaterTime ?? new Date(0)) &&
+          p.total_water_count < totalNeed.totalWater;
+
+        const hasBug =
+          !canHarvest &&
+          new Date() >= (nextBugTime ?? new Date(0)) &&
+          p.total_bug_caught < totalNeed.totalBug;
+
+        let shouldSave =
+          needWaterUpdated ||
+          hasBugUpdated ||
+          p.need_water_until?.getTime() !== nextWaterTime?.getTime() ||
+          p.bug_until?.getTime() !== nextBugTime?.getTime() ||
+          p.stage !== stage;
+
+        if (shouldSave) {
+          p.stage = stage;
+          p.need_water_until = nextWaterTime ?? null;
+          p.bug_until = nextBugTime ?? null;
+
+          await this.slotPlantRepo.save(p);
+        }
+
+        return {
+          id: slot.id,
+          slot_index: slot.slot_index,
+          currentPlant: {
+            ...p,
+            plant_name: p.plant?.name || '',
+            stage,
+            growRemain,
+            needWater,
+            hasBug,
+            canHarvest,
+          },
+        };
+      }),
+    );
+
+    return slotDtos;
   }
 
   async plantToSlot(userId: string, dto: PlantOnSlotDto) {
     const slot = await this.farmSlotRepo.findOne({
       where: { id: dto.farm_slot_id },
+      relations: ['farm'],
     });
     if (!slot) throw new NotFoundException('Farm slot not found');
     if (slot.current_slot_plant_id)
@@ -81,34 +180,33 @@ export class FarmSlotService {
     const user = await this.userRepo.findOne({ where: { id: userId } });
     if (!user) throw new NotFoundException('User not found');
 
-    const warehouseItem = await this.warehouseRepo.findOne({
-      where: { plant_id: plant.id },
-    });
-    if (!warehouseItem || warehouseItem.quantity <= 0)
-      throw new BadRequestException('Not enough seeds in warehouse');
+    if (!slot.farm.clan_id)
+      throw new BadRequestException('This farm is not assigned to any clan');
 
-    warehouseItem.quantity -= 1;
-    await this.warehouseRepo.save(warehouseItem);
+    if (!user.clan_id || user.clan_id !== slot.farm.clan_id)
+      throw new BadRequestException('You are not a member of this clan');
+
+    await this.clanWarehouseService.updateClanWarehouseItem(
+      slot.farm.clan_id,
+      plant.id,
+      CLAN_WAREHOUSE.QUANTITY.USE_ONE_SEED,
+      { autoCreate: false, isHarvested: CLAN_WAREHOUSE.ITEM_TYPE.SEED },
+    );
 
     const now = new Date();
     const harvestAt = new Date(now.getTime() + plant.grow_time * 1000);
-    const care = this.calculateCareNeeds(plant.grow_time);
+    const care = PlantCareUtils.calculateCareNeeds(plant.grow_time);
 
     const slotPlant = this.slotPlantRepo.create({
       farm_slot_id: slot.id,
       plant_id: plant.id,
       planted_by: user.id,
-      grow_time_seconds: plant.grow_time,
+      grow_time: plant.grow_time,
       harvest_at: harvestAt,
-      total_water_count: 0,
-      total_bug_caught: 0,
       expected_water_count: care.totalWater,
       expected_bug_count: care.totalBug,
-      last_watered_at: null,
-      need_water_until: now,
-      bug_until: new Date(
-        now.getTime() + (plant.grow_time / care.totalBug) * 1000,
-      ),
+      created_at: now,
+      updated_at: now,
     });
 
     const saved = await this.slotPlantRepo.save(slotPlant);
@@ -118,14 +216,19 @@ export class FarmSlotService {
     return {
       message: 'Planted successfully!',
       currentPlant: {
+        id: saved.id,
         plant_id: plant.id,
         plant_name: plant.name,
+        planted_by: user.id,
         grow_time: plant.grow_time,
+        grow_time_remain: plant.grow_time,
         stage: PlantState.SEED,
+        harvest_at: harvestAt,
+        can_harvest: false,
         need_water: true,
         has_bug: false,
-        harvest_at: harvestAt,
         created_at: now,
+        updated_at: now,
       },
     };
   }
@@ -133,68 +236,54 @@ export class FarmSlotService {
   async waterPlant(userId: string, farmSlotId: string) {
     const slot = await this.farmSlotRepo.findOne({
       where: { id: farmSlotId },
-      relations: ['currentSlotPlant', 'currentSlotPlant.plant'],
+      relations: ['currentSlotPlant'],
     });
-    if (!slot || !slot.currentSlotPlant)
-      throw new NotFoundException('No plant on this slot');
 
-    const p = slot.currentSlotPlant;
-    const care = this.calculateCareNeeds(p.grow_time_seconds);
-    const now = new Date();
-
-    if (p.total_water_count >= care.totalWater)
-      throw new BadRequestException('Plant already fully watered');
-    if (p.need_water_until && p.need_water_until > now) {
-      const remain = Math.ceil(
-        (p.need_water_until.getTime() - now.getTime()) / 1000,
-      );
-      throw new BadRequestException(`You can water again in ${remain}s`);
+    if (!slot) {
+      throw new NotFoundException(`Farm slot ${farmSlotId} not found`);
     }
 
-    const nextInterval = p.grow_time_seconds / care.totalWater;
-    p.total_water_count += 1;
-    p.last_watered_at = now;
-    p.need_water_until = new Date(now.getTime() + nextInterval * 1000);
+    if (!slot.currentSlotPlant) {
+      throw new NotFoundException(`No plant found on slot ${farmSlotId}`);
+    }
 
-    await this.slotPlantRepo.save(p);
-    return {
-      message: 'Watered successfully!',
-      nextWaterAt: p.need_water_until,
-    };
+    try {
+      const nextWaterAt = PlantCareUtils.applyWater(slot.currentSlotPlant);
+      slot.currentSlotPlant.updated_at = new Date();
+      await this.slotPlantRepo.save(slot.currentSlotPlant);
+      return {
+        message: 'Cây đã được tưới nước!',
+        nextWaterAt,
+      };
+    } catch (err: any) {
+      throw new BadRequestException(err.message || 'Failed to water plant');
+    }
   }
 
   async catchBug(userId: string, farmSlotId: string) {
     const slot = await this.farmSlotRepo.findOne({
       where: { id: farmSlotId },
-      relations: ['currentSlotPlant', 'currentSlotPlant.plant'],
+      relations: ['currentSlotPlant'],
     });
-    if (!slot || !slot.currentSlotPlant)
+    if (!slot?.currentSlotPlant)
       throw new NotFoundException('No plant on this slot');
 
-    const p = slot.currentSlotPlant;
-    const care = this.calculateCareNeeds(p.grow_time_seconds);
-    const now = new Date();
-
-    if (p.total_bug_caught >= care.totalBug)
-      throw new BadRequestException('All bugs already caught');
-    if (p.bug_until && p.bug_until > now) {
-      const remain = Math.ceil((p.bug_until.getTime() - now.getTime()) / 1000);
-      throw new BadRequestException(`No bugs to catch yet, wait ${remain}s`);
+    try {
+      const nextBugAt = PlantCareUtils.applyCatchBug(slot.currentSlotPlant);
+      await this.slotPlantRepo.save(slot.currentSlotPlant);
+      return {
+        message: 'Cây đã được bắt hết sâu bọ!',
+        nextBugAt,
+      };
+    } catch (err) {
+      throw new BadRequestException(err.message);
     }
-
-    const nextBugInterval = p.grow_time_seconds / care.totalBug;
-    p.total_bug_caught += 1;
-    p.last_bug_caught_at = now;
-    p.bug_until = new Date(now.getTime() + nextBugInterval * 1000);
-
-    await this.slotPlantRepo.save(p);
-    return { message: 'Bug caught successfully!', nextBugAt: p.bug_until };
   }
 
   async harvestPlant(
     userId: string,
     farmSlotId: string,
-  ): Promise<PlantStatusDto> {
+  ): Promise<SlotsPlantEntity> {
     const slot = await this.farmSlotRepo.findOne({
       where: { id: farmSlotId },
       relations: [
@@ -210,7 +299,7 @@ export class FarmSlotService {
 
     const slotPlant = slot.currentSlotPlant;
     const elapsed = (Date.now() - slotPlant.created_at.getTime()) / 1000;
-    if (elapsed < slotPlant.grow_time_seconds)
+    if (elapsed < slotPlant.grow_time)
       throw new BadRequestException('Plant not ready for harvest yet');
 
     const userWithClan = await this.userRepo.findOne({
@@ -243,125 +332,47 @@ export class FarmSlotService {
       await this.slotPlantRepo.save(slotPlant);
     }
 
-    let warehouseItem = await this.warehouseRepo.findOne({
-      where: { plant_id: slotPlant.plant_id },
+    let warehouseItem = await this.clanWarehouseRepo.findOne({
+      where: { item_id: slotPlant.plant_id },
     });
     if (!warehouseItem) {
-      warehouseItem = this.warehouseRepo.create({
-        plant_id: slotPlant.plant_id,
+      warehouseItem = this.clanWarehouseRepo.create({
+        item_id: slotPlant.plant_id,
         quantity: 0,
       });
     }
     warehouseItem.quantity += 1;
-    await this.warehouseRepo.save(warehouseItem);
+    await this.clanWarehouseRepo.save(warehouseItem);
 
-    return {
-      id: slotPlant.id,
-      plant_id: slotPlant.plant_id,
-      plant_name: slotPlant.plant?.name || '',
-      stage: PlantState.HARVESTABLE,
-      planted_by: slotPlant.planted_by,
-      grow_time: slotPlant.plant.grow_time,
-      need_water: false,
-      has_bug: false,
-      harvest_at: new Date(),
-      created_at: slotPlant.created_at,
-      updated_at: new Date(),
-    };
-  }
-  async getFarmWithSlotsByClan(clan_id: string): Promise<FarmWithSlotsDto> {
-    if (!clan_id) throw new NotFoundException('clan_id is required');
-
-    const farm = await this.farmRepo.findOne({
-      where: { clan_id },
-      relations: [
-        'slots',
-        'slots.currentSlotPlant',
-        'slots.currentSlotPlant.plant',
-        'warehouseSlots',
-      ],
-    });
-
-    if (!farm)
-      throw new NotFoundException(`Farm for clan_id ${clan_id} not found`);
-
-    farm.slots.sort((a, b) => a.slot_index - b.slot_index);
-    const slotsWithStatus = this.mapSlotsWithStatus(farm.slots);
-
-    return {
-      farm_id: farm.id,
-      warehouseSlots: farm.warehouseSlots || [],
-      slots: slotsWithStatus,
-    };
+    return slotPlant;
   }
 
-  async getFarmWithSlotsByFarm(farm_id: string): Promise<FarmWithSlotsDto> {
-    if (!farm_id) throw new NotFoundException('farm_id is required');
-
-    const farm = await this.farmRepo.findOne({
-      where: { id: farm_id },
-      relations: [
-        'slots',
-        'slots.currentSlotPlant',
-        'slots.currentSlotPlant.plant',
-        'warehouseSlots',
-      ],
+  async getSlotWithPlantById(
+    slotId: string,
+  ): Promise<SlotWithStatusDto | null> {
+    const slot = await this.farmSlotRepo.findOne({
+      where: { id: slotId },
+      relations: ['currentSlotPlant', 'currentSlotPlant.plant'],
     });
 
-    if (!farm) throw new NotFoundException(`Farm with id ${farm_id} not found`);
+    if (!slot) return null;
 
-    farm.slots.sort((a, b) => a.slot_index - b.slot_index);
-    const slotsWithStatus = this.mapSlotsWithStatus(farm.slots);
-
-    return {
-      farm_id: farm.id,
-      warehouseSlots: farm.warehouseSlots || [],
-      slots: slotsWithStatus,
-    };
+    const mapped = await this.mapSlotsWithStatus([slot]);
+    return mapped[0] || null;
   }
 
-  private mapSlotsWithStatus(slots: FarmSlotEntity[]) {
-    const now = new Date();
-
-    return slots.map((slot) => {
-      const p = slot.currentSlotPlant;
-      if (!p)
-        return { id: slot.id, slot_index: slot.slot_index, currentPlant: null };
-
-      const stage = this.calculatePlantStage(p.created_at, p.grow_time_seconds);
-      const care = this.calculateCareNeeds(p.grow_time_seconds);
-
-      const needWater =
-        p.total_water_count < care.totalWater &&
-        (!p.need_water_until || p.need_water_until < now);
-
-      const hasBug =
-        p.total_bug_caught < care.totalBug &&
-        (!p.bug_until || p.bug_until < now);
-
-      const growEnd = p.created_at.getTime() + p.grow_time_seconds * 1000;
-      const remain = Math.max(0, Math.ceil((growEnd - now.getTime()) / 1000));
-      const canHarvest = remain <= 0;
-
-      return {
-        id: slot.id,
-        slot_index: slot.slot_index,
-        currentPlant: {
-          id: p.id,
-          plant_id: p.plant_id,
-          plant_name: p.plant?.name || '',
-          planted_by: p.planted_by,
-          grow_time: p.grow_time_seconds,
-          grow_time_remain: remain,
-          stage,
-          harvest_at: p.harvest_at,
-          can_harvest: canHarvest,
-          need_water: needWater,
-          has_bug: hasBug,
-          created_at: p.created_at,
-          updated_at: p.updated_at,
-        },
-      };
+  async updateSlotPlantTimes(
+    slotId: string,
+    updates: Partial<SlotsPlantEntity>,
+  ): Promise<void> {
+    const slot = await this.farmSlotRepo.findOne({
+      where: { id: slotId },
+      relations: ['currentSlotPlant'],
     });
+
+    if (!slot?.currentSlotPlant) return;
+
+    Object.assign(slot.currentSlotPlant, updates, { updated_at: new Date() });
+    await this.slotPlantRepo.save(slot.currentSlotPlant);
   }
 }
