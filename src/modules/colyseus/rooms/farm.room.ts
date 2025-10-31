@@ -1,9 +1,17 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { AuthenticatedClient, FarmSlotState, PlantDataSchema, Player} from '@types';
+import {
+  AuthenticatedClient,
+  FarmSlotState,
+  PlantDataSchema,
+  Player,
+} from '@types';
 import { BaseGameRoom } from './base-game.room';
 import { FarmSlotService } from '@modules/farm-slots/farm-slots.service';
 import { PlantCareUtils } from '@modules/plant/plant-care.service';
-import { PlantOnSlotDto, SlotWithStatusDto} from '@modules/farm-slots/dto/farm-slot.dto';
+import {
+  PlantOnSlotDto,
+  SlotWithStatusDto,
+} from '@modules/farm-slots/dto/farm-slot.dto';
 import { UserEntity } from '@modules/user/entity/user.entity';
 import { Repository } from 'typeorm';
 import { UserService } from '@modules/user/user.service';
@@ -16,10 +24,12 @@ import { PetPlayersService } from '@modules/pet-players/pet-players.service';
 import { PlayerQuestService } from '@modules/player-quest/player-quest.service';
 import { MessageTypes } from '../MessageTypes';
 import { PlantState } from '@enum';
+import { FARM_CONFIG } from '@constant/farm.constant';
 
 @Injectable()
 export class FarmRoom extends BaseGameRoom {
   private farmLoopInterval?: NodeJS.Timeout;
+  private harvestTimers: Map<string, NodeJS.Timeout> = new Map();
   private playerCount = 0;
   constructor(
     userRepository: Repository<UserEntity>,
@@ -90,7 +100,7 @@ export class FarmRoom extends BaseGameRoom {
           can_harvest: false,
           need_water: false,
           has_bug: false,
-          harvest_at: plant.harvest_at.toString(),
+          harvest_at: null,
           created_at: plant.created_at.toISOString(),
           updated_at: plant.updated_at.toISOString(),
         });
@@ -157,7 +167,6 @@ export class FarmRoom extends BaseGameRoom {
           this.state.farmSlotState.set(updatedSlot.id, slotState);
 
           this.broadcast(MessageTypes.ON_SLOT_UPDATE, { slot: slotState });
-
           client.send(MessageTypes.ON_WATER_PLANT, { message: result.message });
         } catch (err: any) {
           this.logger.error(`[WaterPlant] Error: ${err.message}`);
@@ -210,7 +219,6 @@ export class FarmRoom extends BaseGameRoom {
           if (slotState.currentPlant) slotState.currentPlant.has_bug = false;
 
           this.state.farmSlotState.set(updatedSlot.id, slotState);
-
           this.broadcast(MessageTypes.ON_SLOT_UPDATE, { slot: slotState });
           client.send(MessageTypes.ON_CATCH_BUG, { message: result.message });
         } catch (err: any) {
@@ -218,8 +226,148 @@ export class FarmRoom extends BaseGameRoom {
         }
       },
     );
+    this.onMessage(
+      'startHarvest',
+      async (client, payload: { farm_slot_id: string }) => {
+        const Player = this.state.players.get(client.sessionId);
+        console.log('1');
+        if (!Player) return;
+        if (Player.isHarvesting) {
+          client.send(MessageTypes.ON_HARVEST_DENIED, {
+            message: 'Bạn đang thu hoạch, hãy đợi xong!',
+          });
+          return;
+        }
+
+        console.log('2');
+        const slot = this.state.farmSlotState.get(payload.farm_slot_id);
+        if (!slot || !slot.currentPlant) {
+          client.send(MessageTypes.ON_HARVEST_DENIED, {
+            message: 'Không có cây ở ô này!',
+          });
+          return;
+        }
+
+        console.log('3');
+        if (!slot.currentPlant.can_harvest) {
+          client.send(MessageTypes.ON_HARVEST_DENIED, {
+            message: 'Cây chưa sẵn sàng thu hoạch!',
+          });
+          return;
+        }
+
+        console.log('4');
+        if (slot.harvestingBy && slot.harvestingBy !== client.sessionId) {
+          const otherPlayer = this.state.players.get(slot.harvestingBy);
+          client.send(MessageTypes.ON_HARVEST_DENIED, {
+            message: `Ô này đang được thu hoạch bởi ${otherPlayer?.display_name || 'người khác'}!`,
+          });
+          return;
+        }
+        console.log('5');
+        console.log('Player.isHarvesting:', Player.isHarvesting);
+        console.log('Slot:', slot);
+        console.log('Can harvest:', slot?.currentPlant?.can_harvest);
+        console.log('Slot harvestingBy:', slot?.harvestingBy);
+        const now = Date.now();
+        slot.harvestingBy = client.sessionId;
+        slot.harvestEndTime = now + FARM_CONFIG.HARVEST.DELAY_MS;
+
+        const player = this.state.players.get(client.sessionId);
+        const playerName = player?.display_name || 'Ẩn Danh';
+        this.broadcast(MessageTypes.ON_HARVEST_STARTED, {
+          slotId: slot.id,
+          sessionId: client.sessionId,
+          playerName: playerName,
+          endTime: slot.harvestEndTime,
+        });
+
+        const timer = setTimeout(async () => {
+          Player.isHarvesting = true;
+          console.log(
+            `✅ [HarvestFinish] user=${client.sessionId}, slot=${slot.id} (after 10s)`,
+          );
+          await this.finishHarvest(slot.id, client.sessionId);
+        }, FARM_CONFIG.HARVEST.DELAY_MS);
+        this.harvestTimers.set(slot.id, timer);
+      },
+    );
+
+    this.onMessage(
+      'interruptHarvest',
+      async (
+        client,
+        payload: {
+          fromPlayerId: string;
+          toPlayerId: string;
+          farm_slot_id: string;
+        },
+      ) => {
+        try {
+          console.log('[interruptHarvest] payload:', payload);
+
+          const slot = this.state.farmSlotState.get(payload.farm_slot_id);
+          if (!slot?.harvestingBy) {
+            console.log('[interruptHarvest] slot không có ai thu hoạch');
+            return;
+          }
+
+          if (slot.harvestingBy === payload.fromPlayerId) {
+            console.log('[interruptHarvest] không thể phá chính mình');
+            return;
+          }
+
+          const interrupter = this.state.players.get(payload.fromPlayerId);
+          const targetPlayer = this.state.players.get(payload.toPlayerId);
+
+          if (!targetPlayer) {
+            console.log('[interruptHarvest] targetPlayer không tồn tại');
+            return;
+          }
+
+          try {
+            await this.farmSlotsService.incrementHarvestInterrupted(targetPlayer.user_id);
+          } catch (err: any) {
+            console.log('[interruptHarvest] DB error:', err.message);
+            client.send(MessageTypes.ON_HARVEST_INTERRUPTED_FAILED, {
+              message: err.message,
+            });
+            return;
+          }
+
+          clearTimeout(this.harvestTimers.get(slot.id));
+          this.harvestTimers.delete(slot.id);
+
+          slot.harvestingBy = '';
+          slot.harvestEndTime = 0;
+          targetPlayer.isHarvesting = false;
+
+          client.send(MessageTypes.ON_HARVEST_INTERRUPTED, {
+            slotId: slot.id,
+            interruptedPlayer: payload.toPlayerId,
+            interruptedPlayerName: targetPlayer.display_name || 'Ẩn Danh',
+          });
+
+          const targetClient = this.getClientBySessionId(payload.toPlayerId);
+          if (targetClient) {
+            targetClient.send(MessageTypes.ON_HARVEST_INTERRUPTED_BY_OTHER, {
+              slotId: slot.id,
+              interruptedBy: payload.fromPlayerId,
+              interruptedByName: interrupter?.display_name || 'Ẩn Danh',
+            });
+          }
+
+        } catch (err: any) {
+          console.log('[interruptHarvest] unexpected error:', err.message);
+        }
+      },
+    );
 
     this.startFarmSlotLoop();
+  }
+
+  getClientBySessionId(sessionId: string) {
+    return this.clients.find((c) => c.sessionId === sessionId) || null;
   }
 
   async onJoin(client: AuthenticatedClient, options: any, auth: any) {
@@ -294,7 +442,6 @@ export class FarmRoom extends BaseGameRoom {
 
   override onLeave(client: AuthenticatedClient): void {
     this.playerCount--;
-    this.logger.log(`[FarmRoom] Player left (${this.playerCount})`);
     this.state.players.delete(client.sessionId);
     if (this.playerCount <= 0) {
       this.stopFarmSlotLoop();
@@ -374,6 +521,38 @@ export class FarmRoom extends BaseGameRoom {
       clearInterval(this.farmLoopInterval);
       this.farmLoopInterval = undefined;
       this.logger.log(`[FarmRoom] Stop auto farm loop`);
+    }
+  }
+
+  async finishHarvest(slotId: string, sessionId: string) {
+    const Player = this.state.players.get(sessionId);
+    if (!Player) return;
+
+    const slot = this.state.farmSlotState.get(slotId);
+    if (!slot || !slot.currentPlant) return;
+
+    this.harvestTimers.delete(slotId);
+    Player.isHarvesting = false;
+
+    slot.harvestingBy = '';
+    slot.harvestEndTime = 0;
+
+    try {
+      await this.farmSlotsService.harvestPlant(Player.user_id, slotId);
+      const playerName = Player.display_name || 'Ẩn Danh';
+      this.broadcast(MessageTypes.ON_HARVEST_COMPLETE, {
+        slotId,
+        sessionId,
+        playerName,
+      });
+    } catch (err) {
+      this.logger.error(`[finishHarvest] DB update failed: ${err.message}`);
+      const client = this.getClientBySessionId(sessionId);
+      if (client) {
+        client.send(MessageTypes.ON_HARVEST_DENIED, {
+          message: 'Cây chưa sẵn sàng thu hoạch!',
+        });
+      }
     }
   }
 }

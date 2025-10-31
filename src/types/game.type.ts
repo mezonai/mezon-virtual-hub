@@ -14,6 +14,7 @@ export class Player extends Schema {
   @type('number') y: number = 0;
   @type('string') pet_players: string = '';
   @type('boolean') isInBattle: boolean;
+  @type('boolean') isHarvesting: boolean;
 }
 
 export class SkillState extends Schema {
@@ -72,7 +73,10 @@ export class PlantDataSchema extends Schema {
 export class FarmSlotState extends Schema {
   @type('string') id: string = '';
   @type('number') slot_index: number = 0;
-  @type(PlantDataSchema) currentPlant: PlantDataSchema | null;;
+  @type(PlantDataSchema) currentPlant: PlantDataSchema | null;
+  @type('string')  harvestingBy?: string;
+  @type('number') harvestEndTime: number = 0;
+  harvestTimeout?: NodeJS.Timeout;
 }
 
 export interface WithdrawMezonPayload

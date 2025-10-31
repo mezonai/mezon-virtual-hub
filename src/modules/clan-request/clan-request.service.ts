@@ -18,6 +18,7 @@ import {
   PendingRequestQueryDto,
 } from './dto/clan-request.dto';
 import { ClanRequestEntity } from './entity/clan-request.entity';
+import { UserClanStatEntity } from '@modules/user-clan-stat/entity/user-clan-stat.entity';
 
 @Injectable()
 export class ClanRequestService extends BaseService<ClanRequestEntity> {
@@ -27,6 +28,8 @@ export class ClanRequestService extends BaseService<ClanRequestEntity> {
     private readonly clanRequestRepo: Repository<ClanRequestEntity>,
     @InjectRepository(UserEntity)
     private readonly userRepo: Repository<UserEntity>,
+    @InjectRepository(UserClanStatEntity)
+    private readonly userClantStatRepo: Repository<UserClanStatEntity>,
     private readonly eventEmitter: EventEmitter2,
   ) {
     super(clanRequestRepo, ClanRequestEntity.name);
@@ -102,7 +105,18 @@ export class ClanRequestService extends BaseService<ClanRequestEntity> {
           .andWhere('status = :status', { status: ClanRequestStatus.PENDING })
           .execute(),
       ]);
-
+      const maxHarvest = 10; // max mặc định
+        const stat = this.userClantStatRepo.create({
+          user_id: request.user.id,
+          clan_id: clan.id,
+          total_score: 0,
+          weekly_score: 0,
+          harvest_count: maxHarvest,
+          harvest_interrupt_count: maxHarvest,
+          harvest_count_use: maxHarvest,
+          harvest_interrupt_count_use: maxHarvest,
+        });
+        await this.userClantStatRepo.save(stat);
       await this.clanRequestRepo.save(request);
       this.eventEmitter.emit(ClanBroadcastEventType.JOIN_APPROVED, {
         request,

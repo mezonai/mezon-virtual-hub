@@ -26,6 +26,7 @@ import { ClanRequestService } from '@modules/clan-request/clan-request.service';
 import { ClanRequestStatus } from '@enum';
 import { ClanRequestEntity } from '@modules/clan-request/entity/clan-request.entity';
 import { ClanRole } from '@enum';
+import { UserClanStatEntity } from '@modules/user-clan-stat/entity/user-clan-stat.entity';
 
 @Injectable()
 export class ClanService extends BaseService<ClanEntity> {
@@ -37,6 +38,8 @@ export class ClanService extends BaseService<ClanEntity> {
     private readonly clanRequestService: ClanRequestService,
     @InjectRepository(ClanRequestEntity)
     private readonly clanRequestRepository: Repository<ClanRequestEntity>,
+    @InjectRepository(UserClanStatEntity)
+    private readonly userClantStatRepo: Repository<UserClanStatEntity>,
     private manager: EntityManager,
   ) {
     super(clanRepository, ClanEntity.name);
@@ -139,6 +142,8 @@ export class ClanService extends BaseService<ClanEntity> {
       throw new NotFoundException('Clan not found');
     }
 
+    const totalScore = await this.calculateClanScore(clanId);
+    clanWithCount.score = totalScore.totalScore;
     const totalFund =
       clanWithCount.funds?.reduce((sum, fund) => sum + (fund.amount || 0), 0) ||
       0;
@@ -274,9 +279,18 @@ export class ClanService extends BaseService<ClanEntity> {
       );
     }
 
+    const oldClanId = user.clan_id; 
+
     user.clan = null;
     user.clan_role = ClanRole.MEMBER;
     await this.userRepository.update(user.id, { clan: null });
+
+    if (oldClanId) {
+      await this.userClantStatRepo.update(
+        { user_id: user.id, clan_id: oldClanId },
+        { deleted_at: new Date() }
+      );
+    }
 
     return plainToInstance(UserInformationDto, user);
   }
@@ -298,4 +312,22 @@ export class ClanService extends BaseService<ClanEntity> {
       description: clan.description,
     };
   }
+
+  async calculateClanScore(clanId: string) {
+    const totalScoreRaw = await this.userClantStatRepo
+      .createQueryBuilder('stats')
+      .select('SUM(stats.total_score)', 'total_score')
+      .addSelect('SUM(stats.weekly_score)', 'weekly_score')
+      .where('stats.clan_id = :clanId', { clanId })
+      .andWhere('stats.deleted_at IS NULL')
+      .getRawOne();
+
+    const totalScore = parseInt(totalScoreRaw?.total_score ?? '0', 10);
+    const weeklyScore = parseInt(totalScoreRaw?.weekly_score ?? '0', 10);
+
+    await this.clanRepository.update(clanId, { score: totalScore });
+
+    return { totalScore, weeklyScore };
+  }
+
 }

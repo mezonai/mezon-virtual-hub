@@ -1,15 +1,15 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
-import { UserClantScoreService } from './user-clant-score.service';
+import { UserClanStatService } from './user-clan-stat.service';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ClsService } from 'nestjs-cls';
-import { UpdateUserClanScoreDto } from './dto/user-clan-score.dto';
+import { UpdateUserClanStatDto } from './dto/user-clan-stat.dto';
 
 @ApiBearerAuth()
-@ApiTags('UserClantScore')
-@Controller('user-clant-scores')
-export class UserClantScoreController {
+@ApiTags('user-clan-stat')
+@Controller('user-clan-stats')
+export class UserClanStatController {
   constructor(
-    private readonly userClantScoreService: UserClantScoreService,
+    private readonly userClantScoreService: UserClanStatService,
     private readonly clsService: ClsService,
   ) {}
 
@@ -27,14 +27,14 @@ export class UserClantScoreController {
 
   @Patch(':user_id')
   @ApiOperation({ summary: 'Update score record' })
-  update(@Param('user_id') userId: string, @Body() dto: UpdateUserClanScoreDto) {
-    return this.userClantScoreService.update(userId, dto);
+  update(@Param('user_id') userId: string, @Body() dto: UpdateUserClanStatDto) {
+    return this.userClantScoreService.updateScore(userId, dto);
   }
 
   @Delete(':user_id')
   @ApiOperation({ summary: 'Soft delete score record' })
   delete(@Param('user_id') userId: string) {
-    return this.userClantScoreService.delete(userId);
+    return this.userClantScoreService.deleteScore(userId);
   }
 
   @Post('reset-weekly')

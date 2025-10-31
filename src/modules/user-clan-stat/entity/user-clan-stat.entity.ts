@@ -5,12 +5,12 @@ import { Exclude } from 'class-transformer';
 import { IsDate, IsInt, IsUUID } from 'class-validator';
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, DeleteDateColumn, ManyToOne, JoinColumn } from 'typeorm';
 
-@Entity({ name: 'user_clant_scores' })
-export class UserClantScoreEntity {
+@Entity({ name: 'user-clan-stats' })
+export class UserClanStatEntity {
   @PrimaryGeneratedColumn('uuid', { primaryKeyConstraintName: 'PK_user_clant_scores_id' })
   id: string;
 
-   @ApiProperty({
+  @ApiProperty({
     description: 'User ID who owns this score record',
     type: 'string',
     format: 'uuid',
@@ -29,7 +29,7 @@ export class UserClantScoreEntity {
     format: 'uuid',
   })
   @IsUUID()
-  @Column({ type: 'uuid', nullable: true })
+  @Column({ type: 'uuid', nullable: false })
   clan_id: string;
 
   @ManyToOne(() => ClanEntity, { onDelete: 'SET NULL' })
@@ -91,4 +91,36 @@ export class UserClantScoreEntity {
   @Exclude()
   @DeleteDateColumn({ nullable: true })
   deleted_at: Date;
+
+  @ApiProperty({
+    description: 'Number of times the user has harvested plants',
+    type: 'integer',
+    example: 10,
+  })
+  @Column({ type: 'int', default: 0 })
+  harvest_count: number; // number of times the user harvested plants
+
+  @ApiProperty({
+    description: 'Number of times the user has interrupted other players’ harvests',
+    type: 'integer',
+    example: 10,
+  })
+  @Column({ type: 'int', default: 0 })
+  harvest_interrupt_count: number; // number of times the user interrupted harvests
+
+  @ApiProperty({
+    description: 'Number of times the user has harvested plants use',
+    type: 'integer',
+    example: 10,
+  })
+  @Column({ type: 'int', default: 0 })
+  harvest_count_use: number; // number of times the user harvested plants
+
+  @ApiProperty({
+    description: 'Number of times the user has interrupted other players’ harvests use',
+    type: 'integer',
+    example: 10,
+  })
+  @Column({ type: 'int', default: 0 })
+  harvest_interrupt_count_use: number; // number of times the user interrupted harvests
 }

@@ -13,10 +13,11 @@ import { ClanMemberController } from './clan-member.controller';
 import { ClanMemberService } from './clan-member.service';
 import { ClanBroadcastService } from '@modules/clan/events/clan-broadcast.service';
 import { ClanBroadcastEventsListener } from './events/clan-broadcast.listener';
+import { UserClanStatEntity } from '@modules/user-clan-stat/entity/user-clan-stat.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([ClanEntity, UserEntity, ClanRequestEntity]),
+    TypeOrmModule.forFeature([ClanEntity, UserEntity, ClanRequestEntity, UserClanStatEntity]),
     ClsModule,
     JwtModule,
     forwardRef(() => UserModule),

@@ -41,7 +41,7 @@ import { PlantModule } from '@modules/plant/plant.module';
 import { PlantStageModule } from '@modules/plant-stage/plant-stage.module';
 import { ClanWarehouseModule } from '@modules/clan-warehouse/clan-warehouse.module';
 import { SlotsPlantModule } from '@modules/slots-plant/slots-plant.module';
-import { UserClantScoreModule } from '@modules/user-clant-score/user-clant-score.module';
+import { UserClanStatModule } from '@modules/user-clan-stat/user-clan-stat.module';
 
 @Module({
   imports: [
@@ -93,7 +93,7 @@ import { UserClantScoreModule } from '@modules/user-clant-score/user-clant-score
     PlantStageModule,
     ClanWarehouseModule,
     SlotsPlantModule,
-    UserClantScoreModule,
+    UserClanStatModule,
   ],
 })
 export class AppModule {}

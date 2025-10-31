@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsInt, IsOptional, IsUUID } from 'class-validator';
 
-export class CreateUserClanScoreDto {
+export class CreateUserClanStatDto {
   @ApiProperty({ description: 'User ID', format: 'uuid' })
   @IsUUID()
   user_id: string;
@@ -11,7 +11,7 @@ export class CreateUserClanScoreDto {
   clan_id: string;
 }
 
-export class UpdateUserClanScoreDto {
+export class UpdateUserClanStatDto {
   @ApiProperty({ description: 'Total score', example: 100, required: false })
   @IsOptional()
   @IsInt()
