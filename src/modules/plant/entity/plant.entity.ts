@@ -12,7 +12,6 @@ export class PlantEntity {
   id: string;
 
   @ApiProperty({ required: false })
-  @IsOptional()
   @IsString()
   @Column({ type: 'varchar', unique: true, nullable: false })
   name: string | null;

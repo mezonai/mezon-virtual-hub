@@ -10,10 +10,11 @@ import { PlantEntity } from '@modules/plant/entity/plant.entity';
 import { FarmEntity } from '@modules/farm/entity/farm.entity';
 import { ClanWarehouseModule } from '@modules/clan-warehouse/clan-warehouse.module';
 import { UserClanStatEntity } from '@modules/user-clan-stat/entity/user-clan-stat.entity';
+import { UserClanStatService } from '@modules/user-clan-stat/user-clan-stat.service';
 
 @Module({
   imports: [TypeOrmModule.forFeature([FarmSlotEntity, SlotsPlantEntity, ClanWarehouseEntity, PlantEntity, UserEntity, FarmEntity, UserClanStatEntity]), ClanWarehouseModule],
-  providers: [FarmSlotService],
+  providers: [FarmSlotService, UserClanStatService],
   controllers: [FarmSlotsController],
 })
 export class FarmSlotsModule {}

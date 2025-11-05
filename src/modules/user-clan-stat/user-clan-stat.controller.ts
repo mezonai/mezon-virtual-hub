@@ -1,8 +1,9 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
+import { Controller, Get, Param} from '@nestjs/common';
 import { UserClanStatService } from './user-clan-stat.service';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ClsService } from 'nestjs-cls';
-import { UpdateUserClanStatDto } from './dto/user-clan-stat.dto';
+import { UserEntity } from '@modules/user/entity/user.entity';
+import { USER_TOKEN } from '@constant';
 
 @ApiBearerAuth()
 @ApiTags('user-clan-stat')
@@ -10,36 +11,37 @@ import { UpdateUserClanStatDto } from './dto/user-clan-stat.dto';
 export class UserClanStatController {
   constructor(
     private readonly userClantScoreService: UserClanStatService,
-    private readonly clsService: ClsService,
+    private readonly cls: ClsService,
   ) {}
 
-   @Get()
-  @ApiOperation({ summary: 'Get all user clan scores' })
-  findAll() {
-    return this.userClantScoreService.findAll();
+  @Get(':clanId/harvest-counts')
+  @ApiOperation({
+    summary: 'Get current harvest count information',
+  })
+  async getHarvestCounts(
+    @Param('clanId') clanId: string,
+  ) {
+     const user = this.cls.get<UserEntity>(USER_TOKEN);
+    return this.userClantScoreService.getHarvestCounts(user, clanId);
   }
 
-  @Get(':user_id/:clan_id')
-  @ApiOperation({ summary: 'Get score of a user in a clan' })
-  findByUserAndClan(@Param('user_id') userId: string, @Param('clan_id') clanId: string) {
-    return this.userClantScoreService.findByUserAndClan(userId, clanId);
+  @Get('reset-weekly-manual')
+  @ApiOperation({
+    summary: 'Manually reset all players’ weekly scores',
+    description:
+      'Manually resets all players’ `weekly_score` values to 0. Useful for testing or emergency resets instead of waiting for the automatic weekly cron job.',
+  })
+  async resetWeeklyScores() {
+    return this.userClantScoreService.resetWeeklyScores();
   }
 
-  @Patch(':user_id')
-  @ApiOperation({ summary: 'Update score record' })
-  update(@Param('user_id') userId: string, @Body() dto: UpdateUserClanStatDto) {
-    return this.userClantScoreService.updateScore(userId, dto);
-  }
-
-  @Delete(':user_id')
-  @ApiOperation({ summary: 'Soft delete score record' })
-  delete(@Param('user_id') userId: string) {
-    return this.userClantScoreService.deleteScore(userId);
-  }
-
-  @Post('reset-weekly')
-  @ApiOperation({ summary: 'Reset weekly scores for all users' })
-  resetWeekly() {
-    return this.userClantScoreService.resetWeekly();
+  @Get('reset-daily-manual')
+  @ApiOperation({
+    summary: 'Manually reset daily harvest usage counts',
+    description:
+      'Resets `harvest_count_use` and `harvest_interrupt_count_use` to 0 for all users. Intended for manual testing or recovery purposes.',
+  })
+  async resetDailyHarverstCount() {
+    return this.userClantScoreService.resetDailyHarvestCount();
   }
 }

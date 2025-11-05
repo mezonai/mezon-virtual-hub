@@ -7,40 +7,24 @@ export class SeedDataFarm1761275501147 implements MigrationInterface {
     const clans = await queryRunner.query(`
       SELECT id, name FROM clans WHERE farm_id IS NULL;
     `);
-
+    if (!clans.length) {return;}
     for (const clan of clans) {
       const clanId = clan.id;
       const farmName = `${clan.name || 'Unnamed'} Farm`;
+      const result = await queryRunner.query(`
+        INSERT INTO farms (clan_id, name, quantity_slot, created_at, updated_at) VALUES ($1, $2, 60, NOW(), NOW()) RETURNING id;
+      `, [clanId, farmName]);
 
-      const result = await queryRunner.query(
-        `
-        INSERT INTO farms (clan_id, name, quantity_slot, created_at, updated_at)
-        VALUES ($1, $2, 60, NOW(), NOW())
-        RETURNING id;
-        `,
-        [clanId, farmName],
-      );
-
-      const farmId = result[0]?.id;
+      const farmId = Array.isArray(result) && result[0] ? result[0].id : null;
       if (!farmId) continue;
 
-      await queryRunner.query(
-        `
-        UPDATE clans
-        SET farm_id = $1
-        WHERE id = $2;
-        `,
-        [farmId, clanId],
-      );
+      await queryRunner.query(`
+        UPDATE clans SET farm_id = $1 WHERE id = $2;
+      `,[farmId, clanId]);
 
-      await queryRunner.query(
-        `
-        INSERT INTO farm_slots (farm_id, slot_index, created_at, updated_at)
-        SELECT $1, gs.n, NOW(), NOW()
-        FROM generate_series(1, 60) AS gs(n);
-        `,
-        [farmId],
-      );
+      await queryRunner.query(`
+        INSERT INTO farm_slots (farm_id, slot_index, created_at, updated_at) SELECT $1, gs.n, NOW(), NOW() FROM generate_series(1, 60) AS gs(n);
+      `,[farmId]);
     }
   }
 
@@ -50,9 +34,7 @@ export class SeedDataFarm1761275501147 implements MigrationInterface {
     `);
 
     if (!farms.length) return;
-
     const farmIds = farms.map((f: any) => `'${f.id}'`).join(',');
-
     await queryRunner.query(`
       DELETE FROM farm_slots WHERE farm_id IN (${farmIds});
     `);

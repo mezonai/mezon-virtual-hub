@@ -1,8 +1,6 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class AddColumnHarvestAndHarverstInterrupt1761895935678
-  implements MigrationInterface
-{
+export class AddColumnHarvestAndHarverstInterrupt1761895935678 implements MigrationInterface {
   name = 'AddColumnHarvestAndHarverstInterrupt1761895935678';
 
   public async up(queryRunner: QueryRunner): Promise<void> {

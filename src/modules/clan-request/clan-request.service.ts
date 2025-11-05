@@ -19,6 +19,7 @@ import {
 } from './dto/clan-request.dto';
 import { ClanRequestEntity } from './entity/clan-request.entity';
 import { UserClanStatEntity } from '@modules/user-clan-stat/entity/user-clan-stat.entity';
+import { FARM_CONFIG } from '@constant/farm.constant';
 
 @Injectable()
 export class ClanRequestService extends BaseService<ClanRequestEntity> {
@@ -105,18 +106,17 @@ export class ClanRequestService extends BaseService<ClanRequestEntity> {
           .andWhere('status = :status', { status: ClanRequestStatus.PENDING })
           .execute(),
       ]);
-      const maxHarvest = 10; // max mặc định
-        const stat = this.userClantStatRepo.create({
-          user_id: request.user.id,
-          clan_id: clan.id,
-          total_score: 0,
-          weekly_score: 0,
-          harvest_count: maxHarvest,
-          harvest_interrupt_count: maxHarvest,
-          harvest_count_use: maxHarvest,
-          harvest_interrupt_count_use: maxHarvest,
-        });
-        await this.userClantStatRepo.save(stat);
+      const stat = this.userClantStatRepo.create({
+        user_id: request.user.id,
+        clan_id: clan.id,
+        total_score: 0,
+        weekly_score: 0,
+        harvest_count: FARM_CONFIG.HARVEST.MAX_HARVEST,
+        harvest_interrupt_count: FARM_CONFIG.HARVEST.MAX_INTERRUPT,
+        harvest_count_use: 0,
+        harvest_interrupt_count_use: 0,
+      });
+      await this.userClantStatRepo.save(stat);
       await this.clanRequestRepo.save(request);
       this.eventEmitter.emit(ClanBroadcastEventType.JOIN_APPROVED, {
         request,

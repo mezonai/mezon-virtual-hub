@@ -12,7 +12,6 @@ export class SeedDataPlantStage1761277921706 implements MigrationInterface {
     const plants: { id: string; grow_time: number }[] = await queryRunner.query(
       `SELECT id, grow_time FROM plants`,
     );
-
     const defaultStages = [
       {
         stage_name: 'SEED',
@@ -40,41 +39,49 @@ export class SeedDataPlantStage1761277921706 implements MigrationInterface {
       },
     ];
 
+    const values: any[] = [];
+    const placeholders: string[] = [];
+
+    let idx = 0;
     for (const plant of plants) {
       for (const stage of defaultStages) {
-        await queryRunner.query(
-          `
-          INSERT INTO plant_stages (plant_id, stage_name, ratio_start, ratio_end, description, created_at, updated_at)
-          VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
-          ON CONFLICT (plant_id, stage_name)
-          DO UPDATE SET
-            ratio_start = EXCLUDED.ratio_start,
-            ratio_end = EXCLUDED.ratio_end,
-            description = EXCLUDED.description,
-            updated_at = NOW()
-          `,
-          [
-            plant.id,
-            stage.stage_name,
-            stage.ratio_start,
-            stage.ratio_end,
-            stage.description,
-          ],
+        placeholders.push(
+          `($${idx + 1}, $${idx + 2}, $${idx + 3}, $${idx + 4}, $${idx + 5}, NOW(), NOW())`,
         );
+        values.push(
+          plant.id,
+          stage.stage_name,
+          stage.ratio_start,
+          stage.ratio_end,
+          stage.description,
+        );
+        idx += 5;
       }
+    }
+
+    if (values.length) {
+      await queryRunner.query(`
+        INSERT INTO plant_stages (plant_id, stage_name, ratio_start, ratio_end, description, created_at, updated_at)
+        VALUES ${placeholders.join(', ')} ON CONFLICT (plant_id, stage_name)
+        DO UPDATE SET
+          ratio_start = EXCLUDED.ratio_start,
+          ratio_end = EXCLUDED.ratio_end,
+          description = EXCLUDED.description,
+          updated_at = NOW()
+        `,values
+      );
     }
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
     const stageNames = ['SEED', 'SMALL', 'GROWN', 'HARVESTABLE'];
-    await queryRunner.query(
-      `DELETE FROM plant_stages WHERE stage_name = ANY($1)`,
+    await queryRunner.query(`
+      DELETE FROM plant_stages WHERE stage_name = ANY($1)`,
       [stageNames],
     );
 
     await queryRunner.query(`
-      ALTER TABLE plant_stages
-      DROP CONSTRAINT IF EXISTS unique_plant_stage_per_plant;
+      ALTER TABLE plant_stages DROP CONSTRAINT IF EXISTS unique_plant_stage_per_plant;
     `);
   }
 }

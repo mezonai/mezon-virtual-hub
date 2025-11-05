@@ -1,18 +1,10 @@
-import {
-  BadRequestException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { FarmSlotEntity } from './entity/farm-slots.entity';
 import { SlotsPlantEntity } from '@modules/slots-plant/entity/slots-plant.entity';
 import { UserEntity } from '@modules/user/entity/user.entity';
-import {
-  FarmWithSlotsDto,
-  PlantOnSlotDto,
-  SlotWithStatusDto,
-} from './dto/farm-slot.dto';
+import { FarmWithSlotsDto, PlantOnSlotDto, SlotWithStatusDto} from './dto/farm-slot.dto';
 import { PlantEntity } from '@modules/plant/entity/plant.entity';
 import { ClanEntity } from '@modules/clan/entity/clan.entity';
 import { FarmEntity } from '@modules/farm/entity/farm.entity';
@@ -22,6 +14,7 @@ import { CLanWarehouseService } from '@modules/clan-warehouse/clan-warehouse.ser
 import { PlantState } from '@enum';
 import { CLAN_WAREHOUSE, FARM_CONFIG } from '@constant/farm.constant';
 import { UserClanStatEntity as UserClanStatEntity } from '@modules/user-clan-stat/entity/user-clan-stat.entity';
+import { UserClanStatService } from '@modules/user-clan-stat/user-clan-stat.service';
 
 @Injectable()
 export class FarmSlotService {
@@ -41,6 +34,7 @@ export class FarmSlotService {
     private readonly farmRepo: Repository<FarmEntity>,
     @InjectRepository(UserClanStatEntity)
     private readonly userClanStatRepo: Repository<UserClanStatEntity>,
+    private readonly userClanStatService: UserClanStatService,
   ) {}
 
   async getFarmWithSlotsByClan(clan_id: string): Promise<FarmWithSlotsDto> {
@@ -88,6 +82,7 @@ export class FarmSlotService {
       slots: slotsWithStatus,
     };
   }
+
   private async mapSlotsWithStatus(
     slots: FarmSlotEntity[],
   ): Promise<SlotWithStatusDto[]> {
@@ -178,7 +173,10 @@ export class FarmSlotService {
       plant.created_at.getTime() + FARM_CONFIG.PLANT.DEATH_MS,
     );
 
-    if (now >= deathAt && (plant.harvest_count ?? 0) < FARM_CONFIG.PLANT.MAX_HARVEST) {
+    if (
+      now >= deathAt &&
+      (plant.harvest_count ?? 0) < FARM_CONFIG.PLANT.MAX_HARVEST
+    ) {
       slot.current_slot_plant_id = null;
       await this.farmSlotRepo.save(slot);
       await this.slotPlantRepo.softRemove(plant);
@@ -186,15 +184,27 @@ export class FarmSlotService {
     }
     return false;
   }
-
   async plantToSlot(userId: string, dto: PlantOnSlotDto) {
     const slot = await this.farmSlotRepo.findOne({
       where: { id: dto.farm_slot_id },
       relations: ['farm'],
     });
     if (!slot) throw new NotFoundException('Farm slot not found');
-    if (slot.current_slot_plant_id)
-      throw new BadRequestException('Slot already has a planted crop');
+
+    // Nếu slot đã có cây sống, throw
+    if (slot.current_slot_plant_id) {
+      const existingPlant = await this.slotPlantRepo.findOne({
+        where: { id: slot.current_slot_plant_id },
+        withDeleted: true,
+      });
+
+      if (existingPlant && !existingPlant.deleted_at) {
+        throw new BadRequestException('Slot already has a planted crop');
+      } else {
+        slot.current_slot_plant_id = null;
+        await this.farmSlotRepo.save(slot);
+      }
+    }
 
     const plant = await this.plantRepo.findOne({ where: { id: dto.plant_id } });
     if (!plant) throw new NotFoundException('Plant not found');
@@ -204,7 +214,6 @@ export class FarmSlotService {
 
     if (!slot.farm.clan_id)
       throw new BadRequestException('This farm is not assigned to any clan');
-
     if (!user.clan_id || user.clan_id !== slot.farm.clan_id)
       throw new BadRequestException('You are not a member of this clan');
 
@@ -218,21 +227,45 @@ export class FarmSlotService {
     const now = new Date();
     const care = PlantCareUtils.calculateCareNeeds(plant.grow_time);
 
+    // Tính interval cho bug và water
+    const initialBugInterval = PlantCareUtils.getNextCareInterval(
+      plant.grow_time,
+      care.totalBug,
+    );
+    const initialWaterInterval = PlantCareUtils.getNextCareInterval(
+      plant.grow_time,
+      care.totalWater,
+    );
+
+    // Tạo slotPlant mới
     const slotPlant = this.slotPlantRepo.create({
       farm_slot_id: slot.id,
       plant_id: plant.id,
+      plant_name: plant.name as string,
       planted_by: user.id,
       grow_time: plant.grow_time,
       harvest_at: null,
       expected_water_count: care.totalWater,
       expected_bug_count: care.totalBug,
+      total_bug_caught: 0,
+      total_water_count: 0,
       created_at: now,
       updated_at: now,
+      bug_until: new Date(now.getTime() + initialBugInterval * 1000),
+      need_water_until: new Date(now.getTime() + initialWaterInterval * 1000),
     });
 
     const saved = await this.slotPlantRepo.save(slotPlant);
+
     slot.current_slot_plant_id = saved.id;
     await this.farmSlotRepo.save(slot);
+    const need_water = slotPlant.need_water_until
+      ? slotPlant.need_water_until <= new Date()
+      : false;
+
+    const has_bug = slotPlant.bug_until
+      ? slotPlant.bug_until <= new Date()
+      : false;
 
     return {
       message: 'Planted successfully!',
@@ -245,8 +278,8 @@ export class FarmSlotService {
         grow_time_remain: plant.grow_time,
         stage: PlantState.SEED,
         can_harvest: false,
-        need_water: true,
-        has_bug: false,
+        need_water: need_water,
+        has_bug: has_bug,
         created_at: now,
         updated_at: now,
       },
@@ -314,17 +347,46 @@ export class FarmSlotService {
     return mapped[0] || null;
   }
 
+  async getUserHarvestStat(userId: string, clanId?: string) {
+    const stat = await this.userClanStatRepo.findOne({
+      where: {
+        user_id: userId,
+        ...(clanId ? { clan_id: clanId } : {}),
+      },
+    });
+
+    const used = stat?.harvest_count_use ?? 0;
+    const max = stat?.harvest_count ?? FARM_CONFIG.HARVEST.MAX_HARVEST;
+    const remaining = Math.max(max - used, 0);
+
+    return { used, max, remaining };
+  }
+
   async harvestPlant(userId: string, farmSlotId: string) {
     const user = await this.userRepo.findOne({
       where: { id: userId },
       relations: ['clan'],
     });
-    if (!user?.clan)
-      throw new BadRequestException('User must belong to a clan');
+
+    if (!user?.clan) {
+      throw new BadRequestException('Người chơi không có clan');
+    }
 
     const score = await this.userClanStatRepo.findOne({
       where: { user_id: user.id, clan_id: user.clan.id },
     });
+
+    const used = score?.harvest_count_use ?? 0;
+    const max = score?.harvest_count ?? 0;
+    const remaining = Math.max(max - used, 0);
+
+    if (remaining <= 0) {
+      throw new BadRequestException({
+        message: 'Người chơi đả sử dụng hết lượt thu hoạch',
+        remaining: 0,
+        max,
+      });
+    }
 
     if (score && (score.harvest_count_use ?? 0) >= score.harvest_count) {
       throw new BadRequestException('User has reached maximum harvest usage');
@@ -334,43 +396,38 @@ export class FarmSlotService {
       where: { id: farmSlotId },
       relations: ['currentSlotPlant', 'currentSlotPlant.plant', 'farm'],
     });
-    if (!slot?.currentSlotPlant)
+    if (!slot?.currentSlotPlant) {
       throw new NotFoundException('No plant on this slot');
-
-    const slotPlant = slot.currentSlotPlant;
-
-    const maxHarvest =
-      slotPlant.harvest_count_max ?? FARM_CONFIG.PLANT.MAX_HARVEST;
-    if ((slotPlant.harvest_count ?? 0) >= maxHarvest) {
-      throw new BadRequestException(
-        'This plant has reached its maximum harvest count.',
-      );
     }
 
+    const slotPlant = slot.currentSlotPlant;
     const canHarvest = PlantCareUtils.checkCanHarvest(
       slotPlant.created_at,
       slotPlant.grow_time,
     );
-    if (!canHarvest)
+
+    if (!canHarvest) {
       throw new BadRequestException('Plant not ready for harvest');
+    }
 
     slotPlant.harvest_count ??= 0;
     slotPlant.harvest_count += 1;
     slotPlant.harvest_at = new Date();
+    slotPlant.last_harvested_by = user.id;
 
-    // Nếu đạt max, remove cây
-    if (slotPlant.harvest_count >= maxHarvest) {
-      slot.current_slot_plant_id = null;
-      await this.farmSlotRepo.save(slot);
-      await this.slotPlantRepo.softRemove(slotPlant);
-    } else {
-      await this.slotPlantRepo.save(slotPlant);
-    }
-
-    // Cập nhật kho clan (simple)
-    let warehouseItem = await this.clanWarehouseRepo.findOne({
-      where: { clan_id: user.clan.id, item_id: slotPlant.plant_id },
+    await this.slotPlantRepo.update(slotPlant.id, {
+      harvest_at: new Date(),
+      harvest_count: slotPlant.harvest_count,
     });
+
+    let warehouseItem = await this.clanWarehouseRepo.findOne({
+      where: {
+        clan_id: user.clan.id,
+        item_id: slotPlant.plant_id,
+        is_harvested: true,
+      },
+    });
+
     if (!warehouseItem) {
       warehouseItem = this.clanWarehouseRepo.create({
         clan_id: user.clan.id,
@@ -379,34 +436,142 @@ export class FarmSlotService {
         is_harvested: true,
       });
     }
+
     warehouseItem.quantity += 1;
     await this.clanWarehouseRepo.save(warehouseItem);
 
-    if (score) {
-      score.harvest_count_use ??= 0;
-      score.harvest_count_use += 1;
-      await this.userClanStatRepo.save(score);
-    }
+    const { totalWater, totalBug } = PlantCareUtils.calculateCareNeeds(
+      slotPlant.grow_time,
+    );
+    const waterRatio = Math.min(slotPlant.total_water_count / totalWater, 1);
+    const bugRatio = Math.min(slotPlant.total_bug_caught / totalBug, 1);
+    const careRatio = FARM_CONFIG.HARVEST.FORMULA.WATER_WEIGHT * waterRatio + FARM_CONFIG.HARVEST.FORMULA.BUG_WEIGHT * bugRatio;
+    const basePoint = slotPlant.plant?.harvest_point ?? 1;
+    const multiplierRatio = FARM_CONFIG.HARVEST.FORMULA.MIN_MULTIPLIER + FARM_CONFIG.HARVEST.FORMULA.CARE_FACTOR * careRatio;
+    const clanMultiplier = slot.farm?.clan_id === user.clan.id ? FARM_CONFIG.HARVEST.FORMULA.MY_CLAN : FARM_CONFIG.HARVEST.FORMULA.OTHER_CLAN;
+    const finalScore = Math.floor(basePoint * multiplierRatio * clanMultiplier);
+    console.log(
+      `[HARVEST SCORE DEBUG]: Plant=${slotPlant.plant_name}, 
+      Water=${slotPlant.total_water_count}/${totalWater} (${waterRatio}), Bug=${slotPlant.total_bug_caught}/${totalBug} (${bugRatio}), 
+      CareRatio=${careRatio}, BasePoint=${basePoint},Multiplier=${multiplierRatio},ClanMultiplier=${clanMultiplier}, 
+      FinalScore=${Math.floor(basePoint * multiplierRatio * clanMultiplier)}`,
+    );
 
-    return { success: true, message: 'Harvest successful' };
+    await this.userClanStatService.addScore(user.id, user.clan.id, finalScore);
+    slot.current_slot_plant_id = null;
+    await this.farmSlotRepo.save(slot);
+    await this.slotPlantRepo.softRemove(slotPlant);
+    return {
+      success: true,
+      message: 'Harvest successful',
+      remaining: Math.max(max - (used + 1), 0),
+      max,
+    };
   }
 
-  async incrementHarvestInterrupted(userId: string, clanId?: string): Promise<void> {
-    const userClanStat = await this.userClanStatRepo.findOne({
-      where: { user_id: userId, ...(clanId ? { clan_id: clanId } : {}) },
+  async incrementHarvestInterrupted(
+    interrupterId: string,
+    interrupterClanId: string,
+    targetId: string,
+    targetClanId: string,
+  ) {
+    const interrupterStat = await this.userClanStatRepo.findOne({
+      where: {
+        user_id: interrupterId,
+        ...(interrupterClanId ? { clan_id: interrupterClanId } : {}),
+      },
     });
 
-    if (!userClanStat) {
-      throw new NotFoundException('User score record not found');
+    if (!interrupterStat) {
+      throw new NotFoundException('Không tìm thấy người phá');
     }
 
-    if (userClanStat && (userClanStat.harvest_count_use ?? 0) >= userClanStat.harvest_count) {
-      throw new BadRequestException('User has reached maximum harvest usage');
+    interrupterStat.harvest_interrupt_count_use ??= 0;
+    interrupterStat.harvest_interrupt_count ??=
+      FARM_CONFIG.HARVEST.MAX_INTERRUPT;
+
+    if (
+      interrupterStat.harvest_interrupt_count_use >=
+      interrupterStat.harvest_interrupt_count
+    ) {
+      throw new BadRequestException('Người phá đã hết lượt phá thu hoạch!');
     }
 
-    userClanStat.harvest_interrupt_count_use ??= 0;
-    userClanStat.harvest_interrupt_count_use += 1;
+    interrupterStat.harvest_interrupt_count_use += 1;
+    await this.userClanStatRepo.save(interrupterStat);
 
-    await this.userClanStatRepo.save(userClanStat);
+    const interrupterRemaining =
+      interrupterStat.harvest_interrupt_count -
+      interrupterStat.harvest_interrupt_count_use;
+
+    const targetStat = await this.userClanStatRepo.findOne({
+      where: {
+        user_id: targetId,
+        ...(targetClanId ? { clan_id: targetClanId } : {}),
+      },
+    });
+
+    if (!targetStat) {
+      throw new NotFoundException('Không tìm thấy người đang thu hoạch');
+    }
+
+    targetStat.harvest_count_use ??= 0;
+    targetStat.harvest_count ??= FARM_CONFIG.HARVEST.MAX_HARVEST;
+
+    if (targetStat.harvest_count_use >= targetStat.harvest_count) {
+      throw new BadRequestException(
+        'Người thu hoạch bị phá đã hết lượt thu hoạch!',
+      );
+    }
+
+    targetStat.harvest_count_use += 1;
+    await this.userClanStatRepo.save(targetStat);
+
+    const targetRemaining =
+      targetStat.harvest_count - targetStat.harvest_count_use;
+
+    return {
+      interrupter: {
+        used: interrupterStat.harvest_interrupt_count_use,
+        max: interrupterStat.harvest_interrupt_count,
+        remaining: interrupterRemaining,
+      },
+      target: {
+        used: targetStat.harvest_count_use,
+        max: targetStat.harvest_count,
+        remaining: targetRemaining,
+      },
+    };
+  }
+
+  async decreaseHarvestCount(farmSlotId: string) {
+    const slot = await this.farmSlotRepo.findOne({
+      where: { id: farmSlotId },
+      relations: ['currentSlotPlant'],
+    });
+    if (!slot?.currentSlotPlant) return null;
+
+    const slotPlant = slot.currentSlotPlant;
+    slotPlant.harvest_count ??= 0;
+    slotPlant.harvest_count += 1;
+
+    const maxHarvest =
+      slotPlant.harvest_count_max ?? FARM_CONFIG.PLANT.MAX_HARVEST;
+
+    const remaining = Math.max(maxHarvest - slotPlant.harvest_count, 0);
+
+    if (slotPlant.harvest_count >= maxHarvest) {
+      slot.current_slot_plant_id = null;
+      await this.farmSlotRepo.save(slot);
+      await this.slotPlantRepo.softRemove(slotPlant);
+    } else {
+      await this.slotPlantRepo.save(slotPlant);
+    }
+
+    return {
+      used: slotPlant.harvest_count,
+      max: maxHarvest,
+      remaining,
+    };
   }
 }

@@ -1,22 +1,10 @@
+import { FARM_CONFIG } from '@constant/farm.constant';
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
 export class SeedDataPlant1761275702923 implements MigrationInterface {
   name = 'SeedDataPlant1761275702923';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(`
-      ALTER TABLE plants
-      ADD CONSTRAINT unique_plant_name UNIQUE (name);
-    `);
-
-    await queryRunner.query(`
-      ALTER TABLE plants
-      ALTER COLUMN grow_time SET NOT NULL,
-      ALTER COLUMN harvest_point SET NOT NULL,
-      ALTER COLUMN buy_price SET NOT NULL,
-      ALTER COLUMN description SET NOT NULL;
-    `);
-
     const basePlants = [
       {
         name: 'Broccoli',
@@ -71,20 +59,12 @@ export class SeedDataPlant1761275702923 implements MigrationInterface {
     ];
 
     for (const plant of basePlants) {
-      const grow_time_seconds = plant.grow_time_minutes * 60;
-      const harvest_point = Math.round(plant.grow_time_minutes * 1.5);
-      const buy_price = Math.round(plant.grow_time_minutes * 2);
+      const grow_time_seconds = FARM_CONFIG.PLANT.FORMULAS.growTimeSeconds(plant.grow_time_minutes);
+      const harvest_point = FARM_CONFIG.PLANT.FORMULAS.harvestPoint(plant.grow_time_minutes);
+      const buy_price = FARM_CONFIG.PLANT.FORMULAS.buyPrice(plant.grow_time_minutes);
 
-      await queryRunner.query(
-        `
-        INSERT INTO plants (name, grow_time, harvest_point, buy_price, description, created_at, updated_at)
-        VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
-        ON CONFLICT (name) DO UPDATE SET
-          grow_time = EXCLUDED.grow_time,
-          harvest_point = EXCLUDED.harvest_point,
-          buy_price = EXCLUDED.buy_price,
-          description = EXCLUDED.description,
-          updated_at = NOW();
+      await queryRunner.query(`
+        INSERT INTO plants (name, grow_time, harvest_point, buy_price, description, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, NOW(), NOW()) ON CONFLICT (name) DO UPDATE SET grow_time = EXCLUDED.grow_time, harvest_point = EXCLUDED.harvest_point, buy_price = EXCLUDED.buy_price, description = EXCLUDED.description, updated_at = NOW();
         `,
         [
           plant.name,
@@ -92,8 +72,7 @@ export class SeedDataPlant1761275702923 implements MigrationInterface {
           harvest_point,
           buy_price,
           plant.description,
-        ],
-      );
+        ]);
     }
   }
 
@@ -102,19 +81,7 @@ export class SeedDataPlant1761275702923 implements MigrationInterface {
       `ALTER TABLE plants DROP CONSTRAINT IF EXISTS unique_plant_name;`,
     );
 
-    const names = [
-      'Broccoli',
-      'Chilli',
-      'Corn',
-      'Eggplant',
-      'Garlic',
-      'Potato',
-      'Pumpkin',
-      'Strawberry',
-      'Watermelon',
-      'Grape',
-    ];
-
+    const names = ['Broccoli','Chilli','Corn','Eggplant','Garlic','Potato','Pumpkin','Strawberry','Watermelon','Grape'];
     for (const name of names) {
       await queryRunner.query(`DELETE FROM plants WHERE name = $1`, [name]);
     }

@@ -10,7 +10,6 @@ import { PlantEntity } from '@modules/plant/entity/plant.entity';
 import { UserEntity } from '@modules/user/entity/user.entity';
 import { ClanFundType, ClanRole } from '@enum';
 import { ClanFundEntity } from '@modules/clan-fund/entity/clan-fund.entity';
-import { FarmSlotEntity } from '@modules/farm-slots/entity/farm-slots.entity';
 import { BuyPlantDto } from './dto/clan-warehouse.dto';
 
 @Injectable()
@@ -31,7 +30,7 @@ export class CLanWarehouseService {
       throw new BadRequestException('Clan ID not found');
     }
 
-    return this.warehouseRepo.find({
+    const items = await this.warehouseRepo.find({
       where: {
         clan_id: clanId,
         quantity: MoreThan(0),
@@ -39,6 +38,12 @@ export class CLanWarehouseService {
       relations: ['plant'],
       order: { created_at: 'DESC' },
     });
+
+    return {
+      clanId,
+      totalItems: items.length,
+      items,
+    };
   }
 
   async buyItemsForClanFarm(user: UserEntity, dto: BuyPlantDto) {

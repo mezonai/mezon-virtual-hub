@@ -157,25 +157,30 @@ export class ClanFundService {
       qb.andWhere('u.username ILIKE :search', { search: `%${search}%` });
     }
 
-    qb.orderBy(
-      `
-        CASE 
-          WHEN u.clan_role = '${ClanRole.LEADER}' THEN 1
-          WHEN u.clan_role = '${ClanRole.VICE_LEADER}' THEN 2
-          ELSE 3
-        END
-      `,
-      'ASC',
-    ).addOrderBy('total_amount', 'DESC');
+    const rawData = await qb.getRawMany();
+    rawData.sort((a, b) => {
+      const roleOrder = (role: string) =>
+        role === ClanRole.LEADER ? 0 : role === ClanRole.VICE_LEADER ? 1 : 2;
+      const roleDiff = roleOrder(a.clan_role) - roleOrder(b.clan_role);
+      if (roleDiff !== 0) return roleDiff;
+      return (b.total_amount ?? 0) - (a.total_amount ?? 0);
+    });
 
-    qb.skip((page - 1) * limit).take(limit);
+    let currentRank = 1;
+    const dataWithRank = rawData.map((item) => {
+      const amount = Number(item.total_amount ?? 0);
+      const rank = amount > 0 ? currentRank++ : 0;
+      return { ...item, rank };
+    });
 
-    const [data, total] = await Promise.all([qb.getRawMany(), qb.getCount()]);
+    const start = (page - 1) * limit;
+    const end = start + limit;
+    const pagedData = dataWithRank.slice(start, end);
 
-    return new Pageable(data, {
+    return new Pageable(pagedData, {
       size: limit,
       page,
-      total,
+      total: dataWithRank.length,
     });
   }
 }

@@ -1,51 +1,93 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {Injectable, NotFoundException} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { DataSource, IsNull, Repository } from 'typeorm';
 import { UserClanStatEntity } from './entity/user-clan-stat.entity';
-import { CreateUserClanStatDto, UpdateUserClanStatDto } from './dto/user-clan-stat.dto';
+import { UserEntity } from '@modules/user/entity/user.entity';
+import { FARM_CONFIG } from '@constant/farm.constant';
 
 @Injectable()
 export class UserClanStatService {
   constructor(
     @InjectRepository(UserClanStatEntity)
-    private readonly userClantScoreRepo: Repository<UserClanStatEntity>,
+    private readonly userClanStatRepo: Repository<UserClanStatEntity>,
+     private readonly dataSource: DataSource,
   ) {}
 
-  async findAll(): Promise<UserClanStatEntity[]> {
-    return this.userClantScoreRepo.find({ relations: ['user', 'clan'] });
+  async addScore(userId: string, clanId: string, points: number) {
+    let score = await this.userClanStatRepo.findOne({
+      where: { user_id: userId, clan_id: clanId },
+    });
+
+    if (!score) {
+      score = this.userClanStatRepo.create({
+        user_id: userId,
+        clan_id: clanId,
+        total_score: 0,
+        weekly_score: 0,
+        harvest_count: 10,
+        harvest_count_use: 0,
+        harvest_interrupt_count: 10,
+        harvest_interrupt_count_use: 0,
+      });
+    }
+
+    score.total_score = (score.total_score ?? 0) + points;
+    score.weekly_score = (score.weekly_score ?? 0) + points;
+    score.harvest_count_use += 1;
+
+    return await this.userClanStatRepo.save(score);
   }
 
-  async findByUserAndClan(userId: string, clanId: string): Promise<UserClanStatEntity> {
-    const score = await this.userClantScoreRepo.findOne({ where: { user_id: userId, clan_id: clanId }, relations: ['user', 'clan'] });
-    if (!score) throw new NotFoundException('Score record not found');
-    return score;
+  async getHarvestCounts(user: UserEntity, clanId: string) {
+    const record = await this.userClanStatRepo.findOne({
+      where: { user_id: user.id, clan_id: clanId, deleted_at: IsNull() },
+    });
+
+    if (!record) throw new NotFoundException('UserClanStat record not found');
+
+    return {
+      harvest_count: record.harvest_count ?? 0,
+      harvest_count_use: record.harvest_count_use ?? 0,
+      harvest_interrupt_count: record.harvest_interrupt_count ?? 0,
+      harvest_interrupt_count_use: record.harvest_interrupt_count_use ?? 0
+    };
+  }
+ async resetWeeklyScores() {
+    const now = new Date();
+    console.log('[WeeklyResetService] Starting weekly score reset at', now);
+
+    return await this.dataSource.transaction(async (manager) => {
+      const result = await manager
+        .createQueryBuilder()
+        .update(UserClanStatEntity)
+        .set({
+          weekly_score: 0,
+          last_reset_at: now,
+        })
+        .execute();
+
+      console.log(`Weekly scores reset completed at ${now}, affected ${result.affected} users.`);
+      return { message: 'Weekly reset successful', affected: result.affected };
+    });
   }
 
-  async create(dto: CreateUserClanStatDto): Promise<UserClanStatEntity> {
-    const existing = await this.userClantScoreRepo.findOne({ where: { user_id: dto.user_id, clan_id: dto.clan_id } });
-    if (existing) return existing;
+  async resetDailyHarvestCount() {
+    const now = new Date();
+    console.log('[DailyResetService] Starting daily harvest reset at', now);
 
-    const score = this.userClantScoreRepo.create({ ...dto, total_score: 0, weekly_score: 0 });
-    return this.userClantScoreRepo.save(score);
-  }
+    return await this.dataSource.transaction(async (manager) => {
+      const result = await manager
+        .createQueryBuilder()
+        .update(UserClanStatEntity)
+        .set({
+          harvest_count_use: 0,
+          harvest_interrupt_count_use: 0,
+          last_reset_at: now,
+        })
+        .execute();
 
-  async updateScore(id: string, dto: UpdateUserClanStatDto): Promise<UserClanStatEntity> {
-    const score = await this.userClantScoreRepo.findOne({ where: { id } });
-    if (!score) throw new NotFoundException('Score record not found');
-
-    Object.assign(score, dto);
-    return this.userClantScoreRepo.save(score);
-  }
-
-  async deleteScore(id: string): Promise<void> {
-    await this.userClantScoreRepo.softDelete(id);
-  }
-
-  async resetWeekly(): Promise<void> {
-    await this.userClantScoreRepo
-      .createQueryBuilder()
-      .update(UserClanStatEntity)
-      .set({ weekly_score: 0, last_reset_at: () => 'NOW()' })
-      .execute();
+      console.log(`Daily harvest counts reset completed at ${now}, affected ${result.affected} users.`);
+      return { message: 'Daily reset successful', affected: result.affected };
+    });
   }
 }

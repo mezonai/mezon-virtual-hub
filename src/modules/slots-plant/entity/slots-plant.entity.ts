@@ -33,7 +33,7 @@ export class SlotsPlantEntity {
   @ApiProperty({ enum: PlantState, example: PlantState.GROWING })
   @IsEnum(PlantState)
   @Column({
-    type: 'enum',
+    type: 'int',
     enum: PlantState,
     default: PlantState.SEED,
   })

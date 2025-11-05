@@ -35,6 +35,7 @@ export class OfficeRoom extends BaseGameRoom {
         }))) ?? []
     );
     player.isInBattle = false;
+    player.clan_id = userData?.clan?.id ?? '';
     this.state.players.set(client.sessionId, player);
     this.logger.log(
       `Player ${userData?.username} has position ${player.x} ${player.y}`,

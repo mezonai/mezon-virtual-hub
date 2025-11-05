@@ -52,6 +52,7 @@ export enum MessageTypes {
   ON_HARVEST_INTERRUPTED = 'onHarvestInterrupted',
   ON_HARVEST_INTERRUPTED_BY_OTHER = 'onHarvestInterruptedByOther',
   ON_HARVEST_INTERRUPTED_FAILED = 'onHarvestInterruptedFailed',
+  ON_HARVEST_STARTED_ONJOIN = 'onHarvestStartedOnJoin'
   
   
 }

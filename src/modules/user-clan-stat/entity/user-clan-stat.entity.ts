@@ -5,9 +5,9 @@ import { Exclude } from 'class-transformer';
 import { IsDate, IsInt, IsUUID } from 'class-validator';
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, DeleteDateColumn, ManyToOne, JoinColumn } from 'typeorm';
 
-@Entity({ name: 'user-clan-stats' })
+@Entity({ name: 'user_clan_stats' })
 export class UserClanStatEntity {
-  @PrimaryGeneratedColumn('uuid', { primaryKeyConstraintName: 'PK_user_clant_scores_id' })
+  @PrimaryGeneratedColumn('uuid', { primaryKeyConstraintName: 'PK_user_clant_stats_id' })
   id: string;
 
   @ApiProperty({

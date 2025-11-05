@@ -15,6 +15,7 @@ export class Player extends Schema {
   @type('string') pet_players: string = '';
   @type('boolean') isInBattle: boolean;
   @type('boolean') isHarvesting: boolean;
+  @type('string') clan_id: string = '';
 }
 
 export class SkillState extends Schema {
@@ -65,7 +66,7 @@ export class PlantDataSchema extends Schema {
   @type('boolean') can_harvest: boolean;
   @type('boolean') need_water: boolean;
   @type('boolean') has_bug: boolean;
-  @type('string') harvest_at: string;
+  @type('string') harvest_at: string | null;
   @type('string') created_at: string;
   @type('string') updated_at: string;
 }
