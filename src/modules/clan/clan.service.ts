@@ -26,6 +26,7 @@ import { ClanRequestService } from '@modules/clan-request/clan-request.service';
 import { ClanRequestStatus } from '@enum';
 import { ClanRequestEntity } from '@modules/clan-request/entity/clan-request.entity';
 import { ClanRole } from '@enum';
+import { UserClanStatEntity } from '@modules/user-clan-stat/entity/user-clan-stat.entity';
 
 @Injectable()
 export class ClanService extends BaseService<ClanEntity> {
@@ -37,19 +38,15 @@ export class ClanService extends BaseService<ClanEntity> {
     private readonly clanRequestService: ClanRequestService,
     @InjectRepository(ClanRequestEntity)
     private readonly clanRequestRepository: Repository<ClanRequestEntity>,
+    @InjectRepository(UserClanStatEntity)
+    private readonly userClantStatRepo: Repository<UserClanStatEntity>,
     private manager: EntityManager,
   ) {
     super(clanRepository, ClanEntity.name);
   }
 
   async getAllClansWithMemberCount(query: ClansQueryDto) {
-    const {
-      page = 1,
-      limit = 30,
-      sort_by = 'created_at',
-      order = 'DESC',
-      search,
-    } = query;
+    const { page = 1, limit = 30, search } = query;
 
     const qb = this.repository
       .createQueryBuilder('clans')
@@ -61,16 +58,27 @@ export class ClanService extends BaseService<ClanEntity> {
       });
     }
 
-    const [clans, total] = await qb
-      .orderBy(`clans.${sort_by}`, order)
-      .skip((page - 1) * limit)
-      .take(limit)
-      .getManyAndCount();
+    const clans = await qb.getMany();
 
-    return new Pageable(plainToInstance(ClanListDto, clans), {
+    const clansSorted = clans.sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
+
+    let currentRank = 1;
+    const clansWithRank = clansSorted.map((c) => {
+      const rank = c.score > 0 ? currentRank++ : 0;
+      return {
+        ...plainToInstance(ClanListDto, c),
+        rank,
+      };
+    });
+
+    const start = (page - 1) * limit;
+    const end = start + limit;
+    const pagedClans = clansWithRank.slice(start, end);
+
+    return new Pageable(pagedClans, {
       size: limit,
       page,
-      total,
+      total: clansWithRank.length,
     });
   }
 
@@ -139,6 +147,8 @@ export class ClanService extends BaseService<ClanEntity> {
       throw new NotFoundException('Clan not found');
     }
 
+    const totalScore = await this.calculateClanScore(clanId);
+    clanWithCount.score = totalScore.totalScore;
     const totalFund =
       clanWithCount.funds?.reduce((sum, fund) => sum + (fund.amount || 0), 0) ||
       0;
@@ -152,51 +162,80 @@ export class ClanService extends BaseService<ClanEntity> {
       })
       .getMany();
 
-    const leader = users.find(u => u.clan_role === ClanRole.LEADER) || null;
-    const viceLeader = users.find(u => u.clan_role === ClanRole.VICE_LEADER) || null;
+    const leader = users.find((u) => u.clan_role === ClanRole.LEADER) || null;
+    const viceLeader =
+      users.find((u) => u.clan_role === ClanRole.VICE_LEADER) || null;
 
-    clanWithCount['leader'] = leader;
-    clanWithCount['vice_leader'] = viceLeader;
+    // clanWithCount['leader'] = leader;
+    // clanWithCount['vice_leader'] = viceLeader;
+
+    clanWithCount['leader'] = {
+      ...plainToInstance(UserInformationDto, leader),
+      total_score: leader?.scores?.[0]?.total_score ?? 0,
+      weekly_score: leader?.scores?.[0]?.weekly_score ?? 0,
+    };
+
+    clanWithCount['vice_leader'] = {
+      ...plainToInstance(UserInformationDto, viceLeader),
+      total_score: viceLeader?.scores?.[0]?.total_score ?? 0,
+      weekly_score: viceLeader?.scores?.[0]?.weekly_score ?? 0,
+    };
 
     return plainToInstance(ClanInfoResponseDto, clanWithCount);
   }
 
   async getUsersByClanId(clanId: string, query: UsersClanQueryDto) {
-    const {
-      page = 1,
-      limit = 30,
-      search,
-      sort_by = 'username',
-      order = 'DESC',
-    } = query;
+    const { page = 1, limit = 30, search } = query;
 
     const qb = this.userRepository
       .createQueryBuilder('user')
+      .leftJoinAndSelect('user.scores', 'score', 'score.clan_id = :clanId', {
+        clanId,
+      })
       .where('user.clan_id = :clanId', { clanId });
 
     if (search) {
       qb.andWhere('user.username ILIKE :search', { search: `%${search}%` });
     }
 
-    qb.orderBy(
-      `CASE 
-        WHEN user.clan_role = '${ClanRole.LEADER}' THEN 1
-        WHEN user.clan_role = '${ClanRole.VICE_LEADER}' THEN 2
-        ELSE 3 
-      END`,
-      'ASC',
-    );
+    const users = await qb.getMany();
 
-    qb.addOrderBy(`user.${sort_by}`, order);
+    users.sort((a, b) => {
+      const roleOrder = (role: string) =>
+        role === ClanRole.LEADER ? 0 : role === ClanRole.VICE_LEADER ? 1 : 2;
 
-    qb.skip((page - 1) * limit).take(limit);
+      const roleDiff = roleOrder(a.clan_role) - roleOrder(b.clan_role);
+      if (roleDiff !== 0) return roleDiff;
 
-    const [users, total] = await qb.getManyAndCount();
+      const scoreA = a.scores?.[0]?.total_score ?? 0;
+      const scoreB = b.scores?.[0]?.total_score ?? 0;
+      return scoreB - scoreA;
+    });
 
-    return new Pageable(plainToInstance(UserPublicDto, users), {
+    // tính rank chỉ cho score > 0
+    let currentRank = 1;
+    const usersWithRank = users.map((u) => {
+      const score = u.scores?.[0]?.total_score ?? 0;
+      const weekly_score = u.scores?.[0]?.weekly_score ?? 0;
+
+      const rank = score > 0 ? currentRank++ : 0;
+
+      return {
+        ...plainToInstance(UserPublicDto, u),
+        total_score: score,
+        weekly_score: weekly_score,
+        rank,
+      };
+    });
+
+    const start = (page - 1) * limit;
+    const end = start + limit;
+    const pagedUsers = usersWithRank.slice(start, end);
+
+    return new Pageable(pagedUsers, {
       size: limit,
       page,
-      total,
+      total: usersWithRank.length,
     });
   }
 
@@ -252,9 +291,18 @@ export class ClanService extends BaseService<ClanEntity> {
       );
     }
 
+    const oldClanId = user.clan_id;
+
     user.clan = null;
     user.clan_role = ClanRole.MEMBER;
     await this.userRepository.update(user.id, { clan: null });
+
+    if (oldClanId) {
+      await this.userClantStatRepo.update(
+        { user_id: user.id, clan_id: oldClanId },
+        { deleted_at: new Date() },
+      );
+    }
 
     return plainToInstance(UserInformationDto, user);
   }
@@ -275,5 +323,18 @@ export class ClanService extends BaseService<ClanEntity> {
       success: true,
       description: clan.description,
     };
+  }
+
+  async calculateClanScore(clanId: string) {
+    const totalScoreRaw = await this.userClantStatRepo
+      .createQueryBuilder('stats')
+      .withDeleted()
+      .select('SUM(stats.total_score)', 'total_score')
+      .addSelect('SUM(stats.weekly_score)', 'weekly_score')
+      .where('stats.clan_id = :clanId', { clanId })
+      .getRawOne();
+    const totalScore = parseInt(totalScoreRaw?.total_score ?? '0', 10);
+    await this.clanRepository.update(clanId, { score: totalScore });
+    return { totalScore };
   }
 }

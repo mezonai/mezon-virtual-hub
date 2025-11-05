@@ -19,6 +19,7 @@ import {
   ManyToOne,
   OneToMany,
 } from 'typeorm';
+import { UserClanStatEntity } from '@modules/user-clan-stat/entity/user-clan-stat.entity';
 
 @Entity({ name: 'user' })
 @Index('UQ_clan_leader', ['clan_id'], {
@@ -147,4 +148,8 @@ export class UserEntity extends AuditEntity {
   @IsOptional()
   @IsEnum(ClanRole)
   clan_role: ClanRole;
+
+  @ApiProperty({description: 'Score user in clan' })
+  @OneToMany(() => UserClanStatEntity, (score) => score.user)
+  scores: UserClanStatEntity[];
 }

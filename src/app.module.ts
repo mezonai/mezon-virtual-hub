@@ -34,6 +34,14 @@ import { ClsModule } from 'nestjs-cls';
 import { dataSourceOption } from './config/data-source.config';
 import { ClanFundModule } from './modules/clan-fund/clan-fund.module';
 import { ClanRequestModule } from './modules/clan-request/clan-request.module';
+import { ColyseusModule } from '@modules/colyseus/colyseus.module';
+import { FarmModule } from '@modules/farm/farm.module';
+import { FarmSlotsModule } from '@modules/farm-slots/farm-slots.module';
+import { PlantModule } from '@modules/plant/plant.module';
+import { PlantStageModule } from '@modules/plant-stage/plant-stage.module';
+import { ClanWarehouseModule } from '@modules/clan-warehouse/clan-warehouse.module';
+import { SlotsPlantModule } from '@modules/slots-plant/slots-plant.module';
+import { UserClanStatModule } from '@modules/user-clan-stat/user-clan-stat.module';
 
 @Module({
   imports: [
@@ -78,6 +86,14 @@ import { ClanRequestModule } from './modules/clan-request/clan-request.module';
     }),
     ClanFundModule,
     ClanRequestModule,
+    ColyseusModule,
+    FarmModule,
+    FarmSlotsModule,
+    PlantModule,
+    PlantStageModule,
+    ClanWarehouseModule,
+    SlotsPlantModule,
+    UserClanStatModule,
   ],
 })
 export class AppModule {}

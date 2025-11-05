@@ -76,6 +76,10 @@ export enum InventoryType {
   FOOD = 'food',
 }
 
+export enum InventoryClanType {
+  PLANT = 'plant'
+}
+
 export enum AnimalRarity {
   COMMON = 'common',
   RARE = 'rare',
@@ -214,4 +218,12 @@ export enum ClanRequestStatus {
   APPROVED = 'approved',
   REJECTED = 'rejected',
   CANCELLED = 'cancel',
+}
+
+export enum PlantState {
+  NONE = 0,
+  SEED = 1,
+  SMALL = 2,
+  GROWING = 3,
+  HARVESTABLE = 4,
 }

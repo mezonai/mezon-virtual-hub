@@ -8,9 +8,9 @@ import { In, Repository } from 'typeorm';
 import { UserEntity } from '@modules/user/entity/user.entity';
 import { ClanEntity } from '@modules/clan/entity/clan.entity';
 import { ClanRole } from '@enum';
-import { ClanBroadcastService } from '@modules/clan/events/clan-broadcast.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { ClanBroadcastEventType } from '@modules/shared/events/event-types.enum';
+import { UserClanStatEntity } from '@modules/user-clan-stat/entity/user-clan-stat.entity';
 
 @Injectable()
 export class ClanMemberService {
@@ -19,6 +19,8 @@ export class ClanMemberService {
     private readonly userRepository: Repository<UserEntity>,
     @InjectRepository(ClanEntity)
     private readonly clanRepository: Repository<ClanEntity>,
+    @InjectRepository(UserClanStatEntity)
+    private readonly userClantStatRepo: Repository<UserClanStatEntity>,
     private readonly eventEmitter: EventEmitter2,
   ) {}
 
@@ -133,6 +135,10 @@ export class ClanMemberService {
     });
 
     await this.userRepository.save(targets);
+    await this.userClantStatRepo.update(
+      { user_id: In(targetUserIds), clan_id: clanId },
+      { deleted_at: new Date() }, // soft-delete stat cũ
+    );
 
     emitPayloads.forEach(({ target, oldClan }) => {
       this.eventEmitter.emit(ClanBroadcastEventType.MEMBER_KICKED, {

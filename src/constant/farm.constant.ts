@@ -1,0 +1,50 @@
+export const CLAN_WAREHOUSE = {
+  ITEM_TYPE: {
+    SEED: false,
+    HARVESTED: true,
+  },
+  QUANTITY: {
+    USE_ONE_SEED: -1,
+    ADD_ONE_SEED: 1,
+    ADD_ONE_HARVEST: 1,
+  },
+};
+
+export const FARM_CONFIG = {
+  HARVEST: {
+    DELAY_MS: 10000,
+    INTERRUPT_RATE: 0.2,
+    MAX_HARVEST: 10,
+    MAX_INTERRUPT: 10,
+    RESET_HARVEST_HOURS: 24,
+    FORMULA: {
+      MIN_MULTIPLIER: 0.6, // hệ số tối thiểu khi không chăm cây
+      CARE_FACTOR: 0.4, // hệ số cộng thêm theo tỉ lệ chăm sóc
+      WATER_WEIGHT: 0.5, // tỉ trọng nước trong careRatio
+      BUG_WEIGHT: 0.5, // tỉ trọng bọ trong careRatio
+      MY_CLAN: 2, // hệ số thu hoạch clan của bản thân
+      OTHER_CLAN: 1, // hệ số thu hoạch clan của người khác
+      DEFAULT_FACTOR: 1, // hệ số thu hoạch clan của người khác
+    },
+  },
+  PLANT: {
+    MAX_HARVEST: 10,
+    LAST_OFFSET_SECONDS: 180, // 3 phút trước harvest
+    RESET_PLANT_HOURS: 24,
+    get DEATH_MS() {
+      return this.DEATH_HOURS * 60 * 60 * 1000; // convert giờ -> ms
+    },
+    FORMULAS: {
+      growTimeSeconds: (grow_time_minutes: number) => grow_time_minutes * 60,
+      harvestPoint: (grow_time_minutes: number) =>
+        Math.round(grow_time_minutes * 1.5),
+      buyPrice: (grow_time_minutes: number) =>
+        Math.round(grow_time_minutes * 2),
+      isDead: (plantedAt: number, now: number) =>
+        now - plantedAt >= FARM_CONFIG.PLANT.DEATH_MS, // kiểm tra cây đã chết chưa
+    },
+  },
+  FARM: {
+    DEFAULT_SLOT_COUNT: 60, // ✅ số lượng ô đất mặc định
+  }
+};

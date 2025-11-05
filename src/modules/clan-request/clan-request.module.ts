@@ -8,10 +8,11 @@ import { UserEntity } from '@modules/user/entity/user.entity';
 import { ClanEntity } from '@modules/clan/entity/clan.entity';
 import { ClanModule } from '@modules/clan/clan.module';
 import { EventEmitterModule } from '@nestjs/event-emitter';
+import { UserClanStatEntity } from '@modules/user-clan-stat/entity/user-clan-stat.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([ClanRequestEntity, ClanEntity, UserEntity]),
+    TypeOrmModule.forFeature([ClanRequestEntity, ClanEntity, UserEntity, UserClanStatEntity]),
     ClsModule,
     EventEmitterModule.forRoot(),
     forwardRef(() => ClanModule),
