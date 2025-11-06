@@ -14,11 +14,7 @@ import { Logger } from '@libs/logger';
 import { Public, RequireAdmin, RequireClanRoles } from '@libs/decorator';
 import { Body, Delete, Param, Put } from '@nestjs/common';
 import { ClsService } from 'nestjs-cls';
-import {
-  ClansQueryDto,
-  UpdateClanDescriptionDto,
-  UpdateClanDto,
-} from './dto/clan.dto';
+import {ClansQueryDto, SetUserClanRoleDTO, UpdateClanDescriptionDto, UpdateClanDto} from './dto/clan.dto';
 import { ClanService } from './clan.service';
 import { USER_TOKEN } from '@constant';
 import { UserEntity } from '@modules/user/entity/user.entity';
@@ -159,5 +155,17 @@ export class ClanController {
     @Body() dto: UpdateClanDescriptionDto,
   ) {
     return this.clanService.updateClanDescription(clanId, dto);
+  }
+
+  @Post(':clan_id/set-user-role')
+  @RequireAdmin()
+  @ApiOperation({ summary: 'Assign a user to a clan and set role' })
+  @ApiParam({ name: 'clan_id', example: '91bea29f-0e87-42a5-b851-d9d0386ac32f' })
+  async setUserClanAndRole(
+    @Param('clan_id', ParseUUIDPipe) clanId: string,
+    @Body() dto: SetUserClanRoleDTO,
+  ) {
+    const { userId, role } = dto;
+    return await this.clanService.setUserClanAndRole(userId, clanId, role);
   }
 }

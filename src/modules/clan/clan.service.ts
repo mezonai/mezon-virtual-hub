@@ -337,4 +337,68 @@ export class ClanService extends BaseService<ClanEntity> {
     await this.clanRepository.update(clanId, { score: totalScore });
     return { totalScore };
   }
+
+  async setUserClanAndRole(userId: string, clanId: string, role: ClanRole) {
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+    if (!user) throw new NotFoundException(`User not found`);
+
+    const clan = await this.findById(clanId);
+    if (!clan) throw new NotFoundException(`Clan not found`);
+
+    if (user.clan_id && user.clan_id !== clanId) {
+      await this.userRepository.update(userId, {
+        clan_id: null,
+        clan_role: ClanRole.MEMBER,
+      });
+
+      await this.userClantStatRepo.update(
+        { user_id: userId, clan_id: user.clan_id },
+        { deleted_at: new Date() },
+      );
+    }
+
+    if (role === ClanRole.LEADER || role === ClanRole.VICE_LEADER) {
+      const current = await this.userRepository.findOne({
+        where: { clan_id: clanId, clan_role: role },
+      });
+      if (current && current.id !== userId) {
+        await this.userRepository.update(current.id, {
+          clan_role: ClanRole.MEMBER,
+        });
+      }
+    }
+
+    await this.userRepository.update(userId, {
+      clan_id: clanId,
+      clan_role: role,
+    });
+
+    let stat = await this.userClantStatRepo.findOne({
+      where: { user_id: userId, clan_id: clanId },
+    });
+
+    if (!stat) {
+      stat = this.userClantStatRepo.create({
+        user_id: userId,
+        clan_id: clanId,
+        total_score: 0,
+        weekly_score: 0,
+        harvest_count: 10,
+        harvest_count_use: 0,
+        harvest_interrupt_count: 10,
+        harvest_interrupt_count_use: 0,
+        created_at: new Date(),
+      });
+      await this.userClantStatRepo.save(stat);
+    }
+
+    const updatedUser = await this.userRepository.findOne({
+      where: { id: userId },
+    });
+
+    return {
+      success: true,
+      user: plainToInstance(UserInformationDto, updatedUser),
+    };
+  }
 }
