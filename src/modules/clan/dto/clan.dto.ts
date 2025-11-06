@@ -5,6 +5,7 @@ import { Exclude, Expose, Type } from 'class-transformer';
 import {
   IsArray,
   IsBoolean,
+  IsEnum,
   IsNumber,
   IsOptional,
   IsString,
@@ -12,6 +13,7 @@ import {
   MaxLength,
 } from 'class-validator';
 import { ClanEntity } from '../entity/clan.entity';
+import { ClanRole } from '@enum';
 
 export class CreateMapDto {
   readonly name: string;
@@ -84,4 +86,21 @@ export class ClanActivityDto {
   amount?: number;
   time: string;
   createdAt:Date;
+}
+
+export class SetUserClanRoleDTO {
+  @ApiProperty({
+    description: 'ID of the user to assign to the clan',
+    example: '3decccf1-ce4a-4be5-9842-f92024deb09c',
+  })
+  @IsUUID()
+  userId: string;
+
+  @ApiProperty({
+    description: 'Role to assign for the user in the clan',
+    enum: ClanRole,
+    example: ClanRole.LEADER,
+  })
+  @IsEnum(ClanRole)
+  role: ClanRole;
 }
