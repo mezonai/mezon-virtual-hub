@@ -46,7 +46,7 @@ export class SlotsPlantEntity {
   planted_by: string;
 
   @Exclude()
-  @Column({ nullable: true })
+  @Column({ type: 'uuid', nullable: true })
   last_harvested_by?: string;
 
   @ApiProperty()

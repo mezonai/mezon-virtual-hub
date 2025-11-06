@@ -1,7 +1,7 @@
 import { UserPublicDto } from '@modules/user/dto/user.dto';
 import { ApiProperty, ApiPropertyOptional, OmitType } from '@nestjs/swagger';
 import { QueryParamsDto } from '@types';
-import { Expose, Type } from 'class-transformer';
+import { Exclude, Expose, Type } from 'class-transformer';
 import {
   IsArray,
   IsBoolean,
@@ -74,4 +74,14 @@ export class RemoveMembersDto {
   @IsArray()
   @IsUUID('all', { each: true })
   targetUserIds: string[];
+}
+
+export class ClanActivityDto {
+  userName: string; 
+  actionType: string; 
+  itemName?: string; 
+  quantity?: number;
+  amount?: number;
+  time: string;
+  createdAt:Date;
 }

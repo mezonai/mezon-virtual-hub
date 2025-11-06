@@ -418,6 +418,7 @@ export class FarmSlotService {
     await this.slotPlantRepo.update(slotPlant.id, {
       harvest_at: new Date(),
       harvest_count: slotPlant.harvest_count,
+      last_harvested_by: slotPlant.last_harvested_by,
     });
 
     let warehouseItem = await this.clanWarehouseRepo.findOne({
