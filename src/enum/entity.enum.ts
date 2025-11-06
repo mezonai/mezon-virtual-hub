@@ -227,3 +227,11 @@ export enum PlantState {
   GROWING = 3,
   HARVESTABLE = 4,
 }
+
+export enum ClanActivityActionType {
+  HARVEST = 'harvest',
+  PURCHASE = 'purchase',
+  FUND = 'fund',
+  JOIN = 'join',
+  LEAVE = 'leave',
+}
