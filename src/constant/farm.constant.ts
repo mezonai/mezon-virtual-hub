@@ -29,10 +29,9 @@ export const FARM_CONFIG = {
   },
   PLANT: {
     MAX_HARVEST: 10,
-    LAST_OFFSET_SECONDS: 180, // 3 phút trước harvest
     RESET_PLANT_HOURS: 24,
     get DEATH_MS() {
-      return this.DEATH_HOURS * 60 * 60 * 1000; // convert giờ -> ms
+      return this.RESET_PLANT_HOURS * 60 * 60 * 1000; // convert giờ -> ms
     },
     FORMULAS: {
       growTimeSeconds: (grow_time_minutes: number) => grow_time_minutes * 60,
