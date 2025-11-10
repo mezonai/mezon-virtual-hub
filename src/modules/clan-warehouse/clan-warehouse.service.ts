@@ -4,13 +4,13 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { MoreThan, Repository } from 'typeorm';
+import { In, MoreThan, Repository } from 'typeorm';
 import { ClanWarehouseEntity } from './entity/clan-warehouse.entity';
 import { PlantEntity } from '@modules/plant/entity/plant.entity';
 import { UserEntity } from '@modules/user/entity/user.entity';
 import { ClanFundType, ClanRole } from '@enum';
 import { ClanFundEntity } from '@modules/clan-fund/entity/clan-fund.entity';
-import { BuyPlantDto } from './dto/clan-warehouse.dto';
+import { BuyPlantDto, SeedClanWarehouseDto } from './dto/clan-warehouse.dto';
 
 @Injectable()
 export class CLanWarehouseService {
@@ -140,5 +140,43 @@ export class CLanWarehouseService {
     }
 
     return await this.warehouseRepo.save(warehouseItem);
+  }
+
+  async seedClanWarehouse(dto: SeedClanWarehouseDto) {
+    const plants = dto.itemIds?.length
+      ? await this.plantRepo.find({ where: { id: In(dto.itemIds) } })
+      : await this.plantRepo.find();
+
+    const results: ClanWarehouseEntity[] = [];
+
+    for (const plant of plants) {
+      let warehouseItem = await this.warehouseRepo.findOne({
+        where: {
+          clan_id: dto.clanId,
+          item_id: plant.id,
+          is_harvested: false,
+        },
+      });
+
+      if (warehouseItem) {
+        warehouseItem.quantity += dto.defaultQuantity || 5;
+      } else {
+        warehouseItem = this.warehouseRepo.create({
+          clan_id: dto.clanId,
+          item_id: plant.id,
+          quantity: dto.defaultQuantity || 5,
+          is_harvested: false,
+        });
+      }
+
+      const savedItem = await this.warehouseRepo.save(warehouseItem);
+      results.push(savedItem);
+    }
+
+    return {
+      success: true,
+      clanId: dto.clanId,
+      items: results,
+    };
   }
 }
