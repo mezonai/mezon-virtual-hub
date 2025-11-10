@@ -145,9 +145,13 @@ export class UserEntity extends AuditEntity {
     enumName: 'Role',
     example: ClanRole.MEMBER,
   })
+
   @IsOptional()
   @IsEnum(ClanRole)
   clan_role: ClanRole;
+
+  @Column({ type: 'timestamp', nullable: true })
+  time_leave_clan?: Date;
 
   @ApiProperty({description: 'Score user in clan' })
   @OneToMany(() => UserClanStatEntity, (score) => score.user)
