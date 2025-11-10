@@ -16,6 +16,7 @@ import { ILike, Repository } from 'typeorm';
 import {
   ClanRequestListDto,
   PendingRequestQueryDto,
+  RequestToJoinDto,
 } from './dto/clan-request.dto';
 import { ClanRequestEntity } from './entity/clan-request.entity';
 import { UserClanStatEntity } from '@modules/user-clan-stat/entity/user-clan-stat.entity';
@@ -44,13 +45,27 @@ export class ClanRequestService extends BaseService<ClanRequestEntity> {
         status: ClanRequestStatus.PENDING,
       },
     });
-
+    
     if (existingRequest) {
       throw new BadRequestException('Already requested to join this clan');
     }
 
     if (user.clan_id) {
       throw new BadRequestException('You are already in a clan');
+    }
+
+    const now = new Date();
+    if (
+      user.time_leave_clan &&
+      now.getTime() - user.time_leave_clan.getTime() <
+        ClanRequestService.CANCEL_COOLDOWN_MS
+    ) {
+      const canRequestAt = new Date(
+        user.time_leave_clan.getTime() + ClanRequestService.CANCEL_COOLDOWN_MS,
+      );
+      return {
+        canRequestAt: canRequestAt.toISOString(),
+      } as RequestToJoinDto;
     }
 
     const request = this.clanRequestRepo.create({
@@ -66,7 +81,9 @@ export class ClanRequestService extends BaseService<ClanRequestEntity> {
       user,
     });
 
-    return updatedRequest;
+    return {
+      request: updatedRequest,
+    } as RequestToJoinDto;
   }
 
   async approveRequest(
@@ -141,17 +158,6 @@ export class ClanRequestService extends BaseService<ClanRequestEntity> {
 
     if (!request) {
       throw new NotFoundException('No pending join request found');
-    }
-
-    const now = new Date();
-
-    if (
-      now.getTime() - request.created_at.getTime() <
-      ClanRequestService.CANCEL_COOLDOWN_MS
-    ) {
-      const remainingHours =
-        ClanRequestService.CANCEL_COOLDOWN_MS / (60 * 60 * 1000);
-      return remainingHours;
     }
 
     request.status = ClanRequestStatus.CANCELLED;

@@ -273,7 +273,7 @@ export class ClanService extends BaseService<ClanEntity> {
     if (!clan) {
       throw new NotFoundException('Clan not found');
     }
-    await this.clanRequestService.requestToJoin(user, clan);
+    return await this.clanRequestService.requestToJoin(user, clan);
   }
 
   async cancelJoinClan(user: UserEntity, clanId: string) {
@@ -295,7 +295,12 @@ export class ClanService extends BaseService<ClanEntity> {
 
     user.clan = null;
     user.clan_role = ClanRole.MEMBER;
-    await this.userRepository.update(user.id, { clan: null });
+    user.time_leave_clan = new Date();
+    await this.userRepository.update(user.id, { 
+      clan: null,
+      time_leave_clan: user.time_leave_clan,
+      clan_role: ClanRole.MEMBER,
+    });
 
     if (oldClanId) {
       await this.userClantStatRepo.update(

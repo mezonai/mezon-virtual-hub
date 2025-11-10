@@ -88,7 +88,7 @@ export class ClanActivityDto {
   createdAt:Date;
 }
 
-export class SetUserClanRoleDTO {
+export class SetUserClanRoleDto {
   @ApiProperty({
     description: 'ID of the user to assign to the clan',
     example: '3decccf1-ce4a-4be5-9842-f92024deb09c',

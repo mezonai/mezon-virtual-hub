@@ -46,3 +46,9 @@ export class ClanRequestListDto extends OmitType(ClanRequestEntity, [
   @Type(() => UserPublicDto)
   user: UserPublicDto;
 }
+
+export interface RequestToJoinDto {
+  success: boolean;
+  canRequestAt?: string;
+  request?: ClanRequestEntity;
+}
