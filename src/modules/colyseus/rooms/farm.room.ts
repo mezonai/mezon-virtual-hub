@@ -167,7 +167,11 @@ export class FarmRoom extends BaseGameRoom {
           if (slotState.currentPlant) slotState.currentPlant.need_water = false;
           this.state.farmSlotState.set(updatedSlot.id, slotState);
           this.broadcast(MessageTypes.ON_SLOT_UPDATE, { slot: slotState });
-          client.send(MessageTypes.ON_WATER_PLANT, { message: result.message });
+          client.send(MessageTypes.ON_WATER_PLANT, {  
+            slotId: payload.farm_slot_id,
+            sessionId: client.sessionId,
+            message: result.message 
+          });
         } catch (err: any) {
           this.logger.error(`[WaterPlant] Error: ${err.message}`);
         }
@@ -218,7 +222,11 @@ export class FarmRoom extends BaseGameRoom {
           if (slotState.currentPlant) slotState.currentPlant.has_bug = false;
           this.state.farmSlotState.set(updatedSlot.id, slotState);
           this.broadcast(MessageTypes.ON_SLOT_UPDATE, { slot: slotState });
-          client.send(MessageTypes.ON_CATCH_BUG, { message: result.message });
+          client.send(MessageTypes.ON_CATCH_BUG, { 
+            slotId: payload.farm_slot_id,
+            sessionId: client.sessionId,
+            message: result.message 
+          });
         } catch (err: any) {
           this.logger.error(`[CatchBug] Error: ${err.message}`);
         }
@@ -349,6 +357,18 @@ export class FarmRoom extends BaseGameRoom {
         if (slot.harvestingBy !== targetPlayer.id) {
           throw new Error('Slot đã bị ngắt thu hoạch trước đó!');
         }
+
+        const chance = Math.random(); // 0 → 1
+        const successRate = FARM_CONFIG.HARVEST.INTERRUPT_RATE;
+
+        if (chance > successRate) {
+          client.send(MessageTypes.ON_HARVEST_INTERRUPTED_FAILED, {
+            sessionId: fromPlayerId,
+            message: 'Phá thu hoạch thất bại!',
+          });
+          return;
+        }
+
         const result = await this.farmSlotsService.incrementHarvestInterrupted(
           interrupter.user_id,
           interrupter.clan_id,
