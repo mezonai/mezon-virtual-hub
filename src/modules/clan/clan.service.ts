@@ -200,42 +200,44 @@ export class ClanService extends BaseService<ClanEntity> {
 
     const users = await qb.getMany();
 
-    users.sort((a, b) => {
-      const roleOrder = (role: string) =>
-        role === ClanRole.LEADER ? 0 : role === ClanRole.VICE_LEADER ? 1 : 2;
-
-      const roleDiff = roleOrder(a.clan_role) - roleOrder(b.clan_role);
-      if (roleDiff !== 0) return roleDiff;
-
+    const usersSortedByScore = [...users].sort((a, b) => {
       const scoreA = a.scores?.[0]?.total_score ?? 0;
       const scoreB = b.scores?.[0]?.total_score ?? 0;
       return scoreB - scoreA;
     });
 
-    // tính rank chỉ cho score > 0
     let currentRank = 1;
-    const usersWithRank = users.map((u) => {
+    const usersWithRank = usersSortedByScore.map((u) => {
       const score = u.scores?.[0]?.total_score ?? 0;
       const weekly_score = u.scores?.[0]?.weekly_score ?? 0;
-
       const rank = score > 0 ? currentRank++ : 0;
-
       return {
         ...plainToInstance(UserPublicDto, u),
         total_score: score,
-        weekly_score: weekly_score,
+        weekly_score,
         rank,
       };
     });
 
+    const leaders = usersWithRank.filter(
+      (u) =>
+        u.clan_role === ClanRole.LEADER || u.clan_role === ClanRole.VICE_LEADER,
+    );
+    const members = usersWithRank.filter(
+      (u) =>
+        u.clan_role !== ClanRole.LEADER && u.clan_role !== ClanRole.VICE_LEADER,
+    );
+
+    const finalList = [...leaders, ...members];
+
     const start = (page - 1) * limit;
     const end = start + limit;
-    const pagedUsers = usersWithRank.slice(start, end);
+    const pagedUsers = finalList.slice(start, end);
 
     return new Pageable(pagedUsers, {
       size: limit,
       page,
-      total: usersWithRank.length,
+      total: finalList.length,
     });
   }
 
@@ -296,7 +298,7 @@ export class ClanService extends BaseService<ClanEntity> {
     user.clan = null;
     user.clan_role = ClanRole.MEMBER;
     user.time_leave_clan = new Date();
-    await this.userRepository.update(user.id, { 
+    await this.userRepository.update(user.id, {
       clan: null,
       time_leave_clan: user.time_leave_clan,
       clan_role: ClanRole.MEMBER,

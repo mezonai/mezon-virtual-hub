@@ -8,7 +8,8 @@ import { ClanFundTransactionEntity } from '@modules/clan-fund/entity/clan-fund-t
 import { SlotsPlantEntity } from '@modules/slots-plant/entity/slots-plant.entity';
 import { ClanActivityDto, ClansQueryDto } from './dto/clan.dto';
 import { Pageable } from '@types';
-import { ClanActivityActionType } from '@enum';
+import { ClanActivityActionType, ClanRequestStatus } from '@enum';
+import { ClanRequestEntity } from '@modules/clan-request/entity/clan-request.entity';
 
 @Injectable()
 export class ClanActivityService {
@@ -23,9 +24,13 @@ export class ClanActivityService {
     private readonly userRepo: Repository<UserEntity>,
     @InjectRepository(SlotsPlantEntity)
     private readonly slotsPlantRepo: Repository<SlotsPlantEntity>,
+    @InjectRepository(ClanRequestEntity)
+    private readonly clanRequestRepo: Repository<ClanRequestEntity>,
   ) {}
 
-  private formatTime(date: Date): string { return date.toLocaleString('vi-VN', { hour12: false }); }
+  private formatTime(date: Date): string {
+    return date.toLocaleString('vi-VN', { hour12: false });
+  }
 
   async getClanActivity(
     clanId: string,
@@ -34,23 +39,34 @@ export class ClanActivityService {
     const { page = 1, limit = 30 } = query;
     const data: ClanActivityDto[] = [];
 
-    
-    // --- User join/leave ---
+   const clanRequests = await this.clanRequestRepo.find({
+     where: { clan_id: clanId, status: ClanRequestStatus.APPROVED },
+     relations: ['user'],
+     withDeleted: true,
+   });
+
+   for (const request of clanRequests) {
+     const userName = request.user?.display_name || 'Ai đó';
+
+     if (request.processed_at) {
+       data.push({
+         userName,
+         actionType: ClanActivityActionType.JOIN,
+         time: this.formatTime(request.processed_at),
+         createdAt: request.processed_at,
+       });
+     }
+   }
+
+    // --- User leave ---
     const clanStats = await this.userClanStatRepo.find({
       where: { clan_id: clanId },
       relations: ['user'],
+      withDeleted: true,
     });
 
     for (const stat of clanStats) {
-      const userName = stat.user?.display_name || 'Người chơi';
-      if (stat.created_at) {
-        data.push({
-          userName,
-          actionType: ClanActivityActionType.JOIN,
-          time: this.formatTime(stat.created_at),
-          createdAt: stat.created_at,
-        });
-      }
+      const userName = stat.user?.display_name || 'Ai đó';
       if (stat.deleted_at) {
         data.push({
           userName,
@@ -62,32 +78,81 @@ export class ClanActivityService {
     }
 
     // --- Harvested plants ---
-    const harvestedPlants = await this.slotsPlantRepo
-      .createQueryBuilder('sp')
-      .withDeleted()
-      .innerJoin('sp.farmSlot', 'fs')
-      .innerJoin('fs.farm', 'f')
-      .leftJoinAndSelect('sp.plant', 'p')
-      .leftJoinAndSelect('sp.plantedByUser', 'u')
-      .where('f.clan_id = :clanId', { clanId })
-      .orderBy('sp.harvest_at', 'DESC')
-      .getMany();
+    const clanMembers = await this.userRepo.find({
+      where: { clan_id: clanId },
+    });
+    const memberIds = new Set(clanMembers.map((m) => m.id));
+    if (memberIds.size > 0) {
+      const harvestedByVictimClan = await this.slotsPlantRepo
+        .createQueryBuilder('sp')
+        .withDeleted()
+        .innerJoin('sp.farmSlot', 'fs')
+        .innerJoin('fs.farm', 'f')
+        .leftJoinAndSelect('sp.plant', 'p')
+        .leftJoinAndSelect('sp.plantedByUser', 'u')
+        .addSelect(['f.name'])
+        .where('f.clan_id = :clanId', { clanId })
+        .orderBy('sp.harvest_at', 'DESC')
+        .getMany();
 
-    for (const sp of harvestedPlants) {
-      if (!sp.harvest_at) continue;
+      for (const sp of harvestedByVictimClan) {
+        if (!sp.harvest_at) continue;
 
-      const userName =
-        sp.last_harvested_by
-          ? (await this.userRepo.findOne({ where: { id: sp.last_harvested_by } }))?.display_name || 'Người chơi'
-          : 'Thành viên văn phòng';
+        let userName = sp.plantedByUser?.display_name ?? 'Ai đó';
+        let actionType = ClanActivityActionType.HARVEST;
+        let harvesterFarmName = 'nông trại';
+        if (sp.last_harvested_by && !memberIds.has(sp.last_harvested_by)) {
+          const harvester = await this.userRepo.findOne({
+            where: { id: sp.last_harvested_by },
+            relations: ['clan', 'clan.farm'],
+          });
+          userName = harvester?.display_name ?? 'Ai đó';
+          actionType = ClanActivityActionType.HARVEST_INTRUDER;
+          harvesterFarmName = harvester?.clan?.farm?.name ?? 'nông trại';
+        }
 
-      data.push({
-        userName,
-        actionType: ClanActivityActionType.HARVEST,
-        itemName: sp.plant?.name ?? 'vật phẩm',
-        time: this.formatTime(sp.harvest_at),
-        createdAt: sp.harvest_at,
-      });
+        data.push({
+          userName,
+          actionType,
+          itemName: sp.plant?.name ?? 'vật phẩm',
+          time: this.formatTime(sp.harvest_at),
+          createdAt: sp.harvest_at,
+          officeName: harvesterFarmName,
+        });
+      }
+
+      const harvestedByClanMembers = await this.slotsPlantRepo
+        .createQueryBuilder('sp')
+        .withDeleted()
+        .leftJoinAndSelect('sp.plant', 'p')
+        .leftJoinAndSelect('sp.plantedByUser', 'u')
+        .innerJoinAndSelect('sp.farmSlot', 'fs')
+        .innerJoinAndSelect('fs.farm', 'f')
+        .addSelect(['f.name'])
+        .where('sp.last_harvested_by IN (:...memberIds)', {
+          memberIds: Array.from(memberIds),
+        })
+        .andWhere('f.clan_id != :clanId', { clanId })
+        .orderBy('sp.harvest_at', 'DESC')
+        .getMany();
+
+      for (const sp of harvestedByClanMembers) {
+        if (!sp.harvest_at) continue;
+
+        const harvester = await this.userRepo.findOne({
+          where: { id: sp.last_harvested_by },
+        });
+        const userName = harvester?.display_name ?? 'Ai đó';
+
+        data.push({
+          userName,
+          actionType: ClanActivityActionType.HARVESTED_OTHER_FARM,
+          itemName: sp.plant?.name ?? 'vật phẩm',
+          time: this.formatTime(sp.harvest_at),
+          createdAt: sp.harvest_at,
+          officeName: sp.farmSlot?.farm?.name ?? 'nông trại',
+        });
+      }
     }
 
     // --- Warehouse items ---
@@ -98,9 +163,11 @@ export class ClanActivityService {
 
     for (const item of warehouseItems) {
       if (!item.is_harvested) {
-        let userName = 'Giám đốc văn phòng';
+        let userName = 'Văn phòng được tặng';
         if (item.purchased_by) {
-          const user = await this.userRepo.findOne({ where: { id: item.purchased_by } });
+          const user = await this.userRepo.findOne({
+            where: { id: item.purchased_by },
+          });
           if (user) userName = user.display_name || userName;
         }
 
@@ -123,7 +190,7 @@ export class ClanActivityService {
 
     for (const tx of fundTx) {
       data.push({
-        userName: tx.user?.display_name || 'Thành viên văn phòng',
+        userName: tx.user?.display_name || 'Ai đó',
         actionType: ClanActivityActionType.FUND,
         amount: tx.amount,
         time: this.formatTime(tx.created_at),
