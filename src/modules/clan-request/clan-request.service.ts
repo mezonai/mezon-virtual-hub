@@ -176,22 +176,24 @@ export class ClanRequestService extends BaseService<ClanRequestEntity> {
       search,
     } = query;
 
-    const [requests, total] = await this.clanRequestRepo.findAndCount({
-      where: {
-        clan_id: clanId,
+    const qb = this.clanRequestRepo
+      .createQueryBuilder('request')
+      .leftJoinAndSelect('request.user', 'user')
+      .leftJoinAndSelect('request.clan', 'clan')
+      .where('request.clan_id = :clanId', { clanId })
+      .andWhere('request.status = :status', {
         status: ClanRequestStatus.PENDING,
-        ...(search && { username: ILike(`%${search}%`) }),
-      },
-      select: {
-        clan: { name: true },
-      },
-      relations: ['user', 'clan'],
-      take: limit,
-      skip: (page - 1) * limit,
-      order: {
-        [sort_by]: order,
-      },
-    });
+      });
+
+    if (search) {
+      qb.andWhere('user.username ILIKE :search', { search: `%${search}%` });
+    }
+
+    const [requests, total] = await qb
+      .take(limit)
+      .skip((page - 1) * limit)
+      .orderBy(`request.${sort_by}`, order.toUpperCase() as 'ASC' | 'DESC')
+      .getManyAndCount();
 
     return new Pageable(plainToInstance(ClanRequestListDto, requests), {
       size: limit,
