@@ -64,26 +64,24 @@ export class PlantCareUtils {
   }
 
   static checkNeedWater(p: SlotsPlantEntity): boolean {
-    if (!p.need_water_until || this.checkCanHarvest(p.created_at, p.grow_time)) {
+    if (!p.need_water_until || this.checkCanHarvest(p.created_at, p.grow_time))
       return false;
-    }
-
     const { totalWater } = this.calculateCareNeeds(p.grow_time);
     const now = new Date();
-    const needWaterUntil = new Date(p.need_water_until);
-    return p.total_water_count < totalWater && needWaterUntil > now;
+    return (
+      p.total_water_count < (totalWater ?? 0) &&
+      (!p.need_water_until || p.need_water_until < now)
+    );
   }
 
   static checkHasBug(p: SlotsPlantEntity): boolean {
-    if (!p.bug_until || this.checkCanHarvest(p.created_at, p.grow_time)) {
+    if (!p.bug_until || this.checkCanHarvest(p.created_at, p.grow_time))
       return false;
-    }
 
     const totalBug =
       p.expected_bug_count ?? this.calculateCareNeeds(p.grow_time).totalBug;
     const now = new Date();
-    const bugUntil = new Date(p.bug_until);
-    return p.total_bug_caught < totalBug && bugUntil > now;
+    return p.total_bug_caught < totalBug && p.bug_until <= now;
   }
 
   static isFullyCared(currentCount: number, maxCount: number) {
