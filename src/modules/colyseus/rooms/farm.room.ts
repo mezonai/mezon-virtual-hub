@@ -64,6 +64,10 @@ export class FarmRoom extends BaseGameRoom {
       this.roomName.split('-farm')[0],
     );
     farm.slots.forEach((slot) => {
+      if (slot.currentPlant) {
+        PlantCareUtils.updatePlantCareOffline(slot); // slot là FarmSlotState, chứa entity
+      }
+
       const slotState = new FarmSlotState();
       slotState.id = slot.id;
       slotState.slot_index = slot.slot_index;

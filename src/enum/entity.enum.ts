@@ -230,6 +230,8 @@ export enum PlantState {
 
 export enum ClanActivityActionType {
   HARVEST = 'harvest',
+  HARVEST_INTRUDER = 'harvest_intruder',
+  HARVESTED_OTHER_FARM = 'harvest_other_farm',
   PURCHASE = 'purchase',
   FUND = 'fund',
   JOIN = 'join',

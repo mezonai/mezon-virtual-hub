@@ -1,5 +1,5 @@
-import { FARM_CONFIG } from '@constant/farm.constant';
 import { PlantState } from '@enum';
+import { SlotWithStatusDto } from '@modules/farm-slots/dto/farm-slot.dto';
 import { SlotsPlantEntity } from '@modules/slots-plant/entity/slots-plant.entity';
 
 export class PlantCareUtils {
@@ -180,5 +180,36 @@ export class PlantCareUtils {
     }
 
     return { nextBugTime, hasBugUpdated };
+  }
+
+   static updatePlantCareOffline(slot: SlotWithStatusDto) {
+    const now = new Date();
+    const plant = slot.currentPlant;
+    if (!plant) return;
+
+    const { totalWater, totalBug } = PlantCareUtils.calculateCareNeeds(
+      plant.grow_time,
+    );
+
+    const waterInterval = plant.grow_time / (totalWater + 1);
+    const bugInterval = plant.grow_time / (totalBug + 1);
+
+    const nextWaterIndex = plant.total_water_count + 1;
+    plant.need_water_until =
+      nextWaterIndex > totalWater
+        ? null
+        : new Date(
+            new Date(plant.created_at).getTime() +
+              waterInterval * 1000 * nextWaterIndex,
+          );
+
+    const nextBugIndex = plant.total_bug_caught + 1;
+    plant.bug_until =
+      nextBugIndex > totalBug
+        ? null
+        : new Date(
+            new Date(plant.created_at).getTime() +
+              bugInterval * 1000 * nextBugIndex,
+          );
   }
 }

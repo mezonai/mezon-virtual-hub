@@ -86,6 +86,7 @@ export class ClanActivityDto {
   amount?: number;
   time: string;
   createdAt:Date;
+  officeName?: string; 
 }
 
 export class SetUserClanRoleDto {
