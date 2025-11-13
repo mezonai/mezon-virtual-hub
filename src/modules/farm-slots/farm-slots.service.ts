@@ -138,12 +138,17 @@ export class FarmSlotService {
           p.bug_until?.getTime() !== nextBugTime?.getTime() ||
           p.stage !== stage;
 
+        console.log("needWater: ", needWater);
         if (shouldSave) {
           p.stage = stage;
           p.need_water_until = nextWaterTime ?? null;
           p.bug_until = nextBugTime ?? null;
-          await this.slotPlantRepo.save(p);
         }
+        if (canHarvest) {
+          p.need_water_until = null;
+          p.bug_until = null;
+        }
+        await this.slotPlantRepo.save(p);
 
         return {
           id: slot.id,

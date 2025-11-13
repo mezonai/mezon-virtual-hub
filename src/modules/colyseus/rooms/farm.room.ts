@@ -31,6 +31,8 @@ export class FarmRoom extends BaseGameRoom {
   private farmLoopInterval?: NodeJS.Timeout;
   private harvestTimers: Map<string, NodeJS.Timeout> = new Map();
   private interruptLocks = new Map<string, boolean>(); // khóa theo farm_slot_id
+  private slotLocks = new Map<string, boolean>();
+
   private playerCount = 0;
   constructor(
     userRepository: Repository<UserEntity>,
@@ -64,37 +66,43 @@ export class FarmRoom extends BaseGameRoom {
       this.roomName.split('-farm')[0],
     );
     farm.slots.forEach((slot) => {
-      if (slot.currentPlant) {
-        PlantCareUtils.updatePlantCareOffline(slot); // slot là FarmSlotState, chứa entity
-      }
-
       const slotState = new FarmSlotState();
       slotState.id = slot.id;
       slotState.slot_index = slot.slot_index;
       slotState.currentPlant =
         this.mapSlotEntityToPlantSchema(slot) || new PlantDataSchema();
       this.state.farmSlotState.set(slot.id, slotState);
+      if (slotState.currentPlant) {
+        this.schedulePlant(slot.id, slotState.currentPlant);
+      }
     });
 
     this.onMessage('plantToSlot', async (client, dto: PlantOnSlotDto) => {
+      const slotId = dto.farm_slot_id;
+
+      if (this.slotLocks.get(slotId)) {
+        client.send(MessageTypes.ON_PLANT_TO_PLANT_FAILED, {
+          sessionId: client.sessionId,
+          message: 'Ô này đang được trồng bởi người khác!',
+        });
+        return;
+      }
+      this.slotLocks.set(slotId, true);
+
       try {
         const player = this.state.players.get(client.sessionId);
         const user = player
           ? await this.userRepository.findOne({ where: { id: player.user_id } })
           : null;
 
-        if (!user) {
-          throw new Error('User not found');
-        }
-        const userId = user.id;
-        const result = await this.farmSlotsService.plantToSlot(userId, dto);
-        const plant = result.currentPlant;
-        if (!plant) {
-          throw new Error('Plant data missing from DB result');
-        }
+        if (!user) throw new Error('User not found');
 
-        let slotState =
-          this.state.farmSlotState.get(dto.farm_slot_id) || new FarmSlotState();
+        const result = await this.farmSlotsService.plantToSlot(user.id, dto);
+        const plant = result.currentPlant;
+        if (!plant) throw new Error('Plant data missing');
+
+        const slotState =
+          this.state.farmSlotState.get(slotId) || new FarmSlotState();
         slotState.currentPlant = Object.assign(new PlantDataSchema(), {
           id: plant.id,
           plant_id: plant.plant_id,
@@ -114,16 +122,32 @@ export class FarmRoom extends BaseGameRoom {
           updated_at: plant.updated_at.toISOString(),
         });
 
-        this.state.farmSlotState.set(dto.farm_slot_id, slotState);
+        this.state.farmSlotState.set(slotId, slotState);
+        if (slotState.currentPlant) {
+          this.schedulePlant(slotId, slotState.currentPlant);
+        }
         this.broadcast(MessageTypes.ON_SLOT_UPDATE, { slot: slotState });
-      } catch (err) {
+      } catch (err: any) {
         this.logger.error(`[PlantToSlot] Error: ${err.message}`);
+      } finally {
+        this.slotLocks.delete(slotId);
       }
     });
 
     this.onMessage(
       'waterPlant',
       async (client, payload: { farm_slot_id: string }) => {
+        const slotId = payload.farm_slot_id;
+
+        if (this.slotLocks.get(slotId)) {
+          client.send(MessageTypes.ON_WATER_PLANT_FAILED, {
+            sessionId: client.sessionId,
+            message: 'Ô này đang được tưới nước bởi người khác!',
+          });
+          return;
+        }
+
+        this.slotLocks.set(slotId, true);
         try {
           const player = this.state.players.get(client.sessionId);
           if (!player) throw new Error('Player not found in room');
@@ -171,13 +195,15 @@ export class FarmRoom extends BaseGameRoom {
           if (slotState.currentPlant) slotState.currentPlant.need_water = false;
           this.state.farmSlotState.set(updatedSlot.id, slotState);
           this.broadcast(MessageTypes.ON_SLOT_UPDATE, { slot: slotState });
-          client.send(MessageTypes.ON_WATER_PLANT, {  
+          client.send(MessageTypes.ON_WATER_PLANT, {
             slotId: payload.farm_slot_id,
             sessionId: client.sessionId,
-            message: result.message 
+            message: result.message,
           });
         } catch (err: any) {
           this.logger.error(`[WaterPlant] Error: ${err.message}`);
+        } finally {
+          this.slotLocks.delete(slotId);
         }
       },
     );
@@ -185,6 +211,17 @@ export class FarmRoom extends BaseGameRoom {
     this.onMessage(
       'catchBug',
       async (client, payload: { farm_slot_id: string }) => {
+        const slotId = payload.farm_slot_id;
+
+        if (this.slotLocks.get(slotId)) {
+          client.send(MessageTypes.ON_CATCH_BUG_FAILED, {
+            sessionId: client.sessionId,
+            message: 'Ô này đang được bắt bọ bởi người khác!',
+          });
+          return;
+        }
+
+        this.slotLocks.set(slotId, true);
         try {
           const player = this.state.players.get(client.sessionId);
           if (!player) throw new Error('Player not found in room');
@@ -226,13 +263,15 @@ export class FarmRoom extends BaseGameRoom {
           if (slotState.currentPlant) slotState.currentPlant.has_bug = false;
           this.state.farmSlotState.set(updatedSlot.id, slotState);
           this.broadcast(MessageTypes.ON_SLOT_UPDATE, { slot: slotState });
-          client.send(MessageTypes.ON_CATCH_BUG, { 
+          client.send(MessageTypes.ON_CATCH_BUG, {
             slotId: payload.farm_slot_id,
             sessionId: client.sessionId,
-            message: result.message 
+            message: result.message,
           });
         } catch (err: any) {
           this.logger.error(`[CatchBug] Error: ${err.message}`);
+        } finally {
+          this.slotLocks.delete(slotId);
         }
       },
     );
@@ -419,8 +458,6 @@ export class FarmRoom extends BaseGameRoom {
         this.interruptLocks.delete(farm_slot_id);
       }
     });
-
-    this.startFarmSlotLoop();
   }
 
   getClientBySessionId(sessionId: string) {
@@ -478,10 +515,11 @@ export class FarmRoom extends BaseGameRoom {
             growTime,
           );
         } else {
-          slot.currentPlant.grow_time_remain = 0; // hoặc null
+          slot.currentPlant.grow_time_remain = 0;
           slot.currentPlant.stage = PlantState.SEED;
           slot.currentPlant.can_harvest = false;
         }
+        this.schedulePlant(slot.id, slot.currentPlant);
       }
       return slot;
     });
@@ -502,7 +540,9 @@ export class FarmRoom extends BaseGameRoom {
         endTime: slot.harvestEndTime,
       }));
     if (harvestingSlots.length > 0) {
-      client.send(MessageTypes.ON_HARVEST_STARTED_ONJOIN, { slots: harvestingSlots });
+      client.send(MessageTypes.ON_HARVEST_STARTED_ONJOIN, {
+        slots: harvestingSlots,
+      });
     }
   }
 
@@ -549,66 +589,6 @@ export class FarmRoom extends BaseGameRoom {
   override onDispose() {
     this.stopFarmSlotLoop();
     super.onDispose();
-  }
-
-  private startFarmSlotLoop() {
-    if (this.farmLoopInterval) clearInterval(this.farmLoopInterval);
-
-    this.farmLoopInterval = setInterval(async () => {
-      try {
-        const farmId = this.roomName.split('-farm')[0];
-        const farm = await this.farmSlotsService.getFarmWithSlotsByClan(farmId);
-        const changedSlots: FarmSlotState[] = [];
-
-        for (const slot of farm.slots) {
-          if (!slot.currentPlant) continue;
-
-          const newStage = PlantCareUtils.calculatePlantStage(
-            slot.currentPlant.created_at,
-            slot.currentPlant.grow_time,
-          );
-          const newRemain = PlantCareUtils.calculateGrowRemain(
-            slot.currentPlant.created_at,
-            slot.currentPlant.grow_time,
-          );
-          const newCanHarvest = PlantCareUtils.checkCanHarvest(
-            slot.currentPlant.created_at,
-            slot.currentPlant.grow_time,
-          );
-          const newNeedWater = PlantCareUtils.checkNeedWater(slot.currentPlant);
-          const newHasBug = PlantCareUtils.checkHasBug(slot.currentPlant);
-
-          const currentSlotState = this.state.farmSlotState.get(slot.id);
-          if (!currentSlotState || !currentSlotState.currentPlant) continue;
-
-          const currentPlant = currentSlotState.currentPlant;
-
-          if (
-            currentPlant.stage !== newStage ||
-            currentPlant.can_harvest !== newCanHarvest ||
-            currentPlant.need_water !== newNeedWater ||
-            currentPlant.has_bug !== newHasBug
-          ) {
-            currentPlant.stage = newStage;
-            currentPlant.grow_time_remain = newRemain;
-            currentPlant.can_harvest = newCanHarvest;
-            currentPlant.need_water = newNeedWater;
-            currentPlant.has_bug = newHasBug;
-
-            this.state.farmSlotState.set(slot.id, currentSlotState);
-            changedSlots.push(currentSlotState);
-          }
-        }
-
-        if (changedSlots.length > 0) {
-          this.broadcast(MessageTypes.ON_SLOT_UPDATE_RT, {
-            slots: changedSlots,
-          });
-        }
-      } catch (err) {
-        this.logger.error(`[FarmLoop] Error: ${err.message}`);
-      }
-    }, 10000);
   }
 
   private stopFarmSlotLoop() {
@@ -659,5 +639,139 @@ export class FarmRoom extends BaseGameRoom {
         });
       }
     }
+  }
+
+  private schedulePlant(slotId: string, plant: PlantDataSchema) {
+    const growTimeSeconds = Number(plant.grow_time);
+    if (isNaN(growTimeSeconds)) return;
+
+    const { totalWater, totalBug } =
+      PlantCareUtils.calculateCareNeeds(growTimeSeconds);
+
+    const waterInterval = PlantCareUtils.getNextCareInterval(
+      growTimeSeconds,
+      totalWater,
+    );
+    const bugInterval = PlantCareUtils.getNextCareInterval(
+      growTimeSeconds,
+      totalBug,
+    );
+
+    // --- Tưới nước ---
+    this.schedulePlantWaterPlant(totalWater, waterInterval, slotId, plant);
+
+    // --- Xuất hiện sâu ---
+    this.scheduleCatchBugPlant(totalBug, bugInterval, slotId, plant);
+
+    // --- Thu hoạch ---
+    this.sheduleHarverst(growTimeSeconds, slotId, plant);
+
+    // --- Tự động cập nhật stage theo growTime ---
+    this.sheduleStage(growTimeSeconds, slotId, plant);
+  }
+
+  schedulePlantWaterPlant(
+    totalWater: number,
+    waterInterval,
+    slotId: string,
+    plant: PlantDataSchema,
+  ) {
+    for (let i = 0; i < totalWater; i++) {
+      const waterTime = new Date(
+        new Date(plant.created_at).getTime() + (i + 1) * waterInterval * 1000,
+      );
+      const delay = waterTime.getTime() - Date.now();
+      if (delay <= 0) continue;
+
+      this.setSimulationInterval(() => {
+        const slotState = this.state.farmSlotState.get(slotId);
+        if (!slotState?.currentPlant) return;
+
+        slotState.currentPlant.need_water = true;
+        this.state.farmSlotState.set(slotId, slotState);
+        this.broadcast(MessageTypes.ON_SLOT_UPDATE_RT, { slot: slotState });
+        console.log('Tưới nước ', { slot: slotState });
+      }, delay);
+    }
+  }
+  scheduleCatchBugPlant(
+    totalBug: number,
+    bugInterval,
+    slotId: string,
+    plant: PlantDataSchema,
+  ) {
+    for (let i = 0; i < totalBug; i++) {
+      const bugTime = new Date(
+        new Date(plant.created_at).getTime() + (i + 1) * bugInterval * 1000,
+      );
+      const delay = bugTime.getTime() - Date.now();
+      if (delay <= 0) continue;
+
+      this.setSimulationInterval(() => {
+        const slotState = this.state.farmSlotState.get(slotId);
+        if (!slotState?.currentPlant) return;
+
+        slotState.currentPlant.has_bug = true;
+        this.state.farmSlotState.set(slotId, slotState);
+        this.broadcast(MessageTypes.ON_SLOT_UPDATE_RT, { slot: slotState });
+        console.log('Xuất hiện sâu ', { slot: slotState });
+      }, delay);
+    }
+  }
+
+  sheduleHarverst(
+    growTimeSeconds: number,
+    slotId: string,
+    plant: PlantDataSchema,
+  ) {
+    const harvestTime = new Date(
+      new Date(plant.created_at).getTime() + growTimeSeconds * 1000,
+    );
+    const harvestDelay = harvestTime.getTime() - Date.now();
+
+    if (harvestDelay > 0) {
+      this.setSimulationInterval(() => {
+        const slotState = this.state.farmSlotState.get(slotId);
+        if (!slotState?.currentPlant) return;
+
+        slotState.currentPlant.stage = PlantState.HARVESTABLE;
+        slotState.currentPlant.can_harvest = true;
+        slotState.currentPlant.need_water = false;
+        slotState.currentPlant.has_bug = false;
+
+        this.state.farmSlotState.set(slotId, slotState);
+        this.broadcast(MessageTypes.ON_SLOT_UPDATE_RT, { slot: slotState });
+        console.log('Thu hoạch ', { slot: slotState });
+      }, harvestDelay);
+    }
+  }
+
+  sheduleStage(
+    growTimeSeconds: number,
+    slotId: string,
+    plant: PlantDataSchema,
+  ) {
+    const stageIntervals = [
+      { ratio: 0.3, stage: PlantState.SMALL },
+      { ratio: 0.8, stage: PlantState.GROWING },
+    ];
+
+    stageIntervals.forEach(({ ratio, stage }) => {
+      const stageTime = new Date(
+        new Date(plant.created_at).getTime() + growTimeSeconds * ratio * 1000,
+      );
+      const delay = stageTime.getTime() - Date.now();
+      if (delay <= 0) return;
+
+      this.setSimulationInterval(() => {
+        const slotState = this.state.farmSlotState.get(slotId);
+        if (!slotState?.currentPlant) return;
+
+        slotState.currentPlant.stage = stage;
+        this.state.farmSlotState.set(slotId, slotState);
+        this.broadcast(MessageTypes.ON_SLOT_UPDATE_RT, { slot: slotState });
+        console.log('Tự động cập nhật stage ', { slot: slotState });
+      }, delay);
+    });
   }
 }
