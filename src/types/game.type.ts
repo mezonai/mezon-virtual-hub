@@ -74,10 +74,9 @@ export class PlantDataSchema extends Schema {
 export class FarmSlotState extends Schema {
   @type('string') id: string = '';
   @type('number') slot_index: number = 0;
-  @type(PlantDataSchema) currentPlant: PlantDataSchema | null;
+  @type(PlantDataSchema) currentPlant?: PlantDataSchema | null;
   @type('string')  harvestingBy?: string;
   @type('number') harvestEndTime: number = 0;
-  harvestTimeout?: NodeJS.Timeout;
 }
 
 export interface WithdrawMezonPayload
