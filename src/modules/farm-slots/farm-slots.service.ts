@@ -301,6 +301,10 @@ export class FarmSlotService {
       throw new NotFoundException(`Farm slot ${farmSlotId} not found`);
     }
 
+    if (slot.farm.clan_id !== (await this.getUserClanId(userId))) {
+      throw new NotFoundException('Bạn không thể tưới nước ở ô này vì không thuộc farm của clan bạn.');
+    }
+
     if (!slot.currentSlotPlant) {
       throw new NotFoundException(`No plant found on slot ${farmSlotId}`);
     }
@@ -326,6 +330,10 @@ export class FarmSlotService {
     if (!slot?.currentSlotPlant)
       throw new NotFoundException('No plant on this slot');
 
+    if (slot.farm.clan_id !== (await this.getUserClanId(userId))) {
+      throw new NotFoundException('Bạn không thể bắt sâu bọ ở ô này vì không thuộc farm của clan bạn.' );
+    }
+
     try {
       const nextBugAt = PlantCareUtils.applyCatchBug(slot.currentSlotPlant);
       await this.slotPlantRepo.save(slot.currentSlotPlant);
@@ -336,6 +344,14 @@ export class FarmSlotService {
     } catch (err) {
       throw new BadRequestException(err.message);
     }
+  }
+
+  private async getUserClanId(userId: string) {
+    const user = await this.userRepo.findOne({
+      where: { id: userId },
+      relations: ['clan'],
+    });
+    return user?.clan?.id ?? null;
   }
 
   async getSlotWithPlantById(
