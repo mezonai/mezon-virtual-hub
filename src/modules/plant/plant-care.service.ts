@@ -1,5 +1,4 @@
 import { PlantState } from '@enum';
-import { SlotWithStatusDto } from '@modules/farm-slots/dto/farm-slot.dto';
 import { SlotsPlantEntity } from '@modules/slots-plant/entity/slots-plant.entity';
 
 export class PlantCareUtils {
@@ -64,29 +63,28 @@ export class PlantCareUtils {
   }
 
   static checkNeedWater(p: SlotsPlantEntity): boolean {
-    if (!p.need_water_until || this.checkCanHarvest(p.created_at, p.grow_time))
-      return false;
+    if (this.checkCanHarvest(p.created_at, p.grow_time)) return false;
     const { totalWater } = this.calculateCareNeeds(p.grow_time);
+    const { nextWaterTime } = this.getNextWaterTime(p);
     const now = new Date();
-    return (
-      p.total_water_count < (totalWater ?? 0) &&
-      (!p.need_water_until || p.need_water_until < now)
-    );
+
+    return p.total_water_count < totalWater &&
+      nextWaterTime &&
+      now >= nextWaterTime
+      ? true
+      : false;
   }
 
   static checkHasBug(p: SlotsPlantEntity): boolean {
-    if (!p.bug_until || this.checkCanHarvest(p.created_at, p.grow_time))
-      return false;
-
-    const totalBug =
-      p.expected_bug_count ?? this.calculateCareNeeds(p.grow_time).totalBug;
+    if (this.checkCanHarvest(p.created_at, p.grow_time)) return false;
+    const totalBug = this.calculateCareNeeds(p.grow_time).totalBug;
+    const { nextBugTime } = this.getNextBugTime(p);
     const now = new Date();
-    return p.total_bug_caught < totalBug && p.bug_until <= now;
+    return p.total_bug_caught < totalBug && nextBugTime && now >= nextBugTime
+      ? true
+      : false;
   }
 
-  static isFullyCared(currentCount: number, maxCount: number) {
-    return currentCount >= maxCount;
-  }
   static getNextCareInterval(
     growTimeSeconds: number,
     totalCareActions: number,
@@ -94,45 +92,64 @@ export class PlantCareUtils {
     return growTimeSeconds / (totalCareActions + 1);
   }
 
-  static applyWater(p: SlotsPlantEntity): Date {
-    const { totalWater } = this.calculateCareNeeds(p.grow_time);
+  static applyWater(p: SlotsPlantEntity): Date | null {
     const now = new Date();
-
-    if (p.total_water_count >= totalWater)
+    const { totalWater } = this.calculateCareNeeds(p.grow_time);
+    const waterInterval = p.grow_time / (totalWater + 1);
+    const allWaterTimes = Array.from(
+      { length: totalWater },
+      (_, i) =>
+        new Date(p.created_at.getTime() + waterInterval * 1000 * (i + 1)),
+    );
+    let currentTurn = 0;
+    for (let i = 0; i < allWaterTimes.length; i++) {
+      if (now >= allWaterTimes[i]) {
+      }
+    }
+    if (p.need_water_until == null)
       throw new Error('Plant already fully watered');
-
     if (p.need_water_until && p.need_water_until > now) {
       const remain = Math.ceil(
         (p.need_water_until.getTime() - now.getTime()) / 1000,
       );
       throw new Error(`You can water again in ${remain}s`);
     }
-
-    const nextInterval = this.getNextCareInterval(p.grow_time, totalWater);
     p.total_water_count += 1;
     p.last_watered_at = now;
-    p.need_water_until = new Date(now.getTime() + nextInterval * 1000);
-
+    p.need_water_until =
+      currentTurn >= totalWater ? null : allWaterTimes[currentTurn];
     return p.need_water_until;
   }
 
-  static applyCatchBug(p: SlotsPlantEntity): Date {
-    const totalBug =
-      p.expected_bug_count ?? this.calculateCareNeeds(p.grow_time).totalBug;
+  static applyCatchBug(p: SlotsPlantEntity): Date | null {
     const now = new Date();
+    const { totalBug } = this.calculateCareNeeds(p.grow_time);
 
-    if (p.total_bug_caught >= totalBug)
+    if (p.total_bug_caught >= totalBug) {
       throw new Error('All bugs already caught');
+    }
+
+    const bugInterval = p.grow_time / (totalBug + 1);
+    const allBugTimes = Array.from(
+      { length: totalBug },
+      (_, i) => new Date(p.created_at.getTime() + bugInterval * 1000 * (i + 1)),
+    );
+
+    let currentTurn = 0;
+    for (let i = 0; i < allBugTimes.length; i++) {
+      if (now >= allBugTimes[i]) {
+        currentTurn = i + 1;
+      }
+    }
 
     if (p.bug_until && p.bug_until > now) {
       const remain = Math.ceil((p.bug_until.getTime() - now.getTime()) / 1000);
       throw new Error(`No bugs to catch yet, wait ${remain}s`);
     }
 
-    const nextInterval = this.getNextCareInterval(p.grow_time, totalBug);
     p.total_bug_caught += 1;
     p.last_bug_caught_at = now;
-    p.bug_until = new Date(now.getTime() + nextInterval * 1000);
+    p.bug_until = currentTurn >= totalBug ? null : allBugTimes[currentTurn];
 
     return p.bug_until;
   }
@@ -142,17 +159,33 @@ export class PlantCareUtils {
     needWaterUpdated: boolean;
   } {
     const { totalWater } = this.calculateCareNeeds(p.grow_time);
-    if (p.total_water_count >= totalWater)
-      return { nextWaterTime: null, needWaterUpdated: false };
+    const now = new Date();
 
     const interval = p.grow_time / (totalWater + 1);
-    const nextWaterTime = new Date(
-      p.created_at.getTime() + interval * (p.total_water_count + 1) * 1000,
+    const waterTimes = Array.from(
+      { length: totalWater },
+      (_, i) => new Date(p.created_at.getTime() + interval * 1000 * (i + 1)),
     );
+
+    const remainingTimes = waterTimes.filter(
+      (t) => !p.last_watered_at || t > p.last_watered_at,
+    );
+
+    let nextWaterTime: Date | null = null;
+    if (remainingTimes.length > 0) {
+      nextWaterTime = remainingTimes.reduce((prev, curr) =>
+        Math.abs(curr.getTime() - now.getTime()) <
+        Math.abs(prev.getTime() - now.getTime())
+          ? curr
+          : prev,
+      );
+    }
+
     let needWaterUpdated = false;
     if (
       !p.need_water_until ||
-      p.need_water_until.getTime() !== nextWaterTime.getTime()
+      (nextWaterTime &&
+        p.need_water_until.getTime() !== nextWaterTime.getTime())
     ) {
       p.need_water_until = nextWaterTime;
       needWaterUpdated = true;
@@ -166,50 +199,41 @@ export class PlantCareUtils {
     hasBugUpdated: boolean;
   } {
     const { totalBug } = this.calculateCareNeeds(p.grow_time);
-    if (p.total_bug_caught >= totalBug)
+    const now = new Date();
+
+    if (p.total_bug_caught >= totalBug) {
       return { nextBugTime: null, hasBugUpdated: false };
+    }
 
     const interval = p.grow_time / (totalBug + 1);
-    const nextBugTime = new Date(
-      p.created_at.getTime() + interval * (p.total_bug_caught + 1) * 1000,
+    const bugTimes = Array.from(
+      { length: totalBug },
+      (_, i) => new Date(p.created_at.getTime() + interval * 1000 * (i + 1)),
     );
+
+    const remainingTimes = bugTimes.filter(
+      (t) => !p.last_bug_caught_at || t > p.last_bug_caught_at,
+    );
+
+    let nextBugTime: Date | null = null;
+    if (remainingTimes.length > 0) {
+      nextBugTime = remainingTimes.reduce((prev, curr) =>
+        Math.abs(curr.getTime() - now.getTime()) <
+        Math.abs(prev.getTime() - now.getTime())
+          ? curr
+          : prev,
+      );
+    }
+
     let hasBugUpdated = false;
-    if (!p.bug_until || p.bug_until.getTime() !== nextBugTime.getTime()) {
+    if (
+      !p.bug_until ||
+      (nextBugTime && p.bug_until.getTime() !== nextBugTime.getTime())
+    ) {
       p.bug_until = nextBugTime;
       hasBugUpdated = true;
     }
 
     return { nextBugTime, hasBugUpdated };
-  }
-
-   static updatePlantCareOffline(slot: SlotWithStatusDto) {
-    const now = new Date();
-    const plant = slot.currentPlant;
-    if (!plant) return;
-
-    const { totalWater, totalBug } = PlantCareUtils.calculateCareNeeds(
-      plant.grow_time,
-    );
-
-    const waterInterval = plant.grow_time / (totalWater + 1);
-    const bugInterval = plant.grow_time / (totalBug + 1);
-
-    const nextWaterIndex = plant.total_water_count + 1;
-    plant.need_water_until =
-      nextWaterIndex > totalWater
-        ? null
-        : new Date(
-            new Date(plant.created_at).getTime() +
-              waterInterval * 1000 * nextWaterIndex,
-          );
-
-    const nextBugIndex = plant.total_bug_caught + 1;
-    plant.bug_until =
-      nextBugIndex > totalBug
-        ? null
-        : new Date(
-            new Date(plant.created_at).getTime() +
-              bugInterval * 1000 * nextBugIndex,
-          );
   }
 }
