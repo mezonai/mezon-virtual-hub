@@ -137,8 +137,6 @@ export class FarmSlotService {
           p.need_water_until?.getTime() !== nextWaterTime?.getTime() ||
           p.bug_until?.getTime() !== nextBugTime?.getTime() ||
           p.stage !== stage;
-
-        console.log("needWater: ", needWater);
         if (shouldSave) {
           p.stage = stage;
           p.need_water_until = nextWaterTime ?? null;
