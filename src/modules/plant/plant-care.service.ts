@@ -95,29 +95,23 @@ export class PlantCareUtils {
   static applyWater(p: SlotsPlantEntity): Date | null {
     const now = new Date();
     const { totalWater } = this.calculateCareNeeds(p.grow_time);
-    const waterInterval = p.grow_time / (totalWater + 1);
-    const allWaterTimes = Array.from(
-      { length: totalWater },
-      (_, i) =>
-        new Date(p.created_at.getTime() + waterInterval * 1000 * (i + 1)),
-    );
-    let currentTurn = 0;
-    for (let i = 0; i < allWaterTimes.length; i++) {
-      if (now >= allWaterTimes[i]) {
-      }
-    }
-    if (p.need_water_until == null)
+
+    if (p.total_water_count >= totalWater) {
+      p.need_water_until = null;
       throw new Error('Plant already fully watered');
-    if (p.need_water_until && p.need_water_until > now) {
-      const remain = Math.ceil(
-        (p.need_water_until.getTime() - now.getTime()) / 1000,
-      );
-      throw new Error(`You can water again in ${remain}s`);
     }
+
     p.total_water_count += 1;
     p.last_watered_at = now;
+
+    const waterInterval = p.grow_time / (totalWater + 1);
     p.need_water_until =
-      currentTurn >= totalWater ? null : allWaterTimes[currentTurn];
+      p.total_water_count >= totalWater
+        ? null
+        : new Date(
+            p.created_at.getTime() + waterInterval * 1000 * p.total_water_count,
+          );
+
     return p.need_water_until;
   }
 
@@ -126,30 +120,20 @@ export class PlantCareUtils {
     const { totalBug } = this.calculateCareNeeds(p.grow_time);
 
     if (p.total_bug_caught >= totalBug) {
+      p.bug_until = null;
       throw new Error('All bugs already caught');
-    }
-
-    const bugInterval = p.grow_time / (totalBug + 1);
-    const allBugTimes = Array.from(
-      { length: totalBug },
-      (_, i) => new Date(p.created_at.getTime() + bugInterval * 1000 * (i + 1)),
-    );
-
-    let currentTurn = 0;
-    for (let i = 0; i < allBugTimes.length; i++) {
-      if (now >= allBugTimes[i]) {
-        currentTurn = i + 1;
-      }
-    }
-
-    if (p.bug_until && p.bug_until > now) {
-      const remain = Math.ceil((p.bug_until.getTime() - now.getTime()) / 1000);
-      throw new Error(`No bugs to catch yet, wait ${remain}s`);
     }
 
     p.total_bug_caught += 1;
     p.last_bug_caught_at = now;
-    p.bug_until = currentTurn >= totalBug ? null : allBugTimes[currentTurn];
+
+    const bugInterval = p.grow_time / (totalBug + 1);
+    p.bug_until =
+      p.total_bug_caught >= totalBug
+        ? null
+        : new Date(
+            p.created_at.getTime() + bugInterval * 1000 * p.total_bug_caught,
+          );
 
     return p.bug_until;
   }
