@@ -340,12 +340,11 @@ export class FarmRoom extends BaseGameRoom {
         slot.harvestingBy = client.sessionId;
         slot.harvestEndTime = Date.now() + FARM_CONFIG.HARVEST.DELAY_MS;
 
+        Player.isHarvesting = true;
         const timer = setTimeout(async () => {
-          Player.isHarvesting = true;
           await this.finishHarvest(slot.id, client.sessionId);
         }, FARM_CONFIG.HARVEST.DELAY_MS);
         this.harvestTimers.set(slot.id, timer);
-
         this.broadcast(MessageTypes.ON_HARVEST_STARTED, {
           slotId: slot.id,
           sessionId: client.sessionId,
@@ -500,6 +499,7 @@ export class FarmRoom extends BaseGameRoom {
         })) ?? [],
     );
     player.isInBattle = false;
+    player.isHarvesting = false;
     player.clan_id = userData?.clan?.id ?? '';
     this.state.players.set(client.sessionId, player);
     this.logger.log(
@@ -547,7 +547,7 @@ export class FarmRoom extends BaseGameRoom {
         endTime: slot.harvestEndTime,
       }));
     if (harvestingSlots.length > 0) {
-      client.send(MessageTypes.ON_HARVEST_STARTED_ONJOIN, {
+      client.send(MessageTypes.ON_HARVEST_PLAYER_JOIN, {
         slots: harvestingSlots,
       });
     }
@@ -587,7 +587,31 @@ export class FarmRoom extends BaseGameRoom {
 
   override onLeave(client: AuthenticatedClient): void {
     this.playerCount--;
-    this.state.players.delete(client.sessionId);
+    const sessionId = client.sessionId;
+    const player = this.state.players.get(sessionId);
+    if (player) {
+      if (player.isHarvesting) {
+        const slot = Array.from(this.state.farmSlotState.values()).find(
+          (s) => s.harvestingBy === sessionId,
+        );
+
+        if (slot) {
+          const timer = this.harvestTimers.get(slot.id);
+          if (timer) {
+            clearTimeout(timer);
+          }
+          this.harvestTimers.delete(slot.id);
+          slot.harvestingBy = '';
+          slot.harvestEndTime = 0;
+          this.broadcast(MessageTypes.ON_CANCEL_HARVEST_PLAYER_LEFT, {
+            slotId: slot.id,
+          });
+        }
+      }
+    } 
+
+    this.state.players.delete(sessionId);
+    this.logger.log(`Player ${sessionId} left FarmRoom`);
   }
 
   override onDispose() {
@@ -702,7 +726,7 @@ export class FarmRoom extends BaseGameRoom {
       const delay = bugTime - now;
       if (delay <= 0) continue;
 
-     setTimeout(() => {
+      setTimeout(() => {
         const slotState = this.state.farmSlotState.get(slotId);
         if (!slotState?.currentPlant) return;
         const newSlotState = new FarmSlotState();
@@ -743,7 +767,7 @@ export class FarmRoom extends BaseGameRoom {
         const newPlant = new PlantDataSchema();
         Object.assign(newPlant, slotState.currentPlant);
         newPlant.stage = stage;
-        if(stage == PlantState.HARVESTABLE) newPlant.can_harvest = true;
+        if (stage == PlantState.HARVESTABLE) newPlant.can_harvest = true;
         newSlotState.currentPlant = newPlant;
         this.state.farmSlotState.set(slotId, newSlotState);
       }, delay);
