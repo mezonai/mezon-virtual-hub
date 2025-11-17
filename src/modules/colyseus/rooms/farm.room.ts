@@ -767,6 +767,11 @@ export class FarmRoom extends BaseGameRoom {
         const newPlant = new PlantDataSchema();
         Object.assign(newPlant, slotState.currentPlant);
         newPlant.stage = stage;
+        newPlant.grow_time_remain = PlantCareUtils.calculateGrowRemain(
+          new Date(plant.created_at),
+          growTimeSeconds,
+        );
+       
         if (stage == PlantState.HARVESTABLE) newPlant.can_harvest = true;
         newSlotState.currentPlant = newPlant;
         this.state.farmSlotState.set(slotId, newSlotState);
