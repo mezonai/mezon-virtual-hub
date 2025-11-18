@@ -121,6 +121,8 @@ export class FarmSlotService {
         const canHarvest = PlantCareUtils.checkCanHarvest(
           p.created_at,
           p.grow_time,
+          p.harvest_count,
+          p.harvest_count_max
         );
         const needWater =
           !canHarvest &&
@@ -407,6 +409,8 @@ export class FarmSlotService {
     const canHarvest = PlantCareUtils.checkCanHarvest(
       slotPlant.created_at,
       slotPlant.grow_time,
+      slotPlant.harvest_count,
+      slotPlant.harvest_count_max,
     );
 
     if (!canHarvest) {

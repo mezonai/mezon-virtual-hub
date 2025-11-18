@@ -122,6 +122,8 @@ export class FarmRoom extends BaseGameRoom {
         slotState.currentPlant = newPlant;
         const newSlotState = new FarmSlotState();
         newSlotState.currentPlant = newPlant;
+        newSlotState.harvest_count = slotState.harvest_count;
+        newSlotState.harvest_count_max = slotState.harvest_count_max;
         this.state.farmSlotState.set(slotId, newSlotState);
         this.schedulePlant(slotId, newPlant);
       } catch (err: any) {
@@ -167,6 +169,8 @@ export class FarmRoom extends BaseGameRoom {
           const canHarvest = PlantCareUtils.checkCanHarvest(
             slotBefore.currentPlant.created_at,
             slotBefore.currentPlant.grow_time,
+            slotBefore.currentPlant.harvest_count,
+            slotBefore.currentPlant.harvest_count_max,
           );
 
           if (plantStage === PlantState.HARVESTABLE || canHarvest) {
@@ -251,6 +255,8 @@ export class FarmRoom extends BaseGameRoom {
           const canHarvest = PlantCareUtils.checkCanHarvest(
             slotBefore.currentPlant.created_at,
             slotBefore.currentPlant.grow_time,
+            slotBefore.currentPlant.harvest_count,
+            slotBefore.currentPlant.harvest_count_max,
           );
           if (canHarvest) {
             return;
@@ -457,6 +463,24 @@ export class FarmRoom extends BaseGameRoom {
         slot.harvestingBy = '';
         slot.harvestEndTime = 0;
         targetPlayer.isHarvesting = false;
+        const slotState =
+          this.state.farmSlotState.get(slot.id) || new FarmSlotState();
+        const newSlotState = new FarmSlotState();
+        Object.assign(newSlotState, slotState);
+
+        if (!slotState.currentPlant) return;
+        newSlotState.harvest_count += 1;
+        if (newSlotState.harvest_count >= (slotState.harvest_count_max || 10)) {
+          this.harvestTimers.delete(slot.id);
+          this.resetPlant(slot.id);
+          this.broadcast(MessageTypes.ON_PLANT_DEATH, {
+            harverstId: slot.harvestingBy,
+            interruptedId: fromPlayerId,
+            message: 'Cây đã bị phá hoàn toàn sau hết lượt thu hoạch!',
+          });
+        } else {
+          this.state.farmSlotState.set(slot.id, newSlotState);
+        }
 
         client.send(MessageTypes.ON_HARVEST_INTERRUPTED, {
           sessionId: fromPlayerId,
@@ -542,6 +566,8 @@ export class FarmRoom extends BaseGameRoom {
           slot.currentPlant.can_harvest = PlantCareUtils.checkCanHarvest(
             createdAt,
             growTime,
+            slot.harvest_count,
+            slot.harvest_count_max,
           );
         } else {
           slot.currentPlant.grow_time_remain = 0;
@@ -599,6 +625,8 @@ export class FarmRoom extends BaseGameRoom {
     schema.can_harvest = PlantCareUtils.checkCanHarvest(
       p.created_at,
       p.grow_time,
+      p.harvest_count,
+      p.harvest_count_max,
     );
     schema.need_water = PlantCareUtils.checkNeedWater(p) ?? false;
     schema.has_bug = PlantCareUtils.checkHasBug(p) ?? false;
@@ -648,23 +676,13 @@ export class FarmRoom extends BaseGameRoom {
 
     this.harvestTimers.delete(slotId);
     Player.isHarvesting = false;
-    slot.harvestingBy = '';
-    slot.harvestEndTime = 0;
-
     try {
       const result = await this.farmSlotsService.harvestPlant(
         Player.user_id,
         slotId,
       );
       const playerName = Player.display_name || 'Ẩn Danh';
-      slot.currentPlant = null;
-      const newSlotState = new FarmSlotState();
-      Object.assign(newSlotState, slot);
-      newSlotState.currentPlant = null;
-      newSlotState.harvestingBy = '';
-      newSlotState.harvestEndTime = 0;
-      newSlotState.currentPlant = null;
-      this.state.farmSlotState.set(slot.id, newSlotState);
+      this.resetPlant(slot.id);
       this.broadcast(MessageTypes.ON_HARVEST_COMPLETE, {
         slotId,
         sessionId,
@@ -773,5 +791,20 @@ export class FarmRoom extends BaseGameRoom {
     // this.logger
     //   .log(`[DEBUG] change state Slot ${slotId} setting has_bug = ${newPlant.has_bug},
     //  need_water = ${newPlant.need_water}, can_harvest = ${newPlant.can_harvest}, grow_time_remain = ${newPlant.grow_time_remain}`);
+  }
+
+  resetPlant(slotId: string) {
+    const slot = this.state.farmSlotState.get(slotId);
+    if (!slot) return;
+
+    slot.currentPlant = null;
+
+    const newSlotState = new FarmSlotState();
+    Object.assign(newSlotState, slot);
+
+    newSlotState.currentPlant = null;
+    newSlotState.harvestingBy = '';
+    newSlotState.harvestEndTime = 0;
+    this.state.farmSlotState.set(slotId, newSlotState);
   }
 }
