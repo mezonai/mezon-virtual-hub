@@ -97,6 +97,17 @@ export class QuestEntity {
   @Type(() => Date)
   end_at?: Date;
 
+  @ApiProperty({
+    required: false,
+    description:
+      'Determines the quest order within an event. E.g., sort_index 1 = Day 1 of a 7-day event.',
+  })
+  @Column({ type: 'int', nullable: true })
+  @IsOptional()
+  @IsInt()
+  @Type(() => Number)
+  sort_index?: number;
+
   @OneToMany(() => PlayerQuestEntity, (pq) => pq.quest)
   player_quests: PlayerQuestEntity[] | null;
 }

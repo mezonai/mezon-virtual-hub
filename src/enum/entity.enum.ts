@@ -165,7 +165,7 @@ export enum QuestType {
   NEWBIE_LOGIN = 'newbie_login',
   NEWBIE_LOGIN_SPECIAL = 'newbie_login_special',
   EVENT_LOGIN = 'event_login',
-  EVENT_LOGIN_SPECIAL = 'event_login_special',
+  EVENT_LOGIN_2 = 'event_login_2',
   VISIT_OFFICE = 'visit_office',
   SPIN_LUCKY_WHEEL = 'spin_lucky_wheel',
   BUY_FOOD = 'buy_food',
@@ -188,7 +188,7 @@ export enum RewardType {
   EVENT_LOGIN_DAY_4 = 'event_login_day_4',
   EVENT_LOGIN_DAY_5 = 'event_login_day_5',
   EVENT_LOGIN_DAY_6 = 'event_login_day_6',
-  EVENT_LOGIN_SPECIAL = 'event_login_special',
+  EVENT_LOGIN_DAY_7 = 'event_login_day_7',
 
   NEWBIE_DAILY1 = 'newbie_daily1',
   NEWBIE_DAILY2 = 'newbie_daily2',
