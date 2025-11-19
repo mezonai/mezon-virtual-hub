@@ -62,6 +62,14 @@ export class PlayerQuestController {
     return this.playerQuestService.getNewbieLoginQuests(user.id, query);
   }
 
+  @Get('event-once')
+  async getOnceQuests(
+    @Query() query: PlayerQuestQueryDto,
+  ) {
+     const user = this.cls.get<UserEntity>(USER_TOKEN);
+    return this.playerQuestService.getOnceQuests(user.id, query);
+  }
+
   @Get('check-unclaimed-quest')
   @ApiOperation({ summary: 'Check-Unclaimed-Quest' })
   async checkUnclaimedQuest() {

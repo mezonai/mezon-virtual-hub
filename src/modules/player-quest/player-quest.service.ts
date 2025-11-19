@@ -76,6 +76,10 @@ export class PlayerQuestService extends BaseService<PlayerQuestEntity> {
       weekly: quests
         .filter((pq) => pq.quest.frequency === QuestFrequency.WEEKLY)
         .map((pq) => this.mapQuest(pq)),
+
+      once: quests
+        .filter((pq) => pq.quest.frequency === QuestFrequency.ONCE)
+        .map((pq) => this.mapQuest(pq)),
     };
   }
 
@@ -180,6 +184,41 @@ export class PlayerQuestService extends BaseService<PlayerQuestEntity> {
     return quests.map((q) => this.toQuestProgressDto(q));
   }
 
+  async getOnceQuests(userId: string, query: PlayerQuestQueryDto) {
+    const { 
+      page = 1, 
+      limit = 50, 
+      sort_by = 'start_at', 
+      order = 'ASC' 
+    } = query;
+
+    const quests = await this.playerQuestRepo.find({
+      where: {
+        user: { id: userId },
+        quest: { frequency: QuestFrequency.ONCE },
+        start_at: LessThanOrEqual(new Date()),
+        end_at: MoreThan(new Date()),
+      },
+      relations: [
+        'quest',
+        'quest.reward',
+        'quest.reward.items',
+        'quest.reward.items.pet',
+        'quest.reward.items.food',
+        'quest.reward.items.item',
+      ],
+      take: limit,
+      skip: (page - 1) * limit,
+      order: { [sort_by]: order },
+    });
+
+    const validQuests = quests.filter(
+      (pq) => pq.start_at && pq.end_at && pq.end_at > pq.start_at,
+    );
+
+    return validQuests.map((pq) => this.mapQuest(pq));
+  }
+
   toQuestProgressDto(entity: PlayerQuestEntity): NewbieRewardDto {
     const { quest } = entity;
 
@@ -231,6 +270,8 @@ export class PlayerQuestService extends BaseService<PlayerQuestEntity> {
     return {
       id: pq.id,
       name: pq.quest.name,
+      start_at: pq.start_at,
+      end_at: pq.end_at,
       description: pq.quest.description,
       frequency: pq.quest.frequency,
       progress: pq.progress_history.length,
@@ -240,6 +281,7 @@ export class PlayerQuestService extends BaseService<PlayerQuestEntity> {
       rewards: pq.quest?.reward?.items,
     };
   }
+
   async initQuests(
     userId: string,
     { timezone = 'Asia/Ho_Chi_Minh' }: FinishQuestQueryDto,
@@ -296,8 +338,10 @@ export class PlayerQuestService extends BaseService<PlayerQuestEntity> {
 
       const others = missingQuests.filter(
         (q) =>
-          q.type !== QuestType.NEWBIE_LOGIN &&
-          q.type !== QuestType.NEWBIE_LOGIN_SPECIAL,
+          (q.type !== QuestType.NEWBIE_LOGIN &&
+            q.type !== QuestType.NEWBIE_LOGIN_SPECIAL &&
+            q.frequency === QuestFrequency.DAILY) ||
+          q.frequency === QuestFrequency.WEEKLY,
       );
 
       for (const quest of others) {
@@ -308,6 +352,24 @@ export class PlayerQuestService extends BaseService<PlayerQuestEntity> {
             quest,
             start_at: startAt,
             end_at: endAt,
+          }),
+        );
+      }
+
+      const eventQuest = missingQuests.filter(
+        (q) =>
+          q.type !== QuestType.NEWBIE_LOGIN &&
+          q.type !== QuestType.NEWBIE_LOGIN_SPECIAL &&
+          q.frequency === QuestFrequency.ONCE,
+      );
+
+      for (const quest of eventQuest) {
+        toSave.push(
+          this.playerQuestRepo.create({
+            user: { id: userId },
+            quest,
+            start_at: quest.start_at,
+            end_at: quest.end_at,
           }),
         );
       }
@@ -438,7 +500,9 @@ export class PlayerQuestService extends BaseService<PlayerQuestEntity> {
         const others = missingQuests.filter(
           (q) =>
             q.type !== QuestType.NEWBIE_LOGIN &&
-            q.type !== QuestType.NEWBIE_LOGIN_SPECIAL,
+            q.type !== QuestType.NEWBIE_LOGIN_SPECIAL &&
+            q.frequency === QuestFrequency.DAILY ||
+            q.frequency === QuestFrequency.WEEKLY,
         );
 
         for (const quest of others) {
@@ -452,6 +516,24 @@ export class PlayerQuestService extends BaseService<PlayerQuestEntity> {
               quest,
               start_at: startAt,
               end_at: endAt,
+            }),
+          );
+        }
+
+        const eventQuest = missingQuests.filter(
+          (q) =>
+            q.type !== QuestType.NEWBIE_LOGIN &&
+            q.type !== QuestType.NEWBIE_LOGIN_SPECIAL &&
+            q.frequency === QuestFrequency.ONCE,
+        );
+
+        for (const quest of eventQuest) {
+          toSave.push(
+            this.playerQuestRepo.create({
+              user: { id: userId },
+              quest,
+              start_at: quest.start_at,
+              end_at: quest.end_at,
             }),
           );
         }
