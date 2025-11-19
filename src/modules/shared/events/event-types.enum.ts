@@ -1,6 +1,7 @@
 export enum EventTypes {
   QUEST = 'QUEST',
   NEWBIE_LOGIN = 'NEWBIE_LOGIN',
+  EVENT_LOGIN_REWARD = 'EVENT_LOGIN_REWARD'
 }
 
 export enum ClanBroadcastEventType {

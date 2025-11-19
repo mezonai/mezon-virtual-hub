@@ -91,14 +91,12 @@ export class PlayerQuestProgressService {
     }
   }
 
-  async completeNewbieLogin(userId: string) {
+  async completeQuestForUser(userId: string, questTypes: string[]) {
     const now = new Date();
     const playerQuests = await this.playerQuestService.find({
       where: {
         user: { id: userId },
-        quest: {
-          type: In([QuestType.NEWBIE_LOGIN, QuestType.NEWBIE_LOGIN_SPECIAL]),
-        },
+        quest: { type: In(questTypes) },
         start_at: LessThanOrEqual(now),
         end_at: MoreThanOrEqual(now),
       },
@@ -127,7 +125,7 @@ export class PlayerQuestProgressService {
 
     await this.playerQuestService.saveAll([questToComplete]);
     this.logger.log(
-      `User ${userId} has completed newbie login quest: ${questToComplete.quest.type}`,
+      `User ${userId} has completed quest: ${questToComplete.quest.type}`,
     );
   }
 

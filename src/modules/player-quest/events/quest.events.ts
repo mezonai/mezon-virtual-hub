@@ -32,4 +32,8 @@ export const QuestEventEmitter = {
   emitNewbieLogin(userId: string) {
     GlobalEventCommon.emit(EventTypes.NEWBIE_LOGIN, userId);
   },
+
+  emitEventLoginReward(userId: string) {
+    GlobalEventCommon.emit(EventTypes.EVENT_LOGIN_REWARD, userId);
+  },
 };

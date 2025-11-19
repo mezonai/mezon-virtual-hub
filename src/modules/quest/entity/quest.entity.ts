@@ -4,6 +4,7 @@ import { RewardEntity } from '@modules/reward/entity/reward.entity';
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
+  IsDate,
   IsEnum,
   IsInt,
   IsOptional,
@@ -71,6 +72,30 @@ export class QuestEntity {
   @Min(1)
   @Type(() => Number)
   total_progress: number = 1;
+
+  @ApiProperty({
+    required: false,
+    type: String,
+    format: 'date-time',
+    example: '2025-02-02T23:59:59Z',
+  })
+  @Column({ type: 'timestamptz', nullable: true })
+  @IsOptional()
+  @IsDate()
+  @Type(() => Date)
+  start_at?: Date;
+
+  @ApiProperty({
+    required: false,
+    type: String,
+    format: 'date-time',
+    example: '2025-02-02T23:59:59Z',
+  })
+  @Column({ type: 'timestamptz', nullable: true })
+  @IsOptional()
+  @IsDate()
+  @Type(() => Date)
+  end_at?: Date;
 
   @OneToMany(() => PlayerQuestEntity, (pq) => pq.quest)
   player_quests: PlayerQuestEntity[] | null;

@@ -162,6 +162,7 @@ export class BaseGameRoom extends Room<RoomState> {
     PlayerSessionManager.register(client.userData.id, client);
     if (client?.userData?.id) {
       QuestEventEmitter.emitNewbieLogin(client.userData.id);
+      QuestEventEmitter.emitEventLoginReward(client.userData.id);
       QuestEventEmitter.emitProgress(client.userData.id, QuestType.LOGIN_DAYS, 1);
     }
     return true;

@@ -69,7 +69,7 @@ export class QuestManagementController {
   @ApiOperation({
     summary: 'HARD delete a quest',
   })
-  async deletePetPlayers(
+  async deleteQuest(
     @Param('quest_id', ParseUUIDPipe) quest_id: string,
   ) {
     return await this.questService.delete(quest_id);
