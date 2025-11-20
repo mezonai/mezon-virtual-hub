@@ -4,7 +4,7 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ClsService } from 'nestjs-cls';
 
 @ApiBearerAuth()
-@ApiTags('SlotsPlant')
+@ApiTags('Slots Plant')
 @Controller('slots-plant')
 export class SlotsPlantController {
   constructor(

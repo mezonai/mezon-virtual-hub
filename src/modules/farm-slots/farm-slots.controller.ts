@@ -7,7 +7,7 @@ import { USER_TOKEN } from '@constant';
 import { UserEntity } from '@modules/user/entity/user.entity';
 
 @ApiBearerAuth()
-@ApiTags('FarmSlots')
+@ApiTags('Farm Slots')
 @Controller('farm-slots')
 export class FarmSlotsController {
   constructor(

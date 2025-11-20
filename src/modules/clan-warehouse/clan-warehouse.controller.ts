@@ -8,7 +8,7 @@ import { ClsService } from 'nestjs-cls';
 import { RequireClanRoles } from '@libs/decorator';
 
 @ApiBearerAuth()
-@ApiTags('ClanWarehouse')
+@ApiTags('Clan Warehouse')
 @Controller('Clan-Warehouses')
 export class ClanWarehouseController {
   constructor(

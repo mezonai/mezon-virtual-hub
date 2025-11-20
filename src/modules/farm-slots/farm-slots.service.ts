@@ -377,9 +377,7 @@ export class FarmSlotService {
       throw new BadRequestException('Người chơi không có clan');
     }
 
-    const score = await this.userClanStatRepo.findOne({
-      where: { user_id: user.id, clan_id: user.clan.id },
-    });
+    const {score } = await this.userClanStatService.getOrCreateUserClanStat(userId, user?.clan?.id);
 
     const used = score?.harvest_count_use ?? 0;
     const max = score?.harvest_count ?? 0;
