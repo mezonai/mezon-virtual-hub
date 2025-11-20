@@ -4,7 +4,7 @@ import { ClansQueryDto } from './dto/clan.dto';
 import { ApiBearerAuth } from '@nestjs/swagger';
 
 @ApiBearerAuth()
-@Controller('clan-activitys')
+@Controller('Clan Activitys')
 export class ClanActivityController {
   constructor(private readonly clanActivityService: ClanActivityService) {}
 

@@ -10,7 +10,7 @@ import {
 import { USER_TOKEN } from '@constant';
 
 @ApiBearerAuth()
-@ApiTags('ClanFundController')
+@ApiTags('Clan Fund Controller')
 @Controller('clan-funds')
 export class ClanFundController {
   constructor(

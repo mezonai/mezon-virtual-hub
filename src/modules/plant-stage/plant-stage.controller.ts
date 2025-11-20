@@ -9,7 +9,7 @@ import {
 import { RequireAdmin } from '@libs/decorator';
 
 @ApiBearerAuth()
-@ApiTags('PlantStage')
+@ApiTags('Plant Stage')
 @Controller('plant-stage')
 export class PlantStageController {
   constructor(

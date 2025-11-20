@@ -188,8 +188,6 @@ export class PlayerQuestService extends BaseService<PlayerQuestEntity> {
   async getOnceQuests(userId: string, query: PlayerQuestQueryDto) {
     const { page = 1, limit = 50 } = query;
     const now = new Date();
-
-    // Lấy tất cả quest ONCE của user, join quest + reward + items
     const allQuests = await this.playerQuestRepo
       .createQueryBuilder('pq')
       .leftJoinAndSelect('pq.quest', 'q')
@@ -202,25 +200,16 @@ export class PlayerQuestService extends BaseService<PlayerQuestEntity> {
       .andWhere('q.frequency = :freq', { freq: QuestFrequency.ONCE })
       .getMany();
 
-    // Sort theo sort_index
     allQuests.sort((a, b) => (a.quest.sort_index || 0) - (b.quest.sort_index || 0));
-
-    // Group theo type
     const grouped = _.groupBy(allQuests, (pq) => pq.quest.type);
-
     const result: any[] = [];
-
     for (const type in grouped) {
       const group = grouped[type];
-
-      // Lấy quest đầu tiên của nhóm để check nhóm có active không
       const firstQuest = group[0];
       if (!firstQuest.start_at || !firstQuest.end_at) continue;
 
       const isGroupActive = firstQuest.start_at <= now && firstQuest.end_at >= now;
-      if (!isGroupActive) continue; // Bỏ nhóm chưa tới ngày start
-
-      // Map tất cả quest trong nhóm, tính is_available riêng cho từng quest
+      if (!isGroupActive) continue;
       group.forEach((pq) => {
         const isAvailable = pq.start_at! <= now && pq.end_at! >= now;
         result.push({

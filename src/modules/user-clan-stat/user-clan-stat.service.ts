@@ -1,4 +1,8 @@
-import {Injectable, NotFoundException} from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, IsNull, Repository } from 'typeorm';
 import { UserClanStatEntity } from './entity/user-clan-stat.entity';
@@ -10,12 +14,41 @@ export class UserClanStatService {
   constructor(
     @InjectRepository(UserClanStatEntity)
     private readonly userClanStatRepo: Repository<UserClanStatEntity>,
-     private readonly dataSource: DataSource,
+    @InjectRepository(UserEntity)
+    private readonly userRepo: Repository<UserEntity>,
+    private readonly dataSource: DataSource,
   ) {}
 
   async addScore(userId: string, clanId: string, points: number) {
+    const { score } = await this.getOrCreateUserClanStat(userId, clanId);
+
+    score.total_score = (score.total_score ?? 0) + points;
+    score.weekly_score = (score.weekly_score ?? 0) + points;
+    score.harvest_count_use += 1;
+
+    return await this.userClanStatRepo.save(score);
+  }
+
+  async getHarvestCounts(userId: string, clanId: string) {
+    const { score } = await this.getOrCreateUserClanStat(userId, clanId);
+
+    return {
+      harvest_count: score.harvest_count ?? 0,
+      harvest_count_use: score.harvest_count_use ?? 0,
+      harvest_interrupt_count: score.harvest_interrupt_count ?? 0,
+      harvest_interrupt_count_use: score.harvest_interrupt_count_use ?? 0,
+    };
+  }
+
+  async getOrCreateUserClanStat(userId: string, clanId: string) {
+    const user = await this.userRepo.findOne({ where: { id: userId } });
+    if (!user) throw new NotFoundException('User not found');
+    if (user.clan_id !== clanId) {
+      throw new BadRequestException('User does not belong to this clan');
+    }
+
     let score = await this.userClanStatRepo.findOne({
-      where: { user_id: userId, clan_id: clanId },
+      where: { user_id: userId, clan_id: clanId, deleted_at: IsNull() },
     });
 
     if (!score) {
@@ -29,30 +62,13 @@ export class UserClanStatService {
         harvest_interrupt_count: 10,
         harvest_interrupt_count_use: 0,
       });
+      await this.userClanStatRepo.save(score);
     }
 
-    score.total_score = (score.total_score ?? 0) + points;
-    score.weekly_score = (score.weekly_score ?? 0) + points;
-    score.harvest_count_use += 1;
-
-    return await this.userClanStatRepo.save(score);
+    return { score };
   }
 
-  async getHarvestCounts(user: UserEntity, clanId: string) {
-    const record = await this.userClanStatRepo.findOne({
-      where: { user_id: user.id, clan_id: clanId, deleted_at: IsNull() },
-    });
-
-    if (!record) throw new NotFoundException('UserClanStat record not found');
-
-    return {
-      harvest_count: record.harvest_count ?? 0,
-      harvest_count_use: record.harvest_count_use ?? 0,
-      harvest_interrupt_count: record.harvest_interrupt_count ?? 0,
-      harvest_interrupt_count_use: record.harvest_interrupt_count_use ?? 0
-    };
-  }
- async resetWeeklyScores() {
+  async resetWeeklyScores() {
     const now = new Date();
     console.log('[WeeklyResetService] Starting weekly score reset at', now);
 

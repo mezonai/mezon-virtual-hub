@@ -6,7 +6,7 @@ import { UserEntity } from '@modules/user/entity/user.entity';
 import { USER_TOKEN } from '@constant';
 
 @ApiBearerAuth()
-@ApiTags('user-clan-stat')
+@ApiTags('User Clan Stat')
 @Controller('user-clan-stats')
 export class UserClanStatController {
   constructor(
@@ -22,7 +22,7 @@ export class UserClanStatController {
     @Param('clanId') clanId: string,
   ) {
      const user = this.cls.get<UserEntity>(USER_TOKEN);
-    return this.userClantScoreService.getHarvestCounts(user, clanId);
+    return this.userClantScoreService.getHarvestCounts(user.id, clanId);
   }
 
   @Get('reset-weekly-manual')

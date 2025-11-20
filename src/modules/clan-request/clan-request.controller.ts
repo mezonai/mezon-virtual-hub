@@ -22,7 +22,7 @@ import { ClanRequestService } from './clan-request.service';
 import { PendingRequestQueryDto } from './dto/clan-request.dto';
 
 @ApiBearerAuth()
-@ApiTags('ClanRequestController')
+@ApiTags('Clan Request Controller')
 @Controller('clans/:clan_id/clan-requests')
 @ApiParam({
   name: 'clan_id',
