@@ -23,10 +23,11 @@ import {
 } from './dto/clan.dto';
 import { ClanEntity } from './entity/clan.entity';
 import { ClanRequestService } from '@modules/clan-request/clan-request.service';
-import { ClanRequestStatus } from '@enum';
+import { ClanActivityActionType, ClanRequestStatus } from '@enum';
 import { ClanRequestEntity } from '@modules/clan-request/entity/clan-request.entity';
 import { ClanRole } from '@enum';
 import { UserClanStatEntity } from '@modules/user-clan-stat/entity/user-clan-stat.entity';
+import { ClanActivityService } from '@modules/clan-activity/clan-activity.service';
 
 @Injectable()
 export class ClanService extends BaseService<ClanEntity> {
@@ -40,6 +41,7 @@ export class ClanService extends BaseService<ClanEntity> {
     private readonly clanRequestRepository: Repository<ClanRequestEntity>,
     @InjectRepository(UserClanStatEntity)
     private readonly userClantStatRepo: Repository<UserClanStatEntity>,
+    private readonly clanActivityService: ClanActivityService,
     private manager: EntityManager,
   ) {
     super(clanRepository, ClanEntity.name);
@@ -309,6 +311,11 @@ export class ClanService extends BaseService<ClanEntity> {
         { user_id: user.id, clan_id: oldClanId },
         { deleted_at: new Date() },
       );
+      await this.clanActivityService.logActivity({
+        clanId: oldClanId,
+        userId: user.id,
+        actionType: ClanActivityActionType.LEAVE,
+      });
     }
 
     return plainToInstance(UserInformationDto, user);

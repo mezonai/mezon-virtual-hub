@@ -1,134 +1,68 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { SlotsPlantEntity } from './entity/slots-plant.entity';
-import { FarmSlotEntity } from '@modules/farm-slots/entity/farm-slots.entity';
-import { UserEntity } from '@modules/user/entity/user.entity';
-import { ClanEntity } from '@modules/clan/entity/clan.entity';
-import { PlantEntity } from '@modules/plant/entity/plant.entity';
-import { SlotActionDto, SlotHarvesterDto, SlotHistoryDto } from './dto/slots-plant.dto';
+import { ActivePlantsQueryDto } from './dto/slots-plant.dto';
 
 @Injectable()
 export class SlotsPlantService {
   constructor(
     @InjectRepository(SlotsPlantEntity)
     private readonly slotPlantRepo: Repository<SlotsPlantEntity>,
-    @InjectRepository(FarmSlotEntity)
-    private readonly farmSlotRepo: Repository<FarmSlotEntity>,
-    @InjectRepository(UserEntity)
-    private readonly userRepo: Repository<UserEntity>,
-    @InjectRepository(ClanEntity)
-    private readonly clanRepo: Repository<ClanEntity>,
-    @InjectRepository(PlantEntity)
-    private readonly plantRepo: Repository<PlantEntity>,
   ) {}
 
-  async getSlotHistory(slotId: string): Promise<SlotHistoryDto[]> {
-    const slot = await this.farmSlotRepo.findOne({
-      where: { id: slotId },
-      relations: ['historyPlants', 'historyPlants.plant', 'historyPlants.plantedByUser'],
+  async getAllSlotPlants(): Promise<SlotsPlantEntity[]> {
+    return this.slotPlantRepo.find({
+      relations: ['plant', 'plantedByUser', 'farmSlot'],
+      order: {
+        deleted_at: 'ASC',
+        created_at: 'ASC',
+      },
+      withDeleted: true,
     });
-    if (!slot) throw new NotFoundException('Slot not found');
-
-    return slot.historyPlants.map((p) => ({
-      id: p.id,
-      plant_id: p.plant_id,
-      plant_name: p.plant?.name || '',
-      planted_by: p.planted_by,
-      planted_by_name: p.plantedByUser?.username || '',
-      planted_at: p.created_at,
-      harvest_count: p.harvest_count,
-      harvest_count_max: p.harvest_count_max,
-      harvest_at: p.harvest_at,
-      last_harvested_by: p.last_harvested_by,
-    }));
   }
 
-  async getSlotHarvesters(slotId: string): Promise<{ slot_id: string; harvesters: SlotHarvesterDto[] }> {
-    const plants = await this.slotPlantRepo.find({
-      where: { farm_slot_id: slotId },
-      relations: ['plantedByUser', 'plantedByUser.clan'],
-    });
-    if (!plants.length) throw new NotFoundException('No harvest data for this slot');
+  async getActivePlantsInSlot(
+    farmSlotId: string,
+    filters?: ActivePlantsQueryDto,
+  ): Promise<(SlotsPlantEntity & { isRemoved: false })[]> {
+    const query = this.slotPlantRepo
+      .createQueryBuilder('sp')
+      .leftJoinAndSelect('sp.plant', 'plant')
+      .leftJoinAndSelect('sp.plantedByUser', 'user')
+      .leftJoinAndSelect('sp.farmSlot', 'slot')
+      .where('sp.farm_slot_id = :farmSlotId', { farmSlotId })
+      .andWhere('sp.deleted_at IS NULL');
 
-    const harvesters: SlotHarvesterDto[] = [];
-    for (const p of plants) {
-      if (!p.last_harvested_by) continue;
-      const user = await this.userRepo.findOne({
-        where: { id: p.last_harvested_by },
-        relations: ['clan'],
-      });
-      if (!user || !user.clan) continue;
-      harvesters.push({
-        user_id: user.id,
-        username: user.username,
-        clan_id: user.clan.id,
-        points_added: p.harvest_count,
-        harvested_at: p.harvest_at,
-      });
-    }
-    return { slot_id: slotId, harvesters };
+    if (filters?.userId) query.andWhere('sp.planted_by = :userId', { userId: filters.userId });
+    if (filters?.plantName)
+      query.andWhere('sp.plant_name ILIKE :plantName', { plantName: `%${filters.plantName}%` });
+    if (filters?.stage !== undefined) query.andWhere('sp.stage = :stage', { stage: filters.stage });
+
+    const plants = await query.getMany();
+    return plants.map(p => ({ ...p, isRemoved: false }));
   }
 
-  async getSlotScore(slotId: string): Promise<{ slot_id: string; total_points: number; by_user: { user_id: string; points: number }[] }> {
-    const plants = await this.slotPlantRepo.find({
-      where: { farm_slot_id: slotId },
-      relations: ['plant', 'plantedByUser', 'plantedByUser.clan'],
-    });
-    let totalPoints = 0;
-    const byUser: { user_id: string; points: number }[] = [];
+  async getSlotHistory(
+    farmSlotId: string,
+    filters?: ActivePlantsQueryDto,
+  ): Promise<(SlotsPlantEntity & { isRemoved: boolean })[]> {
+    const query = this.slotPlantRepo
+      .createQueryBuilder('sp')
+      .leftJoinAndSelect('sp.plant', 'plant')
+      .leftJoinAndSelect('sp.plantedByUser', 'user')
+      .leftJoinAndSelect('sp.farmSlot', 'slot')
+      .where('sp.farm_slot_id = :farmSlotId', { farmSlotId })
+      .withDeleted()
+      .orderBy('sp.deleted_at', 'ASC')
+      .addOrderBy('sp.created_at', 'ASC');
 
-    for (const p of plants) {
-      if (!p.last_harvested_by) continue;
-      const user = await this.userRepo.findOne({ where: { id: p.last_harvested_by }, relations: ['clan'] });
-      if (!user || !user.clan) continue;
-      const points = (p.plant?.harvest_point || 1) * p.harvest_count;
-      totalPoints += points;
-      byUser.push({ user_id: user.id, points });
-    }
+    if (filters?.userId) query.andWhere('sp.planted_by = :userId', { userId: filters.userId });
+    if (filters?.plantName)
+      query.andWhere('sp.plant_name ILIKE :plantName', { plantName: `%${filters.plantName}%` });
+    if (filters?.stage !== undefined) query.andWhere('sp.stage = :stage', { stage: filters.stage });
 
-    return { slot_id: slotId, total_points: totalPoints, by_user: byUser };
-  }
-
-  async getFarmScore(farmId: string): Promise<{ clan_id: string; total_points: number }[]> {
-    const slots = await this.farmSlotRepo.find({
-      where: { farm_id: farmId },
-      relations: ['historyPlants', 'historyPlants.plant', 'historyPlants.plantedByUser', 'historyPlants.plantedByUser.clan'],
-    });
-
-    const clanScores: Record<string, number> = {};
-    for (const slot of slots) {
-      for (const p of slot.historyPlants) {
-        if (!p.last_harvested_by) continue;
-        const clan = p.plantedByUser?.clan;
-        if (!clan) continue;
-        const points = (p.plant?.harvest_point || 1) * p.harvest_count;
-        clanScores[clan.id] = (clanScores[clan.id] || 0) + points;
-      }
-    }
-
-    return Object.entries(clanScores).map(([clan_id, total_points]) => ({ clan_id, total_points }));
-  }
-
-  async getSlotActions(slotId: string): Promise<{ slot_id: string; actions: SlotActionDto[] }> {
-    const plants = await this.slotPlantRepo.find({
-      where: { farm_slot_id: slotId },
-      relations: ['plantedByUser', 'plant'],
-    });
-
-    const actions: SlotActionDto[] = [];
-    for (const p of plants) {
-      actions.push({
-        plant_id: p.plant_id,
-        plant_name: p.plant?.name || null,
-        planted_by: p.planted_by,
-        planted_at: p.created_at,
-        last_watered_at: p.last_watered_at,
-        last_bug_caught_at: p.last_bug_caught_at,
-        last_harvested_by: p.last_harvested_by,
-        harvest_at: p.harvest_at,
-      });
-    }
-    return { slot_id: slotId, actions };
+    const plants = await query.getMany();
+    return plants.map(p => ({ ...p, isRemoved: !!p.deleted_at }));
   }
 }

@@ -6,6 +6,7 @@ import { ClanFundController } from './clan-fund.controller';
 import { ClanFundService } from './clan-fund.service';
 import { ClanFundTransactionEntity } from './entity/clan-fund-transaction.entity';
 import { ClanEntity } from '@modules/clan/entity/clan.entity';
+import { ClanActivityModule } from '@modules/clan-activity/clan-activity.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { ClanEntity } from '@modules/clan/entity/clan.entity';
       ClanEntity,
     ]),
     ClsModule,
+    ClanActivityModule
   ],
   providers: [ClanFundService],
   controllers: [ClanFundController],

@@ -42,6 +42,7 @@ import { PlantStageModule } from '@modules/plant-stage/plant-stage.module';
 import { ClanWarehouseModule } from '@modules/clan-warehouse/clan-warehouse.module';
 import { SlotsPlantModule } from '@modules/slots-plant/slots-plant.module';
 import { UserClanStatModule } from '@modules/user-clan-stat/user-clan-stat.module';
+import { ClanActivityModule } from './modules/clan-activity/clan-activity.module';
 
 @Module({
   imports: [
@@ -94,6 +95,7 @@ import { UserClanStatModule } from '@modules/user-clan-stat/user-clan-stat.modul
     ClanWarehouseModule,
     SlotsPlantModule,
     UserClanStatModule,
+    ClanActivityModule,
   ],
 })
 export class AppModule {}
