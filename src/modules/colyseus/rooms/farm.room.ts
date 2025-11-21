@@ -696,6 +696,7 @@ export class FarmRoom extends BaseGameRoom {
       if (client) {
         client.send(MessageTypes.ON_HARVEST_DENIED, {
           message: err.response?.message || 'Cây chưa sẵn sàng thu hoạch!',
+          slotId,
           remaining: err.response?.remaining ?? null,
           max: err.response?.max ?? null,
         });

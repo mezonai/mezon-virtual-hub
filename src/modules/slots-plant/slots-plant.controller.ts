@@ -1,7 +1,11 @@
-import { Controller, Get, Param } from '@nestjs/common';
+import { Controller, Get, NotFoundException, Param, Query } from '@nestjs/common';
 import { SlotsPlantService } from './slots-plant.service';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { ClsService } from 'nestjs-cls';
+import { UserEntity } from '@modules/user/entity/user.entity';
+import { USER_TOKEN } from '@constant';
+import { PlantState } from '@enum';
+import { ActivePlantsQueryDto } from './dto/slots-plant.dto';
 
 @ApiBearerAuth()
 @ApiTags('Slots Plant')
@@ -9,37 +13,30 @@ import { ClsService } from 'nestjs-cls';
 export class SlotsPlantController {
   constructor(
     private readonly slotsPlantService: SlotsPlantService,
-    private readonly clsService: ClsService,
-  ) { }
+    private readonly cls: ClsService,
+  ) {}
 
-  @Get(':farm_slot_id/history')
-  @ApiOperation({ summary: 'Get all history of a slot' })
-  getHistory(@Param('farm_slot_id') farmSlotId: string) {
-    return this.slotsPlantService.getSlotHistory(farmSlotId);
+  @Get('')
+  @ApiOperation({ summary: 'Get all slot plants (including deleted)' })
+  async getAllSlotPlants() {
+    return this.slotsPlantService.getAllSlotPlants();
   }
 
-  @Get(':farm_slot_id/harvesters')
-  @ApiOperation({ summary: 'Get all harvesters for a slot' })
-  getHarvesters(@Param('farm_slot_id') farmSlotId: string) {
-    return this.slotsPlantService.getSlotHarvesters(farmSlotId);
+ @Get(':farmSlotId/active')
+  @ApiOperation({ summary: 'Get active plants in a slot' })
+  async getActivePlants(
+    @Param('farmSlotId') farmSlotId: string,
+    @Query() query: ActivePlantsQueryDto,
+  ) {
+    return this.slotsPlantService.getActivePlantsInSlot(farmSlotId, query);
   }
 
-  @Get(':farm_slot_id/actions')
-  @ApiOperation({ summary: 'Get all actions on a slot' })
-  getActions(@Param('farm_slot_id') farmSlotId: string) {
-    return this.slotsPlantService.getSlotActions(farmSlotId);
+  @Get(':farmSlotId/history')
+  @ApiOperation({ summary: 'Get slot history (including removed plants)' })
+  async getSlotHistory(
+    @Param('farmSlotId') farmSlotId: string,
+    @Query() query: ActivePlantsQueryDto,
+  ) {
+    return this.slotsPlantService.getSlotHistory(farmSlotId, query);
   }
-
-  @Get(':farm_slot_id/score')
-  @ApiOperation({ summary: 'Get slot score' })
-  getSlotScore(@Param('farm_slot_id') farmSlotId: string) {
-    return this.slotsPlantService.getSlotScore(farmSlotId);
-  }
-
-  @Get('/farm/:farm_id/score')
-  @ApiOperation({ summary: 'Get total score for a farm (per clan)' })
-  getFarmScore(@Param('farm_id') farmId: string) {
-    return this.slotsPlantService.getFarmScore(farmId);
-  }
-
 }

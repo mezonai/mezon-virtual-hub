@@ -14,7 +14,8 @@ import { ClanFundTransactionEntity } from './entity/clan-fund-transaction.entity
 import { UserEntity } from '@modules/user/entity/user.entity';
 import { ClanEntity } from '@modules/clan/entity/clan.entity';
 import { Pageable } from '@types';
-import { ClanRole } from '@enum';
+import { ClanActivityActionType, ClanRole } from '@enum';
+import { ClanActivityService } from '@modules/clan-activity/clan-activity.service';
 
 @Injectable()
 export class ClanFundService {
@@ -26,6 +27,7 @@ export class ClanFundService {
     @InjectRepository(ClanFundTransactionEntity)
     private readonly clanFundTransactionRepo: Repository<ClanFundTransactionEntity>,
     private readonly dataSource: DataSource,
+    private readonly clanActivityService: ClanActivityService
   ) {}
 
   async contribute(
@@ -104,6 +106,11 @@ export class ClanFundService {
       });
       await clanFundTransactionRepo.save(transaction);
 
+        await this.clanActivityService.logActivity({
+          clanId: clanId,
+          userId: user.id,
+          actionType: ClanActivityActionType.FUND,
+        });
       return fund;
     });
   }

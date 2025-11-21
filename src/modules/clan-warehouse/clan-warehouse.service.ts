@@ -8,9 +8,10 @@ import { In, MoreThan, Repository } from 'typeorm';
 import { ClanWarehouseEntity } from './entity/clan-warehouse.entity';
 import { PlantEntity } from '@modules/plant/entity/plant.entity';
 import { UserEntity } from '@modules/user/entity/user.entity';
-import { ClanFundType, ClanRole } from '@enum';
+import { ClanActivityActionType, ClanFundType, ClanRole } from '@enum';
 import { ClanFundEntity } from '@modules/clan-fund/entity/clan-fund.entity';
 import { BuyPlantDto, SeedClanWarehouseDto } from './dto/clan-warehouse.dto';
+import { ClanActivityService } from '@modules/clan-activity/clan-activity.service';
 
 @Injectable()
 export class CLanWarehouseService {
@@ -23,6 +24,8 @@ export class CLanWarehouseService {
 
     @InjectRepository(ClanFundEntity)
     private readonly clanFundRepo: Repository<ClanFundEntity>,
+
+    private readonly clanActivityService: ClanActivityService
   ) {}
 
   async getAllItemsInWarehouse(clanId: string) {
@@ -91,6 +94,15 @@ export class CLanWarehouseService {
     }
 
     const savedItem = await this.warehouseRepo.save(warehouseItem);
+
+    await this.clanActivityService.logActivity({
+      clanId: dto.clanId,
+      userId:  user.id,
+      actionType: ClanActivityActionType.PURCHASE,
+      itemName:  plant?.name || '',
+      quantity: dto.quantity,
+      officeName: user.clan?.farm.name
+    });
 
     return {
       clan_id: dto.clanId,

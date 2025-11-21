@@ -14,11 +14,11 @@ import { ClanMemberService } from './clan-member.service';
 import { ClanBroadcastService } from '@modules/clan/events/clan-broadcast.service';
 import { ClanBroadcastEventsListener } from './events/clan-broadcast.listener';
 import { UserClanStatEntity } from '@modules/user-clan-stat/entity/user-clan-stat.entity';
-import { ClanActivityController } from './clan-activity.controller';
-import { ClanActivityService } from './clan-activity.service';
 import { ClanWarehouseEntity } from '@modules/clan-warehouse/entity/clan-warehouse.entity';
 import { ClanFundTransactionEntity } from '@modules/clan-fund/entity/clan-fund-transaction.entity';
 import { SlotsPlantEntity } from '@modules/slots-plant/entity/slots-plant.entity';
+import { ClanActivityService } from '@modules/clan-activity/clan-activity.service';
+import { ClanActivityModule } from '@modules/clan-activity/clan-activity.module';
 
 @Module({
   imports: [
@@ -27,19 +27,18 @@ import { SlotsPlantEntity } from '@modules/slots-plant/entity/slots-plant.entity
     JwtModule,
     forwardRef(() => UserModule),
     forwardRef(() => ClanRequestModule),
+    ClanActivityModule
   ],
   providers: [
     ClanService,
     ClanMemberService,
     ClanBroadcastService,
-    ClanBroadcastEventsListener,
-    ClanActivityService
+    ClanBroadcastEventsListener
   ],
-  controllers: [ClanController, ClanMemberController, ClanActivityController],
+  controllers: [ClanController, ClanMemberController],
   exports: [
     ClanService,
     ClanBroadcastService,
-    ClanActivityService
   ],
 })
 export class ClanModule {}

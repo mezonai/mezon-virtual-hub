@@ -62,12 +62,12 @@ export class PlayerQuestController {
     return this.playerQuestService.getNewbieLoginQuests(user.id, query);
   }
 
-  @Get('event-once')
-  async getOnceQuests(
+  @Get('login-event-7-days')
+  async getLoginRewardQuest(
     @Query() query: PlayerQuestQueryDto,
   ) {
      const user = this.cls.get<UserEntity>(USER_TOKEN);
-    return this.playerQuestService.getOnceQuests(user.id, query);
+    return this.playerQuestService.getLoginRewardQuest(user.id);
   }
 
   @Get('check-unclaimed-quest')

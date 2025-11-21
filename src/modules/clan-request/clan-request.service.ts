@@ -1,4 +1,4 @@
-import { ClanRequestStatus } from '@enum';
+import { ClanActivityActionType, ClanRequestStatus } from '@enum';
 import { BaseService } from '@libs/base/base.service';
 import { ClanEntity } from '@modules/clan/entity/clan.entity';
 import { ClanBroadcastEventType } from '@modules/shared/events/event-types.enum';
@@ -21,6 +21,7 @@ import {
 import { ClanRequestEntity } from './entity/clan-request.entity';
 import { UserClanStatEntity } from '@modules/user-clan-stat/entity/user-clan-stat.entity';
 import { FARM_CONFIG } from '@constant/farm.constant';
+import { ClanActivityService } from '@modules/clan-activity/clan-activity.service';
 
 @Injectable()
 export class ClanRequestService extends BaseService<ClanRequestEntity> {
@@ -33,6 +34,7 @@ export class ClanRequestService extends BaseService<ClanRequestEntity> {
     @InjectRepository(UserClanStatEntity)
     private readonly userClantStatRepo: Repository<UserClanStatEntity>,
     private readonly eventEmitter: EventEmitter2,
+    private readonly clanActivityService:ClanActivityService,
   ) {
     super(clanRequestRepo, ClanRequestEntity.name);
   }
@@ -135,6 +137,11 @@ export class ClanRequestService extends BaseService<ClanRequestEntity> {
       });
       await this.userClantStatRepo.save(stat);
       await this.clanRequestRepo.save(request);
+      await this.clanActivityService.logActivity({
+        clanId: clan.id,
+        userId: request.user.id,
+        actionType: ClanActivityActionType.JOIN,
+      });
       this.eventEmitter.emit(ClanBroadcastEventType.JOIN_APPROVED, {
         request,
       });

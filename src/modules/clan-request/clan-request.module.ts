@@ -9,6 +9,8 @@ import { ClanEntity } from '@modules/clan/entity/clan.entity';
 import { ClanModule } from '@modules/clan/clan.module';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { UserClanStatEntity } from '@modules/user-clan-stat/entity/user-clan-stat.entity';
+import { ClanActivityService } from '@modules/clan-activity/clan-activity.service';
+import { ClanActivityModule } from '@modules/clan-activity/clan-activity.module';
 
 @Module({
   imports: [
@@ -16,10 +18,9 @@ import { UserClanStatEntity } from '@modules/user-clan-stat/entity/user-clan-sta
     ClsModule,
     EventEmitterModule.forRoot(),
     forwardRef(() => ClanModule),
+    ClanActivityModule
   ],
-  providers: [
-    ClanRequestService
-  ],
+  providers: [ClanRequestService],
   controllers: [ClanRequestController],
   exports: [ClanRequestService],
 })
