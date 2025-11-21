@@ -35,7 +35,9 @@ export class QuestListener implements OnModuleInit {
     GlobalEventCommon.on(EventTypes.EVENT_LOGIN_REWARD, (userId: string) => {
       this.questProgressService
         .completeQuestForUser(userId, [
-          QuestType.EVENT_LOGIN
+          QuestType.EVENT_LOGIN_PLANT,
+          QuestType.EVENT_LOGIN_CLAN,
+          QuestType.EVENT_LOGIN_PET,
         ])
         .catch((err) => console.error('Quest Event progress update failed', err));
     });

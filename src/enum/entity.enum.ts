@@ -164,8 +164,9 @@ export enum TransactionCurrency {
 export enum QuestType {
   NEWBIE_LOGIN = 'newbie_login',
   NEWBIE_LOGIN_SPECIAL = 'newbie_login_special',
-  EVENT_LOGIN = 'event_login',
-  EVENT_LOGIN_2 = 'event_login_2',
+  EVENT_LOGIN_PLANT = 'event_login_plant',
+  EVENT_LOGIN_PET = 'event_login_pet',
+  EVENT_LOGIN_CLAN = 'event_login_clan',
   VISIT_OFFICE = 'visit_office',
   SPIN_LUCKY_WHEEL = 'spin_lucky_wheel',
   BUY_FOOD = 'buy_food',

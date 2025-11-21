@@ -1,4 +1,4 @@
-import { QuestFrequency, QuestType } from '@enum';
+import { QuestFrequency, QuestType, SortOrder } from '@enum';
 import { BaseService } from '@libs/base/base.service';
 import { Logger } from '@libs/logger';
 import { InventoryService } from '@modules/inventory/inventory.service';
@@ -185,9 +185,9 @@ export class PlayerQuestService extends BaseService<PlayerQuestEntity> {
     return quests.map((q) => this.toQuestProgressDto(q));
   }
 
-  async getOnceQuests(userId: string, query: PlayerQuestQueryDto) {
-    const { page = 1, limit = 50 } = query;
+  async getLoginRewardQuest(userId: string) {
     const now = new Date();
+
     const allQuests = await this.playerQuestRepo
       .createQueryBuilder('pq')
       .leftJoinAndSelect('pq.quest', 'q')
@@ -198,32 +198,36 @@ export class PlayerQuestService extends BaseService<PlayerQuestEntity> {
       .leftJoinAndSelect('items.item', 'item')
       .where('pq.user_id = :userId', { userId })
       .andWhere('q.frequency = :freq', { freq: QuestFrequency.ONCE })
+      .andWhere('q.start_at <= :now AND q.end_at >= :now', { now })
       .getMany();
 
-    allQuests.sort((a, b) => (a.quest.sort_index || 0) - (b.quest.sort_index || 0));
-    const grouped = _.groupBy(allQuests, (pq) => pq.quest.type);
-    const result: any[] = [];
-    for (const type in grouped) {
-      const group = grouped[type];
-      const firstQuest = group[0];
-      if (!firstQuest.start_at || !firstQuest.end_at) continue;
+    if (!allQuests.length) return null;
 
-      const isGroupActive = firstQuest.start_at <= now && firstQuest.end_at >= now;
-      if (!isGroupActive) continue;
-      group.forEach((pq) => {
-        const isAvailable = pq.start_at! <= now && pq.end_at! >= now;
-        result.push({
-          ...this.toQuestProgressDto(pq),
-          is_available: isAvailable,
-        });
-      });
-    }
+    const firstWithStart = allQuests
+      .filter(pq => pq.quest?.start_at)
+      .sort((a, b) => b.quest!.start_at!.getTime() - a.quest!.start_at!.getTime())[0];
 
-    // Paging
-    const startIndex = (page - 1) * limit;
-    const endIndex = startIndex + limit;
-    return result.slice(startIndex, endIndex);
+    if (!firstWithStart) return null;
+
+    const nearestStart = firstWithStart.quest!.start_at!;
+    const eventType = firstWithStart.quest!.type;
+
+    const nearestEventQuests = allQuests.filter(
+      (pq) => pq.quest?.start_at?.getTime() === nearestStart.getTime()
+    );
+
+    const sorted = nearestEventQuests.sort((a, b) => (a.quest!.sort_index ?? 0) - (b.quest!.sort_index ?? 0));
+    const data = sorted.map(pq => ({
+      ...this.toQuestProgressDto(pq),
+      is_available: pq.is_completed,
+    }));
+
+    return {
+      event_type: eventType,
+      data,
+    };
   }
+
 
   toQuestProgressDto(entity: PlayerQuestEntity): NewbieRewardDto {
     const { quest } = entity;
@@ -444,7 +448,9 @@ export class PlayerQuestService extends BaseService<PlayerQuestEntity> {
             In([
               QuestType.NEWBIE_LOGIN,
               QuestType.NEWBIE_LOGIN_SPECIAL,
-              QuestType.EVENT_LOGIN,
+              QuestType.EVENT_LOGIN_PLANT,
+              QuestType.EVENT_LOGIN_CLAN,
+              QuestType.EVENT_LOGIN_PET,
             ]),
           ),
         },
@@ -641,7 +647,9 @@ export class PlayerQuestService extends BaseService<PlayerQuestEntity> {
             In([
               QuestType.NEWBIE_LOGIN,
               QuestType.NEWBIE_LOGIN_SPECIAL,
-              QuestType.EVENT_LOGIN,
+              QuestType.EVENT_LOGIN_PLANT,
+              QuestType.EVENT_LOGIN_CLAN,
+              QuestType.EVENT_LOGIN_PET,
             ]),
           ),
         },
