@@ -153,6 +153,26 @@ export class UserEntity extends AuditEntity {
   @Column({ type: 'timestamp', nullable: true })
   time_leave_clan?: Date;
 
+  @Column({ type: 'bool', default: false })
+  @ApiProperty({
+    description: 'Whether to show event notification to user today',
+    type: Boolean,
+    required: false,
+  })
+  @IsBoolean()
+  @IsOptional()
+  @Type(() => Boolean)
+  show_event_notification: boolean;
+
+  @Column({ type: 'date', nullable: true })
+  @ApiProperty({
+    description: 'The last date when the event notification was shown',
+    type: String,
+    required: false,
+  })
+  @IsOptional()
+  last_show_event_date: Date;
+
   @ApiProperty({description: 'Score user in clan' })
   @OneToMany(() => UserClanStatEntity, (score) => score.user)
   scores: UserClanStatEntity[];

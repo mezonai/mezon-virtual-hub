@@ -201,7 +201,13 @@ export class PlayerQuestService extends BaseService<PlayerQuestEntity> {
       .andWhere('q.start_at <= :now AND q.end_at >= :now', { now })
       .getMany();
 
-    if (!allQuests.length) return null;
+    if (!allQuests.length) {
+      return {
+        event_type: '',
+        show_event_auto: false,
+        data: [],
+      };
+    }
 
     const firstWithStart = allQuests
       .filter(pq => pq.quest?.start_at)
@@ -222,12 +228,32 @@ export class PlayerQuestService extends BaseService<PlayerQuestEntity> {
       is_available: pq.is_completed,
     }));
 
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const status = await this.userService.getShowEventStatus(userId);
+    const lastShown = status.last_show_event_date
+      ? new Date(status.last_show_event_date)
+      : null;
+
+    const isSameDay =lastShown &&
+      lastShown.getFullYear() === today.getFullYear() &&
+      lastShown.getMonth() === today.getMonth() &&
+      lastShown.getDate() === today.getDate();
+
+    let isAutoShow: boolean;
+    if (!lastShown || !isSameDay) {
+      await this.userService.updateShowEventNotification(userId, true);
+      isAutoShow = true;
+    } else {
+      await this.userService.updateShowEventNotification(userId, false);
+      isAutoShow = false;
+    }
+
     return {
       event_type: eventType,
+      show_event_auto: isAutoShow,
       data,
     };
   }
-
 
   toQuestProgressDto(entity: PlayerQuestEntity): NewbieRewardDto {
     const { quest } = entity;
