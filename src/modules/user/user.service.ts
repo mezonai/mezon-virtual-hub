@@ -113,4 +113,40 @@ export class UserService extends BaseService<UserEntity> {
       this.userLocks.delete(userId);
     }
   }
+
+  async getShowEventStatus(userId: string): Promise<{
+    show_event_notification: boolean;
+    last_show_event_date: Date | null;
+  }> {
+    const user = await this.userRepository.findOne({
+      where: { id: userId },
+      select: ['show_event_notification', 'last_show_event_date'],
+    });
+
+    if (!user) throw new NotFoundException('User not found');
+
+    return {
+      show_event_notification: user.show_event_notification,
+      last_show_event_date: user.last_show_event_date || null,
+    };
+  }
+
+  async updateShowEventNotification(userId: string, show: boolean) {
+    const updateData: Partial<UserEntity> = { show_event_notification: show };
+
+    if (show) {
+      updateData.last_show_event_date = new Date();
+    }
+
+    const result = await this.userRepository
+      .createQueryBuilder()
+      .update(UserEntity)
+      .set(updateData)
+      .where('id = :userId', { userId })
+      .execute();
+
+    if (result.affected === 0) {
+      throw new NotFoundException('User not found');
+    }
+  }
 }
