@@ -51,4 +51,11 @@ export class ClanFundEntity {
   @Min(0)
   @Type(() => Number)
   amount: number;
+  
+  @Column({ type: 'int' })
+  @ApiProperty({ example: 100, description: 'Amount contributed or deducted' })
+  @IsInt()
+  @Min(1)
+  @Type(() => Number)
+  spent_amount: number;
 }

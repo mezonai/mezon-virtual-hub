@@ -109,6 +109,7 @@ export class ClanFundService {
         await this.clanActivityService.logActivity({
           clanId: clanId,
           userId: user.id,
+          amount: amount,
           actionType: ClanActivityActionType.FUND,
         });
       return fund;
@@ -130,6 +131,7 @@ export class ClanFundService {
       funds: funds.map((f) => ({
         type: f.type,
         amount: f.amount,
+        spent_amount: f.spent_amount,
       })),
     };
   }

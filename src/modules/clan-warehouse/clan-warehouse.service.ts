@@ -71,6 +71,7 @@ export class CLanWarehouseService {
       throw new BadRequestException('Not enough clan fund');
 
     fundRecord.amount -= totalPrice;
+    fundRecord.spent_amount += totalPrice,
     await this.clanFundRepo.save(fundRecord);
 
     let warehouseItem = await this.warehouseRepo.findOne({
