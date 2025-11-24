@@ -22,7 +22,7 @@ export class PlayerQuestProgressService {
     label?: string,
   ) {
     if (
-      [QuestType.NEWBIE_LOGIN, QuestType.NEWBIE_LOGIN_SPECIAL].includes(
+      [QuestType.NEWBIE_LOGIN, QuestType.NEWBIE_LOGIN_SPECIAL, QuestType.EVENT_LOGIN_PLANT, QuestType.EVENT_LOGIN_CLAN, QuestType.EVENT_LOGIN_PET].includes(
         questType,
       )
     ) {
