@@ -444,7 +444,8 @@ export class FarmSlotService {
     const careRatio = FARM_CONFIG.HARVEST.FORMULA.WATER_WEIGHT * waterRatio + FARM_CONFIG.HARVEST.FORMULA.BUG_WEIGHT * bugRatio;
     const basePoint = slotPlant.plant?.harvest_point ?? 1;
     const multiplierRatio = FARM_CONFIG.HARVEST.FORMULA.MIN_MULTIPLIER + FARM_CONFIG.HARVEST.FORMULA.CARE_FACTOR * careRatio;
-    const clanMultiplier = FARM_CONFIG.HARVEST.FORMULA.MY_CLAN;
+    const clanMultiplier = isIntruder ? FARM_CONFIG.HARVEST.FORMULA.OTHER_CLAN : FARM_CONFIG.HARVEST.FORMULA.MY_CLAN;
+    const careBonus = Math.round((multiplierRatio - 1) * 100);
     const finalScore = Math.floor(basePoint * multiplierRatio * clanMultiplier);
 
     if (isIntruder) {
@@ -486,6 +487,10 @@ export class FarmSlotService {
         ? 'Harvest (intruder) successful'
         : 'Harvest successful',
       remaining: Math.max(max - (used + 1), 0),
+      basePoint,
+      careBonus,
+      clanMultiplier,
+      totalScore: finalScore,
       max,
     };
   }
