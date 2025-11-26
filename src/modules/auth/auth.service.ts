@@ -25,6 +25,8 @@ import {
 } from './dtos/request';
 import { JwtPayload } from './dtos/response';
 import { OAuth2Service } from './oauth2.service';
+import { QuestEventEmitter } from '@modules/player-quest/events/quest.events';
+import { QuestType } from '@enum';
 
 @Injectable()
 export class AuthService {
@@ -207,6 +209,9 @@ export class AuthService {
       await this.playerQuestService.renewQuests(user.id, {
         timezone: 'Asia/Ho_Chi_Minh',
       });
+      QuestEventEmitter.emitEventLoginReward(user.id);
+      QuestEventEmitter.emitNewbieLogin(user.id);
+      QuestEventEmitter.emitProgress(user.id, QuestType.LOGIN_DAYS, 1);
       return tokens;
     }
 
@@ -221,7 +226,9 @@ export class AuthService {
     await this.playerQuestService.initQuests(newUser.id, {
       timezone: 'Asia/Ho_Chi_Minh',
     });
-
+    QuestEventEmitter.emitEventLoginReward(newUser.id);
+    QuestEventEmitter.emitNewbieLogin(newUser.id);
+    QuestEventEmitter.emitProgress(newUser.id, QuestType.LOGIN_DAYS, 1);
     const tokens = await this.generateAccessAndRefreshTokens(newUser);
     return tokens;
   }
