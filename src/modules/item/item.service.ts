@@ -75,18 +75,19 @@ export class ItemService extends BaseService<ItemEntity> {
       .map((inv) => inv.item?.id)
       .filter((id) => id !== undefined && id !== null);
 
-    return await this.itemRepository.find({
-      where: {
-        gender: In([gender, Gender.NOT_SPECIFIED]),
-        id: Not(In(ownedItemIds)),
-        item_code: Not(
-          In([
-            ItemCode.RARITY_CARD_EPIC,
-            ItemCode.RARITY_CARD_LEGENDARY,
-            ItemCode.RARITY_CARD_RARE,
-          ]),
-        ),
-      },
-    });
+    const query = this.itemRepository
+      .createQueryBuilder('item')
+      .where('item.gender IN (:...genders)', {
+        genders: [gender, Gender.NOT_SPECIFIED],
+      })
+      .andWhere('item.is_purchasable = :purchasable', { purchasable: true });
+
+    if (ownedItemIds.length > 0) {
+      query.andWhere('item.id NOT IN (:...ownedIds)', {
+        ownedIds: ownedItemIds,
+      });
+    }
+    const result = await query.getMany();
+    return result;
   }
 }

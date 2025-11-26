@@ -84,7 +84,7 @@ export class GameService {
     const groupedFoods = await this.foodService.getAllFoodsGroupedByType();
 
     const thresholds = {
-      item: this.coinPercent,
+      item: this.itemPercent,
       coin: this.coinPercent + this.itemPercent,
       normalFood: this.coinPercent + this.itemPercent + this.foodNormalPercent,
       premiumFood:
