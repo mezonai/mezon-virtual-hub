@@ -447,6 +447,7 @@ export class FarmSlotService {
     const clanMultiplier = isIntruder ? FARM_CONFIG.HARVEST.FORMULA.OTHER_CLAN : FARM_CONFIG.HARVEST.FORMULA.MY_CLAN;
     const careBonus = Math.round((multiplierRatio - 1) * 100);
     const finalScore = Math.floor(basePoint * multiplierRatio * clanMultiplier);
+    const totalEffectPercent = Math.round(((finalScore - basePoint) / basePoint) * 100);
 
     if (isIntruder) {
       await this.clanActivityService.logActivity({
@@ -491,6 +492,7 @@ export class FarmSlotService {
       careBonus,
       clanMultiplier,
       totalScore: finalScore,
+      totalEffectPercent,
       max,
     };
   }

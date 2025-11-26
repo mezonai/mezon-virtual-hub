@@ -691,6 +691,7 @@ export class FarmRoom extends BaseGameRoom {
         careBonus: result.careBonus,
         clanMultiplier: result.clanMultiplier,
         totalScore: result.totalScore,
+        totalEffectPercent: result.totalEffectPercent,
         remainingHarvest: result.remaining,
         maxHarvest: result.max,
       });
