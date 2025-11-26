@@ -687,6 +687,11 @@ export class FarmRoom extends BaseGameRoom {
         slotId,
         sessionId,
         playerName,
+        baseScore: result.baseScore,
+        careBonus: result.careBonus,
+        clanMultiplier: result.clanMultiplier,
+        totalScore: result.totalScore,
+        bonusPercent: result.bonusPercent,
         remainingHarvest: result.remaining,
         maxHarvest: result.max,
       });

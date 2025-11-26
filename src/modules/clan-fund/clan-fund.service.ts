@@ -106,12 +106,61 @@ export class ClanFundService {
       });
       await clanFundTransactionRepo.save(transaction);
 
-        await this.clanActivityService.logActivity({
-          clanId: clanId,
-          userId: user.id,
-          amount: amount,
-          actionType: ClanActivityActionType.FUND,
-        });
+      await this.clanActivityService.logActivity({
+        clanId: clanId,
+        userId: user.id,
+        amount: amount,
+        actionType: ClanActivityActionType.FUND,
+      });
+      return fund;
+    });
+  }
+
+  async addToFund(
+    clanId: string,
+    user: UserEntity,
+    dto: ContributeClanFundDto,
+  ) {
+    if (user.clan_id !== clanId) {
+      throw new BadRequestException('User does not belong to this clan');
+    }
+
+    const existedClan = await this.clanRepo.findOne({
+      where: {
+        id: clanId,
+      },
+    });
+
+    if (!existedClan) {
+      throw new NotFoundException(`Clan ${clanId} not found`);
+    }
+
+    return this.dataSource.transaction(async (manager) => {
+      const { type, amount } = dto;
+      const clanFundRepo = manager.getRepository(ClanFundEntity);
+      const clanFundTransactionRepo = manager.getRepository(
+        ClanFundTransactionEntity,
+      );
+      
+      let fund = await clanFundRepo.findOne({
+        where: { clan_id: clanId, type },
+        lock: { mode: 'pessimistic_write', tables: ['clan_funds'] },
+      });
+
+      if (!fund) {
+        fund = clanFundRepo.create({ clan_id: clanId, type, amount: 0 });
+      }
+
+      fund.amount += amount;
+      await clanFundRepo.save(fund);
+
+      const transaction = clanFundTransactionRepo.create({
+        clan_id: clanId,
+        user_id: user.id,
+        type,
+        amount,
+      });
+      await clanFundTransactionRepo.save(transaction);
       return fund;
     });
   }

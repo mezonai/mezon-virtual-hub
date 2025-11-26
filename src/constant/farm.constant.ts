@@ -14,8 +14,8 @@ export const FARM_CONFIG = {
   HARVEST: {
     DELAY_MS: 10000,
     INTERRUPT_RATE: 0.2,
-    MAX_HARVEST: 10,
-    MAX_INTERRUPT: 10,
+    MAX_HARVEST: 100,
+    MAX_INTERRUPT: 100,
     RESET_HARVEST_HOURS: 24,
     FORMULA: {
       MIN_MULTIPLIER: 0.6, // hệ số tối thiểu khi không chăm cây

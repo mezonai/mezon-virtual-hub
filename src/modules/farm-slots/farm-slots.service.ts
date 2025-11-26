@@ -19,11 +19,12 @@ import { FarmEntity } from '@modules/farm/entity/farm.entity';
 import { ClanWarehouseEntity } from '@modules/clan-warehouse/entity/clan-warehouse.entity';
 import { PlantCareUtils } from '@modules/plant/plant-care.service';
 import { CLanWarehouseService } from '@modules/clan-warehouse/clan-warehouse.service';
-import { ClanActivityActionType, PlantState } from '@enum';
+import { ClanActivityActionType, ClanFundType, PlantState } from '@enum';
 import { CLAN_WAREHOUSE, FARM_CONFIG } from '@constant/farm.constant';
 import { UserClanStatEntity as UserClanStatEntity } from '@modules/user-clan-stat/entity/user-clan-stat.entity';
 import { UserClanStatService } from '@modules/user-clan-stat/user-clan-stat.service';
 import { ClanActivityService } from '@modules/clan-activity/clan-activity.service';
+import { ClanFundService } from '@modules/clan-fund/clan-fund.service';
 
 @Injectable()
 export class FarmSlotService {
@@ -45,6 +46,7 @@ export class FarmSlotService {
     private readonly userClanStatRepo: Repository<UserClanStatEntity>,
     private readonly userClanStatService: UserClanStatService,
     private readonly clanActivityService: ClanActivityService,
+    private readonly clanFundService: ClanFundService,
   ) {}
 
   async getFarmWithSlotsByClan(clan_id: string): Promise<FarmWithSlotsDto> {
@@ -442,10 +444,17 @@ export class FarmSlotService {
     const waterRatio = Math.min(slotPlant.total_water_count / totalWater, 1);
     const bugRatio = Math.min(slotPlant.total_bug_caught / totalBug, 1);
     const careRatio = FARM_CONFIG.HARVEST.FORMULA.WATER_WEIGHT * waterRatio + FARM_CONFIG.HARVEST.FORMULA.BUG_WEIGHT * bugRatio;
-    const basePoint = slotPlant.plant?.harvest_point ?? 1;
+    const baseScore = slotPlant.plant?.harvest_point ?? 1;
     const multiplierRatio = FARM_CONFIG.HARVEST.FORMULA.MIN_MULTIPLIER + FARM_CONFIG.HARVEST.FORMULA.CARE_FACTOR * careRatio;
-    const clanMultiplier = FARM_CONFIG.HARVEST.FORMULA.MY_CLAN;
-    const finalScore = Math.floor(basePoint * multiplierRatio * clanMultiplier);
+    const clanMultiplier = isIntruder ? FARM_CONFIG.HARVEST.FORMULA.OTHER_CLAN : FARM_CONFIG.HARVEST.FORMULA.MY_CLAN;
+    const careBonus = Math.round((multiplierRatio - 1) * 100);
+    const finalScore = Math.floor(baseScore * multiplierRatio * clanMultiplier);
+    const bonusPercent = Math.round(((finalScore - baseScore) / baseScore) * 100);
+
+    await this.clanFundService.addToFund(user.clan.id, user, {
+      type: ClanFundType.GOLD ,
+      amount: finalScore,
+    });
 
     if (isIntruder) {
       await this.clanActivityService.logActivity({
@@ -454,6 +463,7 @@ export class FarmSlotService {
         actionType: ClanActivityActionType.HARVEST_INTRUDER,
         itemName: slotPlant.plant?.name ?? 'vật phẩm',
         quantity: 1,
+        amount: finalScore,
         officeName: user.clan.farm?.name ?? (user.clan.name + " Farm"),
       });
 
@@ -463,6 +473,7 @@ export class FarmSlotService {
         actionType: ClanActivityActionType.HARVESTED_OTHER_FARM,
         itemName: slotPlant.plant?.name ?? 'vật phẩm',
         quantity: 1,
+        amount: finalScore,
         officeName: slot.farm.name,
       });
     } else {
@@ -472,6 +483,7 @@ export class FarmSlotService {
         actionType: ClanActivityActionType.HARVEST,
         itemName: slotPlant.plant?.name ?? 'vật phẩm',
         quantity: 1,
+        amount: finalScore,
         officeName: slot.farm.name ?? (user.clan.name + " Farm"),
       });
     }
@@ -486,6 +498,11 @@ export class FarmSlotService {
         ? 'Harvest (intruder) successful'
         : 'Harvest successful',
       remaining: Math.max(max - (used + 1), 0),
+      baseScore: baseScore,
+      careBonus,
+      clanMultiplier,
+      totalScore: finalScore,
+      bonusPercent: bonusPercent,
       max,
     };
   }

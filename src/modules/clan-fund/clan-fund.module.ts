@@ -20,5 +20,6 @@ import { ClanActivityModule } from '@modules/clan-activity/clan-activity.module'
   ],
   providers: [ClanFundService],
   controllers: [ClanFundController],
+  exports: [ClanFundService],
 })
 export class ClanFundModule {}
