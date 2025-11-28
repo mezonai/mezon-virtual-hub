@@ -81,4 +81,17 @@ export class PetsService extends BaseService<PetsEntity> {
     }
     return { deleted: true };
   }
+
+    async getById(id: string): Promise<PetsEntity> {
+    const pet = await this.findOne({
+      where: { id },
+      relations: ['pet_skills'],
+    });
+
+    if (!pet) {
+      throw new NotFoundException(`Pet with id ${id} not found`);
+    }
+    return pet;
+  }
+
 }

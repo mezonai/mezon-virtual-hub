@@ -1,4 +1,4 @@
-import { AnimalRarity, SkillCode } from '@enum';
+import { AnimalRarity, PetType, SkillCode } from '@enum';
 import { PetSkillUsageEntity } from '@modules/pet-skill-usages/entity/pet-skill-usages.entity';
 import {
   ApiProperty,
@@ -6,13 +6,14 @@ import {
   OmitType,
   PickType,
 } from '@nestjs/swagger';
-import { Exclude, Type } from 'class-transformer';
+import { Exclude, Transform, Type } from 'class-transformer';
 import {
   ArrayMaxSize,
   ArrayNotEmpty,
   IsArray,
   IsEnum,
   IsOptional,
+  IsString,
   IsUUID,
 } from 'class-validator';
 import { PetsEntity } from '../entity/pets.entity';
@@ -88,3 +89,30 @@ export class BringPetsDtoList {
   @Type(() => BringPetsDto)
   pets: BringPetsDto[];
 }
+
+export class PetDto {
+  public id: string;
+  @ApiPropertyOptional()
+  @IsString()
+  @IsOptional()
+  @Transform(({ value }) => (typeof value === 'string' ? value?.trim() : value))
+  species?: string;
+
+  @ApiPropertyOptional({
+    description: 'Rarity of the animal',
+    enum: AnimalRarity,
+  })
+  @IsEnum(AnimalRarity)
+  @IsOptional()
+  rarity?: AnimalRarity = AnimalRarity.COMMON;
+
+  @ApiPropertyOptional({
+    description: 'Type of the pet.',
+    enum: PetType,
+  })
+  @IsEnum(PetType)
+  @IsOptional()
+  type?: PetType;
+}
+
+ 

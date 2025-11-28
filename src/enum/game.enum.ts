@@ -3,6 +3,7 @@ export enum RewardSlotType {
   ITEM = 'item',
   FOOD = 'food',
   DIAMOND = 'diamond',
+  PET ='pet',
   NONE = 'none',
 }
 

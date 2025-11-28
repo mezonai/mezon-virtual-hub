@@ -11,6 +11,8 @@ import { InventoryModule } from '@modules/inventory/inventory.module';
 import { ItemModule } from '@modules/item/item.module';
 import { FoodModule } from '@modules/food/food.module';
 import { PlayerQuestModule } from '@modules/player-quest/player-quest.module';
+import { PetsModule } from '@modules/pets/pets.module';
+import { PetPlayersModule } from '@modules/pet-players/pet-players.module';
 
 @Module({
   imports: [
@@ -19,7 +21,9 @@ import { PlayerQuestModule } from '@modules/player-quest/player-quest.module';
     InventoryModule,
     FoodModule,
     ItemModule,
-    PlayerQuestModule
+    PlayerQuestModule,
+    PetsModule,
+    PetPlayersModule
   ],
   controllers: [GameController],
   providers: [GameService],

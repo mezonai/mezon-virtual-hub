@@ -23,6 +23,11 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 import { AwardResponseDto, RewardDataType } from './dto/game.dto';
+import { PetsService } from '@modules/pets/pets.service';
+import { PetsEntity } from '@modules/pets/entity/pets.entity';
+import { PetPlayersService } from '@modules/pet-players/pet-players.service';
+import { json } from 'stream/consumers';
+import { PetDto } from '@modules/pets/dto/pets.dto';
 
 @Injectable()
 export class GameService {
@@ -32,15 +37,19 @@ export class GameService {
   private readonly foodNormalPercent: number;
   private readonly foodPremiumPercent: number;
   private readonly foodUltraPercent: number;
+  private readonly petPercent: number;
   constructor(
     private readonly inventoryService: InventoryService,
     private readonly itemService: ItemService,
     @InjectRepository(UserEntity)
     private readonly userRepository: Repository<UserEntity>,
     private readonly foodService: FoodService,
+    private readonly petsService: PetsService,
+    private readonly petPlayersService: PetPlayersService,
     private readonly dataSource: DataSource,
   ) {
     this.itemPercent = configEnv().REWARD_ITEM_PERCENT;
+    this.petPercent = configEnv().REWARD_PET_PERCENT;
     this.coinPercent = configEnv().REWARD_COIN_PERCENT;
     this.highCoinPercent = configEnv().REWARD_HIGH_COIN_PERCENT;
 
@@ -82,6 +91,7 @@ export class GameService {
   ): Promise<RewardDataType> {
     const rewards: RewardDataType = [];
     const groupedFoods = await this.foodService.getAllFoodsGroupedByType();
+    const groupedPet = await this.petsService.getAll();
 
     const thresholds = {
       item: this.itemPercent,
@@ -98,6 +108,13 @@ export class GameService {
       //   this.foodNormalPercent +
       //   this.foodPremiumPercent +
       //   this.foodUltraPercent,
+      pet: 
+        this.coinPercent +
+        this.itemPercent +
+        this.foodNormalPercent +
+        this.foodPremiumPercent +
+        this.foodUltraPercent +
+        this.petPercent,
     };
 
     for (let i = 0; i < this.SLOT_COUNT; i++) {
@@ -109,7 +126,6 @@ export class GameService {
             availableItems[Math.floor(Math.random() * availableItems.length)];
           rewards.push(randomItem ?? null);
           break;
-
         case rand < thresholds.coin:
           rewards.push('coin');
           break;
@@ -121,10 +137,14 @@ export class GameService {
         case rand < thresholds.premiumFood:
           rewards.push(groupedFoods[FoodType.PREMIUM] || null);
           break;
-
         // case rand < thresholds.ultraFood:
         //   rewards.push(groupedFoods[FoodType.ULTRA_PREMIUM] || null);
         //   break;
+        case rand < thresholds.pet && groupedPet.length > 0:
+          const randomPet =
+            groupedPet[Math.floor(Math.random() * groupedPet.length)];
+          rewards.push(randomPet ?? null);
+          break;
 
         default:
           rewards.push(null);
@@ -193,6 +213,32 @@ export class GameService {
           food: reward,
           quantity: inventoryFood.quantity,
         });
+      } else if (reward instanceof PetsEntity) {
+        const petEntity = await this.petsService.getById(reward?.id);
+        const newPetPlayer = await this.petPlayersService.createPetPlayers(
+          {
+            pet_id: petEntity.id,
+            user_id: user.id,
+            rarity: petEntity.rarity,
+          },
+          1,
+        );
+
+        const petPlayer = newPetPlayer[0];
+        const petRewardDto: PetDto = {
+          id: petPlayer.pet.id,
+          species: petPlayer.pet.species,
+          type: petPlayer.pet.type,
+          rarity: petPlayer.current_rarity,
+        };
+
+        result.push({
+          type: RewardSlotType.PET,
+          pet: petRewardDto,
+          quantity: 1,
+        });
+
+        console.log('Reward Pet DTO: ', JSON.stringify(result));
       } else {
         result.push(null);
       }
