@@ -157,30 +157,28 @@ export class PlayerQuestService extends BaseService<PlayerQuestEntity> {
       order = 'DESC',
     } = query;
 
-    const [quests] = await Promise.all([
-      this.playerQuestRepo.find({
-        where: {
-          user: { id: userId },
-          quest: {
-            type: In([QuestType.NEWBIE_LOGIN, QuestType.NEWBIE_LOGIN_SPECIAL]),
-          },
-          end_at: MoreThan(new Date()),
+    const quests = await this.playerQuestRepo.find({
+      where: {
+        user: { id: userId },
+        quest: {
+          type: In([QuestType.NEWBIE_LOGIN, QuestType.NEWBIE_LOGIN_SPECIAL]),
         },
-        relations: [
-          'quest',
-          'quest.reward',
-          'quest.reward.items',
-          'quest.reward.items.pet',
-          'quest.reward.items.food',
-          'quest.reward.items.item',
-        ],
-        take: limit,
-        skip: (page - 1) * limit,
-        order: {
-          [sort_by]: order,
-        },
-      }),
-    ]);
+        end_at: MoreThan(new Date()),
+      },
+      relations: [
+        'quest',
+        'quest.reward',
+        'quest.reward.items',
+        'quest.reward.items.pet',
+        'quest.reward.items.food',
+        'quest.reward.items.item',
+      ],
+      take: limit,
+      skip: (page - 1) * limit,
+      order: {
+        [sort_by]: order,
+      },
+    });
 
     return quests.map((q) => this.toQuestProgressDto(q));
   }
@@ -199,6 +197,9 @@ export class PlayerQuestService extends BaseService<PlayerQuestEntity> {
       .where('pq.user_id = :userId', { userId })
       .andWhere('q.frequency = :freq', { freq: QuestFrequency.ONCE })
       .andWhere('q.start_at <= :now AND q.end_at >= :now', { now })
+      .andWhere('q.type NOT IN (:...excludedTypes)', {
+        excludedTypes: [QuestType.NEWBIE_LOGIN, QuestType.NEWBIE_LOGIN_SPECIAL],
+      })
       .getMany();
 
     if (!allQuests.length) {
@@ -210,8 +211,10 @@ export class PlayerQuestService extends BaseService<PlayerQuestEntity> {
     }
 
     const firstWithStart = allQuests
-      .filter(pq => pq.quest?.start_at)
-      .sort((a, b) => b.quest!.start_at!.getTime() - a.quest!.start_at!.getTime())[0];
+      .filter((pq) => pq.quest?.start_at)
+      .sort(
+        (a, b) => b.quest!.start_at!.getTime() - a.quest!.start_at!.getTime(),
+      )[0];
 
     if (!firstWithStart) return null;
 
@@ -219,11 +222,13 @@ export class PlayerQuestService extends BaseService<PlayerQuestEntity> {
     const eventType = firstWithStart.quest!.type;
 
     const nearestEventQuests = allQuests.filter(
-      (pq) => pq.quest?.start_at?.getTime() === nearestStart.getTime()
+      (pq) => pq.quest?.start_at?.getTime() === nearestStart.getTime(),
     );
 
-    const sorted = nearestEventQuests.sort((a, b) => (a.quest!.sort_index ?? 0) - (b.quest!.sort_index ?? 0));
-    const data = sorted.map(pq => ({
+    const sorted = nearestEventQuests.sort(
+      (a, b) => (a.quest!.sort_index ?? 0) - (b.quest!.sort_index ?? 0),
+    );
+    const data = sorted.map((pq) => ({
       ...this.toQuestProgressDto(pq),
       is_available: pq.is_completed,
     }));
@@ -234,7 +239,8 @@ export class PlayerQuestService extends BaseService<PlayerQuestEntity> {
       ? new Date(status.last_show_event_date)
       : null;
 
-    const isSameDay =lastShown &&
+    const isSameDay =
+      lastShown &&
       lastShown.getFullYear() === today.getFullYear() &&
       lastShown.getMonth() === today.getMonth() &&
       lastShown.getDate() === today.getDate();
@@ -811,7 +817,7 @@ export class PlayerQuestService extends BaseService<PlayerQuestEntity> {
     return toSave;
   }
 
-  hasCompletedNewbieLoginToday(quests: PlayerQuestEntity[]): boolean {
+  hasCompletedLoginRewardToday(quests: PlayerQuestEntity[]): boolean {
     const startOfToday = new Date();
     startOfToday.setHours(0, 0, 0, 0);
 
@@ -820,18 +826,20 @@ export class PlayerQuestService extends BaseService<PlayerQuestEntity> {
 
     return quests.some(
       (pq) =>
-        this.isNewbieLoginQuest(pq) &&
+        this.isLoginQuest(pq) &&
         pq.completed_at &&
         pq.completed_at >= startOfToday &&
         pq.completed_at <= endOfToday,
     );
   }
 
-  isNewbieLoginQuest(pq: PlayerQuestEntity): boolean {
+  isLoginQuest(pq: PlayerQuestEntity): boolean {
     return (
       pq.quest.type === QuestType.NEWBIE_LOGIN ||
       pq.quest.type === QuestType.NEWBIE_LOGIN_SPECIAL ||
-      pq.quest.frequency === QuestFrequency.ONCE
+      pq.quest.type === QuestType.EVENT_LOGIN_CLAN ||
+      pq.quest.type === QuestType.EVENT_LOGIN_PET ||
+      pq.quest.type === QuestType.EVENT_LOGIN_PLANT
     );
   }
 
