@@ -4,7 +4,7 @@ import { MessageTypes } from '@modules/colyseus/MessageTypes';
 import { PlayerSessionManager } from '@modules/colyseus/player/PlayerSessionManager';
 import { Inject } from '@nestjs/common';
 import moment from 'moment';
-import { In, LessThanOrEqual, MoreThanOrEqual } from 'typeorm';
+import { In, IsNull, LessThanOrEqual, MoreThanOrEqual } from 'typeorm';
 import { PlayerQuestEntity } from './entity/player-quest.entity';
 import { PlayerQuestService } from './player-quest.service';
 
@@ -91,7 +91,7 @@ export class PlayerQuestProgressService {
     }
   }
 
-  async completeQuestForUser(userId: string, questTypes: string[]) {
+  async completeLoginQuestForUser(userId: string, questTypes: QuestType[]) {
     const now = new Date();
     const playerQuests = await this.playerQuestService.find({
       where: {
@@ -101,18 +101,19 @@ export class PlayerQuestProgressService {
         end_at: MoreThanOrEqual(now),
       },
       relations: ['quest'],
-      order: { end_at: 'ASC' },
+      order: { quest:{sort_index: 'ASC'} },
     });
 
     if (!playerQuests.length) return;
 
     // If any quest already completed today → stop
-    if (this.playerQuestService.hasCompletedNewbieLoginToday(playerQuests)) {
+    if (this.playerQuestService.hasCompletedLoginRewardToday(playerQuests)) {
       return;
     }
 
     // Pick the first uncompleted quest (already sorted by end_at)
-    const questToComplete = playerQuests.find((pq) => !pq.completed_at);
+    const questToComplete = playerQuests.find((pq) => !pq.completed_at );
+    console.log("questToComplete: ", questToComplete, "- playerQuests", playerQuests)
     if (!questToComplete) return;
 
     if (!questToComplete.progress_history) {

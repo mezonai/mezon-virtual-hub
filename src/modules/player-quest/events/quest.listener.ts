@@ -25,7 +25,7 @@ export class QuestListener implements OnModuleInit {
 
     GlobalEventCommon.on(EventTypes.NEWBIE_LOGIN, (userId: string) => {
       this.questProgressService
-        .completeQuestForUser(userId,[
+        .completeLoginQuestForUser(userId,[
           QuestType.NEWBIE_LOGIN,
           QuestType.NEWBIE_LOGIN_SPECIAL,
         ])
@@ -34,12 +34,20 @@ export class QuestListener implements OnModuleInit {
 
     GlobalEventCommon.on(EventTypes.EVENT_LOGIN_REWARD, (userId: string) => {
       this.questProgressService
-        .completeQuestForUser(userId, [
-          QuestType.EVENT_LOGIN_PLANT,
-          QuestType.EVENT_LOGIN_CLAN,
-          QuestType.EVENT_LOGIN_PET,
-        ])
-        .catch((err) => console.error('Quest Event progress update failed', err));
+        .completeLoginQuestForUser(userId, [QuestType.EVENT_LOGIN_PLANT])
+        .catch((err) =>
+          console.error('Quest Event progress update failed', err),
+        );
+      this.questProgressService
+        .completeLoginQuestForUser(userId, [QuestType.EVENT_LOGIN_CLAN])
+        .catch((err) =>
+          console.error('Quest Event progress update failed', err),
+        );
+      this.questProgressService
+        .completeLoginQuestForUser(userId, [QuestType.EVENT_LOGIN_PET])
+        .catch((err) =>
+          console.error('Quest Event progress update failed', err),
+        );
     });
   }
 }
