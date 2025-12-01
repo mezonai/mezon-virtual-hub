@@ -2,7 +2,7 @@
 import { RewardType } from '@enum';
 import { QuestEntity } from '@modules/quest/entity/quest.entity';
 import { ApiProperty, OmitType } from '@nestjs/swagger';
-import { IsEnum } from 'class-validator';
+import { IsEnum, IsString } from 'class-validator';
 
 export class QuestManagementDto {
   @ApiProperty()
@@ -42,8 +42,7 @@ export class CreateQuestManagementDto extends OmitType(QuestEntity, [
 ]) {
   @ApiProperty({
     description: 'Reward of the quest',
-    enum: RewardType,
   })
-  @IsEnum(RewardType)
-  reward_type: RewardType;
+  @IsString()
+  reward_type: string;
 }
