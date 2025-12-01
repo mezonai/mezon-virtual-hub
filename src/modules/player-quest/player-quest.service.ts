@@ -337,7 +337,7 @@ export class PlayerQuestService extends BaseService<PlayerQuestEntity> {
       // --- Normal daily newbie login quests ---
       const normalDailies = missingQuests.filter(
         (q) => q.type === QuestType.NEWBIE_LOGIN,
-      );
+      ).sort((a, b) => (a.sort_index || 0) - (b.sort_index || 0));;
 
       normalDailies.forEach((quest, idx) => {
         const startAt = firstLoginDay.clone().add(idx, 'days').toDate();
@@ -791,7 +791,7 @@ export class PlayerQuestService extends BaseService<PlayerQuestEntity> {
     const firstLoginDay = moment.tz(timezone).startOf('day');
     const normalDailies = missingQuests.filter(
       (q) => q.quest.type === QuestType.NEWBIE_LOGIN,
-    );
+    ).sort((a, b) => (a.quest.sort_index || 0) - (b.quest.sort_index || 0));;
 
     normalDailies.forEach((quest, idx) => {
       const startAt = firstLoginDay.clone().add(idx, 'days').toDate();

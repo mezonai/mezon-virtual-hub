@@ -4,14 +4,17 @@ import { MessageTypes } from '@modules/colyseus/MessageTypes';
 import { PlayerSessionManager } from '@modules/colyseus/player/PlayerSessionManager';
 import { Inject } from '@nestjs/common';
 import moment from 'moment';
-import { In, IsNull, LessThanOrEqual, MoreThanOrEqual } from 'typeorm';
+import { In, IsNull, LessThanOrEqual, MoreThanOrEqual, Repository } from 'typeorm';
 import { PlayerQuestEntity } from './entity/player-quest.entity';
 import { PlayerQuestService } from './player-quest.service';
+import { InjectRepository } from '@nestjs/typeorm';
 
 export class PlayerQuestProgressService {
   constructor(
     @Inject()
     private readonly playerQuestService: PlayerQuestService,
+    @InjectRepository(PlayerQuestEntity)
+    private readonly playerQuestRepo: Repository<PlayerQuestEntity>,
     private readonly logger: Logger,
   ) {}
 
@@ -96,12 +99,14 @@ export class PlayerQuestProgressService {
     const playerQuests = await this.playerQuestService.find({
       where: {
         user: { id: userId },
-        quest: { type: In(questTypes) },
+        quest: {
+          type: In(questTypes),
+        },
         start_at: LessThanOrEqual(now),
         end_at: MoreThanOrEqual(now),
       },
       relations: ['quest'],
-      order: { quest:{sort_index: 'ASC'} },
+      order: { quest: { sort_index: 'ASC', start_at: 'DESC' } },
     });
 
     if (!playerQuests.length) return;

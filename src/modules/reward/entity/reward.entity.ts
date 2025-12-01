@@ -22,10 +22,10 @@ export class RewardEntity {
   @IsOptional()
   description: string | null;
 
-  @ApiProperty({ enum: RewardType })
+  @ApiProperty()
   @Column({ type: 'varchar', length: 50, unique: true })
   @IsString()
-  type: RewardType;
+  type: string;
 
   @OneToMany(() => RewardItemEntity, (ri) => ri.reward, { cascade: true })
   @Type(() => RewardItemEntity)
