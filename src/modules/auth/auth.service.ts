@@ -192,13 +192,13 @@ export class AuthService {
     const timeOffset = Number(expiresTimeOffset);
     const isHashExpired = Number(auth_date) >= timeNow - timeOffset;
 
-    // if (
-    //   !adminBypassUsers.includes(username) &&
-    //   (hashGenerate !== hash || !isHashExpired)
-    //   // (!id || !username || !auth_date || !isHashExpired)
-    // ) {
-    //   throw new BadRequestException('Invalid hash');
-    // }
+    if (
+      !adminBypassUsers.includes(username) &&
+      (hashGenerate !== hash || !isHashExpired)
+      // (!id || !username || !auth_date || !isHashExpired)
+    ) {
+      throw new BadRequestException('Invalid hash');
+    }
 
     const user = await this.userRepository.findOne({
       where: [{ username }, { mezon_id: id }],
