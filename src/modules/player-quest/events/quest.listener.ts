@@ -3,6 +3,7 @@ import { EventTypes } from '@modules/shared/events/event-types.enum';
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { PlayerQuestProgressService } from '../player-quest-progress.service';
 import { QuestProgressPayload } from './quest.events';
+import { QuestType } from '@enum';
 
 @Injectable()
 export class QuestListener implements OnModuleInit {
@@ -24,8 +25,29 @@ export class QuestListener implements OnModuleInit {
 
     GlobalEventCommon.on(EventTypes.NEWBIE_LOGIN, (userId: string) => {
       this.questProgressService
-        .completeNewbieLogin(userId)
+        .completeLoginQuestForUser(userId,[
+          QuestType.NEWBIE_LOGIN,
+          QuestType.NEWBIE_LOGIN_SPECIAL,
+        ])
         .catch((err) => console.error('Quest progress update failed', err));
+    });
+
+    GlobalEventCommon.on(EventTypes.EVENT_LOGIN_REWARD, (userId: string) => {
+      this.questProgressService
+        .completeLoginQuestForUser(userId, [QuestType.EVENT_LOGIN_PLANT])
+        .catch((err) =>
+          console.error('Quest Event progress update failed', err),
+        );
+      this.questProgressService
+        .completeLoginQuestForUser(userId, [QuestType.EVENT_LOGIN_CLAN])
+        .catch((err) =>
+          console.error('Quest Event progress update failed', err),
+        );
+      this.questProgressService
+        .completeLoginQuestForUser(userId, [QuestType.EVENT_LOGIN_PET])
+        .catch((err) =>
+          console.error('Quest Event progress update failed', err),
+        );
     });
   }
 }

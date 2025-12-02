@@ -1,5 +1,5 @@
 import { BaseService } from '@libs/base/base.service';
-import { MapEntity } from '@modules/map/entity/map.entity';
+import { ClanEntity } from '@modules/clan/entity/clan.entity';
 import {
   BadRequestException,
   Injectable,
@@ -17,8 +17,8 @@ export class UserService extends BaseService<UserEntity> {
   constructor(
     @InjectRepository(UserEntity)
     private readonly userRepository: Repository<UserEntity>,
-    @InjectRepository(MapEntity)
-    private readonly mapRepository: Repository<MapEntity>,
+    @InjectRepository(ClanEntity)
+    private readonly mapRepository: Repository<ClanEntity>,
     private readonly dataSource: DataSource,
   ) {
     super(userRepository, UserEntity.name);
@@ -30,7 +30,7 @@ export class UserService extends BaseService<UserEntity> {
       .leftJoinAndSelect('user.inventories', 'inventory')
       .leftJoinAndSelect('inventory.item', 'item')
       .leftJoinAndSelect('inventory.food', 'food')
-      .leftJoinAndSelect('user.map', 'map')
+      .leftJoinAndSelect('user.clan', 'clans')
       .where('user.id = :id', { id: userId })
       .getOne();
 
@@ -38,34 +38,34 @@ export class UserService extends BaseService<UserEntity> {
       throw new Error('User not found in the database');
     }
 
-    const { inventories, map, ...user } = userInfo;
+    const { inventories, clan, ...user } = userInfo;
 
     return plainToClass(UserInformationDto, {
       user,
       inventories,
-      map,
+      clan,
     });
   }
 
   async updateUserInfo(user: UserEntity, updateDto: UpdateInfoDto) {
-    if (updateDto.map_id) {
+    if (updateDto.clan_id) {
       const map = await this.mapRepository.findOne({
-        where: { id: updateDto.map_id, is_locked: false },
+        where: { id: updateDto.clan_id, is_locked: false },
       });
 
       if (!map) {
         throw new NotFoundException('Map not found or be locked');
       }
 
-      if (user.id !== updateDto.map_id) {
+      if (user.id !== updateDto.clan_id) {
         user.position_x = map.default_position_x;
         user.position_y = map.default_position_y;
       }
 
-      user.map = map;
+      user.clan = map;
     }
 
-    const { map_id, ...filteredData } = updateDto;
+    const { clan_id, ...filteredData } = updateDto;
 
     const dataToUpdate = Object.fromEntries(
       Object.entries(filteredData).filter(
@@ -81,15 +81,6 @@ export class UserService extends BaseService<UserEntity> {
     Object.assign(user, dataToUpdate);
 
     await this.userRepository.update(user.id, user);
-  }
-
-  async getUsersByMapId(mapId: string): Promise<UserEntity[]> {
-    const users = await this.userRepository
-      .createQueryBuilder('user')
-      .where('map_id = :mapId', { mapId })
-      .getMany();
-
-    return users;
   }
 
   async findOne(options: FindOneOptions<UserEntity>) {
@@ -120,6 +111,42 @@ export class UserService extends BaseService<UserEntity> {
       return await fn(user);
     } finally {
       this.userLocks.delete(userId);
+    }
+  }
+
+  async getShowEventStatus(userId: string): Promise<{
+    show_event_notification: boolean;
+    last_show_event_date: Date | null;
+  }> {
+    const user = await this.userRepository.findOne({
+      where: { id: userId },
+      select: ['show_event_notification', 'last_show_event_date'],
+    });
+
+    if (!user) throw new NotFoundException('User not found');
+
+    return {
+      show_event_notification: user.show_event_notification,
+      last_show_event_date: user.last_show_event_date || null,
+    };
+  }
+
+  async updateShowEventNotification(userId: string, show: boolean) {
+    const updateData: Partial<UserEntity> = { show_event_notification: show };
+
+    if (show) {
+      updateData.last_show_event_date = new Date();
+    }
+
+    const result = await this.userRepository
+      .createQueryBuilder()
+      .update(UserEntity)
+      .set(updateData)
+      .where('id = :userId', { userId })
+      .execute();
+
+    if (result.affected === 0) {
+      throw new NotFoundException('User not found');
     }
   }
 }

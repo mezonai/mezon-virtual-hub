@@ -1,4 +1,4 @@
-import { QuestFrequency, QuestType } from '@enum';
+import { QuestFrequency, QuestType, SortOrder } from '@enum';
 import { BaseService } from '@libs/base/base.service';
 import { Logger } from '@libs/logger';
 import { InventoryService } from '@modules/inventory/inventory.service';
@@ -28,6 +28,7 @@ import {
   UpdatePlayerQuestDto,
 } from './dto/player-quest.dto';
 import { PlayerQuestEntity } from './entity/player-quest.entity';
+import _ from 'lodash';
 
 @Injectable()
 export class PlayerQuestService extends BaseService<PlayerQuestEntity> {
@@ -75,6 +76,10 @@ export class PlayerQuestService extends BaseService<PlayerQuestEntity> {
 
       weekly: quests
         .filter((pq) => pq.quest.frequency === QuestFrequency.WEEKLY)
+        .map((pq) => this.mapQuest(pq)),
+
+      once: quests
+        .filter((pq) => pq.quest.frequency === QuestFrequency.ONCE)
         .map((pq) => this.mapQuest(pq)),
     };
   }
@@ -152,32 +157,108 @@ export class PlayerQuestService extends BaseService<PlayerQuestEntity> {
       order = 'DESC',
     } = query;
 
-    const [quests] = await Promise.all([
-      this.playerQuestRepo.find({
-        where: {
-          user: { id: userId },
-          quest: {
-            type: In([QuestType.NEWBIE_LOGIN, QuestType.NEWBIE_LOGIN_SPECIAL]),
-          },
-          end_at: MoreThan(new Date()),
+    const quests = await this.playerQuestRepo.find({
+      where: {
+        user: { id: userId },
+        quest: {
+          type: In([QuestType.NEWBIE_LOGIN, QuestType.NEWBIE_LOGIN_SPECIAL]),
         },
-        relations: [
-          'quest',
-          'quest.reward',
-          'quest.reward.items',
-          'quest.reward.items.pet',
-          'quest.reward.items.food',
-          'quest.reward.items.item',
-        ],
-        take: limit,
-        skip: (page - 1) * limit,
-        order: {
-          [sort_by]: order,
-        },
-      }),
-    ]);
+        end_at: MoreThan(new Date()),
+      },
+      relations: [
+        'quest',
+        'quest.reward',
+        'quest.reward.items',
+        'quest.reward.items.pet',
+        'quest.reward.items.food',
+        'quest.reward.items.item',
+      ],
+      take: limit,
+      skip: (page - 1) * limit,
+      order: {
+        [sort_by]: order,
+      },
+    });
 
     return quests.map((q) => this.toQuestProgressDto(q));
+  }
+
+  async getLoginRewardQuest(userId: string) {
+    const now = new Date();
+
+    const allQuests = await this.playerQuestRepo
+      .createQueryBuilder('pq')
+      .leftJoinAndSelect('pq.quest', 'q')
+      .leftJoinAndSelect('q.reward', 'reward')
+      .leftJoinAndSelect('reward.items', 'items')
+      .leftJoinAndSelect('items.pet', 'pet')
+      .leftJoinAndSelect('items.food', 'food')
+      .leftJoinAndSelect('items.item', 'item')
+      .where('pq.user_id = :userId', { userId })
+      .andWhere('q.frequency = :freq', { freq: QuestFrequency.ONCE })
+      .andWhere('q.start_at <= :now AND q.end_at >= :now', { now })
+      .andWhere('q.type NOT IN (:...excludedTypes)', {
+        excludedTypes: [QuestType.NEWBIE_LOGIN, QuestType.NEWBIE_LOGIN_SPECIAL],
+      })
+      .getMany();
+
+    if (!allQuests.length) {
+      return {
+        event_type: '',
+        show_event_auto: false,
+        data: [],
+      };
+    }
+
+    const firstWithStart = allQuests
+      .filter((pq) => pq.quest?.start_at)
+      .sort(
+        (a, b) => b.quest!.start_at!.getTime() - a.quest!.start_at!.getTime(),
+      )[0];
+
+    if (!firstWithStart) return null;
+
+    const nearestStart = firstWithStart.quest!.start_at!;
+    const eventType = firstWithStart.quest!.type;
+
+    const nearestEventQuests = allQuests.filter(
+      (pq) => pq.quest?.start_at?.getTime() === nearestStart.getTime(),
+    );
+
+    const sorted = nearestEventQuests.sort(
+      (a, b) => (a.quest!.sort_index ?? 0) - (b.quest!.sort_index ?? 0),
+    );
+    const data = sorted.map((pq) => ({
+      ...this.toQuestProgressDto(pq),
+      is_available: pq.is_completed,
+    }));
+
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const status = await this.userService.getShowEventStatus(userId);
+    const lastShown = status.last_show_event_date
+      ? new Date(status.last_show_event_date)
+      : null;
+
+    const isSameDay =
+      lastShown &&
+      lastShown.getFullYear() === today.getFullYear() &&
+      lastShown.getMonth() === today.getMonth() &&
+      lastShown.getDate() === today.getDate();
+
+    let isAutoShow: boolean;
+    if (!lastShown || !isSameDay) {
+      await this.userService.updateShowEventNotification(userId, true);
+      isAutoShow = true;
+    } else {
+      await this.userService.updateShowEventNotification(userId, false);
+      isAutoShow = false;
+    }
+
+    return {
+      event_type: eventType,
+      show_event_auto: isAutoShow,
+      data,
+    };
   }
 
   toQuestProgressDto(entity: PlayerQuestEntity): NewbieRewardDto {
@@ -231,6 +312,9 @@ export class PlayerQuestService extends BaseService<PlayerQuestEntity> {
     return {
       id: pq.id,
       name: pq.quest.name,
+      type: pq.quest.type,
+      start_at: pq.start_at,
+      end_at: pq.end_at,
       description: pq.quest.description,
       frequency: pq.quest.frequency,
       progress: pq.progress_history.length,
@@ -240,6 +324,7 @@ export class PlayerQuestService extends BaseService<PlayerQuestEntity> {
       rewards: pq.quest?.reward?.items,
     };
   }
+
   async initQuests(
     userId: string,
     { timezone = 'Asia/Ho_Chi_Minh' }: FinishQuestQueryDto,
@@ -252,7 +337,7 @@ export class PlayerQuestService extends BaseService<PlayerQuestEntity> {
       // --- Normal daily newbie login quests ---
       const normalDailies = missingQuests.filter(
         (q) => q.type === QuestType.NEWBIE_LOGIN,
-      );
+      ).sort((a, b) => (a.sort_index || 0) - (b.sort_index || 0));;
 
       normalDailies.forEach((quest, idx) => {
         const startAt = firstLoginDay.clone().add(idx, 'days').toDate();
@@ -296,8 +381,10 @@ export class PlayerQuestService extends BaseService<PlayerQuestEntity> {
 
       const others = missingQuests.filter(
         (q) =>
-          q.type !== QuestType.NEWBIE_LOGIN &&
-          q.type !== QuestType.NEWBIE_LOGIN_SPECIAL,
+          (q.type !== QuestType.NEWBIE_LOGIN &&
+            q.type !== QuestType.NEWBIE_LOGIN_SPECIAL &&
+            q.frequency === QuestFrequency.DAILY) ||
+          q.frequency === QuestFrequency.WEEKLY,
       );
 
       for (const quest of others) {
@@ -310,6 +397,42 @@ export class PlayerQuestService extends BaseService<PlayerQuestEntity> {
             end_at: endAt,
           }),
         );
+      }
+
+      const eventQuests = missingQuests.filter(
+        (q) =>
+          q.type !== QuestType.NEWBIE_LOGIN &&
+          q.type !== QuestType.NEWBIE_LOGIN_SPECIAL &&
+          q.frequency === QuestFrequency.ONCE,
+      );
+
+      const grouped = _.groupBy(
+        eventQuests,
+        (q) =>
+          `${q.type}_${q.start_at?.toISOString() || ''}_${q.end_at?.toISOString() || ''}`,
+      );
+
+      for (const groupKey in grouped) {
+        const group = grouped[groupKey].sort(
+          (a, b) => (a.sort_index || 0) - (b.sort_index || 0),
+        );
+        let currentStart = moment(group[0].start_at).startOf('day');
+        const groupEnd = group[0].end_at;
+
+        group.forEach((quest) => {
+          const startAt = currentStart.clone().toDate();
+          const endAt = groupEnd;
+
+          toSave.push(
+            this.playerQuestRepo.create({
+              user: { id: userId },
+              quest,
+              start_at: startAt,
+              end_at: endAt,
+            }),
+          );
+          currentStart = currentStart.clone().add(1, 'days');
+        });
       }
     }
 
@@ -354,7 +477,13 @@ export class PlayerQuestService extends BaseService<PlayerQuestEntity> {
       where: {
         quest: {
           type: Not(
-            In([QuestType.NEWBIE_LOGIN, QuestType.NEWBIE_LOGIN_SPECIAL]),
+            In([
+              QuestType.NEWBIE_LOGIN,
+              QuestType.NEWBIE_LOGIN_SPECIAL,
+              QuestType.EVENT_LOGIN_PLANT,
+              QuestType.EVENT_LOGIN_CLAN,
+              QuestType.EVENT_LOGIN_PET,
+            ]),
           ),
         },
         user: { id: userId },
@@ -437,8 +566,10 @@ export class PlayerQuestService extends BaseService<PlayerQuestEntity> {
 
         const others = missingQuests.filter(
           (q) =>
-            q.type !== QuestType.NEWBIE_LOGIN &&
-            q.type !== QuestType.NEWBIE_LOGIN_SPECIAL,
+            (q.type !== QuestType.NEWBIE_LOGIN &&
+              q.type !== QuestType.NEWBIE_LOGIN_SPECIAL &&
+              q.frequency === QuestFrequency.DAILY) ||
+            q.frequency === QuestFrequency.WEEKLY,
         );
 
         for (const quest of others) {
@@ -454,6 +585,42 @@ export class PlayerQuestService extends BaseService<PlayerQuestEntity> {
               end_at: endAt,
             }),
           );
+        }
+
+        const eventQuests = missingQuests.filter(
+          (q) =>
+            q.type !== QuestType.NEWBIE_LOGIN &&
+            q.type !== QuestType.NEWBIE_LOGIN_SPECIAL &&
+            q.frequency === QuestFrequency.ONCE,
+        );
+
+        const grouped = _.groupBy(
+          eventQuests,
+          (q) =>
+            `${q.type}_${q.start_at?.toISOString() || ''}_${q.end_at?.toISOString() || ''}`,
+        );
+
+        for (const groupKey in grouped) {
+          const group = grouped[groupKey].sort(
+            (a, b) => (a.sort_index || 0) - (b.sort_index || 0),
+          );
+          let currentStart = moment(group[0].start_at).startOf('day');
+          const groupEnd = group[0].end_at;
+
+          group.forEach((quest) => {
+            const startAt = currentStart.clone().toDate();
+            const endAt = groupEnd;
+
+            toSave.push(
+              this.playerQuestRepo.create({
+                user: { id: userId },
+                quest,
+                start_at: startAt,
+                end_at: endAt,
+              }),
+            );
+            currentStart = currentStart.clone().add(1, 'days');
+          });
         }
       }
 
@@ -509,7 +676,13 @@ export class PlayerQuestService extends BaseService<PlayerQuestEntity> {
         is_completed: true,
         quest: {
           type: Not(
-            In([QuestType.NEWBIE_LOGIN, QuestType.NEWBIE_LOGIN_SPECIAL]),
+            In([
+              QuestType.NEWBIE_LOGIN,
+              QuestType.NEWBIE_LOGIN_SPECIAL,
+              QuestType.EVENT_LOGIN_PLANT,
+              QuestType.EVENT_LOGIN_CLAN,
+              QuestType.EVENT_LOGIN_PET,
+            ]),
           ),
         },
         end_at: MoreThan(new Date()),
@@ -618,7 +791,7 @@ export class PlayerQuestService extends BaseService<PlayerQuestEntity> {
     const firstLoginDay = moment.tz(timezone).startOf('day');
     const normalDailies = missingQuests.filter(
       (q) => q.quest.type === QuestType.NEWBIE_LOGIN,
-    );
+    ).sort((a, b) => (a.quest.sort_index || 0) - (b.quest.sort_index || 0));;
 
     normalDailies.forEach((quest, idx) => {
       const startAt = firstLoginDay.clone().add(idx, 'days').toDate();
@@ -644,7 +817,7 @@ export class PlayerQuestService extends BaseService<PlayerQuestEntity> {
     return toSave;
   }
 
-  hasCompletedNewbieLoginToday(quests: PlayerQuestEntity[]): boolean {
+  hasCompletedLoginRewardToday(quests: PlayerQuestEntity[]): boolean {
     const startOfToday = new Date();
     startOfToday.setHours(0, 0, 0, 0);
 
@@ -653,17 +826,20 @@ export class PlayerQuestService extends BaseService<PlayerQuestEntity> {
 
     return quests.some(
       (pq) =>
-        this.isNewbieLoginQuest(pq) &&
+        this.isLoginQuest(pq) &&
         pq.completed_at &&
         pq.completed_at >= startOfToday &&
         pq.completed_at <= endOfToday,
     );
   }
 
-  isNewbieLoginQuest(pq: PlayerQuestEntity): boolean {
+  isLoginQuest(pq: PlayerQuestEntity): boolean {
     return (
       pq.quest.type === QuestType.NEWBIE_LOGIN ||
-      pq.quest.type === QuestType.NEWBIE_LOGIN_SPECIAL
+      pq.quest.type === QuestType.NEWBIE_LOGIN_SPECIAL ||
+      pq.quest.type === QuestType.EVENT_LOGIN_CLAN ||
+      pq.quest.type === QuestType.EVENT_LOGIN_PET ||
+      pq.quest.type === QuestType.EVENT_LOGIN_PLANT
     );
   }
 

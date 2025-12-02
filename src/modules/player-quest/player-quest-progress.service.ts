@@ -4,14 +4,17 @@ import { MessageTypes } from '@modules/colyseus/MessageTypes';
 import { PlayerSessionManager } from '@modules/colyseus/player/PlayerSessionManager';
 import { Inject } from '@nestjs/common';
 import moment from 'moment';
-import { In, LessThanOrEqual, MoreThanOrEqual } from 'typeorm';
+import { In, IsNull, LessThanOrEqual, MoreThanOrEqual, Repository } from 'typeorm';
 import { PlayerQuestEntity } from './entity/player-quest.entity';
 import { PlayerQuestService } from './player-quest.service';
+import { InjectRepository } from '@nestjs/typeorm';
 
 export class PlayerQuestProgressService {
   constructor(
     @Inject()
     private readonly playerQuestService: PlayerQuestService,
+    @InjectRepository(PlayerQuestEntity)
+    private readonly playerQuestRepo: Repository<PlayerQuestEntity>,
     private readonly logger: Logger,
   ) {}
 
@@ -91,30 +94,31 @@ export class PlayerQuestProgressService {
     }
   }
 
-  async completeNewbieLogin(userId: string) {
+  async completeLoginQuestForUser(userId: string, questTypes: QuestType[]) {
     const now = new Date();
     const playerQuests = await this.playerQuestService.find({
       where: {
         user: { id: userId },
         quest: {
-          type: In([QuestType.NEWBIE_LOGIN, QuestType.NEWBIE_LOGIN_SPECIAL]),
+          type: In(questTypes),
         },
         start_at: LessThanOrEqual(now),
         end_at: MoreThanOrEqual(now),
       },
       relations: ['quest'],
-      order: { end_at: 'ASC' },
+      order: { quest: { sort_index: 'ASC', start_at: 'DESC' } },
     });
 
     if (!playerQuests.length) return;
 
     // If any quest already completed today → stop
-    if (this.playerQuestService.hasCompletedNewbieLoginToday(playerQuests)) {
+    if (this.playerQuestService.hasCompletedLoginRewardToday(playerQuests)) {
       return;
     }
 
     // Pick the first uncompleted quest (already sorted by end_at)
-    const questToComplete = playerQuests.find((pq) => !pq.completed_at);
+    const questToComplete = playerQuests.find((pq) => !pq.completed_at );
+    console.log("questToComplete: ", questToComplete, "- playerQuests", playerQuests)
     if (!questToComplete) return;
 
     if (!questToComplete.progress_history) {
@@ -127,7 +131,7 @@ export class PlayerQuestProgressService {
 
     await this.playerQuestService.saveAll([questToComplete]);
     this.logger.log(
-      `User ${userId} has completed newbie login quest: ${questToComplete.quest.type}`,
+      `User ${userId} has completed quest: ${questToComplete.quest.type}`,
     );
   }
 

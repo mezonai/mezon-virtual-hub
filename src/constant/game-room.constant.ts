@@ -1,4 +1,5 @@
 import { BattleRoom } from '@modules/colyseus/rooms/battle.room';
+import { FarmRoom } from '@modules/colyseus/rooms/farm.room';
 import { GameRoom } from '@modules/colyseus/rooms/game.room';
 import { Meeting1Room } from '@modules/colyseus/rooms/meeting1.room';
 import { OfficeRoom } from '@modules/colyseus/rooms/office.room';
@@ -26,6 +27,9 @@ export const SUB_GAME_ROOM: Record<
   },
   'shop1': {
     room: Shop1Room,
+  },
+  'farm': {
+    room: FarmRoom,
   },
   'battle-room': {
     room: BattleRoom,

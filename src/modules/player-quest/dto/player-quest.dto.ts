@@ -137,6 +137,9 @@ export class NewbieRewardDto {
 export class PlayerQuestFrequencyDto {
   id: string;
   name: string;
+  type: QuestType;
+  start_at?: Date | null;
+  end_at?: Date | null;
   description: string | undefined;
   frequency: string;
   progress: number;
