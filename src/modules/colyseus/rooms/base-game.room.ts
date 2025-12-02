@@ -144,7 +144,7 @@ export class BaseGameRoom extends Room<RoomState> {
     if (!user) {
       throw new NotFoundException('User not found or not assigned to any map');
     }
-
+    this.checkLogin(user.id);
     const petPlayers = await this.petPlayersService.findPetPlayersWithPet({
       user: { id: user.id },
     });
@@ -994,6 +994,7 @@ export class BaseGameRoom extends Room<RoomState> {
     const { userData } = client;
     let userId = userData?.id ?? '';
     this.playersInBattle.delete(client.sessionId);
+    PlayerSessionManager.unregister(client.id);
     if (this.state.players.has(client.sessionId)) {
       this.resetMapItem(client, this.state.players.get(client.sessionId));
       this.state.players.delete(client.sessionId);
@@ -1165,5 +1166,13 @@ export class BaseGameRoom extends Room<RoomState> {
 
     }
 
+  }
+
+  checkLogin(userId: string) {
+    const clientCheck = PlayerSessionManager.getClient(userId);
+    if (!clientCheck) {
+      return;
+    }
+    clientCheck.leave(4444, "Duplicate login");
   }
 }
