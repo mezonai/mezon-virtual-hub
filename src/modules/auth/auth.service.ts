@@ -190,7 +190,7 @@ export class AuthService {
 
     const timeNow = new Date().getTime() / 1000;
     const timeOffset = Number(expiresTimeOffset);
-    const isHashExpired = Number(auth_date) >= timeNow - timeOffset;
+    const isHashExpired = Number(auth_date) <= timeNow && Number(auth_date) >= timeNow - timeOffset;
 
     if (
       !adminBypassUsers.includes(username) &&
