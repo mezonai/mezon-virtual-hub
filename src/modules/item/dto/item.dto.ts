@@ -23,6 +23,9 @@ export class ItemDto implements Partial<ItemEntity> {
 
   @Expose()
   item_code: ItemCode | null;
+
+  @Expose()
+  is_purchasable: boolean;
 }
 
 export class ItemDtoRequest {
@@ -57,6 +60,15 @@ export class ItemDtoRequest {
     enum: ItemType,
     example: ItemType.EYES,
   })
-  @IsNumber()
+  @IsString()
   type: ItemType;
+
+  @ApiProperty({ description: 'Item code', example: ItemCode.RARITY_CARD_EPIC, enum: ItemCode, required: false })
+  @IsOptional()
+  @IsString()
+  item_code?: ItemCode;
+
+  @ApiProperty({ description: 'Indicates whether this item can be purchased', example: true, required: false })
+  @IsOptional()
+  is_purchasable?: boolean;
 }
