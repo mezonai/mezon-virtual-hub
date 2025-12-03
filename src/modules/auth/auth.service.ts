@@ -168,7 +168,7 @@ export class AuthService {
 
   async loginWithMezonHash(payload: LoginMezonDto) {
     const { web_app_data } = payload;
-    const hashGenerate = generateMezonHash(web_app_data);
+    const hashGenerate = generateMezonHash(decodeURIComponent(web_app_data));
 
     const {
       MEZON_AUTH_EXPIRES_TIME_OFFSET_IN_SECONDS: expiresTimeOffset,
