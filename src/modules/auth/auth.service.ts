@@ -168,7 +168,7 @@ export class AuthService {
 
   async loginWithMezonHash(payload: LoginMezonDto) {
     const { web_app_data } = payload;
-    const hashGenerate = generateMezonHash(web_app_data);
+    const hashGenerate = generateMezonHash(decodeURIComponent(web_app_data));
 
     const {
       MEZON_AUTH_EXPIRES_TIME_OFFSET_IN_SECONDS: expiresTimeOffset,
@@ -192,6 +192,8 @@ export class AuthService {
     const timeOffset = Number(expiresTimeOffset);
     const isHashExpired = Number(auth_date) <= timeNow && Number(auth_date) >= timeNow - timeOffset;
 
+    console.log("hash : ", hash );
+    console.log("!isHashExpired : ", Number(auth_date), "timeNow: ", timeNow, "timeNow - timeOffset ", timeNow - timeOffset, "timeOffset: ", timeOffset);
     if (
       !adminBypassUsers.includes(username) &&
       (hashGenerate !== hash || !isHashExpired)

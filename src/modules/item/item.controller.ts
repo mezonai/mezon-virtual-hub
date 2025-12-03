@@ -31,7 +31,15 @@ export class ItemController {
 
   @Get()
   @ApiOperation({
-    summary: 'Get list all Items information',
+    summary: 'Get list all Items information purchasable',
+  })
+  async getAllItemsPurchasable() {
+    return await this.itemService.getAllItemsPurchasable();
+  }
+
+  @Get('all-item')
+  @ApiOperation({
+    summary: 'Get list all Items',
   })
   async getAllItems() {
     return await this.itemService.getAllItems();
