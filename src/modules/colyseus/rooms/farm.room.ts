@@ -121,6 +121,10 @@ export class FarmRoom extends BaseGameRoom {
         newPlant.updated_at = plant.updated_at.toISOString();
         slotState.currentPlant = newPlant;
         const newSlotState = new FarmSlotState();
+        newSlotState.id = slotState.id;
+        newSlotState.slot_index = slotState.slot_index;
+        newSlotState.harvestingBy = slotState.harvestingBy;
+        newSlotState.harvestEndTime = slotState.harvestEndTime;
         newSlotState.currentPlant = newPlant;
         newSlotState.harvest_count = slotState.harvest_count;
         newSlotState.harvest_count_max = slotState.harvest_count_max;
@@ -179,13 +183,9 @@ export class FarmRoom extends BaseGameRoom {
 
           const result = await this.farmSlotsService.waterPlant(
             user.id,
-            payload.farm_slot_id,
+            slotId,
           );
-
-          const updatedSlot = await this.farmSlotsService.getSlotWithPlantById(
-            payload.farm_slot_id,
-          );
-
+          const updatedSlot = await this.farmSlotsService.getSlotWithPlantById(slotId);
           if (!updatedSlot || !updatedSlot.currentPlant) return;
 
           const slotState =
@@ -211,7 +211,7 @@ export class FarmRoom extends BaseGameRoom {
           need_water = ${newPlant.need_water}, can_harvest = ${newPlant.can_harvest}, grow_time_remain = ${newPlant.grow_time_remain}`);
           this.state.farmSlotState.set(updatedSlot.id, newSlotState);
           client.send(MessageTypes.ON_WATER_PLANT, {
-            slotId: payload.farm_slot_id,
+            slotId,
             sessionId: client.sessionId,
             message: result.message,
           });
@@ -510,6 +510,59 @@ export class FarmRoom extends BaseGameRoom {
         this.interruptLocks.delete(farm_slot_id);
       }
     });
+
+    this.onMessage('UpdateSlots', async (client) => {
+      const slots = Array.from(this.state.farmSlotState.values()).map(
+        (slot) => {
+          if (slot.currentPlant) {
+            const createdAt = new Date(slot.currentPlant.created_at);
+            const growTime = Number(slot.currentPlant.grow_time);
+
+            if (!isNaN(createdAt.getTime()) && !isNaN(growTime)) {
+              slot.currentPlant.grow_time_remain =
+                PlantCareUtils.calculateGrowRemain(createdAt, growTime);
+              slot.currentPlant.stage = PlantCareUtils.calculatePlantStage(
+                createdAt,
+                growTime,
+              );
+              slot.currentPlant.can_harvest = PlantCareUtils.checkCanHarvest(
+                createdAt,
+                growTime,
+                slot.harvest_count,
+                slot.harvest_count_max,
+              );
+            } else {
+              slot.currentPlant.grow_time_remain = 0;
+              slot.currentPlant.stage = PlantState.SEED;
+              slot.currentPlant.can_harvest = false;
+            }
+          }
+          return slot;
+        },
+      );
+
+      const messageData = {
+        farm_id: this.roomName.split('-farm')[0],
+        slots: slots,
+      };
+      client.send(MessageTypes.ON_SLOT_FARM, messageData);
+
+      const harvestingSlots = Array.from(this.state.farmSlotState.values())
+        .filter((slot) => slot.harvestingBy)
+        .map((slot) => ({
+          slotId: slot.id,
+          sessionId: slot.harvestingBy!,
+          playerName:
+            this.state.players.get(slot.harvestingBy!)?.display_name ||
+            'Ẩn Danh',
+          endTime: slot.harvestEndTime,
+        }));
+      if (harvestingSlots.length > 0) {
+        client.send(MessageTypes.ON_HARVEST_PLAYER_JOIN, {
+          slots: harvestingSlots,
+        });
+      }
+    });
   }
 
   getClientBySessionId(sessionId: string) {
@@ -782,7 +835,12 @@ export class FarmRoom extends BaseGameRoom {
     if (!slotState?.currentPlant) return;
 
     const newSlotState = new FarmSlotState();
-    Object.assign(newSlotState, slotState);
+    newSlotState.id = slotState.id;
+    newSlotState.slot_index = slotState.slot_index;
+    newSlotState.harvest_count = slotState.harvest_count;
+    newSlotState.harvest_count_max = slotState.harvest_count_max;
+    newSlotState.harvestingBy = slotState.harvestingBy;
+    newSlotState.harvestEndTime = slotState.harvestEndTime;
 
     const newPlant = new PlantDataSchema();
     Object.assign(newPlant, slotState.currentPlant, patch);
