@@ -106,7 +106,7 @@ export class PlayerQuestProgressService {
         end_at: MoreThanOrEqual(now),
       },
       relations: ['quest'],
-      order: { quest: { sort_index: 'ASC', start_at: 'DESC' } },
+      order: { quest: { start_at: 'DESC', sort_index: 'ASC'} },
     });
 
     if (!playerQuests.length) return;

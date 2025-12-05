@@ -1,4 +1,4 @@
-import { Gender, ItemCode } from '@enum';
+import { Gender, ItemCode, ItemType } from '@enum';
 import { BaseService } from '@libs/base/base.service';
 import { Inventory } from '@modules/inventory/entity/inventory.entity';
 import { Injectable, NotFoundException } from '@nestjs/common';
@@ -18,12 +18,17 @@ export class ItemService extends BaseService<ItemEntity> {
     super(itemRepository, ItemEntity.name);
   }
 
-  async getAllItems() {
+  async getAllItemsPurchasable() {
     const items = await this.find({
       where: {
         is_purchasable: true,
       },
     });
+    return plainToInstance(ItemDto, items);
+  }
+
+  async getAllItems() {
+    const items = await this.itemRepository.find();
     return plainToInstance(ItemDto, items);
   }
 

@@ -17,10 +17,14 @@ export function generateMezonHash(dataCheckString: string): string {
     hashBotToken,
     'WebAppData',
   );
+  console.log(`dataCheckString: ${dataCheckString}`);
+  console.log(`configEnv().MEZON_APPLICATION_TOKEN: ${configEnv().MEZON_APPLICATION_TOKEN}`);
+  const hashParamsString = dataCheckString.split('&hash=')[0];
   const hashData = Hasher.HEX(Hasher.HMAC_SHA256(
     secretKey,
-    dataCheckString,
+    hashParamsString,
   ));
 
+  console.log(`hashData: ${hashData}`);
   return hashData;
 }
