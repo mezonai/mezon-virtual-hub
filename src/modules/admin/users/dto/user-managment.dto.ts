@@ -29,59 +29,59 @@ export class UsersManagementResDto extends UserEntity {
 }
 
 export class UpdateUserDto extends PickType(UserEntity, [
-  // 'gold',
-  // 'diamond',
-  // 'has_first_reward',
-  // 'role',
-  // 'mezon_id',
+  'gold',
+  'diamond',
+  'has_first_reward',
+  'role',
+  'mezon_id',
   'clan_role'
 ]) {
-  // @ApiProperty({
-  //   description: 'The clan_id of the user',
-  //   type: UUID,
-  //   required: false,
-  // })
-  // @IsUUID()
-  // @IsOptional()
-  // clan_id?: string;
+  @ApiProperty({
+    description: 'The clan_id of the user',
+    type: UUID,
+    required: false,
+  })
+  @IsUUID()
+  @IsOptional()
+  clan_id?: string;
 
-  // @ApiProperty({
-  //   description: 'position_x of the user',
-  //   type: Number,
-  //   required: false,
-  // })
-  // @IsNumber()
-  // @IsOptional()
-  // @Type(() => Number)
-  // position_x?: number;
+  @ApiProperty({
+    description: 'position_x of the user',
+    type: Number,
+    required: false,
+  })
+  @IsNumber()
+  @IsOptional()
+  @Type(() => Number)
+  position_x?: number;
 
-  // @ApiProperty({
-  //   description: 'position_y of the user',
-  //   type: Number,
-  //   required: false,
-  // })
-  // @IsNumber()
-  // @Type(() => Number)
-  // @IsOptional()
-  // position_y?: number;
+  @ApiProperty({
+    description: 'position_y of the user',
+    type: Number,
+    required: false,
+  })
+  @IsNumber()
+  @Type(() => Number)
+  @IsOptional()
+  position_y?: number;
 
-  // @ApiProperty({
-  //   description: 'The display name of the user',
-  //   type: String,
-  //   required: false,
-  // })
-  // @IsString()
-  // @IsOptional()
-  // display_name?: string;
+  @ApiProperty({
+    description: 'The display name of the user',
+    type: String,
+    required: false,
+  })
+  @IsString()
+  @IsOptional()
+  display_name?: string;
 
-  // @ApiProperty({
-  //   description: 'The gender of the user',
-  //   enum: Gender,
-  //   required: false,
-  // })
-  // @IsOptional()
-  // @IsEnum(Gender)
-  // gender?: Gender;
+  @ApiProperty({
+    description: 'The gender of the user',
+    enum: Gender,
+    required: false,
+  })
+  @IsOptional()
+  @IsEnum(Gender)
+  gender?: Gender;
 }
 
 @Exclude()
