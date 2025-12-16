@@ -81,4 +81,12 @@ export class ItemEntity extends AuditEntity {
     description: 'Indicates whether this item can be purchased',
   })
   is_purchasable: boolean;
+
+  @Column({ type: 'boolean', default: false })
+  @ApiProperty({
+    example: true,
+    description: 'Indicates whether this item can appear as a spin reward',
+  })
+  is_spin_reward: boolean;
+
 }
