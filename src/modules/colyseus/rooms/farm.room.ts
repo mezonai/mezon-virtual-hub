@@ -332,18 +332,18 @@ export class FarmRoom extends BaseGameRoom {
           return;
         }
 
-        const userStat = await this.farmSlotsService.getUserHarvestStat(
-          Player.user_id,
-          Player.clan_id,
-        );
-        const remaining = userStat.max - userStat.used;
-        if (remaining <= 0) {
-          client.send(MessageTypes.ON_HARVEST_DENIED, {
-            sessionId: client.sessionId,
-            message: 'Bạn đã hết lượt thu hoạch!',
-          });
-          return;
-        }
+        // const userStat = await this.farmSlotsService.getUserHarvestStat(
+        //   Player.user_id,
+        //   Player.clan_id,
+        // );
+        // const remaining = userStat.max - userStat.used;
+        // if (remaining <= 0) {
+        //   client.send(MessageTypes.ON_HARVEST_DENIED, {
+        //     sessionId: client.sessionId,
+        //     message: 'Bạn đã hết lượt thu hoạch!',
+        //   });
+        //   return;
+        // }
 
         if (!slot.currentPlant.can_harvest) {
           client.send(MessageTypes.ON_HARVEST_DENIED, {
@@ -446,12 +446,12 @@ export class FarmRoom extends BaseGameRoom {
           return;
         }
 
-        const result = await this.farmSlotsService.incrementHarvestInterrupted(
-          interrupter.user_id,
-          interrupter.clan_id,
-          targetPlayer.user_id,
-          targetPlayer.clan_id,
-        );
+        // const result = await this.farmSlotsService.incrementHarvestInterrupted(
+        //   interrupter.user_id,
+        //   interrupter.clan_id,
+        //   targetPlayer.user_id,
+        //   targetPlayer.clan_id,
+        // );
 
         const plantInfo = await this.farmSlotsService.decreaseHarvestCount(
           slot.id,
@@ -487,7 +487,7 @@ export class FarmRoom extends BaseGameRoom {
           slotId: slot.id,
           interruptedPlayer: targetPlayer.id,
           interruptedPlayerName: targetPlayer.display_name || 'Ẩn Danh',
-          selfHarvestInterrupt: result.interrupter,
+          //selfHarvestInterrupt: result.interrupter,
         });
 
         const targetClient = this.getClientBySessionId(targetPlayer.id);
@@ -497,7 +497,7 @@ export class FarmRoom extends BaseGameRoom {
             slotId: slot.id,
             interruptedBy: fromPlayerId,
             interruptedByName: interrupter?.display_name || 'Ẩn Danh',
-            selfHarvest: result.target,
+            //selfHarvest: result.target,
             plantHarvest: plantInfo,
           });
         }
