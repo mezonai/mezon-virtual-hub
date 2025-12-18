@@ -53,9 +53,9 @@ export class CLanWarehouseService {
     if (dto.quantity <= 0)
       throw new BadRequestException('Quantity must be greater than 0');
 
-    if (!user.clan_id || user.clan_role !== ClanRole.LEADER)
+    if (!user.clan_id || (user.clan_role !== ClanRole.LEADER && user.clan_role !== ClanRole.VICE_LEADER))
       throw new BadRequestException(
-        'Only clan leader can buy plants for clan farm',
+        'Only clan leader/vice leader can buy plants for clan farm',
       );
 
     const plant = await this.plantRepo.findOne({ where: { id: dto.itemId } });
