@@ -24,7 +24,7 @@ export class UserClanStatService {
 
     score.total_score = (score.total_score ?? 0) + points;
     score.weekly_score = (score.weekly_score ?? 0) + points;
-    score.harvest_count_use += 1;
+    //score.harvest_count_use += 1;
 
     return await this.userClanStatRepo.save(score);
   }

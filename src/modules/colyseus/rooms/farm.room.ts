@@ -745,8 +745,8 @@ export class FarmRoom extends BaseGameRoom {
         clanMultiplier: result.clanMultiplier,
         totalScore: result.totalScore,
         bonusPercent: result.bonusPercent,
-        remainingHarvest: result.remaining,
-        maxHarvest: result.max,
+        // remainingHarvest: result.remaining,
+        // maxHarvest: result.max,
       });
     } catch (err) {
       this.logger.error(`[finishHarvest] DB update failed: ${err.message}`);
@@ -755,8 +755,8 @@ export class FarmRoom extends BaseGameRoom {
         client.send(MessageTypes.ON_HARVEST_DENIED, {
           message: err.response?.message || 'Cây chưa sẵn sàng thu hoạch!',
           slotId,
-          remaining: err.response?.remaining ?? null,
-          max: err.response?.max ?? null,
+          // remaining: err.response?.remaining ?? null,
+          // max: err.response?.max ?? null,
         });
       }
     }

@@ -5,7 +5,7 @@ import { BuyPlantDto, SeedClanWarehouseDto } from './dto/clan-warehouse.dto';
 import { UserEntity } from '@modules/user/entity/user.entity';
 import { USER_TOKEN } from '@constant';
 import { ClsService } from 'nestjs-cls';
-import { RequireClanRoles } from '@libs/decorator';
+import { RequireAdmin, RequireClanRoles } from '@libs/decorator';
 
 @ApiBearerAuth()
 @ApiTags('Clan Warehouse')
@@ -31,6 +31,7 @@ export class ClanWarehouseController {
   }
 
   @Post('seed-plant-to-warehouse')
+  @RequireAdmin()
   @ApiOperation({ summary: 'Add item in warehouse for a clan' })
   async seedWarehouse(@Body() dto: SeedClanWarehouseDto) {
     return await this.farmWarehouseService.seedClanWarehouse(dto);

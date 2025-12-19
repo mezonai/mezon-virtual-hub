@@ -11,7 +11,7 @@ import {
 } from '@nestjs/swagger';
 import { ClsService } from 'nestjs-cls';
 import { ClanMemberService } from './clan-member.service';
-import { RemoveMembersDto } from './dto/clan.dto';
+import { AssignViceLeadersDto, RemoveMembersDto } from './dto/clan.dto';
 
 @ApiBearerAuth()
 @Controller('clans/:clan_id/members')
@@ -41,24 +41,24 @@ export class ClanMemberController {
     );
   }
 
-  @Patch(':target_user_id/assign-vice-leader')
+  @Patch('/assign-vice-leader')
   @RequireClanRoles('LEADER')
   @ApiOperation({ summary: 'Assign vice leader role to a clan member' })
   async assignViceLeader(
     @Param('clan_id', ParseUUIDPipe) clanId: string,
-    @Param('target_user_id', ParseUUIDPipe) targetUserId: string,
+    @Body() targetUserIds: AssignViceLeadersDto,
   ) {
-    return this.clanMemberService.assignViceLeader(clanId, targetUserId);
+    return this.clanMemberService.assignViceLeaders(clanId, targetUserIds.targetUserIds);
   }
 
-  @Patch(':target_user_id/remove-vice-leader')
+  @Patch('/remove-vice-leader')
   @RequireClanRoles('LEADER')
-  @ApiOperation({ summary: 'Remove vice leader role (demote to member)' })
+  @ApiOperation({ summary: 'Remove vice leaders role (demote to member)' })
   async removeViceLeader(
     @Param('clan_id', ParseUUIDPipe) clanId: string,
-    @Param('target_user_id', ParseUUIDPipe) targetUserId: string,
+    @Body() targetUserIds: AssignViceLeadersDto,
   ) {
-    return this.clanMemberService.removeViceLeader(clanId, targetUserId);
+    return this.clanMemberService.removeViceLeaders(clanId, targetUserIds.targetUserIds);
   }
 
   @Delete()
