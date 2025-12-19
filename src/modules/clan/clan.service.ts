@@ -165,8 +165,9 @@ export class ClanService extends BaseService<ClanEntity> {
       .getMany();
 
     const leader = users.find((u) => u.clan_role === ClanRole.LEADER) || null;
-    const viceLeader =
-      users.find((u) => u.clan_role === ClanRole.VICE_LEADER) || null;
+    const viceLeaders = users.filter(
+      (u) => u.clan_role === ClanRole.VICE_LEADER,
+    );
 
     // clanWithCount['leader'] = leader;
     // clanWithCount['vice_leader'] = viceLeader;
@@ -177,11 +178,11 @@ export class ClanService extends BaseService<ClanEntity> {
       weekly_score: leader?.scores?.[0]?.weekly_score ?? 0,
     };
 
-    clanWithCount['vice_leader'] = {
-      ...plainToInstance(UserInformationDto, viceLeader),
-      total_score: viceLeader?.scores?.[0]?.total_score ?? 0,
-      weekly_score: viceLeader?.scores?.[0]?.weekly_score ?? 0,
-    };
+    clanWithCount['vice_leaders'] = viceLeaders.map((v) => ({
+      ...plainToInstance(UserInformationDto, v),
+      total_score: v?.scores?.[0]?.total_score ?? 0,
+      weekly_score: v?.scores?.[0]?.weekly_score ?? 0,
+    }));
 
     return plainToInstance(ClanInfoResponseDto, clanWithCount);
   }

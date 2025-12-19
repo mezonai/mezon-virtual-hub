@@ -55,57 +55,107 @@ export class ClanMemberService {
       clan: targetUser.clan,
     });
   }
+  
+  async assignViceLeaders(clanId: string, targetUserIds: string[]) {
+    const MAX_VICE_LEADER = 5;
+    return this.userRepository.manager.transaction(async (manager) => {
+      const users = await manager.find(UserEntity, {
+        where: {
+          id: In(targetUserIds),
+          clan_id: clanId,
+        },
+        relations: ['clan'],
+      });
 
-  async assignViceLeader(clanId: string, targetUserId: string) {
-    const target = await this.userRepository.findOne({
-      where: { id: targetUserId, clan_id: clanId },
-      relations: ['clan'],
-    });
+      if (users.length !== targetUserIds.length) {
+        throw new NotFoundException('Some users not found in clan');
+      }
 
-    if (!target || !target.clan) {
-      throw new NotFoundException('User not found in clan');
-    }
+      for (const user of users) {
+        if (user.clan_role === ClanRole.LEADER) {
+          throw new BadRequestException(
+            `User ${user.id} is leader and cannot be vice leader`,
+          );
+        }
+      }
 
-    if (target.clan_role === ClanRole.VICE_LEADER) {
-      throw new BadRequestException('User is already the vice leader');
-    }
+      const currentViceCount = await manager.count(UserEntity, {
+        where: {
+          clan_id: clanId,
+          clan_role: ClanRole.VICE_LEADER,
+        },
+      });
 
-    const existingVice = await this.userRepository.findOne({
-      where: { clan_id: clanId, clan_role: ClanRole.VICE_LEADER },
-    });
-    if (existingVice) {
-      throw new BadRequestException('Clan already has a vice leader');
-    }
+      const usersToPromote = users.filter(
+        (u) => u.clan_role !== ClanRole.VICE_LEADER,
+      );
 
-    target.clan_role = ClanRole.VICE_LEADER;
-    await this.userRepository.save(target);
+      const finalViceCount = currentViceCount + usersToPromote.length;
+      if (finalViceCount > MAX_VICE_LEADER) {
+        throw new BadRequestException(
+          `Vice leader limit exceeded (current: ${currentViceCount}, adding: ${usersToPromote.length}, max: ${MAX_VICE_LEADER})`,
+        );
+      }
 
-    this.eventEmitter.emit(ClanBroadcastEventType.ROLE_PROMOTED, {
-      user: target,
-      clan: target.clan,
+      for (const user of usersToPromote) {
+        user.clan_role = ClanRole.VICE_LEADER;
+      }
+
+      await manager.save(usersToPromote);
+
+      for (const user of usersToPromote) {
+        this.eventEmitter.emit(ClanBroadcastEventType.ROLE_PROMOTED, {
+          user,
+          clan: user.clan,
+          role: ClanRole.VICE_LEADER,
+        });
+      }
+
+      return {
+        success: true,
+        promotedUserIds: usersToPromote.map((u) => u.id),
+      };
     });
   }
 
-  async removeViceLeader(clanId: string, targetUserId: string) {
-    const target = await this.userRepository.findOne({
-      where: { id: targetUserId, clan_id: clanId },
-      relations: ['clan'],
-    });
+  async removeViceLeaders(clanId: string, targetUserIds: string[]) {
+    return this.userRepository.manager.transaction(async (manager) => {
+      const targets = await manager.find(UserEntity, {
+        where: {
+          id: In(targetUserIds),
+          clan_id: clanId,
+        },
+        relations: ['clan'],
+      });
 
-    if (!target || !target.clan) {
-      throw new NotFoundException('User not found in clan');
-    }
+      if (targets.length !== targetUserIds.length) {
+        throw new NotFoundException('Some users not found in clan');
+      }
 
-    if (target.clan_role !== ClanRole.VICE_LEADER) {
-      throw new BadRequestException('User is not a vice leader');
-    }
+      targets.forEach((u) => {
+        if (u.clan_role !== ClanRole.VICE_LEADER) {
+          throw new BadRequestException(`User ${u.id} is not a vice leader`);
+        }
+      });
 
-    target.clan_role = ClanRole.MEMBER;
-    await this.userRepository.save(target);
+      targets.forEach((u) => {
+        u.clan_role = ClanRole.MEMBER;
+      });
 
-    this.eventEmitter.emit(ClanBroadcastEventType.ROLE_DEMOTED, {
-      user: target,
-      clan: target.clan,
+      await manager.save(targets);
+
+      targets.forEach((user) => {
+        this.eventEmitter.emit(ClanBroadcastEventType.ROLE_DEMOTED, {
+          user,
+          clan: user.clan,
+          role: ClanRole.MEMBER,
+        });
+      });
+
+      return {
+        success: true,
+        demotedUserIds: targets.map((u) => u.id),
+      };
     });
   }
 

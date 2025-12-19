@@ -386,18 +386,18 @@ export class FarmSlotService {
     });
     if (!user?.clan) throw new BadRequestException('Người chơi không có clan');
 
-    const { score } = await this.userClanStatService.getOrCreateUserClanStat(
-      userId,
-      user.clan.id,
-    );
-    const used = score?.harvest_count_use ?? 0;
-    const max = score?.harvest_count ?? 0;
-    if (used >= max)
-      throw new BadRequestException({
-        message: 'Đã sử dụng hết lượt thu hoạch',
-        remaining: 0,
-        max,
-      });
+    // const { score } = await this.userClanStatService.getOrCreateUserClanStat(
+    //   userId,
+    //   user.clan.id,
+    // );
+    // const used = score?.harvest_count_use ?? 0;
+    // const max = score?.harvest_count ?? 0;
+    // if (used >= max)
+    //   throw new BadRequestException({
+    //     message: 'Đã sử dụng hết lượt thu hoạch',
+    //     remaining: 0,
+    //     max,
+    //   });
     const slot = await this.farmSlotRepo.findOne({
       where: { id: farmSlotId },
       relations: ['currentSlotPlant', 'currentSlotPlant.plant', 'farm'],
@@ -415,8 +415,8 @@ export class FarmSlotService {
     if (!canHarvest)
       throw new BadRequestException('Plant not ready for harvest');
 
-    slotPlant.harvest_count ??= 0;
-    slotPlant.harvest_count += 1;
+    // slotPlant.harvest_count ??= 0;
+    // slotPlant.harvest_count += 1;
     slotPlant.harvest_at = new Date();
     slotPlant.last_harvested_by = user.id;
     const isIntruder = slot.farm.clan_id !== user.clan.id;
@@ -497,13 +497,13 @@ export class FarmSlotService {
       message: isIntruder
         ? 'Harvest (intruder) successful'
         : 'Harvest successful',
-      remaining: Math.max(max - (used + 1), 0),
+      //remaining: Math.max(max - (used + 1), 0),
       baseScore: baseScore,
       careBonus,
       clanMultiplier,
       totalScore: finalScore,
       bonusPercent: bonusPercent,
-      max,
+      //max,
     };
   }
 

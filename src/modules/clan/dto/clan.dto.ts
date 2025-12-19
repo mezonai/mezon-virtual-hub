@@ -105,3 +105,8 @@ export class SetUserClanRoleDto {
   @IsEnum(ClanRole)
   role: ClanRole;
 }
+
+export class AssignViceLeadersDto {
+  @IsUUID('all', { each: true })
+  targetUserIds: string[];
+}
