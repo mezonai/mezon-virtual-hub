@@ -1,3 +1,4 @@
+import { FARM_CONFIG } from '@constant/farm.constant';
 import { PlantState } from '@enum';
 import { SlotsPlantEntity } from '@modules/slots-plant/entity/slots-plant.entity';
 
@@ -60,6 +61,9 @@ export class PlantCareUtils {
 
   static checkCanHarvest(createdAt: Date, growTimeSeconds: number, harvest_count: number, harvest_count_max: number): boolean {
     const grown = this.calculateGrowRemain(createdAt, growTimeSeconds) <= 0;
+     if (harvest_count_max === FARM_CONFIG.PLANT.UNLIMITED) {
+       return grown;
+     }
     const remainingHarvest = harvest_count_max - (harvest_count ?? 0);
     return grown && remainingHarvest > 0;
   }

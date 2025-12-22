@@ -12,6 +12,8 @@ export const CLAN_WAREHOUSE = {
 
 export const FARM_CONFIG = {
   HARVEST: {
+    ENABLE_LIMIT: true,
+    UNLIMITED: -1,
     DELAY_MS: 10000,
     INTERRUPT_RATE: 0.2,
     MAX_HARVEST: 100,
@@ -28,7 +30,9 @@ export const FARM_CONFIG = {
     },
   },
   PLANT: {
-    MAX_HARVEST: 10,
+    ENABLE_LIMIT: true,
+    UNLIMITED: -1,
+    MAX_HARVEST: 100,
     RESET_PLANT_HOURS: 24,
     get DEATH_MS() {
       return this.RESET_PLANT_HOURS * 60 * 60 * 1000; // convert giờ -> ms

@@ -93,22 +93,6 @@ export class UserClanStatEntity {
   deleted_at: Date;
 
   @ApiProperty({
-    description: 'Number of times the user has harvested plants',
-    type: 'integer',
-    example: 10,
-  })
-  @Column({ type: 'int', default: 0 })
-  harvest_count: number; // number of times the user harvested plants
-
-  @ApiProperty({
-    description: 'Number of times the user has interrupted other players’ harvests',
-    type: 'integer',
-    example: 10,
-  })
-  @Column({ type: 'int', default: 0 })
-  harvest_interrupt_count: number; // number of times the user interrupted harvests
-
-  @ApiProperty({
     description: 'Number of times the user has harvested plants use',
     type: 'integer',
     example: 10,

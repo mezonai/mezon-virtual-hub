@@ -19,12 +19,12 @@ export class UserClanStatService {
     private readonly dataSource: DataSource,
   ) {}
 
-  async addScore(userId: string, clanId: string, points: number) {
+  async addScore(userId: string, clanId: string, points: number, isLimited:boolean) {
     const { score } = await this.getOrCreateUserClanStat(userId, clanId);
 
     score.total_score = (score.total_score ?? 0) + points;
     score.weekly_score = (score.weekly_score ?? 0) + points;
-    //score.harvest_count_use += 1;
+    if(isLimited) score.harvest_count_use += 1;
 
     return await this.userClanStatRepo.save(score);
   }
@@ -33,9 +33,7 @@ export class UserClanStatService {
     const { score } = await this.getOrCreateUserClanStat(userId, clanId);
 
     return {
-      harvest_count: score.harvest_count ?? FARM_CONFIG.HARVEST.MAX_HARVEST,
       harvest_count_use: score.harvest_count_use ?? 0,
-      harvest_interrupt_count: score.harvest_interrupt_count ?? FARM_CONFIG.HARVEST.MAX_INTERRUPT,
       harvest_interrupt_count_use: score.harvest_interrupt_count_use ?? 0,
     };
   }
@@ -57,9 +55,7 @@ export class UserClanStatService {
         clan_id: clanId,
         total_score: 0,
         weekly_score: 0,
-        harvest_count: FARM_CONFIG.HARVEST.MAX_HARVEST,
         harvest_count_use: 0,
-        harvest_interrupt_count: FARM_CONFIG.HARVEST.MAX_INTERRUPT,
         harvest_interrupt_count_use: 0,
       });
       await this.userClanStatRepo.save(score);

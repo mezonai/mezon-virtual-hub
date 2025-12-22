@@ -25,6 +25,8 @@ import { PlayerQuestService } from '@modules/player-quest/player-quest.service';
 import { MessageTypes } from '../MessageTypes';
 import { PlantState } from '@enum';
 import { FARM_CONFIG } from '@constant/farm.constant';
+import { GameConfigStore } from '@modules/admin/game-config/game-config.store';
+import { GAME_CONFIG_KEYS } from '@constant/game-config.keys';
 
 @Injectable()
 export class FarmRoom extends BaseGameRoom {
@@ -45,6 +47,7 @@ export class FarmRoom extends BaseGameRoom {
     clanFundService: ClanFundService,
     cLanWarehouseService: CLanWarehouseService,
     @Inject() private readonly farmSlotsService: FarmSlotService,
+    private readonly configStore: GameConfigStore,
   ) {
     super(
       userRepository,
@@ -56,6 +59,13 @@ export class FarmRoom extends BaseGameRoom {
       playerQuestService,
       clanFundService,
       cLanWarehouseService,
+    );
+  }
+
+  private getFarmConfig(): typeof FARM_CONFIG {
+    return (
+      this.configStore.get<typeof FARM_CONFIG>(GAME_CONFIG_KEYS.FARM) ??
+      FARM_CONFIG
     );
   }
 
@@ -185,7 +195,8 @@ export class FarmRoom extends BaseGameRoom {
             user.id,
             slotId,
           );
-          const updatedSlot = await this.farmSlotsService.getSlotWithPlantById(slotId);
+          const updatedSlot =
+            await this.farmSlotsService.getSlotWithPlantById(slotId);
           if (!updatedSlot || !updatedSlot.currentPlant) return;
 
           const slotState =
@@ -332,18 +343,18 @@ export class FarmRoom extends BaseGameRoom {
           return;
         }
 
-        // const userStat = await this.farmSlotsService.getUserHarvestStat(
-        //   Player.user_id,
-        //   Player.clan_id,
-        // );
-        // const remaining = userStat.max - userStat.used;
-        // if (remaining <= 0) {
-        //   client.send(MessageTypes.ON_HARVEST_DENIED, {
-        //     sessionId: client.sessionId,
-        //     message: 'Bạn đã hết lượt thu hoạch!',
-        //   });
-        //   return;
-        // }
+        const userStat = await this.farmSlotsService.getUserHarvestStat(
+          Player.user_id,
+          Player.clan_id,
+        );
+        const farmConfigs = this.getFarmConfig();
+        if (farmConfigs.HARVEST.ENABLE_LIMIT &&  userStat.remaining <= 0) {
+          client.send(MessageTypes.ON_HARVEST_DENIED, {
+            sessionId: client.sessionId,
+            message: 'Bạn đã hết lượt thu hoạch!',
+          });
+          return;
+        }
 
         if (!slot.currentPlant.can_harvest) {
           client.send(MessageTypes.ON_HARVEST_DENIED, {
@@ -361,14 +372,14 @@ export class FarmRoom extends BaseGameRoom {
           });
           return;
         }
-
+        const farmConfig = this.getFarmConfig();
         slot.harvestingBy = client.sessionId;
-        slot.harvestEndTime = Date.now() + FARM_CONFIG.HARVEST.DELAY_MS;
+        slot.harvestEndTime = Date.now() + farmConfig.HARVEST.DELAY_MS;
 
         Player.isHarvesting = true;
         const timer = setTimeout(async () => {
           await this.finishHarvest(slot.id, client.sessionId);
-        }, FARM_CONFIG.HARVEST.DELAY_MS);
+        }, farmConfig.HARVEST.DELAY_MS);
         this.harvestTimers.set(slot.id, timer);
         this.broadcast(MessageTypes.ON_HARVEST_STARTED, {
           slotId: slot.id,
@@ -436,7 +447,8 @@ export class FarmRoom extends BaseGameRoom {
         }
 
         const chance = Math.random(); // 0 → 1
-        const successRate = FARM_CONFIG.HARVEST.INTERRUPT_RATE;
+        const farmConfig = this.getFarmConfig();
+        const successRate = farmConfig.HARVEST.INTERRUPT_RATE;
 
         if (chance > successRate) {
           client.send(MessageTypes.ON_HARVEST_INTERRUPTED_FAILED, {
@@ -446,12 +458,12 @@ export class FarmRoom extends BaseGameRoom {
           return;
         }
 
-        // const result = await this.farmSlotsService.incrementHarvestInterrupted(
-        //   interrupter.user_id,
-        //   interrupter.clan_id,
-        //   targetPlayer.user_id,
-        //   targetPlayer.clan_id,
-        // );
+        const result = await this.farmSlotsService.incrementHarvestInterrupted(
+          interrupter.user_id,
+          interrupter.clan_id,
+          targetPlayer.user_id,
+          targetPlayer.clan_id,
+        );
 
         const plantInfo = await this.farmSlotsService.decreaseHarvestCount(
           slot.id,
@@ -470,7 +482,10 @@ export class FarmRoom extends BaseGameRoom {
 
         if (!slotState.currentPlant) return;
         newSlotState.harvest_count += 1;
-        if (newSlotState.harvest_count >= (slotState.harvest_count_max || 10)) {
+        const maxHarvest =
+          slotState.harvest_count_max ?? farmConfig.PLANT.MAX_HARVEST;
+
+        if (newSlotState.harvest_count >= maxHarvest) {
           this.harvestTimers.delete(slot.id);
           this.resetPlant(slot.id);
           this.broadcast(MessageTypes.ON_PLANT_DEATH, {
@@ -487,7 +502,7 @@ export class FarmRoom extends BaseGameRoom {
           slotId: slot.id,
           interruptedPlayer: targetPlayer.id,
           interruptedPlayerName: targetPlayer.display_name || 'Ẩn Danh',
-          //selfHarvestInterrupt: result.interrupter,
+          selfHarvestInterrupt: result.interrupter,
         });
 
         const targetClient = this.getClientBySessionId(targetPlayer.id);
@@ -497,7 +512,7 @@ export class FarmRoom extends BaseGameRoom {
             slotId: slot.id,
             interruptedBy: fromPlayerId,
             interruptedByName: interrupter?.display_name || 'Ẩn Danh',
-            //selfHarvest: result.target,
+            selfHarvest: result.target,
             plantHarvest: plantInfo,
           });
         }
@@ -745,8 +760,8 @@ export class FarmRoom extends BaseGameRoom {
         clanMultiplier: result.clanMultiplier,
         totalScore: result.totalScore,
         bonusPercent: result.bonusPercent,
-        // remainingHarvest: result.remaining,
-        // maxHarvest: result.max,
+        remainingHarvest: result.remaining,
+        maxHarvest: result.max,
       });
     } catch (err) {
       this.logger.error(`[finishHarvest] DB update failed: ${err.message}`);
@@ -755,8 +770,8 @@ export class FarmRoom extends BaseGameRoom {
         client.send(MessageTypes.ON_HARVEST_DENIED, {
           message: err.response?.message || 'Cây chưa sẵn sàng thu hoạch!',
           slotId,
-          // remaining: err.response?.remaining ?? null,
-          // max: err.response?.max ?? null,
+          remaining: err.response?.remaining ?? null,
+          max: err.response?.max ?? null,
         });
       }
     }

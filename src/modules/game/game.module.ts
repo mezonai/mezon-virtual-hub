@@ -11,6 +11,8 @@ import { InventoryModule } from '@modules/inventory/inventory.module';
 import { ItemModule } from '@modules/item/item.module';
 import { FoodModule } from '@modules/food/food.module';
 import { PlayerQuestModule } from '@modules/player-quest/player-quest.module';
+import { GameConfigStore } from '@modules/admin/game-config/game-config.store';
+import { GameConfigModule } from '@modules/admin/game-config/game-config.module';
 
 @Module({
   imports: [
@@ -19,7 +21,8 @@ import { PlayerQuestModule } from '@modules/player-quest/player-quest.module';
     InventoryModule,
     FoodModule,
     ItemModule,
-    PlayerQuestModule
+    PlayerQuestModule,
+    GameConfigModule
   ],
   controllers: [GameController],
   providers: [GameService],

@@ -23,6 +23,9 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 import { AwardResponseDto, RewardDataType } from './dto/game.dto';
+import { GameConfigStore } from '@modules/admin/game-config/game-config.store';
+import { FARM_CONFIG } from '@constant/farm.constant';
+import { GAME_CONFIG_KEYS } from '@constant/game-config.keys';
 
 @Injectable()
 export class GameService {
@@ -39,6 +42,7 @@ export class GameService {
     private readonly userRepository: Repository<UserEntity>,
     private readonly foodService: FoodService,
     private readonly dataSource: DataSource,
+    private readonly configStore: GameConfigStore,
   ) {
     this.itemPercent = configEnv().REWARD_ITEM_PERCENT;
     this.coinPercent = configEnv().REWARD_COIN_PERCENT;
@@ -245,7 +249,9 @@ export class GameService {
       this.foodNormalPercent +
       this.foodPremiumPercent +
       this.foodUltraPercent;
-
+      const farmConfig = this.configStore.get<typeof FARM_CONFIG>(GAME_CONFIG_KEYS.FARM) ??FARM_CONFIG
+      const plantEnabled = farmConfig?.PLANT?.ENABLE_LIMIT ?? false;
+      const harvestEnabled = farmConfig?.HARVEST?.ENABLE_LIMIT ?? false;
     return {
       costs: {
         spinGold: this.SPIN_COST,
@@ -272,6 +278,23 @@ export class GameService {
             ultra: this.foodUltraPercent,
           },
           none: 100 - totalRewardPercent,
+        },
+      },
+      farmLimit: {
+        plant: {
+          enabledLimit: plantEnabled,
+          maxHarvest: plantEnabled
+            ? farmConfig.PLANT.MAX_HARVEST
+            : farmConfig.PLANT.UNLIMITED,
+        },
+        harvest: {
+          enabledLimit: harvestEnabled,
+          maxHarvest: harvestEnabled
+            ? farmConfig.HARVEST.MAX_HARVEST
+            : farmConfig.HARVEST.UNLIMITED,
+          maxInterrupt: harvestEnabled
+            ? farmConfig.HARVEST.MAX_INTERRUPT
+            : farmConfig.HARVEST.UNLIMITED,
         },
       },
     };
