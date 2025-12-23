@@ -144,7 +144,7 @@ export class PetPlayersService extends BaseService<PetPlayersEntity> {
     return await this.petPlayersRepository.save(petPlayers);
   }
 
-  private async getRandomType(rarity: AnimalRarity): Promise<string> {
+  private async getRandomType(rarity: AnimalRarity) {
     const pets = await this.petsRepository.find({
       where: { rarity },
       select: ['type'],
@@ -157,7 +157,7 @@ export class PetPlayersService extends BaseService<PetPlayersEntity> {
     return this.randomItem(pets).type;
   }
 
-  private async getRandomSpecies(rarity: AnimalRarity, type: PetType): Promise<string> {
+  private async getRandomSpecies(rarity: AnimalRarity, type: PetType) {
     const pets = await this.petsRepository.find({
       where: { rarity, type },
       select: ['species'],
