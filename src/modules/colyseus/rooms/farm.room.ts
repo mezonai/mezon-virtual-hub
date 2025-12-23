@@ -137,7 +137,6 @@ export class FarmRoom extends BaseGameRoom {
         newSlotState.harvestEndTime = slotState.harvestEndTime;
         newSlotState.currentPlant = newPlant;
         newSlotState.harvest_count = slotState.harvest_count;
-        newSlotState.harvest_count_max = slotState.harvest_count_max;
         this.state.farmSlotState.set(slotId, newSlotState);
         this.schedulePlant(slotId, newPlant);
       } catch (err: any) {
@@ -184,7 +183,7 @@ export class FarmRoom extends BaseGameRoom {
             slotBefore.currentPlant.created_at,
             slotBefore.currentPlant.grow_time,
             slotBefore.currentPlant.harvest_count,
-            slotBefore.currentPlant.harvest_count_max,
+            this.getFarmConfig(),
           );
 
           if (plantStage === PlantState.HARVESTABLE || canHarvest) {
@@ -267,7 +266,7 @@ export class FarmRoom extends BaseGameRoom {
             slotBefore.currentPlant.created_at,
             slotBefore.currentPlant.grow_time,
             slotBefore.currentPlant.harvest_count,
-            slotBefore.currentPlant.harvest_count_max,
+            this.getFarmConfig(),
           );
           if (canHarvest) {
             return;
@@ -482,10 +481,8 @@ export class FarmRoom extends BaseGameRoom {
 
         if (!slotState.currentPlant) return;
         newSlotState.harvest_count += 1;
-        const maxHarvest =
-          slotState.harvest_count_max ?? farmConfig.PLANT.MAX_HARVEST;
 
-        if (newSlotState.harvest_count >= maxHarvest) {
+        if (farmConfig.PLANT.ENABLE_LIMIT && newSlotState.harvest_count >= farmConfig.PLANT.MAX_HARVEST) {
           this.harvestTimers.delete(slot.id);
           this.resetPlant(slot.id);
           this.broadcast(MessageTypes.ON_PLANT_DEATH, {
@@ -544,7 +541,7 @@ export class FarmRoom extends BaseGameRoom {
                 createdAt,
                 growTime,
                 slot.harvest_count,
-                slot.harvest_count_max,
+                this.getFarmConfig(),
               );
             } else {
               slot.currentPlant.grow_time_remain = 0;
@@ -635,7 +632,7 @@ export class FarmRoom extends BaseGameRoom {
             createdAt,
             growTime,
             slot.harvest_count,
-            slot.harvest_count_max,
+            this.getFarmConfig(),
           );
         } else {
           slot.currentPlant.grow_time_remain = 0;
@@ -694,10 +691,10 @@ export class FarmRoom extends BaseGameRoom {
       p.created_at,
       p.grow_time,
       p.harvest_count,
-      p.harvest_count_max,
+      this.getFarmConfig(),
     );
-    schema.need_water = PlantCareUtils.checkNeedWater(p) ?? false;
-    schema.has_bug = PlantCareUtils.checkHasBug(p) ?? false;
+    schema.need_water = PlantCareUtils.checkNeedWater(p, this.getFarmConfig()) ?? false;
+    schema.has_bug = PlantCareUtils.checkHasBug(p, this.getFarmConfig()) ?? false;
     schema.harvest_at = p.harvest_at ? p.harvest_at.toISOString() : null;
     return schema;
   }
@@ -853,7 +850,6 @@ export class FarmRoom extends BaseGameRoom {
     newSlotState.id = slotState.id;
     newSlotState.slot_index = slotState.slot_index;
     newSlotState.harvest_count = slotState.harvest_count;
-    newSlotState.harvest_count_max = slotState.harvest_count_max;
     newSlotState.harvestingBy = slotState.harvestingBy;
     newSlotState.harvestEndTime = slotState.harvestEndTime;
 

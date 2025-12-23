@@ -107,12 +107,6 @@ export class SlotsPlantEntity {
   harvest_count: number;
 
   @Exclude()
-  @IsInt()
-  @Max(10)
-  @Column({ type: 'int', default: 10 })
-  harvest_count_max: number;
-
-  @Exclude()
   @CreateDateColumn({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   created_at: Date;
 

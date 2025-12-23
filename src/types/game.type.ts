@@ -78,7 +78,6 @@ export class FarmSlotState extends Schema {
   @type('string')  harvestingBy?: string;
   @type('number') harvestEndTime: number = 0;
   @type('number') harvest_count: number = 0;
-  @type('number') harvest_count_max: number = 10;
 }
 
 export interface WithdrawMezonPayload

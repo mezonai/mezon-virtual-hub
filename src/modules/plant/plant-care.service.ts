@@ -59,17 +59,17 @@ export class PlantCareUtils {
     return Math.max(0, Math.ceil((growEnd - now) / 1000));
   }
 
-  static checkCanHarvest(createdAt: Date, growTimeSeconds: number, harvest_count: number, harvest_count_max: number): boolean {
+  static checkCanHarvest(createdAt: Date, growTimeSeconds: number, harvest_count: number, farmConfig :typeof FARM_CONFIG): boolean {
     const grown = this.calculateGrowRemain(createdAt, growTimeSeconds) <= 0;
-     if (harvest_count_max === FARM_CONFIG.PLANT.UNLIMITED) {
-       return grown;
-     }
-    const remainingHarvest = harvest_count_max - (harvest_count ?? 0);
+    if (!farmConfig.PLANT.ENABLE_LIMIT) {
+      return grown;
+    }
+    const remainingHarvest = farmConfig.PLANT.MAX_HARVEST - (harvest_count ?? 0);
     return grown && remainingHarvest > 0;
   }
 
-  static checkNeedWater(p: SlotsPlantEntity): boolean {
-    if (this.checkCanHarvest(p.created_at, p.grow_time, p.harvest_count, p.harvest_count_max)) return false;
+  static checkNeedWater(p: SlotsPlantEntity, farmConfig :typeof FARM_CONFIG): boolean {
+    if (this.checkCanHarvest(p.created_at, p.grow_time, p.harvest_count, farmConfig)) return false;
     const { totalWater } = this.calculateCareNeeds(p.grow_time);
     const { nextWaterTime } = this.getNextWaterTime(p);
     const now = new Date();
@@ -81,8 +81,8 @@ export class PlantCareUtils {
       : false;
   }
 
-  static checkHasBug(p: SlotsPlantEntity): boolean {
-    if (this.checkCanHarvest(p.created_at, p.grow_time, p.harvest_count, p.harvest_count_max)) return false;
+  static checkHasBug(p: SlotsPlantEntity, farmConfig :typeof FARM_CONFIG): boolean {
+    if (this.checkCanHarvest(p.created_at, p.grow_time, p.harvest_count, farmConfig)) return false;
     const totalBug = this.calculateCareNeeds(p.grow_time).totalBug;
     const { nextBugTime } = this.getNextBugTime(p);
     const now = new Date();

@@ -140,11 +140,12 @@ export class FarmSlotService {
           PlantCareUtils.getNextWaterTime(p);
         const { nextBugTime, hasBugUpdated } = PlantCareUtils.getNextBugTime(p);
         const totalNeed = PlantCareUtils.calculateCareNeeds(p.grow_time);
+        const farmConfig = this.getFarmConfig();
         const canHarvest = PlantCareUtils.checkCanHarvest(
           p.created_at,
           p.grow_time,
           p.harvest_count,
-          p.harvest_count_max,
+          farmConfig,
         );
         const needWater =
           !canHarvest &&
@@ -195,7 +196,6 @@ export class FarmSlotService {
     slot: FarmSlotEntity,
     plant: SlotsPlantEntity,
   ): Promise<boolean> {
-
     const farmConfig = this.getFarmConfig();
 
     const now = new Date();
@@ -203,17 +203,22 @@ export class FarmSlotService {
       plant.created_at.getTime() + farmConfig.PLANT.DEATH_MS,
     );
 
-    if (
-      now >= deathAt && farmConfig.PLANT.ENABLE_LIMIT &&
-      (plant.harvest_count ?? 0) < farmConfig.PLANT.MAX_HARVEST
-    ) {
+    const isExpiredByTime = now >= deathAt;
+
+    const isExpiredByHarvest =
+      farmConfig.PLANT.ENABLE_LIMIT &&
+      (plant.harvest_count ?? 0) >= farmConfig.PLANT.MAX_HARVEST;
+
+    if (isExpiredByTime || isExpiredByHarvest) {
       slot.current_slot_plant_id = null;
       await this.farmSlotRepo.save(slot);
       await this.slotPlantRepo.softRemove(plant);
       return true;
     }
+
     return false;
   }
+
   async plantToSlot(userId: string, dto: PlantOnSlotDto) {
     const slot = await this.farmSlotRepo.findOne({
       where: { id: dto.farm_slot_id },
@@ -420,7 +425,7 @@ export class FarmSlotService {
         remaining: 0,
         max,
       });
-    } 
+    }
 
     const slot = await this.farmSlotRepo.findOne({
       where: { id: farmSlotId },
@@ -434,7 +439,7 @@ export class FarmSlotService {
       slotPlant.created_at,
       slotPlant.grow_time,
       slotPlant.harvest_count,
-      slotPlant.harvest_count_max,
+      this.getFarmConfig(),
     );
     if (!canHarvest)
       throw new BadRequestException('Plant not ready for harvest');
@@ -467,15 +472,26 @@ export class FarmSlotService {
     );
     const waterRatio = Math.min(slotPlant.total_water_count / totalWater, 1);
     const bugRatio = Math.min(slotPlant.total_bug_caught / totalBug, 1);
-    const careRatio = farmConfig.HARVEST.FORMULA.WATER_WEIGHT * waterRatio + farmConfig.HARVEST.FORMULA.BUG_WEIGHT * bugRatio;
+    const careRatio =
+      farmConfig.HARVEST.FORMULA.WATER_WEIGHT * waterRatio +
+      farmConfig.HARVEST.FORMULA.BUG_WEIGHT * bugRatio;
     const baseScore = slotPlant.plant?.harvest_point ?? 1;
-    const multiplierRatio = farmConfig.HARVEST.FORMULA.MIN_MULTIPLIER + farmConfig.HARVEST.FORMULA.CARE_FACTOR * careRatio;
-    const clanMultiplier = isIntruder ? farmConfig.HARVEST.FORMULA.OTHER_CLAN: farmConfig.HARVEST.FORMULA.MY_CLAN;
+    const multiplierRatio =
+      farmConfig.HARVEST.FORMULA.MIN_MULTIPLIER +
+      farmConfig.HARVEST.FORMULA.CARE_FACTOR * careRatio;
+    const clanMultiplier = isIntruder
+      ? farmConfig.HARVEST.FORMULA.OTHER_CLAN
+      : farmConfig.HARVEST.FORMULA.MY_CLAN;
     const careBonus = Math.round((multiplierRatio - 1) * 100);
     const finalScore = Math.floor(baseScore * multiplierRatio * clanMultiplier);
-    const bonusPercent = Math.round(((finalScore - baseScore) / baseScore) * 100);
+    const bonusPercent = Math.round(
+      ((finalScore - baseScore) / baseScore) * 100,
+    );
 
-    await this.clanFundService.addToFund(user.clan.id, user, { type: ClanFundType.GOLD, amount: finalScore});
+    await this.clanFundService.addToFund(user.clan.id, user, {
+      type: ClanFundType.GOLD,
+      amount: finalScore,
+    });
 
     if (isIntruder) {
       await this.clanActivityService.logActivity({
@@ -509,23 +525,32 @@ export class FarmSlotService {
       });
     }
 
-    await this.userClanStatService.addScore(user.id, user.clan.id, finalScore, farmConfig.HARVEST.ENABLE_LIMIT );
+    await this.userClanStatService.addScore(
+      user.id,
+      user.clan.id,
+      finalScore,
+      farmConfig.HARVEST.ENABLE_LIMIT,
+    );
     slot.current_slot_plant_id = null;
     await this.farmSlotRepo.save(slot);
     await this.slotPlantRepo.softRemove(slotPlant);
-   
+
     return {
       success: true,
       message: isIntruder
         ? 'Harvest (intruder) successful'
         : 'Harvest successful',
-      remaining: farmConfig.HARVEST.ENABLE_LIMIT ? Math.max(max - (used + 1), 0): farmConfig.HARVEST.UNLIMITED,
+      remaining: farmConfig.HARVEST.ENABLE_LIMIT
+        ? Math.max(max - (used + 1), 0)
+        : farmConfig.HARVEST.UNLIMITED,
       baseScore: baseScore,
       careBonus,
       clanMultiplier,
       totalScore: finalScore,
       bonusPercent: bonusPercent,
-      max: farmConfig.HARVEST.ENABLE_LIMIT ? farmConfig.HARVEST.MAX_HARVEST: farmConfig.HARVEST.UNLIMITED,
+      max: farmConfig.HARVEST.ENABLE_LIMIT
+        ? farmConfig.HARVEST.MAX_HARVEST
+        : farmConfig.HARVEST.UNLIMITED,
     };
   }
 
@@ -552,16 +577,15 @@ export class FarmSlotService {
     if (
       farmConfig.HARVEST.ENABLE_LIMIT &&
       interrupterStat.harvest_interrupt_count_use >=
-      farmConfig.HARVEST.MAX_INTERRUPT
+        farmConfig.HARVEST.MAX_INTERRUPT
     ) {
       throw new BadRequestException('Người phá đã hết lượt phá thu hoạch!');
     }
 
-    if (farmConfig.HARVEST.ENABLE_LIMIT ) {
+    if (farmConfig.HARVEST.ENABLE_LIMIT) {
       interrupterStat.harvest_interrupt_count_use += 1;
       await this.userClanStatRepo.save(interrupterStat);
     }
-
 
     const targetStat = await this.userClanStatRepo.findOne({
       where: {
@@ -592,13 +616,22 @@ export class FarmSlotService {
     return {
       interrupter: {
         used: interrupterStat.harvest_interrupt_count_use,
-        max: farmConfig.HARVEST.ENABLE_LIMIT ? farmConfig.HARVEST.MAX_INTERRUPT : farmConfig.HARVEST.UNLIMITED,
-        remaining: farmConfig.HARVEST.ENABLE_LIMIT ? farmConfig.HARVEST.MAX_INTERRUPT - interrupterStat.harvest_interrupt_count_use: farmConfig.HARVEST.UNLIMITED,
+        max: farmConfig.HARVEST.ENABLE_LIMIT
+          ? farmConfig.HARVEST.MAX_INTERRUPT
+          : farmConfig.HARVEST.UNLIMITED,
+        remaining: farmConfig.HARVEST.ENABLE_LIMIT
+          ? farmConfig.HARVEST.MAX_INTERRUPT -
+            interrupterStat.harvest_interrupt_count_use
+          : farmConfig.HARVEST.UNLIMITED,
       },
       target: {
         used: targetStat.harvest_count_use,
-        max: farmConfig.HARVEST.ENABLE_LIMIT ? farmConfig.HARVEST.MAX_HARVEST: farmConfig.HARVEST.UNLIMITED,
-        remaining: farmConfig.HARVEST.ENABLE_LIMIT ? farmConfig.HARVEST.MAX_HARVEST - targetStat.harvest_count_use: farmConfig.HARVEST.UNLIMITED,
+        max: farmConfig.HARVEST.ENABLE_LIMIT
+          ? farmConfig.HARVEST.MAX_HARVEST
+          : farmConfig.HARVEST.UNLIMITED,
+        remaining: farmConfig.HARVEST.ENABLE_LIMIT
+          ? farmConfig.HARVEST.MAX_HARVEST - targetStat.harvest_count_use
+          : farmConfig.HARVEST.UNLIMITED,
       },
     };
   }
