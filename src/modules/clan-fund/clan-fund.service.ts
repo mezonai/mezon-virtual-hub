@@ -27,7 +27,7 @@ export class ClanFundService {
     @InjectRepository(ClanFundTransactionEntity)
     private readonly clanFundTransactionRepo: Repository<ClanFundTransactionEntity>,
     private readonly dataSource: DataSource,
-    private readonly clanActivityService: ClanActivityService
+    private readonly clanActivityService: ClanActivityService,
   ) {}
 
   async contribute(
@@ -141,7 +141,7 @@ export class ClanFundService {
       const clanFundTransactionRepo = manager.getRepository(
         ClanFundTransactionEntity,
       );
-      
+
       let fund = await clanFundRepo.findOne({
         where: { clan_id: clanId, type },
         lock: { mode: 'pessimistic_write', tables: ['clan_funds'] },
@@ -216,29 +216,38 @@ export class ClanFundService {
     }
 
     const rawData = await qb.getRawMany();
-    rawData.sort((a, b) => {
-      const roleOrder = (role: string) =>
-        role === ClanRole.LEADER ? 0 : role === ClanRole.VICE_LEADER ? 1 : 2;
-      const roleDiff = roleOrder(a.clan_role) - roleOrder(b.clan_role);
-      if (roleDiff !== 0) return roleDiff;
-      return (b.total_amount ?? 0) - (a.total_amount ?? 0);
-    });
+    const sortedByAmount = [...rawData].sort(
+      (a, b) => Number(b.total_amount ?? 0) - Number(a.total_amount ?? 0),
+    );
 
     let currentRank = 1;
-    const dataWithRank = rawData.map((item) => {
+    const rankedData = sortedByAmount.map((item) => {
       const amount = Number(item.total_amount ?? 0);
-      const rank = amount > 0 ? currentRank++ : 0;
-      return { ...item, rank };
+
+      return {
+        ...item,
+        total_amount: amount,
+        rank: amount > 0 ? currentRank++ : 0,
+      };
     });
+    const leaders = rankedData.filter(
+      (u) =>
+        u.clan_role === ClanRole.LEADER || u.clan_role === ClanRole.VICE_LEADER,
+    );
+    const members = rankedData.filter(
+      (u) =>
+        u.clan_role !== ClanRole.LEADER && u.clan_role !== ClanRole.VICE_LEADER,
+    );
+    const finalList = [...leaders, ...members];
 
     const start = (page - 1) * limit;
     const end = start + limit;
-    const pagedData = dataWithRank.slice(start, end);
+    const pagedData = finalList.slice(start, end);
 
     return new Pageable(pagedData, {
       size: limit,
       page,
-      total: dataWithRank.length,
+      total: finalList.length,
     });
   }
 }

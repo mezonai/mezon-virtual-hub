@@ -25,6 +25,8 @@ import { UserClanStatEntity as UserClanStatEntity } from '@modules/user-clan-sta
 import { UserClanStatService } from '@modules/user-clan-stat/user-clan-stat.service';
 import { ClanActivityService } from '@modules/clan-activity/clan-activity.service';
 import { ClanFundService } from '@modules/clan-fund/clan-fund.service';
+import { GameConfigStore } from '@modules/admin/game-config/game-config.store';
+import { GAME_CONFIG_KEYS } from '@constant/game-config.keys';
 
 @Injectable()
 export class FarmSlotService {
@@ -47,7 +49,15 @@ export class FarmSlotService {
     private readonly userClanStatService: UserClanStatService,
     private readonly clanActivityService: ClanActivityService,
     private readonly clanFundService: ClanFundService,
+    private readonly configStore: GameConfigStore,
   ) {}
+
+  private getFarmConfig(): typeof FARM_CONFIG {
+    return (
+      this.configStore.get<typeof FARM_CONFIG>(GAME_CONFIG_KEYS.FARM) ??
+      FARM_CONFIG
+    );
+  }
 
   async getFarmWithSlotsByClan(clan_id: string): Promise<FarmWithSlotsDto> {
     if (!clan_id) throw new NotFoundException('clan_id is required');
@@ -130,11 +140,12 @@ export class FarmSlotService {
           PlantCareUtils.getNextWaterTime(p);
         const { nextBugTime, hasBugUpdated } = PlantCareUtils.getNextBugTime(p);
         const totalNeed = PlantCareUtils.calculateCareNeeds(p.grow_time);
+        const farmConfig = this.getFarmConfig();
         const canHarvest = PlantCareUtils.checkCanHarvest(
           p.created_at,
           p.grow_time,
           p.harvest_count,
-          p.harvest_count_max,
+          farmConfig,
         );
         const needWater =
           !canHarvest &&
@@ -185,22 +196,29 @@ export class FarmSlotService {
     slot: FarmSlotEntity,
     plant: SlotsPlantEntity,
   ): Promise<boolean> {
+    const farmConfig = this.getFarmConfig();
+
     const now = new Date();
     const deathAt = new Date(
-      plant.created_at.getTime() + FARM_CONFIG.PLANT.DEATH_MS,
+      plant.created_at.getTime() + farmConfig.PLANT.DEATH_MS,
     );
 
-    if (
-      now >= deathAt &&
-      (plant.harvest_count ?? 0) < FARM_CONFIG.PLANT.MAX_HARVEST
-    ) {
+    const isExpiredByTime = now >= deathAt;
+
+    const isExpiredByHarvest =
+      farmConfig.PLANT.ENABLE_LIMIT &&
+      (plant.harvest_count ?? 0) >= farmConfig.PLANT.MAX_HARVEST;
+
+    if (isExpiredByTime || isExpiredByHarvest) {
       slot.current_slot_plant_id = null;
       await this.farmSlotRepo.save(slot);
       await this.slotPlantRepo.softRemove(plant);
       return true;
     }
+
     return false;
   }
+
   async plantToSlot(userId: string, dto: PlantOnSlotDto) {
     const slot = await this.farmSlotRepo.findOne({
       where: { id: dto.farm_slot_id },
@@ -371,10 +389,16 @@ export class FarmSlotService {
         ...(clanId ? { clan_id: clanId } : {}),
       },
     });
-
+    const farmConfig = this.getFarmConfig();
     const used = stat?.harvest_count_use ?? 0;
-    const max = stat?.harvest_count ?? FARM_CONFIG.HARVEST.MAX_HARVEST;
-    const remaining = Math.max(max - used, 0);
+    const max = farmConfig.HARVEST.ENABLE_LIMIT
+      ? farmConfig.HARVEST.MAX_HARVEST
+      : FARM_CONFIG.HARVEST.UNLIMITED;
+
+    const remaining =
+      max === farmConfig.HARVEST.UNLIMITED
+        ? FARM_CONFIG.HARVEST.UNLIMITED
+        : Math.max(max - used, 0);
 
     return { used, max, remaining };
   }
@@ -386,18 +410,23 @@ export class FarmSlotService {
     });
     if (!user?.clan) throw new BadRequestException('Người chơi không có clan');
 
-    // const { score } = await this.userClanStatService.getOrCreateUserClanStat(
-    //   userId,
-    //   user.clan.id,
-    // );
-    // const used = score?.harvest_count_use ?? 0;
-    // const max = score?.harvest_count ?? 0;
-    // if (used >= max)
-    //   throw new BadRequestException({
-    //     message: 'Đã sử dụng hết lượt thu hoạch',
-    //     remaining: 0,
-    //     max,
-    //   });
+    const { score } = await this.userClanStatService.getOrCreateUserClanStat(
+      userId,
+      user.clan.id,
+    );
+    const used = score?.harvest_count_use ?? 0;
+    const farmConfig = this.getFarmConfig();
+    const max = farmConfig.HARVEST.ENABLE_LIMIT
+      ? farmConfig.HARVEST.MAX_HARVEST
+      : farmConfig.HARVEST.UNLIMITED;
+    if (farmConfig.HARVEST.ENABLE_LIMIT && used >= max) {
+      throw new BadRequestException({
+        message: 'Đã sử dụng hết lượt thu hoạch',
+        remaining: 0,
+        max,
+      });
+    }
+
     const slot = await this.farmSlotRepo.findOne({
       where: { id: farmSlotId },
       relations: ['currentSlotPlant', 'currentSlotPlant.plant', 'farm'],
@@ -410,13 +439,13 @@ export class FarmSlotService {
       slotPlant.created_at,
       slotPlant.grow_time,
       slotPlant.harvest_count,
-      slotPlant.harvest_count_max,
+      this.getFarmConfig(),
     );
     if (!canHarvest)
       throw new BadRequestException('Plant not ready for harvest');
 
-    // slotPlant.harvest_count ??= 0;
-    // slotPlant.harvest_count += 1;
+    slotPlant.harvest_count ??= 0;
+    slotPlant.harvest_count += 1;
     slotPlant.harvest_at = new Date();
     slotPlant.last_harvested_by = user.id;
     const isIntruder = slot.farm.clan_id !== user.clan.id;
@@ -443,16 +472,24 @@ export class FarmSlotService {
     );
     const waterRatio = Math.min(slotPlant.total_water_count / totalWater, 1);
     const bugRatio = Math.min(slotPlant.total_bug_caught / totalBug, 1);
-    const careRatio = FARM_CONFIG.HARVEST.FORMULA.WATER_WEIGHT * waterRatio + FARM_CONFIG.HARVEST.FORMULA.BUG_WEIGHT * bugRatio;
+    const careRatio =
+      farmConfig.HARVEST.FORMULA.WATER_WEIGHT * waterRatio +
+      farmConfig.HARVEST.FORMULA.BUG_WEIGHT * bugRatio;
     const baseScore = slotPlant.plant?.harvest_point ?? 1;
-    const multiplierRatio = FARM_CONFIG.HARVEST.FORMULA.MIN_MULTIPLIER + FARM_CONFIG.HARVEST.FORMULA.CARE_FACTOR * careRatio;
-    const clanMultiplier = isIntruder ? FARM_CONFIG.HARVEST.FORMULA.OTHER_CLAN : FARM_CONFIG.HARVEST.FORMULA.MY_CLAN;
+    const multiplierRatio =
+      farmConfig.HARVEST.FORMULA.MIN_MULTIPLIER +
+      farmConfig.HARVEST.FORMULA.CARE_FACTOR * careRatio;
+    const clanMultiplier = isIntruder
+      ? farmConfig.HARVEST.FORMULA.OTHER_CLAN
+      : farmConfig.HARVEST.FORMULA.MY_CLAN;
     const careBonus = Math.round((multiplierRatio - 1) * 100);
     const finalScore = Math.floor(baseScore * multiplierRatio * clanMultiplier);
-    const bonusPercent = Math.round(((finalScore - baseScore) / baseScore) * 100);
+    const bonusPercent = Math.round(
+      ((finalScore - baseScore) / baseScore) * 100,
+    );
 
     await this.clanFundService.addToFund(user.clan.id, user, {
-      type: ClanFundType.GOLD ,
+      type: ClanFundType.GOLD,
       amount: finalScore,
     });
 
@@ -464,7 +501,7 @@ export class FarmSlotService {
         itemName: slotPlant.plant?.name ?? 'vật phẩm',
         quantity: 1,
         amount: finalScore,
-        officeName: user.clan.farm?.name ?? (user.clan.name + " Farm"),
+        officeName: user.clan.farm?.name ?? user.clan.name + ' Farm',
       });
 
       await this.clanActivityService.logActivity({
@@ -484,26 +521,36 @@ export class FarmSlotService {
         itemName: slotPlant.plant?.name ?? 'vật phẩm',
         quantity: 1,
         amount: finalScore,
-        officeName: slot.farm.name ?? (user.clan.name + " Farm"),
+        officeName: slot.farm.name ?? user.clan.name + ' Farm',
       });
     }
 
-    await this.userClanStatService.addScore(user.id, user.clan.id, finalScore);
+    await this.userClanStatService.addScore(
+      user.id,
+      user.clan.id,
+      finalScore,
+      farmConfig.HARVEST.ENABLE_LIMIT,
+    );
     slot.current_slot_plant_id = null;
     await this.farmSlotRepo.save(slot);
     await this.slotPlantRepo.softRemove(slotPlant);
+
     return {
       success: true,
       message: isIntruder
         ? 'Harvest (intruder) successful'
         : 'Harvest successful',
-      //remaining: Math.max(max - (used + 1), 0),
+      remaining: farmConfig.HARVEST.ENABLE_LIMIT
+        ? Math.max(max - (used + 1), 0)
+        : farmConfig.HARVEST.UNLIMITED,
       baseScore: baseScore,
       careBonus,
       clanMultiplier,
       totalScore: finalScore,
       bonusPercent: bonusPercent,
-      //max,
+      max: farmConfig.HARVEST.ENABLE_LIMIT
+        ? farmConfig.HARVEST.MAX_HARVEST
+        : farmConfig.HARVEST.UNLIMITED,
     };
   }
 
@@ -524,23 +571,21 @@ export class FarmSlotService {
       throw new NotFoundException('Không tìm thấy người phá');
     }
 
+    const farmConfig = this.getFarmConfig();
     interrupterStat.harvest_interrupt_count_use ??= 0;
-    interrupterStat.harvest_interrupt_count ??=
-      FARM_CONFIG.HARVEST.MAX_INTERRUPT;
 
     if (
+      farmConfig.HARVEST.ENABLE_LIMIT &&
       interrupterStat.harvest_interrupt_count_use >=
-      interrupterStat.harvest_interrupt_count
+        farmConfig.HARVEST.MAX_INTERRUPT
     ) {
       throw new BadRequestException('Người phá đã hết lượt phá thu hoạch!');
     }
 
-    interrupterStat.harvest_interrupt_count_use += 1;
-    await this.userClanStatRepo.save(interrupterStat);
-
-    const interrupterRemaining =
-      interrupterStat.harvest_interrupt_count -
-      interrupterStat.harvest_interrupt_count_use;
+    if (farmConfig.HARVEST.ENABLE_LIMIT) {
+      interrupterStat.harvest_interrupt_count_use += 1;
+      await this.userClanStatRepo.save(interrupterStat);
+    }
 
     const targetStat = await this.userClanStatRepo.findOne({
       where: {
@@ -554,30 +599,39 @@ export class FarmSlotService {
     }
 
     targetStat.harvest_count_use ??= 0;
-    targetStat.harvest_count ??= FARM_CONFIG.HARVEST.MAX_HARVEST;
-
-    if (targetStat.harvest_count_use >= targetStat.harvest_count) {
+    if (
+      farmConfig.HARVEST.ENABLE_LIMIT &&
+      targetStat.harvest_count_use >= farmConfig.HARVEST.MAX_HARVEST
+    ) {
       throw new BadRequestException(
         'Người thu hoạch bị phá đã hết lượt thu hoạch!',
       );
     }
 
-    targetStat.harvest_count_use += 1;
-    await this.userClanStatRepo.save(targetStat);
-
-    const targetRemaining =
-      targetStat.harvest_count - targetStat.harvest_count_use;
+    if (farmConfig.HARVEST.ENABLE_LIMIT) {
+      targetStat.harvest_count_use += 1;
+      await this.userClanStatRepo.save(targetStat);
+    }
 
     return {
       interrupter: {
         used: interrupterStat.harvest_interrupt_count_use,
-        max: interrupterStat.harvest_interrupt_count,
-        remaining: interrupterRemaining,
+        max: farmConfig.HARVEST.ENABLE_LIMIT
+          ? farmConfig.HARVEST.MAX_INTERRUPT
+          : farmConfig.HARVEST.UNLIMITED,
+        remaining: farmConfig.HARVEST.ENABLE_LIMIT
+          ? farmConfig.HARVEST.MAX_INTERRUPT -
+            interrupterStat.harvest_interrupt_count_use
+          : farmConfig.HARVEST.UNLIMITED,
       },
       target: {
         used: targetStat.harvest_count_use,
-        max: targetStat.harvest_count,
-        remaining: targetRemaining,
+        max: farmConfig.HARVEST.ENABLE_LIMIT
+          ? farmConfig.HARVEST.MAX_HARVEST
+          : farmConfig.HARVEST.UNLIMITED,
+        remaining: farmConfig.HARVEST.ENABLE_LIMIT
+          ? farmConfig.HARVEST.MAX_HARVEST - targetStat.harvest_count_use
+          : farmConfig.HARVEST.UNLIMITED,
       },
     };
   }
@@ -593,12 +647,20 @@ export class FarmSlotService {
     slotPlant.harvest_count ??= 0;
     slotPlant.harvest_count += 1;
 
-    const maxHarvest =
-      slotPlant.harvest_count_max ?? FARM_CONFIG.PLANT.MAX_HARVEST;
+    const farmConfig = this.getFarmConfig();
+    const maxHarvest = farmConfig.PLANT.ENABLE_LIMIT
+      ? farmConfig.PLANT.MAX_HARVEST
+      : farmConfig.HARVEST.UNLIMITED;
 
-    const remaining = Math.max(maxHarvest - slotPlant.harvest_count, 0);
+    const remaining =
+      maxHarvest === farmConfig.PLANT.UNLIMITED
+        ? farmConfig.PLANT.UNLIMITED
+        : Math.max(maxHarvest - slotPlant.harvest_count, 0);
 
-    if (slotPlant.harvest_count >= maxHarvest) {
+    if (
+      maxHarvest !== farmConfig.PLANT.UNLIMITED &&
+      slotPlant.harvest_count >= maxHarvest
+    ) {
       slot.current_slot_plant_id = null;
       await this.farmSlotRepo.save(slot);
       await this.slotPlantRepo.softRemove(slotPlant);

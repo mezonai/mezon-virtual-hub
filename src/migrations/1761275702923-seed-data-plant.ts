@@ -59,9 +59,9 @@ export class SeedDataPlant1761275702923 implements MigrationInterface {
     ];
 
     for (const plant of basePlants) {
-      const grow_time_seconds = FARM_CONFIG.PLANT.FORMULAS.growTimeSeconds(plant.grow_time_minutes);
-      const harvest_point = FARM_CONFIG.PLANT.FORMULAS.harvestPoint(plant.grow_time_minutes);
-      const buy_price = FARM_CONFIG.PLANT.FORMULAS.buyPrice(plant.grow_time_minutes);
+      const grow_time_seconds = FARM_CONFIG.PLANT.FORMULA.growTimeSeconds(plant.grow_time_minutes);
+      const harvest_point = FARM_CONFIG.PLANT.FORMULA.harvestPoint(plant.grow_time_minutes);
+      const buy_price = FARM_CONFIG.PLANT.FORMULA.buyPrice(plant.grow_time_minutes);
 
       await queryRunner.query(`
         INSERT INTO plants (name, grow_time, harvest_point, buy_price, description, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, NOW(), NOW()) ON CONFLICT (name) DO UPDATE SET grow_time = EXCLUDED.grow_time, harvest_point = EXCLUDED.harvest_point, buy_price = EXCLUDED.buy_price, description = EXCLUDED.description, updated_at = NOW();

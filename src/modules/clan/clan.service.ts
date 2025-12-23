@@ -398,10 +398,7 @@ export class ClanService extends BaseService<ClanEntity> {
         clan_id: clanId,
         total_score: 0,
         weekly_score: 0,
-        harvest_count: 100,
         harvest_count_use: 0,
-        harvest_interrupt_count: 100,
-        harvest_interrupt_count_use: 0,
         created_at: new Date(),
       });
       await this.userClantStatRepo.save(stat);
