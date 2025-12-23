@@ -152,6 +152,10 @@ export class AdminPetPlayersService extends BaseService<PetPlayersEntity> {
     return await this.petPlayersService.createPetPlayers(payload, quantity);
   }
 
+  async fillMissingPetsByRoom(room_code: string) {
+    return await this.petPlayersService.fillMissingPetsByRoom(room_code);
+  }
+
   async updatePetPlayers(
     updatePetPlayers: UpdatePetPlayersDto,
     pet_id: string,
