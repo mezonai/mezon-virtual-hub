@@ -33,14 +33,13 @@ export class CLanWarehouseService {
       throw new BadRequestException('Clan ID not found');
     }
 
-    const items = await this.warehouseRepo.find({
-      where: {
-        clan_id: clanId,
-        quantity: MoreThan(0),
-      },
-      relations: ['plant'],
-      order: { created_at: 'DESC' },
-    });
+    const items = await this.warehouseRepo
+    .createQueryBuilder('w')
+    .leftJoinAndSelect('w.plant', 'plant')
+    .where('w.clan_id = :clanId', { clanId })
+    .andWhere('w.quantity > 0')
+    .orderBy('plant.harvest_point', 'DESC')
+    .getMany();
 
     return {
       clanId,
