@@ -20,6 +20,7 @@ import {
   SpawnPetPlayersDto,
   UpdatePetPlayersDto,
 } from './dto/pet-players.dto';
+import { NumberRarityService } from '@modules/number-rarity/number-rarity.service';
 
 @Injectable()
 export class AdminPetPlayersService extends BaseService<PetPlayersEntity> {
@@ -30,6 +31,7 @@ export class AdminPetPlayersService extends BaseService<PetPlayersEntity> {
     private readonly petsRepository: Repository<PetsEntity>,
     private readonly petPlayersService: PetPlayersService,
     private readonly userService: UserService,
+    private readonly numberRarityService: NumberRarityService,
     private manager: EntityManager,
   ) {
     super(petPlayersRepository, PetPlayersEntity.name);
@@ -152,7 +154,15 @@ export class AdminPetPlayersService extends BaseService<PetPlayersEntity> {
     return await this.petPlayersService.createPetPlayers(payload, quantity);
   }
 
-  async fillMissingPetsByRoom(room_code: string, common: number, rare: number, epic: number, legendary: number) {
+  async fillMissingPetsByRoom(room_code: string) {
+    const room = await this.numberRarityService.findOne({ where: { room_code }, });
+    if (!room) throw new BadRequestException(`Room code ${room_code} not found`);
+
+    const common = room.common_number;
+    const rare = room.rare_number;
+    const epic = room.epic_number;
+    const legendary = room.legendary_number;
+
     return await this.petPlayersService.fillMissingPetsByRoom(room_code, common, rare, epic, legendary);
   }
 

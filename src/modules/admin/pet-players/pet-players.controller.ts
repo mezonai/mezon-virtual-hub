@@ -11,7 +11,7 @@ import { Logger } from '@libs/logger';
 import { RequireAdmin } from '@libs/decorator';
 import { Delete, Param, Put } from '@nestjs/common';
 import { ClsService } from 'nestjs-cls';
-import { NumberRarityDto, PetPlayersQueryDto, SpawnPetPlayersDto, UpdatePetPlayersDto } from './dto/pet-players.dto';
+import { PetPlayersQueryDto, SpawnPetPlayersDto, UpdatePetPlayersDto } from './dto/pet-players.dto';
 import { AdminPetPlayersService } from './pet-players.service';
 
 @ApiBearerAuth()
@@ -56,9 +56,8 @@ export class AdminPetPlayersController {
   })
   async fillMissingPetsByRoom(
     @Param('room_code') room_code: string,
-    @Body() { common, rare, epic, legendary }: NumberRarityDto,
   ) {
-    await this.adminPetPlayersService.fillMissingPetsByRoom(room_code, common, rare, epic, legendary);
+    await this.adminPetPlayersService.fillMissingPetsByRoom(room_code);
 
     return {
       success: true,

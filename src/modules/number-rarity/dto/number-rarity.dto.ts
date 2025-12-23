@@ -1,5 +1,5 @@
 import { IsValidRoomCode } from "@libs/decorator";
-import { ApiProperty, PartialType } from "@nestjs/swagger";
+import { ApiProperty, OmitType, PartialType } from "@nestjs/swagger";
 import { Type } from "class-transformer";
 import { IsNumber, IsString } from "class-validator";
 
@@ -49,4 +49,6 @@ export class CreateNumberRarityDto {
   legendary_number: number;
 }
 
-export class UpdateNumberRarityDto extends PartialType(CreateNumberRarityDto) {}
+export class UpdateNumberRarityDto extends PartialType(
+  OmitType(CreateNumberRarityDto, ['room_code'] as const),
+) {}
