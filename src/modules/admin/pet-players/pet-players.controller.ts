@@ -44,24 +44,19 @@ export class AdminPetPlayersController {
     return await this.adminPetPlayersService.createPetPlayers(pet, quantity);
   }
 
-   @Post('fill-missing/:room_code')
+  @Post('fill-missing/:room_code')
   @RequireAdmin()
-  @ApiOperation({
-    summary: 'Fill missing pets in a room',
-  })
   @ApiParam({
     name: 'room_code',
     example: 'sg',
   })
+  @ApiOperation({
+    summary: 'Fill missing pets in a room',
+  })
   async fillMissingPetsByRoom(
     @Param('room_code') room_code: string,
   ) {
-    await this.adminPetPlayersService.fillMissingPetsByRoom(room_code);
-
-    return {
-      success: true,
-      message: `Filled missing pets for room ${room_code}`,
-    };
+    return await this.adminPetPlayersService.fillMissingPetsByRoom(room_code);
   }
 
   @Get(':pet_player_id')

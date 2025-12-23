@@ -5,8 +5,7 @@ import {
   Post,
   Put,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
-import { NumberRarityEntity } from '@modules/number-rarity/entity/number-rarity.entity';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiParam } from '@nestjs/swagger';
 import { RequireAdmin } from '@libs/decorator';
 import { AdminNumberRarityService } from '@modules/admin/number-rarity/number-rarity.service';
 import { CreateNumberRarityDto, UpdateNumberRarityDto } from '@modules/admin/number-rarity/dto/number-rarity.dto';
@@ -22,20 +21,23 @@ export class AdminNumberRarityController {
 
   @Post()
   @RequireAdmin()
-  @ApiOperation({ summary: 'Create number rarity config' })
-  create(
-    @Body() dto: CreateNumberRarityDto,
-  ): Promise<NumberRarityEntity> {
+  @ApiOperation({
+    summary: 'Create number rarity config'
+  })
+  create(@Body() dto: CreateNumberRarityDto) {
     return this.service.createNumberRarity(dto);
   }
 
   @Put(':roomCode')
   @RequireAdmin()
-  @ApiOperation({ summary: 'Update number rarity by room code' })
-  update(
-    @Param('roomCode') roomCode: string,
-    @Body() dto: UpdateNumberRarityDto,
-  ): Promise<NumberRarityEntity> {
+  @ApiParam({
+    name: 'roomCode',
+    example: 'sg',
+  })
+  @ApiOperation({
+    summary: 'Update number rarity by room code'
+  })
+  update(@Param('roomCode') roomCode: string, @Body() dto: UpdateNumberRarityDto) {
     return this.service.updateNumberRarity(roomCode, dto);
   }
 }

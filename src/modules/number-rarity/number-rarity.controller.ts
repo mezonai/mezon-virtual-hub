@@ -6,8 +6,7 @@ import {
   Post,
   Put,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
-import { NumberRarityEntity } from '@modules/number-rarity/entity/number-rarity.entity';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiParam } from '@nestjs/swagger';
 import { NumberRarityService } from '@modules/number-rarity/number-rarity.service';
 
 @ApiBearerAuth()
@@ -19,16 +18,24 @@ export class NumberRarityController {
   ) {}
 
   @Get()
-  @ApiOperation({ summary: 'Get all number rarity configs' })
-  findAll(): Promise<NumberRarityEntity[]> {
+  @ApiOperation({ 
+    summary: 'Get all number rarity configs' 
+  })
+  findAll() {
     return this.service.findAll();
   }
 
   @Get(':roomCode')
-  @ApiOperation({ summary: 'Get number rarity by room code' })
+  @ApiParam({
+    name: 'roomCode',
+    example: 'sg',
+  })
+  @ApiOperation({ 
+    summary: 'Get number rarity by room code' 
+  })
   findByRoomCode(
     @Param('roomCode') roomCode: string,
-  ): Promise<NumberRarityEntity> {
+  ) {
     return this.service.findByRoomCode(roomCode);
   }
 }

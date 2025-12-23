@@ -16,8 +16,8 @@ export class NumberRarityService extends BaseService<NumberRarityEntity> {
   }
 
   async createNumberRarity(dto: CreateNumberRarityDto) {
-    const entity = this.numberRarityRepository.create(dto);
-    return this.numberRarityRepository.save(entity);
+    const numberRarity = this.numberRarityRepository.create(dto);
+    return this.numberRarityRepository.save(numberRarity);
   }
 
   async findAll() {
@@ -25,23 +25,19 @@ export class NumberRarityService extends BaseService<NumberRarityEntity> {
   }
 
   async findByRoomCode(roomCode: string) {
-    const entity = await this.numberRarityRepository.findOne({
+    const numberRarity = await this.numberRarityRepository.findOne({
       where: { room_code: roomCode },
     });
 
-    if (!entity) {
-      throw new NotFoundException(
-        `NumberRarity not found for room_code=${roomCode}`,
-      );
-    }
+    if (!numberRarity) throw new NotFoundException(`NumberRarity not found for room_code=${roomCode}`);
 
-    return entity;
+    return numberRarity;
   }
 
   async updateNumberRarity(roomCode: string, dto: UpdateNumberRarityDto) {
-    const entity = await this.findByRoomCode(roomCode);
+    const numberRarity = await this.findByRoomCode(roomCode);
 
-    Object.assign(entity, dto);
-    return this.numberRarityRepository.save(entity);
+    Object.assign(numberRarity, dto);
+    return this.numberRarityRepository.save(numberRarity);
   }
 }

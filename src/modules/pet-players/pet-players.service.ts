@@ -151,9 +151,7 @@ export class PetPlayersService extends BaseService<PetPlayersEntity> {
     });
 
     if (!pets.length) {
-      throw new Error(
-        `No pet found with rarity=${rarity}`,
-      );
+      throw new Error(`No pet found with rarity=${rarity}`);
     }
 
     return this.randomItem(pets).type;
@@ -166,9 +164,7 @@ export class PetPlayersService extends BaseService<PetPlayersEntity> {
     });
 
     if (!pets.length) {
-      throw new Error(
-        `No pet found with rarity=${rarity} and type=${type}`,
-      );
+      throw new Error(`No pet found with rarity=${rarity} and type=${type}`);
     }
 
     return this.randomItem(pets).species;
