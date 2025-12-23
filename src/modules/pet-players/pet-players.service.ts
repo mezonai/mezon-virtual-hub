@@ -47,7 +47,6 @@ import {
   UpgradedRarityPetPlayerDto,
 } from './dto/pet-players.dto';
 import { PetPlayersEntity } from './entity/pet-players.entity';
-import { randomItem, TARGET_BY_RARITY } from '@modules/pet-players/pet-players.helper';
 
 @Injectable()
 export class PetPlayersService extends BaseService<PetPlayersEntity> {
@@ -157,7 +156,7 @@ export class PetPlayersService extends BaseService<PetPlayersEntity> {
       );
     }
 
-    return randomItem(pets).type;
+    return this.randomItem(pets).type;
   }
 
   private async getRandomSpecies(rarity: AnimalRarity, type: PetType): Promise<string> {
@@ -172,10 +171,10 @@ export class PetPlayersService extends BaseService<PetPlayersEntity> {
       );
     }
 
-    return randomItem(pets).species;
+    return this.randomItem(pets).species;
   }
 
-  async fillMissingPetsByRoom(room_code: string) {
+  async fillMissingPetsByRoom(room_code: string, common: number, rare: number, epic: number, legendary: number) {
     const pets = await this.getAvailablePetPlayersWithRoom(room_code);
 
     const countByRarity: Record<AnimalRarity, number> = {
@@ -189,7 +188,14 @@ export class PetPlayersService extends BaseService<PetPlayersEntity> {
       countByRarity[pet.current_rarity]++;
     }
 
-    for (const [rarity, target] of Object.entries(TARGET_BY_RARITY)) {
+    const targetRarity = {
+      [AnimalRarity.COMMON]: common,
+      [AnimalRarity.RARE]: rare,
+      [AnimalRarity.EPIC]: epic,
+      [AnimalRarity.LEGENDARY]: legendary,
+    };
+
+    for (const [rarity, target] of Object.entries(targetRarity)) {
       const current = countByRarity[rarity as AnimalRarity];
       const missing = target - current;
 
@@ -919,5 +925,9 @@ export class PetPlayersService extends BaseService<PetPlayersEntity> {
 
   generateIndividualValue(): number {
     return Math.floor(Math.random() * 31) + 1;
+  }
+
+  randomItem<T>(arr: T[]): T {
+    return arr[Math.floor(Math.random() * arr.length)];
   }
 }

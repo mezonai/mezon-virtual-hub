@@ -152,8 +152,8 @@ export class AdminPetPlayersService extends BaseService<PetPlayersEntity> {
     return await this.petPlayersService.createPetPlayers(payload, quantity);
   }
 
-  async fillMissingPetsByRoom(room_code: string) {
-    return await this.petPlayersService.fillMissingPetsByRoom(room_code);
+  async fillMissingPetsByRoom(room_code: string, common: number, rare: number, epic: number, legendary: number) {
+    return await this.petPlayersService.fillMissingPetsByRoom(room_code, common, rare, epic, legendary);
   }
 
   async updatePetPlayers(

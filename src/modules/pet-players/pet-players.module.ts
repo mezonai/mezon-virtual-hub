@@ -11,6 +11,7 @@ import { PetPlayersService } from './pet-players.service';
 import { PetSkillsModule } from '@modules/pet-skills/pet-skills.module';
 import { PetSkillUsageEntity } from '@modules/pet-skill-usages/entity/pet-skill-usages.entity';
 import { PetSpawnCronJob } from '@modules/pet-players/pet-players.cronjob';
+import { NumberRarityModule } from '@modules/number-rarity/number-rarity.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { PetSpawnCronJob } from '@modules/pet-players/pet-players.cronjob';
     ClsModule,
     PetSkillsModule,
     forwardRef(() => UserModule),
+    NumberRarityModule,
   ],
   providers: [PetPlayersService, PetSpawnCronJob],
   controllers: [PetPlayersController],
