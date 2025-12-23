@@ -230,15 +230,23 @@ export class ClanFundService {
         rank: amount > 0 ? currentRank++ : 0,
       };
     });
-    const leaders = rankedData.filter(
-      (u) =>
-        u.clan_role === ClanRole.LEADER || u.clan_role === ClanRole.VICE_LEADER,
-    );
-    const members = rankedData.filter(
-      (u) =>
-        u.clan_role !== ClanRole.LEADER && u.clan_role !== ClanRole.VICE_LEADER,
-    );
-    const finalList = [...leaders, ...members];
+    const leaders = rankedData
+      .filter((u) => u.clan_role === ClanRole.LEADER)
+      .sort((a, b) => a.rank - b.rank);
+
+    const viceLeaders = rankedData
+      .filter((u) => u.clan_role === ClanRole.VICE_LEADER)
+      .sort((a, b) => a.rank - b.rank);
+
+    const members = rankedData
+      .filter(
+        (u) =>
+          u.clan_role !== ClanRole.LEADER &&
+          u.clan_role !== ClanRole.VICE_LEADER,
+      )
+      .sort((a, b) => a.rank - b.rank);
+
+    const finalList = [...leaders, ...viceLeaders, ...members];
 
     const start = (page - 1) * limit;
     const end = start + limit;

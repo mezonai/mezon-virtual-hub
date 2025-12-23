@@ -53,10 +53,7 @@ export class CLanWarehouseService {
     if (dto.quantity <= 0)
       throw new BadRequestException('Quantity must be greater than 0');
 
-    if (!user.clan_id || (user.clan_role !== ClanRole.LEADER && user.clan_role !== ClanRole.VICE_LEADER))
-      throw new BadRequestException(
-        'Only clan leader/vice leader can buy plants for clan farm',
-      );
+    if (!user.clan_id) throw new BadRequestException('User not found clan');
 
     const plant = await this.plantRepo.findOne({ where: { id: dto.itemId } });
     if (!plant) throw new NotFoundException('Plant not found');
@@ -76,7 +73,7 @@ export class CLanWarehouseService {
 
     let warehouseItem = await this.warehouseRepo.findOne({
       where: {
-        clan_id: dto.clanId,
+        clan_id: user.clan_id,
         item_id: dto.itemId,
         is_harvested: false,
       },
@@ -86,7 +83,7 @@ export class CLanWarehouseService {
       warehouseItem.quantity += dto.quantity;
     } else {
       warehouseItem = this.warehouseRepo.create({
-        clan_id: dto.clanId,
+        clan_id: user.clan_id,
         item_id: dto.itemId,
         quantity: dto.quantity,
         is_harvested: false,
@@ -97,7 +94,7 @@ export class CLanWarehouseService {
     const savedItem = await this.warehouseRepo.save(warehouseItem);
 
     await this.clanActivityService.logActivity({
-      clanId: dto.clanId,
+      clanId: user.clan_id,
       userId:  user.id,
       actionType: ClanActivityActionType.PURCHASE,
       itemName:  plant?.name || '',
@@ -106,7 +103,7 @@ export class CLanWarehouseService {
     });
 
     return {
-      clan_id: dto.clanId,
+      clan_id: user.clan_id,
       item: savedItem,
       fund: fundRecord.amount,
     };
@@ -155,7 +152,7 @@ export class CLanWarehouseService {
     return await this.warehouseRepo.save(warehouseItem);
   }
 
-  async seedClanWarehouse(dto: SeedClanWarehouseDto) {
+  async seedClanWarehouse(clanId: string, dto: SeedClanWarehouseDto) {
     const plants = dto.itemIds?.length
       ? await this.plantRepo.find({ where: { id: In(dto.itemIds) } })
       : await this.plantRepo.find();
@@ -165,7 +162,7 @@ export class CLanWarehouseService {
     for (const plant of plants) {
       let warehouseItem = await this.warehouseRepo.findOne({
         where: {
-          clan_id: dto.clanId,
+          clan_id: clanId,
           item_id: plant.id,
           is_harvested: false,
         },
@@ -175,7 +172,7 @@ export class CLanWarehouseService {
         warehouseItem.quantity += dto.defaultQuantity || 5;
       } else {
         warehouseItem = this.warehouseRepo.create({
-          clan_id: dto.clanId,
+          clan_id: clanId,
           item_id: plant.id,
           quantity: dto.defaultQuantity || 5,
           is_harvested: false,
@@ -188,7 +185,7 @@ export class CLanWarehouseService {
 
     return {
       success: true,
-      clanId: dto.clanId,
+      clanId: clanId,
       items: results,
     };
   }

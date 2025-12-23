@@ -210,28 +210,36 @@ export class ClanService extends BaseService<ClanEntity> {
     });
 
     let currentRank = 1;
+
     const usersWithRank = usersSortedByScore.map((u) => {
       const score = u.scores?.[0]?.total_score ?? 0;
       const weekly_score = u.scores?.[0]?.weekly_score ?? 0;
-      const rank = score > 0 ? currentRank++ : 0;
+
       return {
         ...plainToInstance(UserPublicDto, u),
         total_score: score,
         weekly_score,
-        rank,
+        rank: currentRank++,
       };
     });
 
-    const leaders = usersWithRank.filter(
-      (u) =>
-        u.clan_role === ClanRole.LEADER || u.clan_role === ClanRole.VICE_LEADER,
-    );
-    const members = usersWithRank.filter(
-      (u) =>
-        u.clan_role !== ClanRole.LEADER && u.clan_role !== ClanRole.VICE_LEADER,
-    );
+    const leaders = usersWithRank
+      .filter((u) => u.clan_role === ClanRole.LEADER)
+      .sort((a, b) => a.rank - b.rank);
 
-    const finalList = [...leaders, ...members];
+    const viceLeaders = usersWithRank
+      .filter((u) => u.clan_role === ClanRole.VICE_LEADER)
+      .sort((a, b) => a.rank - b.rank);
+
+    const members = usersWithRank
+      .filter(
+        (u) =>
+          u.clan_role !== ClanRole.LEADER &&
+          u.clan_role !== ClanRole.VICE_LEADER,
+      )
+      .sort((a, b) => a.rank - b.rank);
+
+    const finalList = [...leaders, ...viceLeaders, ...members];
 
     const start = (page - 1) * limit;
     const end = start + limit;

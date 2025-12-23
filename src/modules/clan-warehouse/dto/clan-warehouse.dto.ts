@@ -6,13 +6,6 @@ import { IsInt, Min, IsUUID, IsOptional, IsEnum, Max, IsArray } from 'class-vali
 
 export class BuyPlantDto {
   @ApiProperty({
-    example: '0b071122-8ac2-4886-a8bd-64e1694f3ba7',
-    description: 'Clan ID',
-  })
-  @IsUUID()
-  clanId: string;
-
-  @ApiProperty({
     example: '1c23a3d4-abc1-4d7a-b123-1a2b3c4d5e6f',
     description: 'Item Farm ID (UUID)',
   })
@@ -54,13 +47,6 @@ export class HarvestPlantStatusDto {
 }
 
 export class SeedClanWarehouseDto {
-  @ApiProperty({
-    description: 'ID của clan cần seed kho',
-    example: '6f185442-7fe2-4dcf-b3ba-59e873225ec0',
-  })
-  @IsUUID()
-  clanId: string;
-
   @ApiPropertyOptional({
     description: 'Số lượng mặc định cho mỗi item, nếu không truyền sẽ lấy 5',
     example: 5,
