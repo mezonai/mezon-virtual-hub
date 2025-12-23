@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { EntityManager, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 import { CreateNumberRarityDto, UpdateNumberRarityDto } from '@modules/number-rarity/dto/number-rarity.dto';
 import { NumberRarityEntity } from '@modules/number-rarity/entity/number-rarity.entity';
 import { BaseService } from '@libs/base/base.service';
@@ -10,7 +10,6 @@ export class NumberRarityService extends BaseService<NumberRarityEntity> {
   constructor(
     @InjectRepository(NumberRarityEntity)
     private readonly numberRarityRepository: Repository<NumberRarityEntity>,
-    private manager: EntityManager,
   ) {
     super(numberRarityRepository, NumberRarityEntity.name);
   }
