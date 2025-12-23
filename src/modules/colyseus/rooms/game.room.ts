@@ -39,7 +39,7 @@ export class GameRoom extends BaseGameRoom {
 
       if (this.mathProblemData.id == id && this.mathProblemData.answer == answer.toString()) {
         if (client.userData) {
-          client.userData.gold += 1;
+          client.userData.gold += 100;
           response.correct = true;
           response.userGold = client.userData.gold;
           this.userRepository.update(client.userData.id, { gold: client.userData.gold });
