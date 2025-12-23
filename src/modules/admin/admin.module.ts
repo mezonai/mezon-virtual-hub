@@ -12,6 +12,8 @@ import { RewardManagementModule } from './reward/reward.module';
 import { RewardManagementController } from './reward/reward.controller';
 import { QuestManagementModule } from './quest/quest.module';
 import { QuestManagementController } from './quest/quest.controller';
+import { AdminNumberRarityModule } from '@modules/admin/number-rarity/number-rarity.module';
+import { AdminNumberRarityController } from '@modules/admin/number-rarity/number-rarity.controller';
 
 @Module({
   imports: [
@@ -22,6 +24,7 @@ import { QuestManagementController } from './quest/quest.controller';
     AdminPetPlayersModule,
     RewardManagementModule,
     QuestManagementModule,
+    AdminNumberRarityModule,
   ],
   controllers: [
     TransactionsController,
@@ -30,6 +33,7 @@ import { QuestManagementController } from './quest/quest.controller';
     AdminPetPlayersController,
     RewardManagementController,
     QuestManagementController,
+    AdminNumberRarityController,
   ],
 })
 export class AdminModule {}
