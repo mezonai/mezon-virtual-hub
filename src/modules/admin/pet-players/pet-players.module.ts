@@ -7,6 +7,7 @@ import { ClsModule } from 'nestjs-cls';
 import { AdminPetPlayersService } from './pet-players.service';
 import { PetPlayersModule } from '@modules/pet-players/pet-players.module';
 import { UserModule } from '@modules/user/user.module';
+import { NumberRarityModule } from '@modules/number-rarity/number-rarity.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { UserModule } from '@modules/user/user.module';
     PetSkillsModule,
     PetPlayersModule,
     UserModule,
+    NumberRarityModule,
   ],
   providers: [AdminPetPlayersService],
   exports: [AdminPetPlayersService],

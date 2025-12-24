@@ -10,6 +10,7 @@ import { PetPlayersController } from './pet-players.controller';
 import { PetPlayersService } from './pet-players.service';
 import { PetSkillsModule } from '@modules/pet-skills/pet-skills.module';
 import { PetSkillUsageEntity } from '@modules/pet-skill-usages/entity/pet-skill-usages.entity';
+import { NumberRarityModule } from '@modules/number-rarity/number-rarity.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { PetSkillUsageEntity } from '@modules/pet-skill-usages/entity/pet-skill-
     ]),
     ClsModule,
     PetSkillsModule,
+    NumberRarityModule,
     forwardRef(() => UserModule),
   ],
   providers: [PetPlayersService],
