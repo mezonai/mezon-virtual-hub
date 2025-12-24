@@ -62,11 +62,19 @@ export class ClanService extends BaseService<ClanEntity> {
 
     const clans = await qb.getMany();
 
-    const clansSorted = clans.sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
+    const clansSorted = query.isWeekly
+      ? clans.sort((a, b) => (b.weekly_score ?? 0) - (a.weekly_score ?? 0))
+      : clans.sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
 
     let currentRank = 1;
     const clansWithRank = clansSorted.map((c) => {
-      const rank = c.score > 0 ? currentRank++ : 0;
+      let rank;
+      if (query.isWeekly) {
+        rank = c.weekly_score > 0 ? currentRank++ : 0;
+      } else {
+        rank = c.score > 0 ? currentRank++ : 0;
+      }
+
       return {
         ...plainToInstance(ClanListDto, c),
         rank,

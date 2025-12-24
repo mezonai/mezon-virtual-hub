@@ -1,7 +1,7 @@
 import { UserPublicDto } from '@modules/user/dto/user.dto';
 import { ApiProperty, ApiPropertyOptional, OmitType } from '@nestjs/swagger';
 import { QueryParamsDto } from '@types';
-import { Exclude, Expose, Type } from 'class-transformer';
+import { Exclude, Expose, Transform, Type } from 'class-transformer';
 import {
   IsArray,
   IsBoolean,
@@ -63,6 +63,14 @@ export class ClansQueryDto extends OmitType(QueryParamsDto, ['limit']) {
   @Type(() => Number)
   @IsNumber()
   limit?: number = 30;
+
+  @ApiPropertyOptional({
+    description: 'Filter by weekly score',
+  })
+  @IsOptional()
+  @Transform(({ value }) => value === 'true')
+  @IsBoolean()
+  isWeekly?: boolean;
 }
 
 export class UpdateClanDescriptionDto {
