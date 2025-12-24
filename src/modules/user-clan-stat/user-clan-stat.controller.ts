@@ -1,9 +1,10 @@
-import { Controller, Get, Param} from '@nestjs/common';
+import { Body, Controller, Get, Param, Post } from '@nestjs/common';
 import { UserClanStatService } from './user-clan-stat.service';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ClsService } from 'nestjs-cls';
 import { UserEntity } from '@modules/user/entity/user.entity';
 import { USER_TOKEN } from '@constant';
+import { AddScoreDto } from '@modules/user-clan-stat/dto/user-clan-stat.dto';
 
 @ApiBearerAuth()
 @ApiTags('User Clan Stat')
@@ -13,6 +14,18 @@ export class UserClanStatController {
     private readonly userClantScoreService: UserClanStatService,
     private readonly cls: ClsService,
   ) {}
+
+  @Post('add-score')
+  async addScore(@Body() body: AddScoreDto) {
+    const { userId, clanId, points, isLimited } = body;
+
+    return this.userClantScoreService.addScore(
+      userId,
+      clanId,
+      points,
+      isLimited,
+    );
+  }
 
   @Get(':clanId/harvest-counts')
   @ApiOperation({

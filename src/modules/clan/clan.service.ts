@@ -62,11 +62,19 @@ export class ClanService extends BaseService<ClanEntity> {
 
     const clans = await qb.getMany();
 
-    const clansSorted = clans.sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
+    const clansSorted = query.isWeekly
+      ? clans.sort((a, b) => (b.weekly_score ?? 0) - (a.weekly_score ?? 0))
+      : clans.sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
 
     let currentRank = 1;
     const clansWithRank = clansSorted.map((c) => {
-      const rank = c.score > 0 ? currentRank++ : 0;
+      let rank;
+      if (query.isWeekly) {
+        rank = c.weekly_score > 0 ? currentRank++ : 0;
+      } else {
+        rank = c.score > 0 ? currentRank++ : 0;
+      }
+
       return {
         ...plainToInstance(ClanListDto, c),
         rank,
@@ -149,8 +157,9 @@ export class ClanService extends BaseService<ClanEntity> {
       throw new NotFoundException('Clan not found');
     }
 
-    const totalScore = await this.calculateClanScore(clanId);
-    clanWithCount.score = totalScore.totalScore;
+    const { totalScore, weeklyScore } = await this.calculateClanScore(clanId);
+    clanWithCount.score = totalScore;
+    clanWithCount.weekly_score = weeklyScore;
     const totalFund =
       clanWithCount.funds?.reduce((sum, fund) => sum + (fund.amount || 0), 0) ||
       0;
@@ -357,8 +366,10 @@ export class ClanService extends BaseService<ClanEntity> {
       .where('stats.clan_id = :clanId', { clanId })
       .getRawOne();
     const totalScore = parseInt(totalScoreRaw?.total_score ?? '0', 10);
-    await this.clanRepository.update(clanId, { score: totalScore });
-    return { totalScore };
+    const weeklyScore = parseInt(totalScoreRaw?.weekly_score ?? '0', 10);
+
+    await this.clanRepository.update(clanId, { score: totalScore, weekly_score: weeklyScore });
+    return { totalScore, weeklyScore };
   }
 
   async setUserClanAndRole(userId: string, clanId: string, role: ClanRole) {

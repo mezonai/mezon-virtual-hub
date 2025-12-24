@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsInt, IsOptional, IsUUID } from 'class-validator';
+import { IsBoolean, IsInt, IsOptional, IsString, IsUUID } from 'class-validator';
 
 export class CreateUserClanStatDto {
   @ApiProperty({ description: 'User ID', format: 'uuid' })
@@ -21,4 +21,22 @@ export class UpdateUserClanStatDto {
   @IsOptional()
   @IsInt()
   weekly_score?: number;
+}
+
+export class AddScoreDto {
+  @ApiProperty({ description: 'User ID', format: 'uuid' })
+  @IsString()
+  userId: string;
+
+  @ApiProperty({ description: 'Clan ID', format: 'uuid' })
+  @IsString()
+  clanId: string;
+
+  @ApiProperty({ description: 'Points to add', example: 10 })
+  @IsInt()
+  points: number;
+
+  @ApiProperty({ description: 'Is limited score addition', example: false })
+  @IsBoolean()
+  isLimited: boolean;
 }
