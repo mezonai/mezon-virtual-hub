@@ -13,9 +13,12 @@ import { UserClanStatEntity } from '@modules/user-clan-stat/entity/user-clan-sta
 import { UserClanStatService } from '@modules/user-clan-stat/user-clan-stat.service';
 import { ClanActivityModule } from '@modules/clan-activity/clan-activity.module';
 import { ClanFundModule } from '@modules/clan-fund/clan-fund.module';
+import { GameConfigStore } from '@modules/admin/game-config/game-config.store';
+import { GameConfigModule } from '@modules/admin/game-config/game-config.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([FarmSlotEntity, SlotsPlantEntity, ClanWarehouseEntity, PlantEntity, UserEntity, FarmEntity, UserClanStatEntity]), ClanWarehouseModule, ClanActivityModule, ClanFundModule],
+  imports: [TypeOrmModule.forFeature([FarmSlotEntity, SlotsPlantEntity, ClanWarehouseEntity, PlantEntity, UserEntity, FarmEntity, UserClanStatEntity]), ClanWarehouseModule, ClanActivityModule, ClanFundModule,
+  GameConfigModule],
   providers: [FarmSlotService, UserClanStatService],
   controllers: [FarmSlotsController],
 })

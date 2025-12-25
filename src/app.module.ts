@@ -43,6 +43,8 @@ import { ClanWarehouseModule } from '@modules/clan-warehouse/clan-warehouse.modu
 import { SlotsPlantModule } from '@modules/slots-plant/slots-plant.module';
 import { UserClanStatModule } from '@modules/user-clan-stat/user-clan-stat.module';
 import { ClanActivityModule } from './modules/clan-activity/clan-activity.module';
+import { GameConfigModule } from './modules/admin/game-config/game-config.module';
+import { NumberRarityModule } from '@modules/number-rarity/number-rarity.module';
 
 @Module({
   imports: [
@@ -96,6 +98,8 @@ import { ClanActivityModule } from './modules/clan-activity/clan-activity.module
     SlotsPlantModule,
     UserClanStatModule,
     ClanActivityModule,
+    GameConfigModule,
+    NumberRarityModule,
   ],
 })
 export class AppModule {}

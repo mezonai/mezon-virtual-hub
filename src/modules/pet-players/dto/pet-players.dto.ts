@@ -326,4 +326,16 @@ export class GameConfigResponseDto {
       none: number;
     };
   };
+
+  farmLimit: {
+    plant: {
+      enabledLimit: boolean;
+      maxHarvest: number;
+    };
+    harvest: {
+      enabledLimit: boolean;
+      maxHarvest: number;
+      maxInterrupt: number;
+    };
+  };
 }

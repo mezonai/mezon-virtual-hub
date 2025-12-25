@@ -857,11 +857,12 @@ export class BaseGameRoom extends Room<RoomState> {
           });
           return;
         }
+        const ALLOWED_ROLES = [ClanRole.LEADER, ClanRole.VICE_LEADER];
         if (
           !player ||
           !user ||
           !user.clan_id ||
-          user.clan_role !== ClanRole.LEADER
+          !ALLOWED_ROLES.includes(user.clan_role)
         ) {
           client.send(MessageTypes.ON_BUY_CLAN_ITEM_FAILED, {
             message: !player
@@ -870,7 +871,7 @@ export class BaseGameRoom extends Room<RoomState> {
                 ? 'Không tìm thấy thông tin người dùng'
                 : !user.clan_id
                   ? 'Người dùng chưa thuộc clan nào'
-                  : 'Chỉ leader mới có thể mua item cho clan',
+                  : 'Chỉ Giám Đốc văn phòng/ Phó Giám Đốc mới có thể mua vật phẩm cho văn phòng',
           });
           return;
         }
@@ -879,7 +880,6 @@ export class BaseGameRoom extends Room<RoomState> {
           const result = await this.cLanWarehouseService.buyItemsForClanFarm(
             user,
             {
-              clanId: user.clan_id,
               itemId: payload.itemId,
               quantity: payload.quantity,
               type: InventoryClanType.PLANT,

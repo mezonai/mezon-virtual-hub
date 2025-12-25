@@ -7,7 +7,7 @@ import {
   STAR_MULTIPLIER,
   UPGRADE_PET_RATES
 } from '@constant';
-import { AnimalRarity, SkillCode } from '@enum';
+import { AnimalRarity, PetType, SkillCode } from '@enum';
 import { BaseService } from '@libs/base/base.service';
 import { Logger } from '@libs/logger';
 import { getExpForNextLevel, getRarityUpgradeMultiplier, serializeDto } from '@libs/utils';
@@ -142,6 +142,79 @@ export class PetPlayersService extends BaseService<PetPlayersEntity> {
     }
 
     return await this.petPlayersRepository.save(petPlayers);
+  }
+
+  private async getRandomType(rarity: AnimalRarity) {
+    const pets = await this.petsRepository.find({
+      where: { rarity },
+      select: ['type'],
+    });
+
+    if (!pets.length) {
+      throw new Error(`No pet found with rarity=${rarity}`);
+    }
+
+    return this.randomItem(pets).type;
+  }
+
+  private async getRandomSpecies(rarity: AnimalRarity, type: PetType) {
+    const pets = await this.petsRepository.find({
+      where: { rarity, type },
+      select: ['species'],
+    });
+
+    if (!pets.length) {
+      throw new Error(`No pet found with rarity=${rarity} and type=${type}`);
+    }
+
+    return this.randomItem(pets).species;
+  }
+
+  async fillMissingPetsByRoom(room_code: string, common: number, rare: number, epic: number, legendary: number) {
+    const pets = await this.getAvailablePetPlayersWithRoom(room_code);
+
+    const countByRarity: Record<AnimalRarity, number> = {
+      [AnimalRarity.COMMON]: 0,
+      [AnimalRarity.RARE]: 0,
+      [AnimalRarity.EPIC]: 0,
+      [AnimalRarity.LEGENDARY]: 0,
+    };
+
+    for (const pet of pets) {
+      countByRarity[pet.current_rarity]++;
+    }
+
+    const targetRarity = {
+      [AnimalRarity.COMMON]: common,
+      [AnimalRarity.RARE]: rare,
+      [AnimalRarity.EPIC]: epic,
+      [AnimalRarity.LEGENDARY]: legendary,
+    };
+
+    for (const [rarity, target] of Object.entries(targetRarity)) {
+      const current = countByRarity[rarity as AnimalRarity];
+      const missing = target - current;
+
+      if (missing <= 0) continue;
+
+      for (let i = 0; i < missing; i++) {
+        const randomType = await this.getRandomType(rarity as AnimalRarity);
+        const randomSpecies = await this.getRandomSpecies(
+          rarity as AnimalRarity,
+          randomType as PetType,
+        );
+
+        await this.createPetPlayers(
+          {
+            room_code,
+            rarity: rarity as AnimalRarity,
+            type: randomType as PetType,
+            species: randomSpecies,
+          },
+          1,
+        );
+      }
+    }
   }
 
   async findPetPlayersWithPet(where: FindOptionsWhere<PetPlayersEntity>) {
@@ -848,5 +921,9 @@ export class PetPlayersService extends BaseService<PetPlayersEntity> {
 
   generateIndividualValue(): number {
     return Math.floor(Math.random() * 31) + 1;
+  }
+
+  randomItem<T>(arr: T[]): T {
+    return arr[Math.floor(Math.random() * arr.length)];
   }
 }

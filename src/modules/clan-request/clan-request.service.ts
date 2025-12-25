@@ -130,8 +130,6 @@ export class ClanRequestService extends BaseService<ClanRequestEntity> {
         clan_id: clan.id,
         total_score: 0,
         weekly_score: 0,
-        harvest_count: FARM_CONFIG.HARVEST.MAX_HARVEST,
-        harvest_interrupt_count: FARM_CONFIG.HARVEST.MAX_INTERRUPT,
         harvest_count_use: 0,
         harvest_interrupt_count_use: 0,
       });

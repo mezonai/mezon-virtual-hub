@@ -165,8 +165,9 @@ export class ClanService extends BaseService<ClanEntity> {
       .getMany();
 
     const leader = users.find((u) => u.clan_role === ClanRole.LEADER) || null;
-    const viceLeader =
-      users.find((u) => u.clan_role === ClanRole.VICE_LEADER) || null;
+    const viceLeaders = users.filter(
+      (u) => u.clan_role === ClanRole.VICE_LEADER,
+    );
 
     // clanWithCount['leader'] = leader;
     // clanWithCount['vice_leader'] = viceLeader;
@@ -177,11 +178,11 @@ export class ClanService extends BaseService<ClanEntity> {
       weekly_score: leader?.scores?.[0]?.weekly_score ?? 0,
     };
 
-    clanWithCount['vice_leader'] = {
-      ...plainToInstance(UserInformationDto, viceLeader),
-      total_score: viceLeader?.scores?.[0]?.total_score ?? 0,
-      weekly_score: viceLeader?.scores?.[0]?.weekly_score ?? 0,
-    };
+    clanWithCount['vice_leaders'] = viceLeaders.map((v) => ({
+      ...plainToInstance(UserInformationDto, v),
+      total_score: v?.scores?.[0]?.total_score ?? 0,
+      weekly_score: v?.scores?.[0]?.weekly_score ?? 0,
+    }));
 
     return plainToInstance(ClanInfoResponseDto, clanWithCount);
   }
@@ -209,28 +210,36 @@ export class ClanService extends BaseService<ClanEntity> {
     });
 
     let currentRank = 1;
+
     const usersWithRank = usersSortedByScore.map((u) => {
       const score = u.scores?.[0]?.total_score ?? 0;
       const weekly_score = u.scores?.[0]?.weekly_score ?? 0;
-      const rank = score > 0 ? currentRank++ : 0;
+
       return {
         ...plainToInstance(UserPublicDto, u),
         total_score: score,
         weekly_score,
-        rank,
+        rank: currentRank++,
       };
     });
 
-    const leaders = usersWithRank.filter(
-      (u) =>
-        u.clan_role === ClanRole.LEADER || u.clan_role === ClanRole.VICE_LEADER,
-    );
-    const members = usersWithRank.filter(
-      (u) =>
-        u.clan_role !== ClanRole.LEADER && u.clan_role !== ClanRole.VICE_LEADER,
-    );
+    const leaders = usersWithRank
+      .filter((u) => u.clan_role === ClanRole.LEADER)
+      .sort((a, b) => a.rank - b.rank);
 
-    const finalList = [...leaders, ...members];
+    const viceLeaders = usersWithRank
+      .filter((u) => u.clan_role === ClanRole.VICE_LEADER)
+      .sort((a, b) => a.rank - b.rank);
+
+    const members = usersWithRank
+      .filter(
+        (u) =>
+          u.clan_role !== ClanRole.LEADER &&
+          u.clan_role !== ClanRole.VICE_LEADER,
+      )
+      .sort((a, b) => a.rank - b.rank);
+
+    const finalList = [...leaders, ...viceLeaders, ...members];
 
     const start = (page - 1) * limit;
     const end = start + limit;
@@ -397,10 +406,7 @@ export class ClanService extends BaseService<ClanEntity> {
         clan_id: clanId,
         total_score: 0,
         weekly_score: 0,
-        harvest_count: 100,
         harvest_count_use: 0,
-        harvest_interrupt_count: 100,
-        harvest_interrupt_count_use: 0,
         created_at: new Date(),
       });
       await this.userClantStatRepo.save(stat);
