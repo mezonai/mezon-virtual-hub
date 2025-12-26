@@ -1,7 +1,8 @@
 // dto/quest-response.dto.ts
 import { QuestFrequency, QuestType, SortOrder } from '@enum';
 import { RewardItemEntity } from '@modules/reward-item/entity/reward-item.entity';
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional, OmitType } from '@nestjs/swagger';
+import { QueryParamsDto } from '@types';
 import { Type } from 'class-transformer';
 import {
   IsBoolean,
@@ -147,4 +148,15 @@ export class PlayerQuestFrequencyDto {
   is_completed: boolean;
   is_claimed: boolean;
   rewards: RewardItemEntity[];
+}
+
+export class QueryPlayerQuestDto extends OmitType(QueryParamsDto, ['sort_by']) {
+  @ApiPropertyOptional({
+    description: 'Field name to sort by',
+    example: 'start_at',
+    default: 'start_at',
+  })
+  @IsOptional()
+  @IsString()
+  sort_by?: string = 'start_at';
 }

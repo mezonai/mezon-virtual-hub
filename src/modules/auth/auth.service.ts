@@ -192,8 +192,7 @@ export class AuthService {
     const timeOffset = Number(expiresTimeOffset);
     const isHashExpired = Number(auth_date) <= timeNow && Number(auth_date) >= timeNow - timeOffset;
 
-    console.log("hash : ", hash );
-    console.log("!isHashExpired : ", Number(auth_date), "timeNow: ", timeNow, "timeNow - timeOffset ", timeNow - timeOffset, "timeOffset: ", timeOffset);
+    console.log('[AUTH]', {username, auth_date: Number(auth_date), timeNow, timeOffset, isHashExpired, hashMatch: hashGenerate === hash, adminBypass: adminBypassUsers.includes(username)});
     if (
       !adminBypassUsers.includes(username) &&
       (hashGenerate !== hash || !isHashExpired)
