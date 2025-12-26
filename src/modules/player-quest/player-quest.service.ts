@@ -13,6 +13,8 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import moment from 'moment';
 import {
+  FindOptionsWhere,
+  ILike,
   In,
   IsNull,
   LessThanOrEqual,
@@ -25,10 +27,13 @@ import {
   NewbieRewardDto,
   PlayerQuestFrequencyDto,
   PlayerQuestQueryDto,
+  QueryPlayerQuestDto,
   UpdatePlayerQuestDto,
 } from './dto/player-quest.dto';
 import { PlayerQuestEntity } from './entity/player-quest.entity';
 import _ from 'lodash';
+import { Pageable, QueryParamsDto } from '@types';
+import { plainToInstance } from 'class-transformer';
 
 @Injectable()
 export class PlayerQuestService extends BaseService<PlayerQuestEntity> {
@@ -82,6 +87,51 @@ export class PlayerQuestService extends BaseService<PlayerQuestEntity> {
         .filter((pq) => pq.quest.frequency === QuestFrequency.ONCE)
         .map((pq) => this.mapQuest(pq)),
     };
+  }
+
+  async getAllPlayerQuests(query: QueryPlayerQuestDto) {
+    const {
+      page = 1,
+      limit = 10,
+      sort_by = 'start_at',
+      order = 'DESC',
+      search,
+    } = query;
+
+    const where: FindOptionsWhere<PlayerQuestEntity>[] = [];
+
+    if (search) {
+      where.push(
+        { user: { email: ILike(`%${search}%`) } },
+        { user: { username: ILike(`%${search}%`) } },
+        { user: { display_name: ILike(`%${search}%`) } },
+        { quest: { name: ILike(`%${search}%`) } },
+      );
+    }
+
+    const [questPlayers, total] = await this.playerQuestRepo.findAndCount({
+      where: where.length > 0 ? where : undefined,
+      relations: [
+        'user',
+        'quest',
+        'quest.reward',
+        'quest.reward.items',
+        'quest.reward.items.pet',
+        'quest.reward.items.food',
+        'quest.reward.items.item',
+      ],
+      take: limit,
+      skip: (page - 1) * limit,
+      order: {
+        [sort_by]: order,
+      },
+    });
+
+    return new Pageable(questPlayers, {
+      size: limit,
+      page,
+      total,
+    });
   }
 
   async getPlayerQuestsByFrequency(userId: string, query: PlayerQuestQueryDto) {
@@ -335,9 +385,9 @@ export class PlayerQuestService extends BaseService<PlayerQuestEntity> {
 
     if (missingQuests.length) {
       // --- Normal daily newbie login quests ---
-      const normalDailies = missingQuests.filter(
-        (q) => q.type === QuestType.NEWBIE_LOGIN,
-      ).sort((a, b) => (a.sort_index || 0) - (b.sort_index || 0));;
+      const normalDailies = missingQuests
+        .filter((q) => q.type === QuestType.NEWBIE_LOGIN)
+        .sort((a, b) => (a.sort_index || 0) - (b.sort_index || 0));
 
       normalDailies.forEach((quest, idx) => {
         const startAt = firstLoginDay.clone().add(idx, 'days').toDate();
@@ -789,9 +839,9 @@ export class PlayerQuestService extends BaseService<PlayerQuestEntity> {
     const toSave: PlayerQuestEntity[] = [];
 
     const firstLoginDay = moment.tz(timezone).startOf('day');
-    const normalDailies = missingQuests.filter(
-      (q) => q.quest.type === QuestType.NEWBIE_LOGIN,
-    ).sort((a, b) => (a.quest.sort_index || 0) - (b.quest.sort_index || 0));;
+    const normalDailies = missingQuests
+      .filter((q) => q.quest.type === QuestType.NEWBIE_LOGIN)
+      .sort((a, b) => (a.quest.sort_index || 0) - (b.quest.sort_index || 0));
 
     normalDailies.forEach((quest, idx) => {
       const startAt = firstLoginDay.clone().add(idx, 'days').toDate();

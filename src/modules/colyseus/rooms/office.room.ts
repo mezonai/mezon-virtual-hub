@@ -31,7 +31,7 @@ export class OfficeRoom extends BaseGameRoom {
           id: a.id,
           name: a.name,
           species: a.pet?.species,
-          rarity: a.pet?.rarity,
+          rarity: a?.current_rarity,
         }))) ?? []
     );
     player.isInBattle = false;
