@@ -25,9 +25,11 @@ import {
   FinishQuestQueryDto,
   PlayerQuestQueryDto,
   PlayerQuestsResponseDto,
+  QueryPlayerQuestDto,
   UpdatePlayerQuestDto,
 } from './dto/player-quest.dto';
 import { RequireAdmin } from '@libs/decorator';
+import { QueryParamsDto } from '@types';
 
 @ApiTags('Player Quests')
 @Controller('player-quests')
@@ -48,6 +50,15 @@ export class PlayerQuestController {
     return this.playerQuestService.getPlayerQuests(user.id);
   }
 
+  @Get('get-all-player-quest')
+  @RequireAdmin()
+  @ApiOperation({
+    summary: 'Get list all quest information',
+  })
+  async getAllPlayerQuests(@Query() query: QueryPlayerQuestDto) {
+    return await this.playerQuestService.getAllPlayerQuests(query);
+  }
+
   @Get('get-quests-frequency')
   @ApiOperation({ summary: 'get Player Quests By Frequency' })
   async getPlayerQuestsByFrequency(@Query() query: PlayerQuestQueryDto) {
@@ -63,10 +74,8 @@ export class PlayerQuestController {
   }
 
   @Get('login-event-7-days')
-  async getLoginRewardQuest(
-    @Query() query: PlayerQuestQueryDto,
-  ) {
-     const user = this.cls.get<UserEntity>(USER_TOKEN);
+  async getLoginRewardQuest(@Query() query: PlayerQuestQueryDto) {
+    const user = this.cls.get<UserEntity>(USER_TOKEN);
     return this.playerQuestService.getLoginRewardQuest(user.id);
   }
 

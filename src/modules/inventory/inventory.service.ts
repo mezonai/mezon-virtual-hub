@@ -295,7 +295,7 @@ export class InventoryService extends BaseService<Inventory> {
             break;
           }
 
-          const addedFood = await this.addFoodToInventory(user, reward.food_id);
+          const addedFood = await this.addFoodToInventory(user, reward.food_id, reward.quantity);
           if (!addedFood) {
             this.logger.warn(
               `Food not found: food_id=${reward.food_id}, user=${user.username}`,
