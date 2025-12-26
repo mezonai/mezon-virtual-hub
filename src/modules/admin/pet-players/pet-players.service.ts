@@ -158,10 +158,10 @@ export class AdminPetPlayersService extends BaseService<PetPlayersEntity> {
     const room = await this.numberRarityService.findOne({ where: { room_code }, });
     if (!room) throw new BadRequestException(`Room code ${room_code} not found`);
 
-    const common = room.common_number;
-    const rare = room.rare_number;
-    const epic = room.epic_number;
-    const legendary = room.legendary_number;
+    const common = room.common_number || 6;
+    const rare = room.rare_number || 3;
+    const epic = room.epic_number || 1;
+    const legendary = room.legendary_number || 0;
 
     return await this.petPlayersService.fillMissingPetsByRoom(room_code, common, rare, epic, legendary);
   }
