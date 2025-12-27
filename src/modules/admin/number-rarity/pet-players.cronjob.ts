@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PetPlayersService } from '@modules/pet-players/pet-players.service';
 import { NumberRarityService } from '@modules/number-rarity/number-rarity.service';
+import { MapKey } from '@enum';
 
 @Injectable()
 export class PetSpawnCronJob {
@@ -12,17 +13,17 @@ export class PetSpawnCronJob {
     private readonly numberRarityService: NumberRarityService,
   ) {}
 
-  @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
+  @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT, { timeZone: 'Asia/Ho_Chi_Minh' })
   async checkAndFillPets() {
     try {
       this.logger.log('Start check & fill pets');
       const numberRarities = await this.numberRarityService.findAll();
-      const allRooms = numberRarities.map(nr => nr.room_code);
+      const allRooms = numberRarities.length > 0 ? numberRarities.map(nr => nr.room_code) : Object.values(MapKey);
 
       for (const room_code of allRooms) {
         const commonNumber = numberRarities.find(nr => nr.room_code === room_code)?.common_number || 6;
         const rareNumber = numberRarities.find(nr => nr.room_code === room_code)?.rare_number || 3;
-        const epicNumber = numberRarities.find(nr => nr.room_code === room_code)?.epic_number || 2;
+        const epicNumber = numberRarities.find(nr => nr.room_code === room_code)?.epic_number || 1;
         const legendaryNumber = numberRarities.find(nr => nr.room_code === room_code)?.legendary_number || 0;
         await this.petPlayersService.fillMissingPetsByRoom(room_code, commonNumber, rareNumber, epicNumber, legendaryNumber);
         this.logger.log(`Room ${room_code} checked`);
