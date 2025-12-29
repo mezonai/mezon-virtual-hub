@@ -55,6 +55,12 @@ export class ClanEntity extends AuditEntity {
   @Type(() => Number)
   score: number = 0;
 
+  @Column({ type: 'int', default: 0 })
+  @ApiProperty()
+  @IsInt()
+  @Type(() => Number)
+  weekly_score: number = 0;
+
   @Column({ type: 'int', default: 20 })
   @ApiProperty()
   @IsInt()
