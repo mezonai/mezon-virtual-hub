@@ -37,6 +37,22 @@ export class RewardManagementController {
     return await this.rewardService.getAll(query);
   }
 
+  @Get("weekly-rewards/members")
+  @ApiOperation({
+    summary: 'Reward weekly top players',
+  })
+  async rewardWeeklyTopPlayers() {
+    return await this.rewardService.rewardWeeklyTopPlayers();
+  }
+
+  @Get("weekly-rewards/clans")
+  @ApiOperation({
+    summary: 'Reward weekly top clans',
+  })
+  async rewardWeeklyTopClans() {
+    return await this.rewardService.rewardWeeklyTopClans();
+  }
+
   @Post()
   @ApiOperation({
     summary: 'Create a new reward',

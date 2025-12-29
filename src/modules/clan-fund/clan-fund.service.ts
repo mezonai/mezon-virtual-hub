@@ -165,6 +165,21 @@ export class ClanFundService {
     });
   }
 
+  async rewardClanFund(clanId: string, dto: ContributeClanFundDto) {
+    const existedClan = await this.clanRepo.findOne({
+      where: {
+        id: clanId,
+      },
+    });
+    if (!existedClan) {
+      throw new NotFoundException(`Clan ${clanId} not found`);
+    }
+    return await this.clanFundRepo.update(
+      { clan_id: clanId, type: dto.type },
+      { amount: () => `amount + ${dto.amount}` },
+    );
+  }
+
   async getClanFundInfo(clanId: string) {
     const funds = await this.clanFundRepo.find({
       where: { clan_id: clanId },

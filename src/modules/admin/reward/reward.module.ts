@@ -10,6 +10,9 @@ import { RewardManagementController } from './reward.controller';
 import { RewardManagementService } from './reward.service';
 import { QuestEntity } from '@modules/quest/entity/quest.entity';
 import { RewardEntity } from '@modules/reward/entity/reward.entity';
+import { ClanModule } from '@modules/clan/clan.module';
+import { ClanFundModule } from '@modules/clan-fund/clan-fund.module';
+import { UserModule } from '@modules/user/user.module';
 
 @Module({
   imports: [
@@ -17,6 +20,10 @@ import { RewardEntity } from '@modules/reward/entity/reward.entity';
     JwtModule.register({}),
     FoodModule,
     ItemModule,
+    InventoryModule,
+    ClanModule,
+    ClanFundModule,
+    UserModule,
   ],
   providers: [RewardManagementService],
   exports: [RewardManagementService],
