@@ -853,25 +853,21 @@ export class BaseGameRoom extends Room<RoomState> {
           payload.quantity <= 0
         ) {
           client.send(MessageTypes.ON_BUY_CLAN_ITEM_FAILED, {
-            message: 'Quantity phải > 0',
+            message: 'Số lượng phải lớn hơn 0',
           });
           return;
         }
-        const ALLOWED_ROLES = [ClanRole.LEADER, ClanRole.VICE_LEADER];
         if (
           !player ||
           !user ||
-          !user.clan_id ||
-          !ALLOWED_ROLES.includes(user.clan_role)
+          !user.clan_id
         ) {
           client.send(MessageTypes.ON_BUY_CLAN_ITEM_FAILED, {
             message: !player
               ? 'Không tìm thấy người chơi'
               : !user
                 ? 'Không tìm thấy thông tin người dùng'
-                : !user.clan_id
-                  ? 'Người dùng chưa thuộc clan nào'
-                  : 'Chỉ Giám Đốc văn phòng/ Phó Giám Đốc mới có thể mua vật phẩm cho văn phòng',
+                : 'Người dùng chưa thuộc clan nào'
           });
           return;
         }
