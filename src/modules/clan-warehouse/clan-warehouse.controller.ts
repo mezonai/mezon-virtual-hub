@@ -24,7 +24,6 @@ export class ClanWarehouseController {
   }
 
   @Post('buy-items-clan')
-  @RequireClanRoles('LEADER', 'VICE_LEADER')
   @ApiOperation({ summary: 'Buy plant for a clan farm' })
   async buyItemsForClan(@Body() dto: BuyPlantDto) {
     const user = this.cls.get<UserEntity>(USER_TOKEN);

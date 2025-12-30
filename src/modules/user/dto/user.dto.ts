@@ -1,4 +1,4 @@
-import { ClanRole, Gender } from '@enum';
+import { ClanRole, Gender, ScoreType } from '@enum';
 import { ClanInfoResponseDto } from '@modules/clan/dto/clan.dto';
 import { InventoryDto } from '@modules/inventory/dto/inventory.dto';
 import { PetPlayersWithSpeciesDto } from '@modules/pet-players/dto/pet-players.dto';
@@ -137,12 +137,12 @@ export class UsersClanQueryDto extends OmitType(QueryParamsDto, [
 ]) {
   @ApiPropertyOptional({
     description: 'Field name to sort by',
-    example: 'username',
-    default: 'username',
+    example: 'created_at',
+    default: 'created_at',
   })
   @IsOptional()
   @IsString()
-  sort_by?: string = 'username';
+  sort_by?: string = 'created_at';
 
   @ApiPropertyOptional({
     description: 'Number of results per page',
@@ -153,4 +153,14 @@ export class UsersClanQueryDto extends OmitType(QueryParamsDto, [
   @Type(() => Number)
   @IsNumber()
   limit?: number = 30;
+
+  @ApiPropertyOptional({
+    description: 'Score type to rank users',
+    enum: ScoreType,
+    default: ScoreType.ALL,
+  })
+  @IsOptional()
+  @IsEnum(ScoreType)
+  score_type?: ScoreType = ScoreType.ALL;
+
 }

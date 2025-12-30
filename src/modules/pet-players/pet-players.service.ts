@@ -100,7 +100,7 @@ export class PetPlayersService extends BaseService<PetPlayersEntity> {
 
     if (!pet) {
       throw new NotFoundException(
-        `Pet ${payload.species} with Rarity: ${payload.rarity} and Type ${payload.type} or Id: ${payload.pet_id} not found`,
+        `Pet ${payload.species} with Rarity: ${payload.current_rarity} and Type ${payload.type} or Id: ${payload.pet_id} not found`,
       );
     }
 
@@ -122,7 +122,7 @@ export class PetPlayersService extends BaseService<PetPlayersEntity> {
     for (let i = 0; i < quantity; i++) {
       const newPetPlayer = this.petPlayersRepository.create({
         pet,
-        current_rarity: payload.rarity,
+        current_rarity: payload.current_rarity,
         name: pet.species,
         skill_slot_1: { skill_code: skill1?.skill.skill_code },
         skill_slot_2: { skill_code: skill2?.skill.skill_code },
@@ -207,7 +207,7 @@ export class PetPlayersService extends BaseService<PetPlayersEntity> {
         await this.createPetPlayers(
           {
             room_code,
-            rarity: rarity as AnimalRarity,
+            current_rarity: rarity as AnimalRarity,
             type: randomType as PetType,
             species: randomSpecies,
           },
