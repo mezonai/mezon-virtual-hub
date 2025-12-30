@@ -14,6 +14,8 @@ import axios from 'axios';
 import { APISentTokenRequest, Events, MezonClient } from 'mezon-sdk';
 import moment from 'moment';
 import { EntityManager } from 'typeorm';
+import * as QRCode from 'qrcode';
+import { TokenSentEvent } from 'mezon-sdk/dist/cjs/api/api';
 
 @Injectable()
 export class MezonService implements OnModuleInit, OnModuleDestroy {
@@ -34,8 +36,14 @@ export class MezonService implements OnModuleInit, OnModuleDestroy {
     this.logger.log('Initializing Mezon client...');
     await this.loginMezon();
 
-    this.client.on(Events.TokenSend, async (event: MezonTokenSentEvent) => {
-      await this.transferTokenToDiamond(event);
+    // this.client.on(Events.TokenSend, async (event: MezonTokenSentEvent) => {
+    //   await this.transferTokenToDiamond(event);
+    //   console.log('event', event);
+    // });
+
+    this.client.onTokenSend(async (data: TokenSentEvent) => {
+      console.log('data', data);
+      await this.transferTokenToDiamond(data);
     });
 
     this.logger.log('Mezon event listeners set up.');
@@ -168,4 +176,25 @@ export class MezonService implements OnModuleInit, OnModuleDestroy {
       });
     }
   }
+
+   async generateMezonReceiverQr(): Promise<{
+      qr_base64: string;
+    }> {
+      const payload = {
+        receiver_id: configEnv().MEZON_TOKEN_RECEIVER_APP_ID,
+        receiver_name: 'mezon_bot',
+      };
+  
+      const text = JSON.stringify(payload);
+  
+      const qrBase64 = await QRCode.toDataURL(text, {
+        width: 300,
+        margin: 1,
+        errorCorrectionLevel: 'M',
+      });
+  
+      return {
+        qr_base64: qrBase64,
+      };
+    }
 }
