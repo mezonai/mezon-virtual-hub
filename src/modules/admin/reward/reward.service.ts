@@ -11,7 +11,6 @@ import { InventoryService } from '@modules/inventory/inventory.service';
 import { ClanService } from '@modules/clan/clan.service';
 import { UserService } from '@modules/user/user.service';
 import { ClanFundType, RewardType } from '@enum';
-import { UserEntity } from '@modules/user/entity/user.entity';
 import { ClanFundService } from '@modules/clan-fund/clan-fund.service';
 import { CLanWarehouseService } from '@modules/clan-warehouse/clan-warehouse.service';
 
