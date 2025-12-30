@@ -348,15 +348,15 @@ export class BaseGameRoom extends Room<RoomState> {
     });
     this.onMessage('onPlayerUpdateDiamond', (client, data) => {
       const { newValue, amountChange, needUpdate } = data;
-      if (client?.userData?.gold != null) {
+      if (client?.userData?.diamond != null) {
         if (newValue >= 0) {
-          client.userData.gold = newValue;
+          client.userData.diamond = newValue;
         } else {
           return;
         }
 
         if (needUpdate && client?.userData) {
-          this.userRepository.update(client.userData.id, { gold: newValue });
+          this.userRepository.update(client.userData.id, { diamond: newValue });
         }
 
         const responseData = {
