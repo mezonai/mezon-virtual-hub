@@ -157,12 +157,15 @@ export class MezonService implements OnModuleInit, OnModuleDestroy {
   }
 
   async loginMezon() {
+    const botId = configEnv().MEZON_TOKEN_RECEIVER_APP_ID;
+    const token = configEnv().MEZON_TOKEN_RECEIVER_APP_TOKEN ;
+    if(!botId || !token) return;
     try {
       this.client = new MezonClient({
-        botId: configEnv().MEZON_TOKEN_RECEIVER_APP_ID,
-        token: configEnv().MEZON_TOKEN_RECEIVER_APP_TOKEN,
+        botId,
+        token,
       });
-      await this.client.login();
+      this.client.login().catch((e)=>{console.log(e);});
 
       this.logger.log('Mezon client authenticated in module init');
 
