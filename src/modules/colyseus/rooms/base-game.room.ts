@@ -524,7 +524,7 @@ export class BaseGameRoom extends Room<RoomState> {
           this.sendMessageToTarget(sender, action, 'Số tiền thách đấu không hợp lệ');
           return;
         }
-        if (sender.userData?.diamond <= 0 || sender.userData?.diamond < amount) {
+        if (sender.userData?.gold <= 0 || sender.userData?.gold < amount) {
           this.sendMessageToTarget(sender, action, 'Bạn không đủ tiền');
           return;
         }
@@ -534,7 +534,7 @@ export class BaseGameRoom extends Room<RoomState> {
           return;
         }
 
-        if (targetClient?.userData.diamond < amount) {
+        if (targetClient?.userData.gold < amount) {
           this.sendMessageToTarget(sender, action, 'Người chơi không đủ tiền');
           return;
         }
@@ -553,7 +553,7 @@ export class BaseGameRoom extends Room<RoomState> {
           fromName: sender.userData?.display_name,
           gameKey: gameKey,
           amount: amount,
-          currentDiamond: targetClient.userData.diamond,
+          currentGold: targetClient.userData.gold,
           userId: targetClient.userData.id,
         });
 
@@ -563,7 +563,7 @@ export class BaseGameRoom extends Room<RoomState> {
           from: sender.sessionId,
           toName: targetClient.userData?.display_name,
           amount: amount,
-          currentDiamond: sender.userData?.diamond,
+          currentGold: sender.userData?.gold,
           userId: sender.userData?.id,
         });
       }

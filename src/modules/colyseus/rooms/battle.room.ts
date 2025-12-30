@@ -458,14 +458,14 @@ export class BattleRoom extends BaseGameRoom {
         if (loserClient.userData == null || winnerClient.userData == null) {
             return;
         }
-        loserClient.userData.diamond -= this.amountChallenge;
-        winnerClient.userData.diamond += this.amountChallenge;
+        loserClient.userData.gold -= this.amountChallenge;
+        winnerClient.userData.gold += this.amountChallenge;
 
         this.userRepository.update(loserClient.userData.id, {
-            diamond: loserClient.userData.diamond,
+            gold: loserClient.userData.gold,
         });
         this.userRepository.update(winnerClient.userData.id, {
-            diamond: winnerClient.userData.diamond,
+            gold: winnerClient.userData.gold,
         });
     }
 
