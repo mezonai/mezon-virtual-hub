@@ -35,14 +35,7 @@ export class MezonService implements OnModuleInit, OnModuleDestroy {
   async onModuleInit() {
     this.logger.log('Initializing Mezon client...');
     await this.loginMezon();
-
-    // this.client.on(Events.TokenSend, async (event: MezonTokenSentEvent) => {
-    //   await this.transferTokenToDiamond(event);
-    //   console.log('event', event);
-    // });
-
     this.client.onTokenSend(async (data: TokenSentEvent) => {
-      console.log('data', data);
       await this.transferTokenToDiamond(data);
     });
 

@@ -216,9 +216,6 @@ export class FarmRoom extends BaseGameRoom {
           );
 
           newSlotState.currentPlant = newPlant;
-          this.logger
-            .log(`[DEBUG] WATER PLANT PLAYER state Slot ${slotId} setting has_bug = ${newPlant.has_bug}, 
-          need_water = ${newPlant.need_water}, can_harvest = ${newPlant.can_harvest}, grow_time_remain = ${newPlant.grow_time_remain}`);
           this.state.farmSlotState.set(updatedSlot.id, newSlotState);
           client.send(MessageTypes.ON_WATER_PLANT, {
             slotId,
@@ -299,9 +296,6 @@ export class FarmRoom extends BaseGameRoom {
             slotState.currentPlant.grow_time,
           );
 
-          this.logger
-            .log(`[DEBUG] CTACH BUG PLAYER state Slot ${slotId} setting has_bug = ${newPlant.has_bug}, 
-          need_water = ${newPlant.need_water}, can_harvest = ${newPlant.can_harvest}, grow_time_remain = ${newPlant.grow_time_remain}`);
           newSlotState.currentPlant = newPlant;
           this.state.farmSlotState.set(updatedSlot.id, newSlotState);
 
