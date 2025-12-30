@@ -13,6 +13,7 @@ import { UserService } from '@modules/user/user.service';
 import { ClanFundType, RewardType } from '@enum';
 import { UserEntity } from '@modules/user/entity/user.entity';
 import { ClanFundService } from '@modules/clan-fund/clan-fund.service';
+import { CLanWarehouseService } from '@modules/clan-warehouse/clan-warehouse.service';
 
 @Injectable()
 export class RewardManagementService extends BaseService<RewardEntity> {
@@ -25,6 +26,7 @@ export class RewardManagementService extends BaseService<RewardEntity> {
     private clanService: ClanService,
     private clanFundService: ClanFundService,
     private userService: UserService,
+    private clanWarehouseService: CLanWarehouseService,
   ) {
     super(rewardRepo, RewardEntity.name);
   }
@@ -38,7 +40,7 @@ export class RewardManagementService extends BaseService<RewardEntity> {
         description,
         items: { food: { type: food_type }, item: { type: item_type } },
       },
-      relations: ['items', 'items.food', 'items.item'],
+      relations: ['items', 'items.food', 'items.item', 'items.plant'],
     });
     return rewards;
   }
@@ -57,33 +59,30 @@ export class RewardManagementService extends BaseService<RewardEntity> {
     return await this.rewardRepo.save(updateRewardManagement);
   }
 
-  async rewardWeeklyTopPlayers() {
+  async rewardWeeklyTopMembers() {
     const allClans = await this.clanService.getAllClansWithMemberCount({ isWeekly: true });
+    
+    const rewardMap = {
+      1: RewardType.WEEKLY_RANKING_MEMBER_1,
+      2: RewardType.WEEKLY_RANKING_MEMBER_2,
+      3: RewardType.WEEKLY_RANKING_MEMBER_3,
+      4: RewardType.WEEKLY_RANKING_MEMBER_TOP_10,
+    };
+
     for (const clan of allClans.result) {
-      const topPlayers = await this.clanService.getUsersByClanId(clan.id, { page: 1, limit: 10 });
+      const topMembers = await this.clanService.getUsersByClanId(clan.id, { page: 1, limit: 10 });
 
-      const rewardTop1 = await this.getAll({ type: RewardType.WEEKLY_RANKING_MEMBER_1 });
-      const rewardTop2 = await this.getAll({ type: RewardType.WEEKLY_RANKING_MEMBER_2 });
-      const rewardTop3 = await this.getAll({ type: RewardType.WEEKLY_RANKING_MEMBER_3 });
-      const rewardTop10 = await this.getAll({ type: RewardType.WEEKLY_RANKING_MEMBER_TOP_10 });
+      for (const member of topMembers.result.filter(p => p.weekly_score > 0)) {
+        const rewardType = rewardMap[member.rank];
+        if (!rewardType) continue;
 
-      for (const player of topPlayers.result.filter(p => p.weekly_score > 0)) {
-        const user = await this.userService.findById(player.id);
+        const reward = await this.getAll({ type: rewardType })[0];
+        if (!reward) continue;
 
-        switch (player.rank) {
-          case 1:
-            await this.inventoryService.processRewardItems(user!, rewardTop1[0].items);
-            break;
-          case 2:
-            await this.inventoryService.processRewardItems(user!, rewardTop2[0].items);
-            break;
-          case 3:
-            await this.inventoryService.processRewardItems(user!, rewardTop3[0].items);
-            break;
-          default:
-            await this.inventoryService.processRewardItems(user!, rewardTop10[0].items);
-            break;
-        }
+        const user = await this.userService.findById(member.id);
+        if(!user) continue;
+
+        await this.inventoryService.processRewardItems(user, reward.items);
       }
     }
   }
@@ -91,19 +90,29 @@ export class RewardManagementService extends BaseService<RewardEntity> {
   async rewardWeeklyTopClans() {
     const topClans = await this.clanService.getAllClansWithMemberCount({ page: 1, limit: 3, isWeekly: true });
 
+    const rewardMap = {
+      1: RewardType.WEEKLY_RANKING_CLAN_1,
+      2: RewardType.WEEKLY_RANKING_CLAN_2,
+      3: RewardType.WEEKLY_RANKING_CLAN_3,
+    };
+
     for (const clan of topClans.result.filter(clan => clan.weekly_score > 0)) {
-      switch (clan.rank) {
-        case 1:
-          await this.clanFundService.rewardClanFund(clan.id, { type: ClanFundType.GOLD, amount: 10000 });
-          break;
-        case 2:
-          await this.clanFundService.rewardClanFund(clan.id, { type: ClanFundType.GOLD, amount: 5000 });
-          break;
-        case 3:
-          await this.clanFundService.rewardClanFund(clan.id, { type: ClanFundType.GOLD, amount: 3000 });
-          break;
-        default:
-          break;
+      const rewardType = rewardMap[clan.rank];
+      if (!rewardType) continue;
+
+      const reward = await this.getAll({ type: rewardType })[0];
+      if (!reward) continue;
+
+      for (const item of reward.items) {
+        if (item.type === 'gold' || item.type === 'diamond') {
+          await this.clanFundService.rewardClanFund(clan.id, {
+            type: item.type === 'gold' ? ClanFundType.GOLD : ClanFundType.DIAMOND,
+            amount: item.quantity,
+          });
+        }
+        if (item.type === 'plant' && item.plant) {
+          await this.clanWarehouseService.rewardSeedToClans(clan.id, item.plant.id, item.quantity);
+        }
       }
     }
     return topClans;

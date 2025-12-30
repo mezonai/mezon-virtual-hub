@@ -39,10 +39,10 @@ export class RewardManagementController {
 
   @Get("weekly-rewards/members")
   @ApiOperation({
-    summary: 'Reward weekly top players',
+    summary: 'Reward weekly top members',
   })
-  async rewardWeeklyTopPlayers() {
-    return await this.rewardService.rewardWeeklyTopPlayers();
+  async rewardWeeklyTopMembers() {
+    return await this.rewardService.rewardWeeklyTopMembers();
   }
 
   @Get("weekly-rewards/clans")

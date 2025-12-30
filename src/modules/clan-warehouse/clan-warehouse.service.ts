@@ -188,4 +188,35 @@ export class CLanWarehouseService {
       items: results,
     };
   }
+
+  async rewardSeedToClans(clanId: string, seedId: string, quantity: number) {
+    const plant = await this.plantRepo.find({ where: { id: seedId } })[0];
+
+    let warehouseItem = await this.warehouseRepo.findOne({
+      where: {
+        clan_id: clanId,
+        item_id: plant.id,
+        is_harvested: false,
+      },
+    });
+
+    if (warehouseItem) {
+      warehouseItem.quantity += quantity;
+    } else {
+      warehouseItem = this.warehouseRepo.create({
+        clan_id: clanId,
+        item_id: plant.id,
+        quantity,
+        is_harvested: false,
+      });
+    }
+
+    const savedItem = await this.warehouseRepo.save(warehouseItem);
+
+    return {
+      success: true,
+      clanId: clanId,
+      item: savedItem,
+    };
+  }
 }

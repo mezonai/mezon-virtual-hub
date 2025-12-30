@@ -7,6 +7,7 @@ import { FoodEntity } from '@modules/food/entity/food.entity';
 import { RewardItemService } from './reward-item.service';
 import { RewardItemController } from './reward-item.controller';
 import { PetsEntity } from '@modules/pets/entity/pets.entity';
+import { PlantEntity } from '@modules/plant/entity/plant.entity';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { PetsEntity } from '@modules/pets/entity/pets.entity';
       ItemEntity,
       FoodEntity,
       PetsEntity,
+      PlantEntity,
     ]),
   ],
   providers: [RewardItemService],

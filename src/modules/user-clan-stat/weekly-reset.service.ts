@@ -12,7 +12,7 @@ export class WeeklyResetService {
 
   @Cron('0 0 * * 1', { timeZone: 'Asia/Ho_Chi_Minh' }) // mỗi thứ 2 lúc 00:00
   async handleCron() {
-    await this.rewardManagementService.rewardWeeklyTopPlayers();
+    await this.rewardManagementService.rewardWeeklyTopMembers();
     await this.rewardManagementService.rewardWeeklyTopClans();
     await this.userClanStatService.resetWeeklyScores();
   }

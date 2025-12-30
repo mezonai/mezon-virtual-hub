@@ -13,6 +13,7 @@ import { RewardEntity } from '@modules/reward/entity/reward.entity';
 import { ClanModule } from '@modules/clan/clan.module';
 import { ClanFundModule } from '@modules/clan-fund/clan-fund.module';
 import { UserModule } from '@modules/user/user.module';
+import { ClanWarehouseModule } from '@modules/clan-warehouse/clan-warehouse.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { UserModule } from '@modules/user/user.module';
     ClanModule,
     ClanFundModule,
     UserModule,
+    ClanWarehouseModule,
   ],
   providers: [RewardManagementService],
   exports: [RewardManagementService],
