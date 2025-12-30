@@ -61,26 +61,32 @@ export class RewardManagementService extends BaseService<RewardEntity> {
 
   async rewardWeeklyTopMembers() {
     const allClans = await this.clanService.getAllClansWithMemberCount({ isWeekly: true });
-    
+
     const rewardMap = {
       1: RewardType.WEEKLY_RANKING_MEMBER_1,
       2: RewardType.WEEKLY_RANKING_MEMBER_2,
       3: RewardType.WEEKLY_RANKING_MEMBER_3,
-      4: RewardType.WEEKLY_RANKING_MEMBER_TOP_10,
     };
 
     for (const clan of allClans.result) {
       const topMembers = await this.clanService.getUsersByClanId(clan.id, { page: 1, limit: 10 });
 
       for (const member of topMembers.result.filter(p => p.weekly_score > 0)) {
-        const rewardType = rewardMap[member.rank];
+        let rewardType: RewardType | undefined;
+
+        if (member.rank >= 1 && member.rank <= 3) {
+          rewardType = rewardMap[member.rank];
+        } else if (member.rank >= 4 && member.rank <= 10) {
+          rewardType = RewardType.WEEKLY_RANKING_MEMBER_TOP_10;
+        }
+
         if (!rewardType) continue;
 
         const reward = await this.getAll({ type: rewardType })[0];
         if (!reward) continue;
 
         const user = await this.userService.findById(member.id);
-        if(!user) continue;
+        if (!user) continue;
 
         await this.inventoryService.processRewardItems(user, reward.items);
       }
