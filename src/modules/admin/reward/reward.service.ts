@@ -67,8 +67,9 @@ export class RewardManagementService extends BaseService<RewardEntity> {
       3: RewardType.WEEKLY_RANKING_MEMBER_3,
     };
 
-    for (const clan of allClans.result) {
+    for (const clan of allClans.result.filter(clan => clan.weekly_score > 0)) {
       const topMembers = await this.clanService.getUsersByClanId(clan.id, { page: 1, limit: 10 });
+      if (!topMembers.result.length) continue;
 
       for (const member of topMembers.result.filter(p => p.weekly_score > 0)) {
         let rewardType: RewardType | undefined;
@@ -78,16 +79,15 @@ export class RewardManagementService extends BaseService<RewardEntity> {
         } else if (member.rank >= 4 && member.rank <= 10) {
           rewardType = RewardType.WEEKLY_RANKING_MEMBER_TOP_10;
         }
-
         if (!rewardType) continue;
 
-        const reward = await this.getAll({ type: rewardType })[0];
+        const reward = await this.getAll({ type: rewardType });
         if (!reward) continue;
 
         const user = await this.userService.findById(member.id);
         if (!user) continue;
 
-        await this.inventoryService.processRewardItems(user, reward.items);
+        await this.inventoryService.processRewardItems(user, reward[0].items);
       }
     }
   }
@@ -105,10 +105,10 @@ export class RewardManagementService extends BaseService<RewardEntity> {
       const rewardType = rewardMap[clan.rank];
       if (!rewardType) continue;
 
-      const reward = await this.getAll({ type: rewardType })[0];
+      const reward = await this.getAll({ type: rewardType });
       if (!reward) continue;
 
-      for (const item of reward.items) {
+      for (const item of reward[0].items) {
         if (item.type === 'gold' || item.type === 'diamond') {
           await this.clanFundService.rewardClanFund(clan.id, {
             type: item.type === 'gold' ? ClanFundType.GOLD : ClanFundType.DIAMOND,

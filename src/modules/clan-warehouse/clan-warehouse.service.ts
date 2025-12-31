@@ -190,12 +190,10 @@ export class CLanWarehouseService {
   }
 
   async rewardSeedToClans(clanId: string, seedId: string, quantity: number) {
-    const plant = await this.plantRepo.find({ where: { id: seedId } })[0];
-
     let warehouseItem = await this.warehouseRepo.findOne({
       where: {
         clan_id: clanId,
-        item_id: plant.id,
+        item_id: seedId,
         is_harvested: false,
       },
     });
@@ -205,7 +203,7 @@ export class CLanWarehouseService {
     } else {
       warehouseItem = this.warehouseRepo.create({
         clan_id: clanId,
-        item_id: plant.id,
+        item_id: seedId,
         quantity,
         is_harvested: false,
       });
