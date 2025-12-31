@@ -44,6 +44,13 @@ export class RewardManagementService extends BaseService<RewardEntity> {
     return rewards;
   }
 
+  async getRewardByType(type: RewardType) {
+    return await this.rewardRepo.findOne({ 
+      where: { type }, 
+      relations: ['items', 'items.food', 'items.item', 'items.plant'] 
+    });
+  }
+
   async createRewardManagement(payload: CreateRewardManagementDto) {
     const newRewardManagement = this.rewardRepo.create(payload);
     return await this.rewardRepo.save(newRewardManagement);
@@ -81,13 +88,13 @@ export class RewardManagementService extends BaseService<RewardEntity> {
         }
         if (!rewardType) continue;
 
-        const reward = await this.getAll({ type: rewardType });
+        const reward = await this.getRewardByType(rewardType);
         if (!reward) continue;
 
         const user = await this.userService.findById(member.id);
         if (!user) continue;
 
-        await this.inventoryService.processRewardItems(user, reward[0].items);
+        await this.inventoryService.processRewardItems(user, reward.items);
       }
     }
   }
@@ -105,10 +112,10 @@ export class RewardManagementService extends BaseService<RewardEntity> {
       const rewardType = rewardMap[clan.rank];
       if (!rewardType) continue;
 
-      const reward = await this.getAll({ type: rewardType });
+      const reward = await this.getRewardByType(rewardType);
       if (!reward) continue;
 
-      for (const item of reward[0].items) {
+      for (const item of reward.items) {
         if (item.type === 'gold' || item.type === 'diamond') {
           await this.clanFundService.rewardClanFund(clan.id, {
             type: item.type === 'gold' ? ClanFundType.GOLD : ClanFundType.DIAMOND,
