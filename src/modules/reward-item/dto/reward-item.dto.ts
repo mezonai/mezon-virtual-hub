@@ -77,6 +77,16 @@ export class RewardItemDto {
   @IsEnum(PetType)
   @IsOptional()
   pet_type?: PetType;
+  
+  @ApiPropertyOptional({
+    description: 'Plant Id',
+    example: '550e8400-e29b-41d4-a716-446655440000',
+    type: String,
+    required: false,
+  })
+  @IsUUID()
+  @IsOptional()
+  plant_id?: string;
 }
 
 export class UpdateRewardItemDto {
@@ -124,6 +134,12 @@ export class BulkRewardItemsDTO {
         type: 'food',
         quantity: 1,
         food_id: '770e8400-e29b-41d4-a716-446655440222',
+      },
+      {
+        reward_id: '550e8400-e29b-41d4-a716-446655440000',
+        type: 'plant',
+        quantity: 1,
+        plant_id: '770e8400-e29b-41d4-a716-446655440222',
       },
       {
         reward_id: '550e8400-e29b-41d4-a716-446655440000',

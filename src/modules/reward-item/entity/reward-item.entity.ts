@@ -17,6 +17,7 @@ import { FoodDto } from '@modules/food/dto/food.dto';
 import { PetsEntity } from '@modules/pets/entity/pets.entity';
 import { PetsDtoResponse } from '@modules/pets/dto/pets.dto';
 import { ItemDto } from '@modules/item/dto/item.dto';
+import { PlantEntity } from '@modules/plant/entity/plant.entity';
 
 @Entity('reward_items')
 @Unique('UQ_reward_items_reward_id_item_id', ['reward_id', 'item_id'])
@@ -87,6 +88,18 @@ export class RewardItemEntity {
   })
   @Type(() => PetsDtoResponse)
   pet: PetsDtoResponse | null;
+
+  @Column({ type: 'uuid', nullable: true })
+  @Exclude()
+  plant_id: string | null;
+
+  @ManyToOne(() => PlantEntity, { nullable: true })
+  @JoinColumn({
+    name: 'plant_id',
+    foreignKeyConstraintName: 'FK_reward_items_plant_id',
+  })
+  @Type(() => FoodDto)
+  plant: PlantEntity | null;
 
   @Column({ type: 'jsonb', nullable: true })
   metadata: Record<string, any> | { rarity: AnimalRarity } | null;

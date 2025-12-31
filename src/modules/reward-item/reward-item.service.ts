@@ -13,6 +13,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { FindOptionsWhere, Repository } from 'typeorm';
 import { RewardItemDto, UpdateRewardItemDto } from './dto/reward-item.dto';
 import { RewardItemEntity } from './entity/reward-item.entity';
+import { PlantEntity } from '@modules/plant/entity/plant.entity';
 
 @Injectable()
 export class RewardItemService extends BaseService<RewardItemEntity> {
@@ -31,6 +32,9 @@ export class RewardItemService extends BaseService<RewardItemEntity> {
 
     @InjectRepository(PetsEntity)
     private readonly petRepo: Repository<PetsEntity>,
+
+    @InjectRepository(PlantEntity)
+    private readonly plantRepo: Repository<PlantEntity>,
   ) {
     super(rewardItemRepo, RewardItemEntity.name);
   }
@@ -166,6 +170,21 @@ export class RewardItemService extends BaseService<RewardItemEntity> {
         return this.upsertRewardItem(
           { type: dto.type, reward: { id: reward.id } },
           { reward, type: dto.type },
+          dto.quantity,
+        );
+      }
+
+      case RewardItemType.PLANT: {
+        if (!dto.plant_id) {
+          throw new BadRequestException('plant_id is required when type is PLANT');
+        }
+        const plant = await this.plantRepo.findOne({
+          where: { id: dto.plant_id },
+        });
+        if (!plant) throw new NotFoundException('Plant not found');
+        return this.upsertRewardItem(
+          { plant: { id: dto.plant_id }, reward: { id: reward.id } },
+          { reward, type: dto.type, plant },
           dto.quantity,
         );
       }

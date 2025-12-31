@@ -165,6 +165,13 @@ export class ClanFundService {
     });
   }
 
+  async rewardClanFund(clanId: string, dto: ContributeClanFundDto) {
+    return await this.clanFundRepo.update(
+      { clan_id: clanId, type: dto.type },
+      { amount: () => `amount + ${dto.amount}` },
+    );
+  }
+
   async getClanFundInfo(clanId: string) {
     const funds = await this.clanFundRepo.find({
       where: { clan_id: clanId },

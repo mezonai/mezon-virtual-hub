@@ -13,7 +13,7 @@ import {
   MaxLength,
 } from 'class-validator';
 import { ClanEntity } from '../entity/clan.entity';
-import { ClanRole } from '@enum';
+import { ClanActivityActionType, ClanRole } from '@enum';
 
 export class CreateMapDto {
   readonly name: string;
@@ -71,6 +71,14 @@ export class ClansQueryDto extends OmitType(QueryParamsDto, ['limit']) {
   @Transform(({ value }) => value === 'true')
   @IsBoolean()
   isWeekly?: boolean;
+
+  @ApiPropertyOptional({
+    enum: ClanActivityActionType,
+    description: 'Filter clan activity by action type',
+  })
+  @IsOptional()
+  @IsEnum(ClanActivityActionType)
+  actionType?: ClanActivityActionType;
 }
 
 export class UpdateClanDescriptionDto {
