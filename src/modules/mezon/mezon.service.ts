@@ -14,6 +14,9 @@ import axios from 'axios';
 import { APISentTokenRequest, Events, MezonClient } from 'mezon-sdk';
 import moment from 'moment';
 import { EntityManager } from 'typeorm';
+import * as QRCode from 'qrcode';
+import { TokenSentEvent } from 'mezon-sdk/dist/cjs/api/api';
+import { PlayerSessionManager } from '@modules/colyseus/player/PlayerSessionManager';
 
 @Injectable()
 export class MezonService implements OnModuleInit, OnModuleDestroy {
@@ -34,8 +37,8 @@ export class MezonService implements OnModuleInit, OnModuleDestroy {
     this.logger.log('Initializing Mezon client...');
     await this.loginMezon();
 
-    this.client.on(Events.TokenSend, async (event: MezonTokenSentEvent) => {
-      await this.transferTokenToDiamond(event);
+    this.client.onTokenSend(async (data: TokenSentEvent) => {
+      await this.transferTokenToDiamond(data);
     });
 
     this.logger.log('Mezon event listeners set up.');
@@ -48,16 +51,50 @@ export class MezonService implements OnModuleInit, OnModuleDestroy {
   async transferTokenToDiamond(data: MezonTokenSentEvent) {
     if (data.receiver_id !== configEnv().MEZON_TOKEN_RECEIVER_APP_ID) return;
 
-    const success =
-      await this.transactionService.handleDepositTransaction(data);
-    if (success) {
-      return this.logger.log(
-        `Deposit successful | User: ${data?.sender_name} | Amount: ${data.amount} diamond`,
+    let user: UserEntity | null = null;
+    try {
+      const success =
+        await this.transactionService.handleDepositTransaction(data);
+
+      user = await this.userRepository.findOne({
+        where: { mezon_id: data.sender_id },
+      });
+      if (!user) return;
+
+      const client = PlayerSessionManager.getClient(user.id);
+      if (!client) return;
+
+      if (!success) {
+        client.send('onSendTokenFail', {
+          reason: 'Không thể nạp Diamond',
+        });
+        return;
+      }
+
+      client.userData.diamond = user.diamond;
+
+      client.send('onSendTokenSuccess', {
+        userDiamond: user.diamond,
+        amountChange: data.amount,
+      });
+
+      this.logger.log(
+        `Deposit successful | User: ${data?.sender_name} | Amount: ${data.amount}`,
+      );
+    } catch (err) {
+      if (user) {
+        const client = PlayerSessionManager.getClient(user.id);
+        if (client) {
+          client.send('onSendTokenFail', {
+            reason: 'Lỗi hệ thống khi nạp Diamond',
+          });
+        }
+      }
+
+      this.logger.error(
+        `Deposit exception | User: ${data?.sender_name} | Amount: ${data.amount} | ${err}`,
       );
     }
-    this.logger.error(
-      `Deposit Failed | User: ${data?.sender_name} | Amount: ${data.amount} diamond`,
-    );
   }
 
   async withdrawTokenRequest(
@@ -149,12 +186,17 @@ export class MezonService implements OnModuleInit, OnModuleDestroy {
   }
 
   async loginMezon() {
+    const botId = configEnv().MEZON_TOKEN_RECEIVER_APP_ID;
+    const token = configEnv().MEZON_TOKEN_RECEIVER_APP_TOKEN;
+    if (!botId || !token) return;
     try {
       this.client = new MezonClient({
-        botId: configEnv().MEZON_TOKEN_RECEIVER_APP_ID,
-        token: configEnv().MEZON_TOKEN_RECEIVER_APP_TOKEN,
+        botId,
+        token,
       });
-      await this.client.login();
+      this.client.login().catch((e) => {
+        console.log(e);
+      });
 
       this.logger.log('Mezon client authenticated in module init');
 
@@ -167,5 +209,26 @@ export class MezonService implements OnModuleInit, OnModuleDestroy {
         t: `FAILED: Mezon client initializes failed at: ${moment().tz('Asia/Ho_Chi_Minh').format('YYYY-MM-DD HH:mm:ss')} (Asia/Ho_Chi_Minh Time) ${error}`,
       });
     }
+  }
+
+  async generateMezonReceiverQr(): Promise<{
+    qr_base64: string;
+  }> {
+    const payload = {
+      receiver_id: configEnv().MEZON_TOKEN_RECEIVER_APP_ID,
+      receiver_name: 'mezon_bot',
+    };
+
+    const text = JSON.stringify(payload);
+
+    const qrBase64 = await QRCode.toDataURL(text, {
+      width: 300,
+      margin: 1,
+      errorCorrectionLevel: 'M',
+    });
+
+    return {
+      qr_base64: qrBase64,
+    };
   }
 }
