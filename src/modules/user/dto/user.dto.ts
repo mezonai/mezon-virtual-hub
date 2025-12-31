@@ -3,9 +3,10 @@ import { ClanInfoResponseDto } from '@modules/clan/dto/clan.dto';
 import { InventoryDto } from '@modules/inventory/dto/inventory.dto';
 import { PetPlayersWithSpeciesDto } from '@modules/pet-players/dto/pet-players.dto';
 import { ApiProperty, ApiPropertyOptional, OmitType } from '@nestjs/swagger';
-import { Exclude, Expose, Type } from 'class-transformer';
+import { Exclude, Expose, Transform, Type } from 'class-transformer';
 import {
   IsArray,
+  IsBoolean,
   IsEnum,
   IsNumber,
   IsOptional,
@@ -155,12 +156,10 @@ export class UsersClanQueryDto extends OmitType(QueryParamsDto, [
   limit?: number = 30;
 
   @ApiPropertyOptional({
-    description: 'Score type to rank users',
-    enum: ScoreType,
-    default: ScoreType.ALL,
+    description: 'Filter by weekly score',
   })
   @IsOptional()
-  @IsEnum(ScoreType)
-  score_type?: ScoreType = ScoreType.ALL;
-
+  @Transform(({ value }) => value === 'true')
+  @IsBoolean()
+  isWeekly?: boolean;
 }

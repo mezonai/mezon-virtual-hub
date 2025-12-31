@@ -48,7 +48,7 @@ export class ClanService extends BaseService<ClanEntity> {
   }
 
   async getAllClansWithMemberCount(query: ClansQueryDto) {
-    const { page = 1, limit = 30, search } = query;
+    const { page = 1, limit = 30, search, isWeekly } = query;
     const qb = this.repository
       .createQueryBuilder('clans')
       .loadRelationCountAndMap('clans.member_count', 'clans.members');
@@ -61,8 +61,8 @@ export class ClanService extends BaseService<ClanEntity> {
 
     const clans = await qb.getMany();
     const clansSorted = [...clans].sort((a, b) => {
-      const scoreA = query.isWeekly ? (a.weekly_score ?? 0) : (a.score ?? 0);
-      const scoreB = query.isWeekly ? (b.weekly_score ?? 0) : (b.score ?? 0);
+      const scoreA = isWeekly ? (a.weekly_score ?? 0) : (a.score ?? 0);
+      const scoreB = isWeekly ? (b.weekly_score ?? 0) : (b.score ?? 0);
 
       if (scoreA !== scoreB) {
         return scoreB - scoreA;
@@ -76,7 +76,7 @@ export class ClanService extends BaseService<ClanEntity> {
     let rank = 1;
 
     const clansWithRank = clansSorted.map((c) => {
-      const score = query.isWeekly ? c.weekly_score : c.score;
+      const score = isWeekly ? c.weekly_score : c.score;
 
       return {
         ...plainToInstance(ClanListDto, c),
@@ -202,10 +202,7 @@ export class ClanService extends BaseService<ClanEntity> {
   }
 
   async getUsersByClanId(clanId: string, query: UsersClanQueryDto) {
-    const { page = 1, limit = 30, search, score_type } = query;
-
-    const isAll = score_type === ScoreType.ALL;
-    const isWeekly = score_type === ScoreType.WEEKLY;
+    const { page = 1, limit = 30, search, isWeekly } = query;
 
     const qb = this.userRepository
       .createQueryBuilder('user')
@@ -244,22 +241,11 @@ export class ClanService extends BaseService<ClanEntity> {
       const total_score = u.scores?.[0]?.total_score ?? 0;
       const weekly_score = u.scores?.[0]?.weekly_score ?? 0;
 
-      const base = {
+      return {
         ...plainToInstance(UserPublicDto, u),
         rank: currentRank++,
-      };
-
-      if (isAll) {
-        return {
-          ...base,
-          total_score,
-          weekly_score,
-        };
-      }
-
-      return {
-        ...base,
-        score: isWeekly ? weekly_score : total_score,
+        total_score,
+        weekly_score,
       };
     });
 
