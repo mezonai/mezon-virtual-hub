@@ -10,9 +10,10 @@ import { RewardEntity } from '@modules/reward/entity/reward.entity';
 import { InventoryService } from '@modules/inventory/inventory.service';
 import { ClanService } from '@modules/clan/clan.service';
 import { UserService } from '@modules/user/user.service';
-import { ClanFundType, RewardType } from '@enum';
+import { ClanActivityActionType, ClanFundType, RewardType } from '@enum';
 import { ClanFundService } from '@modules/clan-fund/clan-fund.service';
 import { CLanWarehouseService } from '@modules/clan-warehouse/clan-warehouse.service';
+import { ClanActivityService } from '@modules/clan-activity/clan-activity.service';
 
 @Injectable()
 export class RewardManagementService extends BaseService<RewardEntity> {
@@ -26,6 +27,7 @@ export class RewardManagementService extends BaseService<RewardEntity> {
     private clanFundService: ClanFundService,
     private userService: UserService,
     private clanWarehouseService: CLanWarehouseService,
+    private clanActivityService: ClanActivityService,
   ) {
     super(rewardRepo, RewardEntity.name);
   }
@@ -69,9 +71,9 @@ export class RewardManagementService extends BaseService<RewardEntity> {
     const allClans = await this.clanService.getAllClansWithMemberCount({ isWeekly: true });
 
     const rewardMap = {
-      1: RewardType.WEEKLY_RANKING_MEMBER_1,
-      2: RewardType.WEEKLY_RANKING_MEMBER_2,
-      3: RewardType.WEEKLY_RANKING_MEMBER_3,
+      1: { rewardType: RewardType.WEEKLY_RANKING_MEMBER_1, activityType: ClanActivityActionType.WEEKLY_RANKING_MEMBER_1 },
+      2: { rewardType: RewardType.WEEKLY_RANKING_MEMBER_2, activityType: ClanActivityActionType.WEEKLY_RANKING_MEMBER_2 },
+      3: { rewardType: RewardType.WEEKLY_RANKING_MEMBER_3, activityType: ClanActivityActionType.WEEKLY_RANKING_MEMBER_3 },
     };
 
     for (const clan of allClans.result.filter(clan => clan.weekly_score > 0)) {
@@ -80,13 +82,16 @@ export class RewardManagementService extends BaseService<RewardEntity> {
 
       for (const member of topMembers.result.filter(p => p.weekly_score > 0)) {
         let rewardType: RewardType | undefined;
+        let activityType: ClanActivityActionType | undefined;
 
         if (member.rank >= 1 && member.rank <= 3) {
-          rewardType = rewardMap[member.rank];
+          rewardType = rewardMap[member.rank].rewardType;
+          activityType = rewardMap[member.rank].activityType;
         } else if (member.rank >= 4 && member.rank <= 10) {
           rewardType = RewardType.WEEKLY_RANKING_MEMBER_TOP_10;
+          activityType = ClanActivityActionType.WEEKLY_RANKING_MEMBER_TOP_10;
         }
-        if (!rewardType) continue;
+        if (!rewardType || !activityType) continue;
 
         const reward = await this.getRewardByType(rewardType);
         if (!reward) continue;
@@ -95,6 +100,12 @@ export class RewardManagementService extends BaseService<RewardEntity> {
         if (!user) continue;
 
         await this.inventoryService.processRewardItems(user, reward.items);
+        await this.clanActivityService.logActivity({
+          clanId: clan.id,
+          userId: user.id,
+          actionType: activityType,
+          officeName: `${clan.name} Farm`,
+        });
       }
     }
   }
@@ -103,14 +114,15 @@ export class RewardManagementService extends BaseService<RewardEntity> {
     const topClans = await this.clanService.getAllClansWithMemberCount({ page: 1, limit: 3, isWeekly: true });
 
     const rewardMap = {
-      1: RewardType.WEEKLY_RANKING_CLAN_1,
-      2: RewardType.WEEKLY_RANKING_CLAN_2,
-      3: RewardType.WEEKLY_RANKING_CLAN_3,
+      1: { rewardType: RewardType.WEEKLY_RANKING_CLAN_1, activityType: ClanActivityActionType.WEEKLY_RANKING_CLAN_1 },
+      2: { rewardType: RewardType.WEEKLY_RANKING_CLAN_2, activityType: ClanActivityActionType.WEEKLY_RANKING_CLAN_2 },
+      3: { rewardType: RewardType.WEEKLY_RANKING_CLAN_3, activityType: ClanActivityActionType.WEEKLY_RANKING_CLAN_3 },
     };
 
     for (const clan of topClans.result.filter(clan => clan.weekly_score > 0)) {
-      const rewardType = rewardMap[clan.rank];
-      if (!rewardType) continue;
+      const rewardType = rewardMap[clan.rank].rewardType;
+      const activityType = rewardMap[clan.rank].activityType;
+      if (!rewardType || !activityType) continue;
 
       const reward = await this.getRewardByType(rewardType);
       if (!reward) continue;
@@ -126,6 +138,12 @@ export class RewardManagementService extends BaseService<RewardEntity> {
           await this.clanWarehouseService.rewardSeedToClans(clan.id, item.plant.id, item.quantity);
         }
       }
+
+      await this.clanActivityService.logActivity({
+        clanId: clan.id,
+        actionType: activityType,
+        officeName: `${clan.name} Farm`,
+      });
     }
     return topClans;
   }

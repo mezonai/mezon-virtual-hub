@@ -53,10 +53,10 @@ export class ClanActivityService {
     clanId: string,
     query: ClansQueryDto,
   ): Promise<Pageable<ClanActivityDto>> {
-    const { page = 1, limit = 30 } = query;
+    const { page = 1, limit = 30, actionType } = query;
 
     const [logs, total] = await this.clanActivityRepo.findAndCount({
-      where: { clan_id: clanId },
+      where: { clan_id: clanId, action_type: actionType },
       order: { created_at: 'DESC' },
       skip: (page - 1) * limit,
       take: limit,

@@ -14,6 +14,7 @@ import { ClanModule } from '@modules/clan/clan.module';
 import { ClanFundModule } from '@modules/clan-fund/clan-fund.module';
 import { UserModule } from '@modules/user/user.module';
 import { ClanWarehouseModule } from '@modules/clan-warehouse/clan-warehouse.module';
+import { ClanActivityModule } from '@modules/clan-activity/clan-activity.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { ClanWarehouseModule } from '@modules/clan-warehouse/clan-warehouse.modu
     ClanFundModule,
     UserModule,
     ClanWarehouseModule,
+    ClanActivityModule,
   ],
   providers: [RewardManagementService],
   exports: [RewardManagementService],
