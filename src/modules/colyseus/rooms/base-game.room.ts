@@ -902,7 +902,7 @@ export class BaseGameRoom extends Room<RoomState> {
 
     //combat
     this.onMessage('p2pCombatActionAccept', (sender, data) => {
-      const { targetClientId, action, amount } = data;
+      const { targetClientId, action, amount, isDiamond } = data;
       if (action !== ActionKey.Battle.toString()) {
         this.sendMessageToTarget(sender, action, 'Lỗi bất định');
         return;
@@ -938,7 +938,7 @@ export class BaseGameRoom extends Room<RoomState> {
         }
       });
 
-      this.createBattleRoom(player1Id, player2Id, amount);
+      this.createBattleRoom(player1Id, player2Id, amount, isDiamond);
     });
 
     this.onMessage(MessageTypes.NOT_PET_BATTLE, async (client: AuthenticatedClient, data) => {
@@ -1136,11 +1136,12 @@ export class BaseGameRoom extends Room<RoomState> {
       }, 100);
     });
   }
-  async createBattleRoom(player1Id: string, player2Id: string, valueChallenge: number) {
+  async createBattleRoom(player1Id: string, player2Id: string, valueChallenge: number, isDiamond: boolean) {
     try {
       const room = await matchMaker.createRoom("battle-room", {
         roomName: this.roomName,
-        amount: valueChallenge
+        amount: valueChallenge,
+        isDiamond,
       });
       // Gửi thông báo cho client
       this.broadcast(MessageTypes.BATTE_ROOM_READY, {
