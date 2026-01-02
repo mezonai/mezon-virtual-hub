@@ -35,7 +35,7 @@ export class SpawnPetPlayersDto extends PickType(PetPlayersEntity, [
   })
   @IsEnum(AnimalRarity)
   @IsOptional()
-  rarity?: AnimalRarity = AnimalRarity.COMMON;
+  current_rarity?: AnimalRarity = AnimalRarity.COMMON;
 
   @ApiPropertyOptional({
     description: 'Type of the pet.',
@@ -170,3 +170,16 @@ export class UpdatePetPlayersDto extends OmitType(PetPlayersInfoDto, [
   'max_exp',
   'id',
 ]) {}
+
+export class CompensateUpdateRarityPetPlayersDto {
+  @ApiProperty({ description: 'ID of Pet' })
+  @IsUUID()
+  pet_id: string;
+
+  @ApiProperty({
+    description: 'Rarity of the animal',
+    enum: AnimalRarity,
+  })
+  @IsEnum(AnimalRarity)
+  rarity: AnimalRarity;
+}

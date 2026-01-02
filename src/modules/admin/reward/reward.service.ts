@@ -76,6 +76,8 @@ export class RewardManagementService extends BaseService<RewardEntity> {
       3: { rewardType: RewardType.WEEKLY_RANKING_MEMBER_3, activityType: ClanActivityActionType.WEEKLY_RANKING_MEMBER_3 },
     };
 
+    const rewardedUsers: string[] = [];
+
     for (const clan of allClans.result.filter(clan => clan.weekly_score > 0)) {
       const topMembers = await this.clanService.getUsersByClanId(clan.id, { page: 1, limit: 10 });
       if (!topMembers.result.length) continue;
@@ -106,8 +108,11 @@ export class RewardManagementService extends BaseService<RewardEntity> {
           actionType: activityType,
           officeName: `${clan.name} Farm`,
         });
+        rewardedUsers.push(user.username);
       }
     }
+
+    return rewardedUsers;
   }
 
   async rewardWeeklyTopClans() {

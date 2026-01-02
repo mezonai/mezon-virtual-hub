@@ -313,8 +313,10 @@ export class InventoryService extends BaseService<Inventory> {
           }
 
           const pet = await this.petPlayerService.createPetPlayers({
+            room_code: '',
             user_id: user.id,
             pet_id: reward.pet_id,
+            current_rarity: reward.metadata?.rarity,
           });
 
           if (!pet) {

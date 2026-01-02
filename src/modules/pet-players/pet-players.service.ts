@@ -919,6 +919,31 @@ export class PetPlayersService extends BaseService<PetPlayersEntity> {
     });
   }
 
+  async compensateUpdateRarityPetPlayersToUser(pet_id: string, rarity: AnimalRarity) {
+    const petPlayers = await this.petPlayersRepository.find({
+      where: {
+        pet: { id: pet_id },
+        current_rarity: AnimalRarity.COMMON,
+      },
+      relations: ['user'],
+    });
+
+    const users: string[] = [];
+
+    if (!petPlayers) {
+      throw new NotFoundException(`Pet-player not found for pet ${pet_id}`);
+    }
+
+    for (const petPlayer of petPlayers) {
+      petPlayer.current_rarity = rarity;
+      await this.petPlayersRepository.save(petPlayer);
+      if (!petPlayer.user?.display_name) throw new NotFoundException(`User not found for pet-player ${petPlayer.user?.display_name}`);
+      users.push(petPlayer.user.display_name);
+    }
+
+    return { updated: users };
+  }
+
   generateIndividualValue(): number {
     return Math.floor(Math.random() * 31) + 1;
   }

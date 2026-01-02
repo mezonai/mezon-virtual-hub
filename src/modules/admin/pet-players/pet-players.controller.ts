@@ -11,7 +11,7 @@ import { Logger } from '@libs/logger';
 import { RequireAdmin } from '@libs/decorator';
 import { Delete, Param, Put } from '@nestjs/common';
 import { ClsService } from 'nestjs-cls';
-import { PetPlayersQueryDto, SpawnPetPlayersDto, UpdatePetPlayersDto } from './dto/pet-players.dto';
+import { CompensateUpdateRarityPetPlayersDto, PetPlayersQueryDto, SpawnPetPlayersDto, UpdatePetPlayersDto } from './dto/pet-players.dto';
 import { AdminPetPlayersService } from './pet-players.service';
 
 @ApiBearerAuth()
@@ -42,6 +42,15 @@ export class AdminPetPlayersController {
   })
   async createPetPlayers(@Body() { quantity, ...pet }: SpawnPetPlayersDto) {
     return await this.adminPetPlayersService.createPetPlayers(pet, quantity);
+  }
+
+  @Post('compensate-update-rarity')
+  @RequireAdmin()
+  @ApiOperation({
+    summary: 'Compensate update rarity pet players to user',
+  })
+  async compensateUpdateRarityPetPlayersToUser(@Body() { pet_id, rarity }: CompensateUpdateRarityPetPlayersDto) {
+    return await this.adminPetPlayersService.compensateUpdateRarityPetPlayersToUser(pet_id, rarity);
   }
 
   @Post('fill-missing/:room_code')
