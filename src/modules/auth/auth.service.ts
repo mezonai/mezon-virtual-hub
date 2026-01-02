@@ -168,7 +168,8 @@ export class AuthService {
 
   async loginWithMezonHash(payload: LoginMezonDto) {
     const { web_app_data } = payload;
-    const hashGenerate = generateMezonHash(decodeURIComponent(web_app_data));
+
+    const decodedData = decodeURIComponent(web_app_data);
 
     const {
       MEZON_AUTH_EXPIRES_TIME_OFFSET_IN_SECONDS: expiresTimeOffset,
@@ -177,28 +178,45 @@ export class AuthService {
 
     const adminBypassUsers = ADMIN_BYPASS_USERS?.split(',') || [];
 
-    const {
-      hash,
-      user: mezonUserInfo,
-      auth_date,
-    } = Object.fromEntries<WebAppData | any>(
-      new URLSearchParams(decodeURIComponent(web_app_data)),
+    const params = Object.fromEntries(
+      new URLSearchParams(decodedData),
     ) as WebAppData;
+
+    const { hash, user: mezonUserInfo, auth_date } = params;
 
     const { avatar_url, id, mezon_id, username }: UserInfoWebAppData =
       JSON.parse(mezonUserInfo);
 
-    const timeNow = new Date().getTime() / 1000;
-    const timeOffset = Number(expiresTimeOffset);
-    const isHashExpired = Number(auth_date) <= timeNow && Number(auth_date) >= timeNow - timeOffset;
+    const hashGenerate = generateMezonHash(decodedData);
 
-    console.log('[AUTH]', {username, auth_date: Number(auth_date), timeNow, timeOffset, isHashExpired, hashMatch: hashGenerate === hash, adminBypass: adminBypassUsers.includes(username)});
+    const now = Math.floor(Date.now() / 1000);
+    const timeOffset = Number(expiresTimeOffset);
+    const authDate = Number(auth_date);
+
+    const isAdminBypass = adminBypassUsers.includes(username);
+
+    if (!isAdminBypass && hashGenerate !== hash) {
+      console.error('[MEZON HASH FAIL]', {
+        username,
+        hashGenerate,
+        hash,
+      });
+      throw new BadRequestException('Invalid login hash');
+    }
+
     if (
-      !adminBypassUsers.includes(username) &&
-      (hashGenerate !== hash || !isHashExpired)
-      // (!id || !username || !auth_date || !isHashExpired)
+      !isAdminBypass &&
+      (isNaN(authDate) ||
+        authDate < now - timeOffset ||
+        authDate > now + 5)
     ) {
-      throw new BadRequestException('Invalid hash');
+      console.error('[MEZON AUTH DATE FAIL]', {
+        username,
+        authDate,
+        now,
+        timeOffset,
+      });
+      throw new BadRequestException('Login data expired');
     }
 
     const user = await this.userRepository.findOne({
