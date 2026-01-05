@@ -21,6 +21,7 @@ import {
   UpdatePetPlayersDto,
 } from './dto/pet-players.dto';
 import { NumberRarityService } from '@modules/number-rarity/number-rarity.service';
+import { AnimalRarity } from '@enum';
 
 @Injectable()
 export class AdminPetPlayersService extends BaseService<PetPlayersEntity> {
@@ -220,5 +221,9 @@ export class AdminPetPlayersService extends BaseService<PetPlayersEntity> {
       throw new Error('Pet-player not found');
     }
     return { deleted: true };
+  }
+
+  async compensateUpdateRarityPetPlayersToUser(pet_id: string, current_rarity: AnimalRarity) {
+    return await this.petPlayersService.compensateUpdateRarityPetPlayersToUser(pet_id, current_rarity);
   }
 }
