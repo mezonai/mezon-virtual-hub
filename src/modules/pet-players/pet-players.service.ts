@@ -925,7 +925,7 @@ export class PetPlayersService extends BaseService<PetPlayersEntity> {
         pet: { id: pet_id },
         current_rarity: AnimalRarity.COMMON,
       },
-      relations: ['user'],
+      relations: ['user', 'pet'],
     });
 
     const users: string[] = [];
@@ -936,6 +936,9 @@ export class PetPlayersService extends BaseService<PetPlayersEntity> {
 
     for (const petPlayer of petPlayers) {
       petPlayer.current_rarity = rarity;
+
+      this.recalculateStats(petPlayer);
+
       await this.petPlayersRepository.save(petPlayer);
       if (!petPlayer.user?.display_name) throw new NotFoundException(`User not found for pet-player ${petPlayer.user?.display_name}`);
       users.push(petPlayer.user.display_name);
