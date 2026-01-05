@@ -392,6 +392,10 @@ export class ClanService extends BaseService<ClanEntity> {
     return { totalScore, weeklyScore };
   }
 
+  async resetWeeklyScores() {
+    await this.clanRepository.update({}, { weekly_score: 0 });
+  }
+
   async setUserClanAndRole(userId: string, clanId: string, role: ClanRole) {
     const user = await this.userRepository.findOne({ where: { id: userId } });
     if (!user) throw new NotFoundException(`User not found`);
