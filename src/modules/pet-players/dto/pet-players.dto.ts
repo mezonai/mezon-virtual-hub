@@ -339,3 +339,22 @@ export class GameConfigResponseDto {
     };
   };
 }
+
+export class PetPlayersQueryDto {
+  @ApiPropertyOptional({
+    enum: AnimalRarity,
+    enumName: 'AnimalRarity',
+  })
+  @IsEnum(AnimalRarity)
+  @IsOptional()
+  current_rarity?: AnimalRarity;
+
+  @ApiPropertyOptional({
+    type: Number,
+  })
+  @IsNumber()
+  @IsOptional()
+  @Transform(({ value }) => (typeof value === 'string' ? Number(value) : value))
+  stars?: number;
+}
+
