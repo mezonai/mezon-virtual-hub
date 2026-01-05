@@ -6,7 +6,7 @@ import { PetsEntity } from '@modules/pets/entity/pets.entity';
 import { UserEntity } from '@modules/user/entity/user.entity';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { AuditEntity } from '@types';
-import { Type } from 'class-transformer';
+import { Expose, Type } from 'class-transformer';
 import {
   ArrayMaxSize,
   ArrayNotEmpty,
@@ -152,6 +152,7 @@ export class PetPlayersEntity extends AuditEntity {
   @ArrayMaxSize(2)
   equipped_skill_codes: (SkillCode | null)[];
 
+  @Expose()
   @Column({
     name: 'current_rarity',
     type: 'enum',
