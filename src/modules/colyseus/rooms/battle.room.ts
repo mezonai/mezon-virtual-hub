@@ -22,6 +22,7 @@ export class BattleRoom extends BaseGameRoom {
     private timeLeft: number = 0;
     timeRemaning: number = 10;
     amountChallenge: number = 0;
+    isDiamond: boolean = true;
     // @Inject() private readonly petPlayersService: PetPlayersService;
     override async onCreate(options: any) {
         if (options?.roomName != null) {
@@ -30,6 +31,10 @@ export class BattleRoom extends BaseGameRoom {
 
         if (options?.amount != null) {
             this.amountChallenge = options.amount;
+        }
+
+        if (options?.isDiamond != null) {
+            this.isDiamond = options.isDiamond;
         }
 
         this.setState(new RoomState());
@@ -458,15 +463,27 @@ export class BattleRoom extends BaseGameRoom {
         if (loserClient.userData == null || winnerClient.userData == null) {
             return;
         }
-        loserClient.userData.diamond -= this.amountChallenge;
-        winnerClient.userData.diamond += this.amountChallenge;
+        if (!!this.isDiamond) {
+            loserClient.userData.diamond -= this.amountChallenge;
+            winnerClient.userData.diamond += this.amountChallenge;
 
-        this.userRepository.update(loserClient.userData.id, {
-            diamond: loserClient.userData.diamond,
-        });
-        this.userRepository.update(winnerClient.userData.id, {
-            diamond: winnerClient.userData.diamond,
-        });
+            this.userRepository.update(loserClient.userData.id, {
+                diamond: loserClient.userData.diamond,
+            });
+            this.userRepository.update(winnerClient.userData.id, {
+                diamond: winnerClient.userData.diamond,
+            });
+        } else {
+            loserClient.userData.gold -= this.amountChallenge;
+            winnerClient.userData.gold += this.amountChallenge;
+
+            this.userRepository.update(loserClient.userData.id, {
+                gold: loserClient.userData.gold,
+            });
+            this.userRepository.update(winnerClient.userData.id, {
+                gold: winnerClient.userData.gold,
+            });
+        }
     }
 
     private handleSwitchPetAfterPetDead(client: Client, petId: string) {
