@@ -170,3 +170,16 @@ export class UpdatePetPlayersDto extends OmitType(PetPlayersInfoDto, [
   'max_exp',
   'id',
 ]) {}
+
+export class CompensateUpdateRarityPetPlayersDto {
+  @ApiProperty({ description: 'ID of Pet' })
+  @IsUUID()
+  pet_id: string;
+
+  @ApiProperty({
+    description: 'Rarity of the animal',
+    enum: AnimalRarity,
+  })
+  @IsEnum(AnimalRarity)
+  rarity: AnimalRarity;
+}
