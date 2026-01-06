@@ -39,6 +39,7 @@ import {
   MergedPetPlayerDto,
   MergePetsDto,
   PetPlayersInfoDto,
+  PetPlayersQueryDto,
   PetPlayersWithSpeciesDto,
   SpawnPetPlayersDto,
   UpdateBattleSkillsDto,
@@ -70,9 +71,9 @@ export class PetPlayersService extends BaseService<PetPlayersEntity> {
     this.unlockSkillSlot4Level = configEnv().PET_UNLOCK_SKILL_SLOT_LEVEL_4;
   }
 
-  async findPetPlayersByUserId(user_id: string) {
+  async findPetPlayersByUserId(user_id: string, query: PetPlayersQueryDto = {}) {
     const pets = await this.find({
-      where: { user: { id: user_id } },
+      where: { user: { id: user_id }, ...query },
       relations: [
         'pet',
         'skill_slot_1',
