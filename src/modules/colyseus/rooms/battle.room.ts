@@ -438,18 +438,20 @@ export class BattleRoom extends BaseGameRoom {
             loserClient.send(MessageTypes.BATTLE_FINISHED, {
                 id: loser.id,
                 expReceived: result.expPerLoser ?? 0,
-                dimondChallenge: this.amountChallenge ?? 0,
+                currentValue: this.amountChallenge ?? 0,
                 currentPets: result.losers,
                 isWinner: false,
+                isDiamond: this.isDiamond,
             });
 
             // gửi kết quả cho winner
             winnerClient.send(MessageTypes.BATTLE_FINISHED, {
                 id: winner.id,
                 expReceived: result.expPerWinner ?? 0,
-                dimondChallenge: this.amountChallenge ?? 0,
+                currentValue: this.amountChallenge ?? 0,
                 currentPets: result.winners,
                 isWinner: true,
+                isDiamond: this.isDiamond,
             });
             QuestEventEmitter.emitProgress(loserClient?.userData?.id, QuestType.PET_BATTLE, 1);
             QuestEventEmitter.emitProgress(winnerClient?.userData?.id, QuestType.PET_BATTLE, 1);
