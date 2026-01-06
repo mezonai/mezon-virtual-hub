@@ -9,9 +9,16 @@ import { WeeklyResetService } from './weekly-reset.service';
 import { DailyResetService } from './daily-reset.service';
 import { UserEntity } from '@modules/user/entity/user.entity';
 import { RewardManagementModule } from '@modules/admin/reward/reward.module';
+import { ClanModule } from '@modules/clan/clan.module';
 
 @Module({
-  imports: [ScheduleModule.forRoot(), TypeOrmModule.forFeature([UserClanStatEntity, UserEntity]), ClsModule, RewardManagementModule],
+  imports: [
+    ScheduleModule.forRoot(),
+    TypeOrmModule.forFeature([UserClanStatEntity, UserEntity]),
+    ClsModule,
+    RewardManagementModule,
+    ClanModule
+  ],
   providers: [UserClanStatService, WeeklyResetService, DailyResetService],
   controllers: [UserClanStatController],
 })
