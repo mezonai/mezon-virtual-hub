@@ -173,6 +173,17 @@ export class UserEntity extends AuditEntity {
   @IsOptional()
   last_show_event_date: Date;
 
+  @Column({ type: 'bool', default: false })
+  @ApiProperty({
+    description: 'Whether the user has completed the tutorial',
+    type: Boolean,
+    required: false,
+  })
+  @IsBoolean()
+  @IsOptional()
+  @Type(() => Boolean)
+  isTutorialCompleted: boolean;
+
   @ApiProperty({description: 'Score user in clan' })
   @OneToMany(() => UserClanStatEntity, (score) => score.user)
   scores: UserClanStatEntity[];

@@ -45,6 +45,7 @@ import { UserClanStatModule } from '@modules/user-clan-stat/user-clan-stat.modul
 import { ClanActivityModule } from './modules/clan-activity/clan-activity.module';
 import { GameConfigModule } from './modules/admin/game-config/game-config.module';
 import { NumberRarityModule } from '@modules/number-rarity/number-rarity.module';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
@@ -55,6 +56,7 @@ import { NumberRarityModule } from '@modules/number-rarity/number-rarity.module'
       validationSchema: configValidationSchema,
     }),
     TypeOrmModule.forRoot(dataSourceOption),
+    ScheduleModule.forRoot(),
     AuthModule,
     UserModule,
     ItemModule,
