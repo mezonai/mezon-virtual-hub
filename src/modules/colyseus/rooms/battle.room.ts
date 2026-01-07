@@ -11,7 +11,8 @@ import { QuestEventEmitter } from "@modules/player-quest/events/quest.events";
 enum BattleState {
     READY,     // Chờ cả 2 người chọn hành động
     BATTLE,  // Bắt đầu xử lý skill (đang diễn ra turn)
-    FINISHED   // Trận đấu đã kết thúc
+    FINISHED,   // Trận đấu đã kết thúc
+    DISCONNECTED
 }
 export class BattleRoom extends BaseGameRoom {
     private playerActions: Map<string, PlayerAction> = new Map();
@@ -52,6 +53,10 @@ export class BattleRoom extends BaseGameRoom {
         this.onMessage(MessageTypes.CONFIRM_END_TURN, (client, data) => {
             this.checkEndTurn(client);
         });
+
+        this.onMessage(MessageTypes.ON_DISCONNECTED_BATTE, (client, data) => {
+            this.battleState = BattleState.DISCONNECTED;
+        });
         this.onMessage(MessageTypes.SET_PET_SLEEP, (client, data) => {
             const { petSleepingId } = data
             const player = this.state.battlePlayers.get(client.sessionId);
@@ -67,7 +72,7 @@ export class BattleRoom extends BaseGameRoom {
         if (this.battleState === BattleState.FINISHED) return;
 
         // Nếu đang trong trận, kết thúc trận đấu với player này
-        if (this.battleState === BattleState.BATTLE) {
+        if (this.battleState === BattleState.BATTLE) {// người chơi thoát giữa chừng
             this.battleIsFinished(client);
             return;
         }
@@ -386,7 +391,7 @@ export class BattleRoom extends BaseGameRoom {
             newPetIndex: player.action.newPetIndex,
         });
     }
-    private async battleIsFinished(loserClient: Client) {
+    private async battleIsFinished(loserClient: Client) {      
         if (!loserClient) {
             this.sendMessageError();
             return;

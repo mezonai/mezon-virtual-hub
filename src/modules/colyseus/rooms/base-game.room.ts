@@ -76,6 +76,7 @@ export class BaseGameRoom extends Room<RoomState> {
   private pethangeRoomInterval: any;
   protected doorManager: DoorManager;
   speciesPetEvent = 'DragonIce';
+  private batteRoomName = "battle-room";
   static activeRooms: Set<BaseGameRoom> = new Set();
   static globalTargetClients: Map<string, Client> = new Map();
   static eventData: any;
@@ -144,7 +145,7 @@ export class BaseGameRoom extends Room<RoomState> {
     if (!user) {
       throw new NotFoundException('User not found or not assigned to any map');
     }
-    //this.checkLogin(user.id);
+    this.checkLogin(user.id);
     const petPlayers = await this.petPlayersService.findPetPlayersWithPet({
       user: { id: user.id },
     });
@@ -159,7 +160,10 @@ export class BaseGameRoom extends Room<RoomState> {
 
     this.logger.log(`User ${user.username} is allowed in ${this.roomId}`);
     client.userData = userWithPets;
-    PlayerSessionManager.register(client.userData.id, client);
+    if (this.roomName != this.batteRoomName) {
+      PlayerSessionManager.register(client.userData.id, client);
+    }
+
     if (client?.userData?.id) {
       QuestEventEmitter.emitProgress(client.userData.id, QuestType.LOGIN_DAYS, 1);
     }
@@ -554,7 +558,7 @@ export class BaseGameRoom extends Room<RoomState> {
           return;
         }
 
-        if (amount <= 0|| amount < BATTLE_MIN_FEE || amount > BATTLE_MAX_FEE) {
+        if (amount <= 0 || amount < BATTLE_MIN_FEE || amount > BATTLE_MAX_FEE) {
           this.sendMessageToTarget(
             sender,
             action,
@@ -1054,7 +1058,9 @@ export class BaseGameRoom extends Room<RoomState> {
     const { userData } = client;
     let userId = userData?.id ?? '';
     this.playersInBattle.delete(client.sessionId);
-    PlayerSessionManager.unregister(client.id);
+    if (this.roomName != this.batteRoomName) {
+      PlayerSessionManager.unregister(client.id);
+    }
     if (this.state.players.has(client.sessionId)) {
       this.resetMapItem(client, this.state.players.get(client.sessionId));
       this.state.players.delete(client.sessionId);
@@ -1202,7 +1208,7 @@ export class BaseGameRoom extends Room<RoomState> {
   }
   async createBattleRoom(player1Id: string, player2Id: string, valueChallenge: number, isDiamond: boolean) {
     try {
-      const room = await matchMaker.createRoom("battle-room", {
+      const room = await matchMaker.createRoom(this.batteRoomName, {
         roomName: this.roomName,
         amount: valueChallenge,
         isDiamond,
@@ -1230,6 +1236,7 @@ export class BaseGameRoom extends Room<RoomState> {
   }
 
   checkLogin(userId: string) {
+    if (this.roomName == this.batteRoomName) return;
     const clientCheck = PlayerSessionManager.getClient(userId);
     if (!clientCheck) {
       return;
