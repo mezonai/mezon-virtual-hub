@@ -38,6 +38,8 @@ export class UserService extends BaseService<UserEntity> {
       throw new Error('User not found in the database');
     }
 
+    const { inventories, clan, ...user } = userInfo;
+
     if (!userInfo.isPlantTutorialCompleted) {
       userInfo.isPlantTutorialCompleted = true;
     }
@@ -46,9 +48,7 @@ export class UserService extends BaseService<UserEntity> {
       userInfo.isPetTutorialCompleted = true;
     }
 
-    const isTutorialUser = await this.userRepository.save(userInfo);
-
-    const { inventories, clan, ...user } = isTutorialUser;
+    await this.userRepository.save(userInfo);
 
     return plainToClass(UserInformationDto, {
       user,
