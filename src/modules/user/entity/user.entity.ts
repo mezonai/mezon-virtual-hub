@@ -175,14 +175,25 @@ export class UserEntity extends AuditEntity {
 
   @Column({ type: 'bool', default: false })
   @ApiProperty({
-    description: 'Whether the user has completed the tutorial',
+    description: 'Whether the user has completed plant tutorial',
     type: Boolean,
     required: false,
   })
   @IsBoolean()
   @IsOptional()
   @Type(() => Boolean)
-  isTutorialCompleted: boolean;
+  isPlantTutorialCompleted: boolean;
+
+  @Column({ type: 'bool', default: false })
+  @ApiProperty({
+    description: 'Whether the user has completed pet tutorial',
+    type: Boolean,
+    required: false,
+  })
+  @IsBoolean()
+  @IsOptional()
+  @Type(() => Boolean)
+  isPetTutorialCompleted: boolean;
 
   @ApiProperty({description: 'Score user in clan' })
   @OneToMany(() => UserClanStatEntity, (score) => score.user)
