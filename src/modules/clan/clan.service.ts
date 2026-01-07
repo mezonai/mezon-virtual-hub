@@ -256,24 +256,6 @@ export class ClanService extends BaseService<ClanEntity> {
       };
     });
 
-    // const leaders = usersWithRank
-    //   .filter((u) => u.clan_role === ClanRole.LEADER)
-    //   .sort((a, b) => a.rank - b.rank);
-
-    // const viceLeaders = usersWithRank
-    //   .filter((u) => u.clan_role === ClanRole.VICE_LEADER)
-    //   .sort((a, b) => a.rank - b.rank);
-
-    // const members = usersWithRank
-    //   .filter(
-    //     (u) =>
-    //       u.clan_role !== ClanRole.LEADER &&
-    //       u.clan_role !== ClanRole.VICE_LEADER,
-    //   )
-    //   .sort((a, b) => a.rank - b.rank);
-
-    // const finalList = [...leaders, ...viceLeaders, ...members];
-
     const finalList = usersWithRank;
     const start = (page - 1) * limit;
     const end = start + limit;
