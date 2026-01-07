@@ -241,32 +241,40 @@ export class ClanService extends BaseService<ClanEntity> {
       const total_score = u.scores?.[0]?.total_score ?? 0;
       const weekly_score = u.scores?.[0]?.weekly_score ?? 0;
 
+      const score = isWeekly ? weekly_score : total_score;
+
+      let rank = 0;
+      if (score > 0) {
+        rank = currentRank++;
+      }
+
       return {
         ...plainToInstance(UserPublicDto, u),
-        rank: currentRank++,
+        rank,
         total_score,
         weekly_score,
       };
     });
 
-    const leaders = usersWithRank
-      .filter((u) => u.clan_role === ClanRole.LEADER)
-      .sort((a, b) => a.rank - b.rank);
+    // const leaders = usersWithRank
+    //   .filter((u) => u.clan_role === ClanRole.LEADER)
+    //   .sort((a, b) => a.rank - b.rank);
 
-    const viceLeaders = usersWithRank
-      .filter((u) => u.clan_role === ClanRole.VICE_LEADER)
-      .sort((a, b) => a.rank - b.rank);
+    // const viceLeaders = usersWithRank
+    //   .filter((u) => u.clan_role === ClanRole.VICE_LEADER)
+    //   .sort((a, b) => a.rank - b.rank);
 
-    const members = usersWithRank
-      .filter(
-        (u) =>
-          u.clan_role !== ClanRole.LEADER &&
-          u.clan_role !== ClanRole.VICE_LEADER,
-      )
-      .sort((a, b) => a.rank - b.rank);
+    // const members = usersWithRank
+    //   .filter(
+    //     (u) =>
+    //       u.clan_role !== ClanRole.LEADER &&
+    //       u.clan_role !== ClanRole.VICE_LEADER,
+    //   )
+    //   .sort((a, b) => a.rank - b.rank);
 
-    const finalList = [...leaders, ...viceLeaders, ...members];
+    // const finalList = [...leaders, ...viceLeaders, ...members];
 
+    const finalList = usersWithRank;
     const start = (page - 1) * limit;
     const end = start + limit;
     const pagedUsers = finalList.slice(start, end);
