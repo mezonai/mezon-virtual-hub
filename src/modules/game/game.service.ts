@@ -10,6 +10,7 @@ import {
   QuestType,
   RewardConfig,
   RewardSlotType,
+  RewardType,
 } from '@enum';
 import { FoodEntity } from '@modules/food/entity/food.entity';
 import { FoodService } from '@modules/food/food.service';
@@ -26,6 +27,7 @@ import { AwardResponseDto, RewardDataType } from './dto/game.dto';
 import { GameConfigStore } from '@modules/admin/game-config/game-config.store';
 import { FARM_CONFIG } from '@constant/farm.constant';
 import { GAME_CONFIG_KEYS } from '@constant/game-config.keys';
+import { RewardManagementService } from '@modules/admin/reward/reward.service';
 
 @Injectable()
 export class GameService {
@@ -43,6 +45,7 @@ export class GameService {
     private readonly foodService: FoodService,
     private readonly dataSource: DataSource,
     private readonly configStore: GameConfigStore,
+    private readonly rewardManagementService: RewardManagementService,
   ) {
     this.itemPercent = configEnv().REWARD_ITEM_PERCENT;
     this.coinPercent = configEnv().REWARD_COIN_PERCENT;
@@ -240,6 +243,29 @@ export class GameService {
     ];
 
     return { rewards };
+  }
+
+  async giveWeeklyReward(user: UserEntity) {
+    if(!user.has_weekly_reward) return
+
+    const weeklyReward = await this.rewardManagementService.getRewardByType(
+      user.reward_type as RewardType,
+    );
+
+    if (!weeklyReward) {
+      return { success: false, message: 'No weekly reward available.' };
+    }
+
+    await this.inventoryService.processRewardItems(
+      user,
+      weeklyReward.items,
+    );
+
+    user.has_weekly_reward = false;
+    user.reward_type = "";
+    await this.userRepository.save(user);
+
+    return weeklyReward;
   }
 
   getGameConfig(): GameConfigResponseDto {

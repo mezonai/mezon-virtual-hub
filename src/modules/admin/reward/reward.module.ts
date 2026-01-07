@@ -22,7 +22,6 @@ import { ClanActivityModule } from '@modules/clan-activity/clan-activity.module'
     JwtModule.register({}),
     FoodModule,
     ItemModule,
-    InventoryModule,
     ClanModule,
     ClanFundModule,
     UserModule,
