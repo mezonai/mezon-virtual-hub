@@ -7,13 +7,13 @@ import { Repository } from 'typeorm';
 import { CreateRewardManagementDto, QueryRewardDto } from './dto/reward.dto';
 import { BaseService } from '@libs/base/base.service';
 import { RewardEntity } from '@modules/reward/entity/reward.entity';
-import { InventoryService } from '@modules/inventory/inventory.service';
 import { ClanService } from '@modules/clan/clan.service';
 import { UserService } from '@modules/user/user.service';
 import { ClanActivityActionType, ClanFundType, RewardType } from '@enum';
 import { ClanFundService } from '@modules/clan-fund/clan-fund.service';
 import { CLanWarehouseService } from '@modules/clan-warehouse/clan-warehouse.service';
 import { ClanActivityService } from '@modules/clan-activity/clan-activity.service';
+import { ClanEntity } from '@modules/clan/entity/clan.entity';
 
 @Injectable()
 export class RewardManagementService extends BaseService<RewardEntity> {
@@ -22,7 +22,6 @@ export class RewardManagementService extends BaseService<RewardEntity> {
     private readonly rewardRepo: Repository<RewardEntity>,
     @InjectRepository(QuestEntity)
     private questRepo: Repository<QuestEntity>,
-    private inventoryService: InventoryService,
     private clanService: ClanService,
     private clanFundService: ClanFundService,
     private userService: UserService,
@@ -49,7 +48,7 @@ export class RewardManagementService extends BaseService<RewardEntity> {
   async getRewardByType(type: RewardType) {
     return await this.rewardRepo.findOne({ 
       where: { type }, 
-      relations: ['items', 'items.food', 'items.item', 'items.plant'] 
+      relations: ['items', 'items.food', 'items.item', 'items.plant', 'items.pet'],
     });
   }
 
@@ -79,7 +78,7 @@ export class RewardManagementService extends BaseService<RewardEntity> {
     const rewardedUsers: string[] = [];
 
     for (const clan of allClans.result.filter(clan => clan.weekly_score > 0)) {
-      const topMembers = await this.clanService.getUsersByClanId(clan.id, { page: 1, limit: 10 });
+      const topMembers = await this.clanService.getUsersByClanId(clan.id, { page: 1, limit: 10, isWeekly: true });
       if (!topMembers.result.length) continue;
 
       for (const member of topMembers.result.filter(p => p.weekly_score > 0)) {
@@ -95,20 +94,22 @@ export class RewardManagementService extends BaseService<RewardEntity> {
         }
         if (!rewardType || !activityType) continue;
 
-        const reward = await this.getRewardByType(rewardType);
-        if (!reward) continue;
-
         const user = await this.userService.findById(member.id);
         if (!user) continue;
 
-        await this.inventoryService.processRewardItems(user, reward.items);
+        user.has_weekly_reward = true;
+        user.reward_type = rewardType;
+
+        const updatedUser = await this.userService.save(user);
+
         await this.clanActivityService.logActivity({
           clanId: clan.id,
           userId: user.id,
           actionType: activityType,
           officeName: `${clan.name} Farm`,
         });
-        rewardedUsers.push(user.username);
+
+        rewardedUsers.push(updatedUser.username);
       }
     }
 
@@ -123,6 +124,8 @@ export class RewardManagementService extends BaseService<RewardEntity> {
       2: { rewardType: RewardType.WEEKLY_RANKING_CLAN_2, activityType: ClanActivityActionType.WEEKLY_RANKING_CLAN_2 },
       3: { rewardType: RewardType.WEEKLY_RANKING_CLAN_3, activityType: ClanActivityActionType.WEEKLY_RANKING_CLAN_3 },
     };
+
+    const rewardedClans: ClanEntity[] = [];
 
     for (const clan of topClans.result.filter(clan => clan.weekly_score > 0)) {
       const rewardType = rewardMap[clan.rank].rewardType;
@@ -149,7 +152,10 @@ export class RewardManagementService extends BaseService<RewardEntity> {
         actionType: activityType,
         officeName: `${clan.name} Farm`,
       });
+
+      rewardedClans.push(clan);
     }
-    return topClans;
+
+    return rewardedClans;
   }
 }

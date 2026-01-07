@@ -13,6 +13,7 @@ import { FoodModule } from '@modules/food/food.module';
 import { PlayerQuestModule } from '@modules/player-quest/player-quest.module';
 import { GameConfigStore } from '@modules/admin/game-config/game-config.store';
 import { GameConfigModule } from '@modules/admin/game-config/game-config.module';
+import { RewardManagementModule } from '@modules/admin/reward/reward.module';
 
 @Module({
   imports: [
@@ -22,7 +23,8 @@ import { GameConfigModule } from '@modules/admin/game-config/game-config.module'
     FoodModule,
     ItemModule,
     PlayerQuestModule,
-    GameConfigModule
+    GameConfigModule,
+    RewardManagementModule,
   ],
   controllers: [GameController],
   providers: [GameService],
