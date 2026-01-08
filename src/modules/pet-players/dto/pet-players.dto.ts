@@ -33,7 +33,7 @@ export class SpawnPetPlayersDto extends PickType(PetPlayersEntity, [
   })
   @IsEnum(AnimalRarity)
   @IsOptional()
-  rarity?: AnimalRarity = AnimalRarity.COMMON;
+  current_rarity?: AnimalRarity = AnimalRarity.COMMON;
 
   @ApiPropertyOptional({
     description: 'Type of the pet.',
@@ -339,3 +339,22 @@ export class GameConfigResponseDto {
     };
   };
 }
+
+export class PetPlayersQueryDto {
+  @ApiPropertyOptional({
+    enum: AnimalRarity,
+    enumName: 'AnimalRarity',
+  })
+  @IsEnum(AnimalRarity)
+  @IsOptional()
+  current_rarity?: AnimalRarity;
+
+  @ApiPropertyOptional({
+    type: Number,
+  })
+  @IsNumber()
+  @IsOptional()
+  @Transform(({ value }) => (typeof value === 'string' ? Number(value) : value))
+  stars?: number;
+}
+

@@ -1,11 +1,12 @@
-import { ClanRole, Gender } from '@enum';
+import { ClanRole, Gender, ScoreType } from '@enum';
 import { ClanInfoResponseDto } from '@modules/clan/dto/clan.dto';
 import { InventoryDto } from '@modules/inventory/dto/inventory.dto';
 import { PetPlayersWithSpeciesDto } from '@modules/pet-players/dto/pet-players.dto';
 import { ApiProperty, ApiPropertyOptional, OmitType } from '@nestjs/swagger';
-import { Exclude, Expose, Type } from 'class-transformer';
+import { Exclude, Expose, Transform, Type } from 'class-transformer';
 import {
   IsArray,
+  IsBoolean,
   IsEnum,
   IsNumber,
   IsOptional,
@@ -137,12 +138,12 @@ export class UsersClanQueryDto extends OmitType(QueryParamsDto, [
 ]) {
   @ApiPropertyOptional({
     description: 'Field name to sort by',
-    example: 'username',
-    default: 'username',
+    example: 'created_at',
+    default: 'created_at',
   })
   @IsOptional()
   @IsString()
-  sort_by?: string = 'username';
+  sort_by?: string = 'created_at';
 
   @ApiPropertyOptional({
     description: 'Number of results per page',
@@ -153,4 +154,12 @@ export class UsersClanQueryDto extends OmitType(QueryParamsDto, [
   @Type(() => Number)
   @IsNumber()
   limit?: number = 30;
+
+  @ApiPropertyOptional({
+    description: 'Filter by weekly score',
+  })
+  @IsOptional()
+  @Transform(({ value }) => value === 'true')
+  @IsBoolean()
+  isWeekly?: boolean;
 }

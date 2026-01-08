@@ -40,6 +40,16 @@ export class UserService extends BaseService<UserEntity> {
 
     const { inventories, clan, ...user } = userInfo;
 
+    if (!userInfo.isPlantTutorialCompleted) {
+      userInfo.isPlantTutorialCompleted = true;
+    }
+
+    if (!userInfo.isPetTutorialCompleted) {
+      userInfo.isPetTutorialCompleted = true;
+    }
+
+    await this.userRepository.save(userInfo);
+
     return plainToClass(UserInformationDto, {
       user,
       inventories,

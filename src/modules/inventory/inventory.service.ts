@@ -316,7 +316,7 @@ export class InventoryService extends BaseService<Inventory> {
             room_code: '',
             user_id: user.id,
             pet_id: reward.pet_id,
-            rarity: reward.metadata?.rarity,
+            current_rarity: reward.metadata?.rarity,
           });
 
           if (!pet) {

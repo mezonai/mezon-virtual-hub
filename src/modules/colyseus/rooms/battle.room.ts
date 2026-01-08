@@ -11,7 +11,8 @@ import { QuestEventEmitter } from "@modules/player-quest/events/quest.events";
 enum BattleState {
     READY,     // Chờ cả 2 người chọn hành động
     BATTLE,  // Bắt đầu xử lý skill (đang diễn ra turn)
-    FINISHED   // Trận đấu đã kết thúc
+    FINISHED,   // Trận đấu đã kết thúc
+    DISCONNECTED
 }
 export class BattleRoom extends BaseGameRoom {
     private playerActions: Map<string, PlayerAction> = new Map();
@@ -22,6 +23,7 @@ export class BattleRoom extends BaseGameRoom {
     private timeLeft: number = 0;
     timeRemaning: number = 10;
     amountChallenge: number = 0;
+    isDiamond: boolean = true;
     // @Inject() private readonly petPlayersService: PetPlayersService;
     override async onCreate(options: any) {
         if (options?.roomName != null) {
@@ -30,6 +32,10 @@ export class BattleRoom extends BaseGameRoom {
 
         if (options?.amount != null) {
             this.amountChallenge = options.amount;
+        }
+
+        if (options?.isDiamond != null) {
+            this.isDiamond = options.isDiamond;
         }
 
         this.setState(new RoomState());
@@ -47,6 +53,10 @@ export class BattleRoom extends BaseGameRoom {
         this.onMessage(MessageTypes.CONFIRM_END_TURN, (client, data) => {
             this.checkEndTurn(client);
         });
+
+        this.onMessage(MessageTypes.ON_DISCONNECTED_BATTE, (client, data) => {
+            this.battleState = BattleState.DISCONNECTED;
+        });
         this.onMessage(MessageTypes.SET_PET_SLEEP, (client, data) => {
             const { petSleepingId } = data
             const player = this.state.battlePlayers.get(client.sessionId);
@@ -62,7 +72,7 @@ export class BattleRoom extends BaseGameRoom {
         if (this.battleState === BattleState.FINISHED) return;
 
         // Nếu đang trong trận, kết thúc trận đấu với player này
-        if (this.battleState === BattleState.BATTLE) {
+        if (this.battleState === BattleState.BATTLE) {// người chơi thoát giữa chừng
             this.battleIsFinished(client);
             return;
         }
@@ -381,7 +391,7 @@ export class BattleRoom extends BaseGameRoom {
             newPetIndex: player.action.newPetIndex,
         });
     }
-    private async battleIsFinished(loserClient: Client) {
+    private async battleIsFinished(loserClient: Client) {      
         if (!loserClient) {
             this.sendMessageError();
             return;
@@ -433,18 +443,20 @@ export class BattleRoom extends BaseGameRoom {
             loserClient.send(MessageTypes.BATTLE_FINISHED, {
                 id: loser.id,
                 expReceived: result.expPerLoser ?? 0,
-                dimondChallenge: this.amountChallenge ?? 0,
+                currentValue: this.amountChallenge ?? 0,
                 currentPets: result.losers,
                 isWinner: false,
+                isDiamond: this.isDiamond,
             });
 
             // gửi kết quả cho winner
             winnerClient.send(MessageTypes.BATTLE_FINISHED, {
                 id: winner.id,
                 expReceived: result.expPerWinner ?? 0,
-                dimondChallenge: this.amountChallenge ?? 0,
+                currentValue: this.amountChallenge ?? 0,
                 currentPets: result.winners,
                 isWinner: true,
+                isDiamond: this.isDiamond,
             });
             QuestEventEmitter.emitProgress(loserClient?.userData?.id, QuestType.PET_BATTLE, 1);
             QuestEventEmitter.emitProgress(winnerClient?.userData?.id, QuestType.PET_BATTLE, 1);
@@ -458,15 +470,27 @@ export class BattleRoom extends BaseGameRoom {
         if (loserClient.userData == null || winnerClient.userData == null) {
             return;
         }
-        loserClient.userData.diamond -= this.amountChallenge;
-        winnerClient.userData.diamond += this.amountChallenge;
+        if (!!this.isDiamond) {
+            loserClient.userData.diamond -= this.amountChallenge;
+            winnerClient.userData.diamond += this.amountChallenge;
 
-        this.userRepository.update(loserClient.userData.id, {
-            diamond: loserClient.userData.diamond,
-        });
-        this.userRepository.update(winnerClient.userData.id, {
-            diamond: winnerClient.userData.diamond,
-        });
+            this.userRepository.update(loserClient.userData.id, {
+                diamond: loserClient.userData.diamond,
+            });
+            this.userRepository.update(winnerClient.userData.id, {
+                diamond: winnerClient.userData.diamond,
+            });
+        } else {
+            loserClient.userData.gold -= this.amountChallenge;
+            winnerClient.userData.gold += this.amountChallenge;
+
+            this.userRepository.update(loserClient.userData.id, {
+                gold: loserClient.userData.gold,
+            });
+            this.userRepository.update(winnerClient.userData.id, {
+                gold: winnerClient.userData.gold,
+            });
+        }
     }
 
     private handleSwitchPetAfterPetDead(client: Client, petId: string) {

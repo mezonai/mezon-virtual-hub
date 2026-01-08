@@ -123,6 +123,26 @@ export class UserEntity extends AuditEntity {
   @IsOptional()
   @Type(() => Boolean)
   has_first_reward: boolean;
+  
+  @Column({ type: 'bool', default: false })
+  @ApiProperty({
+    type: Boolean,
+    required: false,
+  })
+  @IsBoolean()
+  @IsOptional()
+  @Type(() => Boolean)  
+  has_weekly_reward: boolean;
+
+  @Column({ type: 'varchar', length: 50, nullable: true })
+  @ApiProperty({
+    description: 'The type of reward the user is eligible for',
+    type: String,
+    required: false,
+  })
+  @IsString() 
+  @IsOptional()
+  reward_type: string;
 
   @Column({ type: 'int', default: Role.USER })
   @ApiProperty({
@@ -172,6 +192,28 @@ export class UserEntity extends AuditEntity {
   })
   @IsOptional()
   last_show_event_date: Date;
+
+  @Column({ type: 'bool', default: false })
+  @ApiProperty({
+    description: 'Whether the user has completed plant tutorial',
+    type: Boolean,
+    required: false,
+  })
+  @IsBoolean()
+  @IsOptional()
+  @Type(() => Boolean)
+  isPlantTutorialCompleted: boolean;
+
+  @Column({ type: 'bool', default: false })
+  @ApiProperty({
+    description: 'Whether the user has completed pet tutorial',
+    type: Boolean,
+    required: false,
+  })
+  @IsBoolean()
+  @IsOptional()
+  @Type(() => Boolean)
+  isPetTutorialCompleted: boolean;
 
   @ApiProperty({description: 'Score user in clan' })
   @OneToMany(() => UserClanStatEntity, (score) => score.user)

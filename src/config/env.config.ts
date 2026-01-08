@@ -31,6 +31,7 @@ const validateEnv = {
   GOOGLE_GEN_AI_API_KEY: Joi.string().required(),
   QUIZ_PROMPT_CONTENT: Joi.string().required(),
   QUIZ_PROMPT_RESPONSE_FORMAT: Joi.string().required(),
+  MEZON_AUTH_EXPIRES_TIME_OFFSET_IN_SECONDS: Joi.number().integer().min(5).default(30),
 };
 
 export const configValidationSchema = Joi.object(validateEnv);
@@ -67,8 +68,9 @@ export const configEnv = () => ({
   MEZON_APPLICATION_ID: process.env.MEZON_APPLICATION_ID!,
   MEZON_TOKEN_RECEIVER_APP_ID: process.env.MEZON_TOKEN_RECEIVER_APP_ID!,
   MEZON_TOKEN_RECEIVER_APP_TOKEN: process.env.MEZON_TOKEN_RECEIVER_APP_TOKEN!,
-  MEZON_AUTH_EXPIRES_TIME_OFFSET_IN_SECONDS:
-    process.env.MEZON_AUTH_EXPIRES_TIME_OFFSET_IN_SECONDS ?? 30,
+  MEZON_AUTH_EXPIRES_TIME_OFFSET_IN_SECONDS: +(
+    process.env.MEZON_AUTH_EXPIRES_TIME_OFFSET_IN_SECONDS ?? 30
+  ),
   GOOGLE_GEN_AI_API_KEY: process.env.GOOGLE_GEN_AI_API_KEY!,
   QUIZ_QUESTION_FETCH_INTERVAL_SECONDS: +(
     process.env.QUIZ_QUESTION_FETCH_INTERVAL_SECONDS ?? 10000

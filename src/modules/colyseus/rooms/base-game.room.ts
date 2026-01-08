@@ -76,6 +76,7 @@ export class BaseGameRoom extends Room<RoomState> {
   private pethangeRoomInterval: any;
   protected doorManager: DoorManager;
   speciesPetEvent = 'DragonIce';
+  private batteRoomName = "battle-room";
   static activeRooms: Set<BaseGameRoom> = new Set();
   static globalTargetClients: Map<string, Client> = new Map();
   static eventData: any;
@@ -159,7 +160,10 @@ export class BaseGameRoom extends Room<RoomState> {
 
     this.logger.log(`User ${user.username} is allowed in ${this.roomId}`);
     client.userData = userWithPets;
-    PlayerSessionManager.register(client.userData.id, client);
+    if (this.roomName != this.batteRoomName) {
+      PlayerSessionManager.register(client.userData.id, client);
+    }
+
     if (client?.userData?.id) {
       QuestEventEmitter.emitProgress(client.userData.id, QuestType.LOGIN_DAYS, 1);
     }
@@ -455,13 +459,25 @@ export class BaseGameRoom extends Room<RoomState> {
     );
 
     this.onMessage('p2pAction', (sender, data) => {
-      const { targetClientId, action, amount } = data;
+      const { targetClientId, action, amount, isDiamond } = data;
+      const senderValue = isDiamond ? sender.userData?.diamond : sender.userData?.gold;
+      if (
+        action == ActionKey.RPS.toString() &&
+        senderValue < amount
+      ) {
+        this.sendMessageToTarget(sender, action, `Bạn không đủ ${isDiamond ? 'Diamond' : 'Gold'}`);
+        return;
+      }
 
       if (
         action == ActionKey.RPS.toString() &&
-        sender.userData?.diamond < RPS_FEE
+        (amount < BATTLE_MIN_FEE || amount > BATTLE_MAX_FEE)
       ) {
-        this.sendMessageToTarget(sender, action, 'Không đủ tiền');
+        this.sendMessageToTarget(
+          sender,
+          action,
+          'Số tiền thách đấu không hợp lệ',
+        );
         return;
       }
 
@@ -479,9 +495,13 @@ export class BaseGameRoom extends Room<RoomState> {
         }
       }
 
-      if (targetClient && action == ActionKey.RPS.toString() && targetClient.userData.diamond < RPS_FEE
+      const targetValue = isDiamond ? targetClient?.userData.diamond : targetClient?.userData?.gold;
+      if (
+        targetClient &&
+        action == ActionKey.RPS.toString() &&
+        targetValue < amount
       ) {
-        this.sendMessageToTarget(sender, action, 'Người chơi không đủ tiền');
+        this.sendMessageToTarget(sender, action, `Người chơi không đủ ${isDiamond ? 'Diamond' : 'Gold'}`);
         return;
       }
 
@@ -491,7 +511,7 @@ export class BaseGameRoom extends Room<RoomState> {
           sender.userData?.diamond <= 0 ||
           sender.userData?.diamond < amount
         ) {
-          this.sendMessageToTarget(sender, action, 'Không đủ tiền');
+          this.sendMessageToTarget(sender, action, 'Bạn không đủ Diamond');
           return;
         }
 
@@ -517,25 +537,41 @@ export class BaseGameRoom extends Room<RoomState> {
 
       if (action == ActionKey.Battle.toString()) {
         if (sender.userData?.id == targetClient?.userData?.id) {
-          this.sendMessageToTarget(sender, action, 'Cùng 1 tài khoản không thể thách đấu');
-          return;
-        }
-        if (amount <= 0) {
-          this.sendMessageToTarget(sender, action, 'Số tiền thách đấu không hợp lệ');
-          return;
-        }
-        if (sender.userData?.diamond <= 0 || sender.userData?.diamond < amount) {
-          this.sendMessageToTarget(sender, action, 'Bạn không đủ tiền');
+          this.sendMessageToTarget(
+            sender,
+            action,
+            'Cùng 1 tài khoản không thể thách đấu',
+          );
           return;
         }
 
-        if (amount < BATTLE_MIN_FEE || amount > BATTLE_MAX_FEE) {
-          this.sendMessageToTarget(sender, action, 'Số tiền thách đấu không hợp lệ');
+        const userMoney = isDiamond
+          ? sender.userData?.diamond
+          : sender.userData?.gold;
+
+        if (!userMoney || userMoney < amount) {
+          this.sendMessageToTarget(
+            sender,
+            action,
+            `Bạn không đủ ${isDiamond ? 'Diamond' : 'Gold'}`,
+          );
           return;
         }
 
-        if (targetClient?.userData.diamond < amount) {
-          this.sendMessageToTarget(sender, action, 'Người chơi không đủ tiền');
+        if (amount <= 0 || amount < BATTLE_MIN_FEE || amount > BATTLE_MAX_FEE) {
+          this.sendMessageToTarget(
+            sender,
+            action,
+            'Số tiền thách đấu không hợp lệ',
+          );
+          return;
+        }
+
+        const targetMoney = isDiamond
+          ? targetClient?.userData.diamond
+          : targetClient?.userData?.gold;
+        if (targetMoney < amount) {
+          this.sendMessageToTarget(sender, action, `Người chơi không đủ ${isDiamond ? 'Diamond' : 'Gold'}`);
           return;
         }
       }
@@ -553,8 +589,9 @@ export class BaseGameRoom extends Room<RoomState> {
           fromName: sender.userData?.display_name,
           gameKey: gameKey,
           amount: amount,
-          currentDiamond: targetClient.userData.diamond,
+          currentValue: isDiamond ? targetClient.userData.diamond : targetClient.userData.gold,
           userId: targetClient.userData.id,
+          isDiamond: isDiamond,
         });
 
         sender.send('onP2pActionSended', {
@@ -563,14 +600,15 @@ export class BaseGameRoom extends Room<RoomState> {
           from: sender.sessionId,
           toName: targetClient.userData?.display_name,
           amount: amount,
-          currentDiamond: sender.userData?.diamond,
+          currentValue: isDiamond ? sender.userData?.diamond : sender.userData?.gold,
           userId: sender.userData?.id,
+          isDiamond: isDiamond,
         });
       }
     });
 
     this.onMessage('p2pActionAccept', (sender, data) => {
-      const { targetClientId, action } = data;
+      const { targetClientId, action, amount, isDiamond } = data;
       const targetClient = this.clients.find(
         (client) => client.sessionId === targetClientId,
       );
@@ -585,6 +623,8 @@ export class BaseGameRoom extends Room<RoomState> {
         to: sender.sessionId,
         result1: '',
         result2: '',
+        amount,
+        isDiamond,
       });
 
       if (targetClient) {
@@ -593,6 +633,8 @@ export class BaseGameRoom extends Room<RoomState> {
           from: targetClientId,
           to: sender.sessionId,
           gameKey: gameKey,
+          amount,
+          isDiamond,
         });
       }
     });
@@ -601,7 +643,6 @@ export class BaseGameRoom extends Room<RoomState> {
       const { senderAction, gameKey, action, from, to } = data;
       let fromPlayer = this.clients.find((client) => client.sessionId === from);
       let toPlayer = this.clients.find((client) => client.sessionId === to);
-
       if (this.minigameResultDict.has(gameKey)) {
         let result = this.minigameResultDict.get(gameKey);
         if (sender.sessionId == result.from) {
@@ -624,22 +665,40 @@ export class BaseGameRoom extends Room<RoomState> {
             fromPlayer?.userData?.id != toPlayer?.userData?.id
           ) {
             if (fromPlayer?.userData) {
-              fromPlayer.userData.diamond =
-                winner == fromPlayer.sessionId
-                  ? fromPlayer.userData.diamond + RPS_FEE
-                  : fromPlayer.userData.diamond - RPS_FEE;
-              this.userRepository.update(fromPlayer.userData.id, {
-                diamond: fromPlayer.userData.diamond,
-              });
+              if (result.isDiamond) {
+                fromPlayer.userData.diamond = winner == fromPlayer.sessionId
+                  ? fromPlayer.userData.diamond + result.amount
+                  : fromPlayer.userData.diamond - result.amount;
+                this.userRepository.update(fromPlayer.userData.id, {
+                  diamond: fromPlayer.userData.diamond,
+                });
+              } else {
+                fromPlayer.userData.gold = winner == fromPlayer.sessionId
+                  ? fromPlayer.userData.gold + result.amount
+                  : fromPlayer.userData.gold - result.amount;
+                this.userRepository.update(fromPlayer.userData.id, {
+                  gold: fromPlayer.userData.gold,
+                });
+              }
+
             }
             if (toPlayer?.userData) {
-              toPlayer.userData.diamond =
-                winner == toPlayer.sessionId
-                  ? toPlayer.userData.diamond + RPS_FEE
-                  : toPlayer.userData.diamond - RPS_FEE;
-              this.userRepository.update(toPlayer.userData.id, {
-                diamond: toPlayer.userData.diamond,
-              });
+              if (result.isDiamond) {
+                toPlayer.userData.diamond = winner == toPlayer.sessionId
+                  ? toPlayer.userData.diamond + result.amount
+                  : toPlayer.userData.diamond - result.amount;
+                this.userRepository.update(toPlayer.userData.id, {
+                  diamond: toPlayer.userData.diamond,
+                });
+              } else {
+                toPlayer.userData.gold = winner == toPlayer.sessionId
+                  ? toPlayer.userData.gold + result.amount
+                  : toPlayer.userData.gold - result.amount;
+                this.userRepository.update(toPlayer.userData.id, {
+                  gold: toPlayer.userData.gold,
+                });
+              }
+
             }
           }
 
@@ -651,11 +710,20 @@ export class BaseGameRoom extends Room<RoomState> {
             result2: result.result2,
             fee: RPS_FEE,
             winner: winner,
-            fromDiamond: fromPlayer?.userData?.diamond,
-            toDiamond: toPlayer?.userData?.diamond,
+            isDiamond: result.isDiamond,
+            fromBetValue: result.isDiamond ? fromPlayer?.userData?.diamond : fromPlayer?.userData?.gold,
+            toBetValue: result.isDiamond ? toPlayer?.userData?.diamond : toPlayer?.userData?.gold,
           });
-          QuestEventEmitter.emitProgress(fromPlayer?.userData?.id, QuestType.PLAY_RPS, 1);
-          QuestEventEmitter.emitProgress(toPlayer?.userData?.id, QuestType.PLAY_RPS, 1);
+          QuestEventEmitter.emitProgress(
+            fromPlayer?.userData?.id,
+            QuestType.PLAY_RPS,
+            1,
+          );
+          QuestEventEmitter.emitProgress(
+            toPlayer?.userData?.id,
+            QuestType.PLAY_RPS,
+            1,
+          );
           this.minigameResultDict.delete(gameKey);
         }
       } else {
@@ -853,25 +921,21 @@ export class BaseGameRoom extends Room<RoomState> {
           payload.quantity <= 0
         ) {
           client.send(MessageTypes.ON_BUY_CLAN_ITEM_FAILED, {
-            message: 'Quantity phải > 0',
+            message: 'Số lượng phải lớn hơn 0',
           });
           return;
         }
-        const ALLOWED_ROLES = [ClanRole.LEADER, ClanRole.VICE_LEADER];
         if (
           !player ||
           !user ||
-          !user.clan_id ||
-          !ALLOWED_ROLES.includes(user.clan_role)
+          !user.clan_id
         ) {
           client.send(MessageTypes.ON_BUY_CLAN_ITEM_FAILED, {
             message: !player
               ? 'Không tìm thấy người chơi'
               : !user
                 ? 'Không tìm thấy thông tin người dùng'
-                : !user.clan_id
-                  ? 'Người dùng chưa thuộc clan nào'
-                  : 'Chỉ Giám Đốc văn phòng/ Phó Giám Đốc mới có thể mua vật phẩm cho văn phòng',
+                : 'Người dùng chưa thuộc clan nào'
           });
           return;
         }
@@ -906,7 +970,7 @@ export class BaseGameRoom extends Room<RoomState> {
 
     //combat
     this.onMessage('p2pCombatActionAccept', (sender, data) => {
-      const { targetClientId, action, amount } = data;
+      const { targetClientId, action, amount, isDiamond } = data;
       if (action !== ActionKey.Battle.toString()) {
         this.sendMessageToTarget(sender, action, 'Lỗi bất định');
         return;
@@ -942,7 +1006,7 @@ export class BaseGameRoom extends Room<RoomState> {
         }
       });
 
-      this.createBattleRoom(player1Id, player2Id, amount);
+      this.createBattleRoom(player1Id, player2Id, amount, isDiamond);
     });
 
     this.onMessage(MessageTypes.NOT_PET_BATTLE, async (client: AuthenticatedClient, data) => {
@@ -994,7 +1058,9 @@ export class BaseGameRoom extends Room<RoomState> {
     const { userData } = client;
     let userId = userData?.id ?? '';
     this.playersInBattle.delete(client.sessionId);
-    PlayerSessionManager.unregister(client.id);
+    if (this.roomName != this.batteRoomName) {
+      PlayerSessionManager.unregister(client.id);
+    }
     if (this.state.players.has(client.sessionId)) {
       this.resetMapItem(client, this.state.players.get(client.sessionId));
       this.state.players.delete(client.sessionId);
@@ -1140,11 +1206,12 @@ export class BaseGameRoom extends Room<RoomState> {
       }, 100);
     });
   }
-  async createBattleRoom(player1Id: string, player2Id: string, valueChallenge: number) {
+  async createBattleRoom(player1Id: string, player2Id: string, valueChallenge: number, isDiamond: boolean) {
     try {
-      const room = await matchMaker.createRoom("battle-room", {
+      const room = await matchMaker.createRoom(this.batteRoomName, {
         roomName: this.roomName,
-        amount: valueChallenge
+        amount: valueChallenge,
+        isDiamond,
       });
       // Gửi thông báo cho client
       this.broadcast(MessageTypes.BATTE_ROOM_READY, {
@@ -1169,6 +1236,7 @@ export class BaseGameRoom extends Room<RoomState> {
   }
 
   checkLogin(userId: string) {
+    if (this.roomName == this.batteRoomName) return;
     const clientCheck = PlayerSessionManager.getClient(userId);
     if (!clientCheck) {
       return;

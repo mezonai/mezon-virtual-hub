@@ -29,6 +29,7 @@ import {
   BringPetPlayersDtoList,
   BulkUpdateBattleSlotsDto,
   MergePetsDto,
+  PetPlayersQueryDto,
   SpawnPetPlayersDto,
   UpdateBattleSkillsDto,
 } from './dto/pet-players.dto';
@@ -51,9 +52,9 @@ export class PetPlayersController {
   @ApiOperation({
     summary: 'Get list all Pet Players of user',
   })
-  async getPetPlayers() {
+  async getPetPlayers(@Query() query: PetPlayersQueryDto) {
     const user = this.cls.get<UserEntity>(USER_TOKEN);
-    return await this.petPlayersService.findPetPlayersByUserId(user.id);
+    return await this.petPlayersService.findPetPlayersByUserId(user.id, query);
   }
 
   @Get('battle')

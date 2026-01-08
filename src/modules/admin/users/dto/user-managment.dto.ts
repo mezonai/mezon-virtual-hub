@@ -2,6 +2,7 @@ import { Gender, SortOrder } from '@enum';
 import { ApiProperty, ApiPropertyOptional, PickType } from '@nestjs/swagger';
 import { Exclude, Expose, Type } from 'class-transformer';
 import {
+  IsBoolean,
   IsEnum,
   IsNumber,
   IsOptional,
@@ -82,6 +83,24 @@ export class UpdateUserDto extends PickType(UserEntity, [
   @IsOptional()
   @IsEnum(Gender)
   gender?: Gender;
+
+  @ApiProperty({
+    description: 'Whether the user has completed plant tutorial',
+    type: Boolean,
+    required: false,
+  })
+  @IsOptional()
+  @IsBoolean()
+  isPlantTutorialCompleted?: boolean;
+
+  @ApiProperty({
+    description: 'Whether the user has completed pet tutorial',
+    type: Boolean,
+    required: false,
+  })
+  @IsOptional()
+  @IsBoolean()
+  isPetTutorialCompleted?: boolean;
 }
 
 @Exclude()

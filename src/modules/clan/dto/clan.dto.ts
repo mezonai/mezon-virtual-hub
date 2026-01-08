@@ -1,7 +1,7 @@
 import { UserPublicDto } from '@modules/user/dto/user.dto';
 import { ApiProperty, ApiPropertyOptional, OmitType } from '@nestjs/swagger';
 import { QueryParamsDto } from '@types';
-import { Exclude, Expose, Type } from 'class-transformer';
+import { Exclude, Expose, Transform, Type } from 'class-transformer';
 import {
   IsArray,
   IsBoolean,
@@ -13,7 +13,7 @@ import {
   MaxLength,
 } from 'class-validator';
 import { ClanEntity } from '../entity/clan.entity';
-import { ClanRole } from '@enum';
+import { ClanActivityActionType, ClanRole } from '@enum';
 
 export class CreateMapDto {
   readonly name: string;
@@ -63,6 +63,22 @@ export class ClansQueryDto extends OmitType(QueryParamsDto, ['limit']) {
   @Type(() => Number)
   @IsNumber()
   limit?: number = 30;
+
+  @ApiPropertyOptional({
+    description: 'Filter by weekly score',
+  })
+  @IsOptional()
+  @Transform(({ value }) => value === 'true')
+  @IsBoolean()
+  isWeekly?: boolean;
+
+  @ApiPropertyOptional({
+    enum: ClanActivityActionType,
+    description: 'Filter clan activity by action type',
+  })
+  @IsOptional()
+  @IsEnum(ClanActivityActionType)
+  actionType?: ClanActivityActionType;
 }
 
 export class UpdateClanDescriptionDto {

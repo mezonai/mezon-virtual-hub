@@ -23,7 +23,7 @@ import {
 } from './dto/clan.dto';
 import { ClanEntity } from './entity/clan.entity';
 import { ClanRequestService } from '@modules/clan-request/clan-request.service';
-import { ClanActivityActionType, ClanRequestStatus } from '@enum';
+import { ClanActivityActionType, ClanRequestStatus, ScoreType } from '@enum';
 import { ClanRequestEntity } from '@modules/clan-request/entity/clan-request.entity';
 import { ClanRole } from '@enum';
 import { UserClanStatEntity } from '@modules/user-clan-stat/entity/user-clan-stat.entity';
@@ -48,8 +48,7 @@ export class ClanService extends BaseService<ClanEntity> {
   }
 
   async getAllClansWithMemberCount(query: ClansQueryDto) {
-    const { page = 1, limit = 30, search } = query;
-
+    const { page = 1, limit = 30, search, isWeekly } = query;
     const qb = this.repository
       .createQueryBuilder('clans')
       .loadRelationCountAndMap('clans.member_count', 'clans.members');
@@ -61,15 +60,27 @@ export class ClanService extends BaseService<ClanEntity> {
     }
 
     const clans = await qb.getMany();
+    const clansSorted = [...clans].sort((a, b) => {
+      const scoreA = isWeekly ? (a.weekly_score ?? 0) : (a.score ?? 0);
+      const scoreB = isWeekly ? (b.weekly_score ?? 0) : (b.score ?? 0);
 
-    const clansSorted = clans.sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
+      if (scoreA !== scoreB) {
+        return scoreB - scoreA;
+      }
 
-    let currentRank = 1;
+      const timeA = a.updated_at?.getTime() ?? 0;
+      const timeB = b.updated_at?.getTime() ?? 0;
+
+      return timeA - timeB;
+    });
+    let rank = 1;
+
     const clansWithRank = clansSorted.map((c) => {
-      const rank = c.score > 0 ? currentRank++ : 0;
+      const score = isWeekly ? c.weekly_score : c.score;
+
       return {
         ...plainToInstance(ClanListDto, c),
-        rank,
+        rank: score > 0 ? rank++ : 0,
       };
     });
 
@@ -104,20 +115,22 @@ export class ClanService extends BaseService<ClanEntity> {
     }
 
     const [clans, total] = await qb
-      .orderBy(`clans.${sort_by}`, order)
-      .skip((page - 1) * limit)
-      .take(limit)
-      .getManyAndCount();
-
+    .orderBy(`clans.${sort_by}`, order)
+    .skip((page - 1) * limit)
+    .take(limit)
+    .getManyAndCount();
+    
+    qb.orderBy(
+      query.isWeekly ? 'clans.weekly_score' : 'clans.score',
+      'DESC',
+    ).addOrderBy('clans.update_at', 'DESC');
     let latestRequestMap = new Map<string, ClanRequestStatus>();
-
     if (user?.id) {
       const requests = await this.clanRequestRepository
-        .createQueryBuilder('req')
-        .select(['req.clan_id', 'req.status'])
+      .createQueryBuilder('req')
+      .select(['req.clan_id', 'req.status'])
         .where('req.user_id = :userId', { userId: user.id })
         .andWhere('req.processed_at IS NULL')
-        .orderBy('req.created_at', 'DESC')
         .getMany();
 
       for (const r of requests) {
@@ -149,8 +162,9 @@ export class ClanService extends BaseService<ClanEntity> {
       throw new NotFoundException('Clan not found');
     }
 
-    const totalScore = await this.calculateClanScore(clanId);
-    clanWithCount.score = totalScore.totalScore;
+    const { totalScore, weeklyScore } = await this.calculateClanScore(clanId);
+    clanWithCount.score = totalScore;
+    clanWithCount.weekly_score = weeklyScore;
     const totalFund =
       clanWithCount.funds?.reduce((sum, fund) => sum + (fund.amount || 0), 0) ||
       0;
@@ -188,7 +202,7 @@ export class ClanService extends BaseService<ClanEntity> {
   }
 
   async getUsersByClanId(clanId: string, query: UsersClanQueryDto) {
-    const { page = 1, limit = 30, search } = query;
+    const { page = 1, limit = 30, search, isWeekly } = query;
 
     const qb = this.userRepository
       .createQueryBuilder('user')
@@ -204,43 +218,45 @@ export class ClanService extends BaseService<ClanEntity> {
     const users = await qb.getMany();
 
     const usersSortedByScore = [...users].sort((a, b) => {
-      const scoreA = a.scores?.[0]?.total_score ?? 0;
-      const scoreB = b.scores?.[0]?.total_score ?? 0;
-      return scoreB - scoreA;
+      const scoreA = isWeekly
+        ? (a.scores?.[0]?.weekly_score ?? 0)
+        : (a.scores?.[0]?.total_score ?? 0);
+
+      const scoreB = isWeekly
+        ? (b.scores?.[0]?.weekly_score ?? 0)
+        : (b.scores?.[0]?.total_score ?? 0);
+
+      if (scoreA !== scoreB) {
+        return scoreB - scoreA;
+      }
+
+      const timeA = a.scores?.[0]?.updated_at?.getTime() ?? 0;
+      const timeB = b.scores?.[0]?.updated_at?.getTime() ?? 0;
+      return timeA - timeB;
     });
 
     let currentRank = 1;
 
     const usersWithRank = usersSortedByScore.map((u) => {
-      const score = u.scores?.[0]?.total_score ?? 0;
+      const total_score = u.scores?.[0]?.total_score ?? 0;
       const weekly_score = u.scores?.[0]?.weekly_score ?? 0;
+
+      const score = isWeekly ? weekly_score : total_score;
+
+      let rank = 0;
+      if (score > 0) {
+        rank = currentRank++;
+      }
 
       return {
         ...plainToInstance(UserPublicDto, u),
-        total_score: score,
+        rank,
+        total_score,
         weekly_score,
-        rank: currentRank++,
       };
     });
 
-    const leaders = usersWithRank
-      .filter((u) => u.clan_role === ClanRole.LEADER)
-      .sort((a, b) => a.rank - b.rank);
-
-    const viceLeaders = usersWithRank
-      .filter((u) => u.clan_role === ClanRole.VICE_LEADER)
-      .sort((a, b) => a.rank - b.rank);
-
-    const members = usersWithRank
-      .filter(
-        (u) =>
-          u.clan_role !== ClanRole.LEADER &&
-          u.clan_role !== ClanRole.VICE_LEADER,
-      )
-      .sort((a, b) => a.rank - b.rank);
-
-    const finalList = [...leaders, ...viceLeaders, ...members];
-
+    const finalList = usersWithRank;
     const start = (page - 1) * limit;
     const end = start + limit;
     const pagedUsers = finalList.slice(start, end);
@@ -357,8 +373,17 @@ export class ClanService extends BaseService<ClanEntity> {
       .where('stats.clan_id = :clanId', { clanId })
       .getRawOne();
     const totalScore = parseInt(totalScoreRaw?.total_score ?? '0', 10);
-    await this.clanRepository.update(clanId, { score: totalScore });
-    return { totalScore };
+    const weeklyScore = parseInt(totalScoreRaw?.weekly_score ?? '0', 10);
+
+    await this.clanRepository.update(clanId, {
+      score: totalScore,
+      weekly_score: weeklyScore,
+    });
+    return { totalScore, weeklyScore };
+  }
+
+  async resetWeeklyScores() {
+    await this.clanRepository.update({}, { weekly_score: 0 });
   }
 
   async setUserClanAndRole(userId: string, clanId: string, role: ClanRole) {

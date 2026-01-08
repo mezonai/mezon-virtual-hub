@@ -213,6 +213,14 @@ export enum RewardType {
   QUEST_WEEKLY5 = 'quest_weekly5',
   QUEST_WEEKLY6 = 'quest_weekly6',
 
+  WEEKLY_RANKING_MEMBER_1 = 'weekly_ranking_member_1',
+  WEEKLY_RANKING_MEMBER_2 = 'weekly_ranking_member_2',
+  WEEKLY_RANKING_MEMBER_3 = 'weekly_ranking_member_3',
+  WEEKLY_RANKING_MEMBER_TOP_10 = 'weekly_ranking_member_top_10',
+
+  WEEKLY_RANKING_CLAN_1 = 'weekly_ranking_clan_1',
+  WEEKLY_RANKING_CLAN_2 = 'weekly_ranking_clan_2',
+  WEEKLY_RANKING_CLAN_3 = 'weekly_ranking_clan_3',
 }
 
 export enum QuestFrequency {
@@ -227,6 +235,7 @@ export enum RewardItemType {
   FOOD = 'food',
   ITEM = 'item',
   PET = 'pet',
+  PLANT = 'plant',
 }
 
 export enum ClanFundType {
@@ -257,4 +266,13 @@ export enum ClanActivityActionType {
   FUND = 'fund',
   JOIN = 'join',
   LEAVE = 'leave',
+  
+  WEEKLY_RANKING_MEMBER_1 = 'weekly_ranking_member_1',
+  WEEKLY_RANKING_MEMBER_2 = 'weekly_ranking_member_2',
+  WEEKLY_RANKING_MEMBER_3 = 'weekly_ranking_member_3',
+  WEEKLY_RANKING_MEMBER_TOP_10 = 'weekly_ranking_member_top_10',
+
+  WEEKLY_RANKING_CLAN_1 = 'weekly_ranking_clan_1',
+  WEEKLY_RANKING_CLAN_2 = 'weekly_ranking_clan_2',
+  WEEKLY_RANKING_CLAN_3 = 'weekly_ranking_clan_3',
 }
