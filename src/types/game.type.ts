@@ -13,6 +13,7 @@ export class Player extends Schema {
   @type('number') x: number = 0;
   @type('number') y: number = 0;
   @type('string') pet_players: string = '';
+  @type('number') totalPetBattle: number = 0;
   @type('boolean') isInBattle: boolean;
   @type('boolean') isHarvesting: boolean;
   @type('string') clan_id: string = '';
@@ -62,7 +63,7 @@ export class PlantDataSchema extends Schema {
   @type('string') planted_by: string;
   @type('number') grow_time: number;
   @type('number') grow_time_remain: number;
-  @type('number') stage: PlantState; 
+  @type('number') stage: PlantState;
   @type('boolean') can_harvest: boolean;
   @type('boolean') need_water: boolean;
   @type('boolean') has_bug: boolean;
@@ -75,7 +76,7 @@ export class FarmSlotState extends Schema {
   @type('string') id: string = '';
   @type('number') slot_index: number = 0;
   @type(PlantDataSchema) currentPlant?: PlantDataSchema | null;
-  @type('string')  harvestingBy?: string;
+  @type('string') harvestingBy?: string;
   @type('number') harvestEndTime: number = 0;
   @type('number') harvest_count: number = 0;
 }

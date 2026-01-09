@@ -566,13 +566,19 @@ export class BaseGameRoom extends Room<RoomState> {
           );
           return;
         }
-
         const targetMoney = isDiamond
           ? targetClient?.userData.diamond
           : targetClient?.userData?.gold;
         if (targetMoney < amount) {
           this.sendMessageToTarget(sender, action, `Người chơi không đủ ${isDiamond ? 'Diamond' : 'Gold'}`);
           return;
+        }
+        if (targetClient) {
+          const playerTarget = this.state.players.get(targetClient.sessionId);
+          if (playerTarget) {
+            if (!this.validateBattlePets(sender, action, playerTarget.totalPetBattle))
+              return;
+          }
         }
       }
 
@@ -1009,26 +1015,13 @@ export class BaseGameRoom extends Room<RoomState> {
       this.createBattleRoom(player1Id, player2Id, amount, isDiamond);
     });
 
-    this.onMessage(MessageTypes.NOT_PET_BATTLE, async (client: AuthenticatedClient, data) => {
-      const { sender } = data
-      const player = this.clients.getById(sender);
-      if (player == null) return;
-      player.send(MessageTypes.NOTIFY_BATTLE, { message: "Đối thủ chưa có Pet để chiến đấu" })
-    });
-
-    this.onMessage(MessageTypes.NOT_ENOUGH_PET_BATTLE, async (client: AuthenticatedClient, data) => {
-      const { sender } = data
-      const player = this.clients.getById(sender);
-      if (player == null) return;
-      player.send(MessageTypes.NOTIFY_BATTLE, { message: "Đối thủ chưa có đủ Pet để chiến đấu" })
-
-    });
-    this.onMessage(MessageTypes.NOT_ENOUGH_SKILL_PET_BATTLE, async (client: AuthenticatedClient, data) => {
-      const { sender } = data
-      const player = this.clients.getById(sender);
-      if (player == null) return;
-      player.send(MessageTypes.NOTIFY_BATTLE, { message: "Đối thủ chưa thiết lập kỹ năng Pet đầy đủ" })
-
+    this.onMessage(MessageTypes.ON_CHANGE_TOTAL_SLOT_PET_BATTLE, (sender, data) => {
+      const player = this.state.players.get(sender.sessionId);
+      if (!player) return;
+      const newPlayer = new Player();
+      newPlayer.assign(player);
+      newPlayer.totalPetBattle = data;
+      this.state.players.set(sender.sessionId, newPlayer);
     });
   }
 
@@ -1242,5 +1235,23 @@ export class BaseGameRoom extends Room<RoomState> {
       return;
     }
     clientCheck.leave(4444, "Duplicate login");
+  }
+
+  private validateBattlePets(
+    sender: Client,
+    action,
+    totalPetBattle: number
+  ): boolean {
+
+    if (totalPetBattle >= 3) {
+      return true;
+    }
+    const notice =
+      totalPetBattle <= 0
+        ? "Đối thủ chưa có Pet để chiến đấu"
+        : "Đối thủ chưa có đủ Pet để chiến đấu";
+
+    this.sendMessageToTarget(sender, action, notice);
+    return false;
   }
 }
