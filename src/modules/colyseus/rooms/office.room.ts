@@ -26,7 +26,7 @@ export class OfficeRoom extends BaseGameRoom {
     player.display_name = userData?.display_name || userData?.username || '';
     player.skin_set = userData?.skin_set?.join('/') || '';
     player.pet_players = JSON.stringify(
-      (userData?.pet_players?.filter(a => a.is_brought)
+      (userData?.pet_players.filter(a => a.is_brought)
         .map(a => ({
           id: a.id,
           name: a.name,
@@ -34,6 +34,7 @@ export class OfficeRoom extends BaseGameRoom {
           rarity: a?.current_rarity,
         }))) ?? []
     );
+    player.totalPetBattle = userData?.pet_players?.filter(pet => pet?.battle_slot > 0)?.length ?? 0;
     player.isInBattle = false;
     player.clan_id = userData?.clan?.id ?? '';
     this.state.players.set(client.sessionId, player);
