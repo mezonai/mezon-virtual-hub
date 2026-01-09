@@ -19,8 +19,18 @@ export class ClanWarehouseController {
 
   @Get()
   @ApiOperation({ summary: 'Get all item in warehouse for a clan' })
-  async getAllItemsInWarehouse(@Param('clan_id', ParseUUIDPipe) clanId: string) {
+  async getAllItemsInWarehouse(
+    @Param('clan_id', ParseUUIDPipe) clanId: string,
+  ) {
     return this.farmWarehouseService.getAllItemsInWarehouse(clanId);
+  }
+
+  @Get('items-for-planting')
+  @ApiOperation({ summary: 'Get all item for planting' })
+  async getItemsForPlanting(
+    @Param('clan_id', ParseUUIDPipe)clanId: string,
+  ) {
+    return this.farmWarehouseService.getItemsForPlant(clanId);
   }
 
   @Post('buy-items-clan')
@@ -33,8 +43,10 @@ export class ClanWarehouseController {
   @Post('seed-plant-to-warehouse')
   @RequireAdmin()
   @ApiOperation({ summary: 'Add item in warehouse for a clan' })
-  async seedWarehouse(@Param('clan_id', ParseUUIDPipe) clanId: string,
-  @Body() dto: SeedClanWarehouseDto) {
+  async seedWarehouse(
+    @Param('clan_id', ParseUUIDPipe) clanId: string,
+    @Body() dto: SeedClanWarehouseDto,
+  ) {
     return await this.farmWarehouseService.seedClanWarehouse(clanId, dto);
   }
 }

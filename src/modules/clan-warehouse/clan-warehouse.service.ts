@@ -38,6 +38,26 @@ export class CLanWarehouseService {
     .leftJoinAndSelect('w.plant', 'plant')
     .where('w.clan_id = :clanId', { clanId })
     .andWhere('w.quantity > 0')
+    .orderBy('plant.buy_price', 'ASC')
+    .getMany();
+
+    return {
+      clanId,
+      totalItems: items.length,
+      items,
+    };
+  }
+
+  async getItemsForPlant(clanId: string) {
+    if (!clanId) {
+      throw new BadRequestException('Clan ID not found');
+    }
+
+    const items = await this.warehouseRepo
+    .createQueryBuilder('w')
+    .leftJoinAndSelect('w.plant', 'plant')
+    .where('w.clan_id = :clanId', { clanId })
+    .andWhere('w.quantity > 0')
     .orderBy('plant.harvest_point', 'DESC')
     .getMany();
 

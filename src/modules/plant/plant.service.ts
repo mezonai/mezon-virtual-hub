@@ -14,7 +14,7 @@ export class PlantService {
   async getAllPlants(): Promise<PlantEntity[]> {
     return this.plantRepository.find({
       relations: ['slotPlants'],
-      order: { name: 'ASC' },
+      order: { harvest_point: 'ASC' },
     });
   }
 
