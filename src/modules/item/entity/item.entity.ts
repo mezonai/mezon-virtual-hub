@@ -1,9 +1,10 @@
 import { Gender, ItemCode, ItemType } from '@enum';
+import { ClanWarehouseEntity } from '@modules/clan-warehouse/entity/clan-warehouse.entity';
 import { ApiProperty } from '@nestjs/swagger';
 import { AuditEntity } from '@types';
 import { Transform } from 'class-transformer';
 import { IsString, Matches } from 'class-validator';
-import { Entity, Column, Unique } from 'typeorm';
+import { Entity, Column, Unique, OneToMany } from 'typeorm';
 
 @Unique('UQ_item_item_code', ['item_code'])
 @Entity({ name: 'item' })
@@ -73,6 +74,10 @@ export class ItemEntity extends AuditEntity {
   item_code: ItemCode | null;
 
   @Column({ type: 'boolean', default: false })
+  @ApiProperty({
+    example: false,
+    description: 'Indicates whether this item can be stacked',
+  })
   is_stackable: boolean;
 
   @Column({ type: 'boolean', default: true })
@@ -81,4 +86,7 @@ export class ItemEntity extends AuditEntity {
     description: 'Indicates whether this item can be purchased',
   })
   is_purchasable: boolean;
+
+  @OneToMany(() => ClanWarehouseEntity, (wh) => wh.item)
+  warehouseItems: ClanWarehouseEntity[];
 }

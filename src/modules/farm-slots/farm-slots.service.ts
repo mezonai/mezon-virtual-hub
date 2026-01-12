@@ -19,8 +19,8 @@ import { FarmEntity } from '@modules/farm/entity/farm.entity';
 import { ClanWarehouseEntity } from '@modules/clan-warehouse/entity/clan-warehouse.entity';
 import { PlantCareUtils } from '@modules/plant/plant-care.service';
 import { CLanWarehouseService } from '@modules/clan-warehouse/clan-warehouse.service';
-import { ClanActivityActionType, ClanFundType, PlantState } from '@enum';
-import { CLAN_WAREHOUSE, FARM_CONFIG } from '@constant/farm.constant';
+import { ClanActivityActionType, ClanFundType, InventoryClanType, PlantState } from '@enum';
+import { CLAN_WAREHOUSE, FARM_CONFIG, TOOL_RATE_MAP } from '@constant/farm.constant';
 import { UserClanStatEntity as UserClanStatEntity } from '@modules/user-clan-stat/entity/user-clan-stat.entity';
 import { UserClanStatService } from '@modules/user-clan-stat/user-clan-stat.service';
 import { ClanActivityService } from '@modules/clan-activity/clan-activity.service';
@@ -252,7 +252,7 @@ export class FarmSlotService {
     if (!user.clan_id || user.clan_id !== slot.farm.clan_id)
       throw new BadRequestException('You are not a member of this clan');
 
-    await this.clanWarehouseService.updateClanWarehouseItem(
+    await this.clanWarehouseService.updateClanWarehousePlant(
       slot.farm.clan_id,
       plant.id,
       CLAN_WAREHOUSE.QUANTITY.USE_ONE_SEED,
@@ -320,6 +320,103 @@ export class FarmSlotService {
       },
     };
   }
+
+  async getToolRate(toolId?: string) {
+    if (!toolId) return 0;
+
+    const tool = await this.clanWarehouseRepo.findOne({
+      where: { item_id: toolId },
+    });
+
+    if (!tool) {
+      throw new NotFoundException('Tool not found');
+    }
+
+    const rate = TOOL_RATE_MAP[tool.type as InventoryClanType];
+
+    if (rate === undefined) {
+      throw new BadRequestException('Item is not a supported tool');
+    }
+
+    return rate;
+  }
+
+  async decreaseToolQuantityInClanWarehouse(toolId: string) {
+    const tool = await this.clanWarehouseRepo.findOne({
+      where: { item_id: toolId },
+    });
+
+    if (!tool) throw new NotFoundException('Tool not found');
+
+    if (tool.quantity <= 0) throw new BadRequestException('Tool quantity is insufficient');
+
+    tool.quantity -= 1;
+    if (tool.quantity <= 0) {
+      await this.clanWarehouseRepo.remove(tool);
+    } else {
+      await this.clanWarehouseRepo.save(tool);
+    }
+    
+    return tool;
+  }
+
+  async decreasePlantGrowTime(farmSlotId: string, toolId: string) {
+    const slot = await this.farmSlotRepo.findOne({
+      where: { id: farmSlotId },
+      relations: ['currentSlotPlant'],
+    });
+    if (!slot?.currentSlotPlant) throw new NotFoundException('No plant on this slot');
+
+    const plant = slot.currentSlotPlant;
+
+    const growRemain = PlantCareUtils.calculateGrowRemain(new Date(plant.created_at), plant.grow_time);
+    const reductionRate = await this.getToolRate(toolId);
+    const deltaMs = growRemain * reductionRate * 1000;
+    
+    plant.created_at = new Date(plant.created_at.getTime() - deltaMs);
+
+    const { totalWater, totalBug } = PlantCareUtils.calculateCareNeeds(plant.grow_time);
+
+    const autoWater = Math.ceil(totalWater * reductionRate);
+    const autoBug = Math.ceil(totalBug * reductionRate);
+
+    plant.total_water_count = Math.min(
+      totalWater,
+      plant.total_water_count + autoWater,
+    );
+
+    plant.total_bug_caught = Math.min(
+      totalBug,
+      plant.total_bug_caught + autoBug,
+    );
+
+    const { nextWaterTime } = PlantCareUtils.getNextWaterTime(plant);
+    const { nextBugTime } = PlantCareUtils.getNextBugTime(plant);
+
+    plant.need_water_until = nextWaterTime ?? null;
+    plant.bug_until = nextBugTime ?? null;
+
+    await this.slotPlantRepo.save(plant);
+
+    await this.decreaseToolQuantityInClanWarehouse(toolId);
+
+    return {
+      message: `Plant grow time reduced by ${reductionRate * 100}%`,
+      newGrowTimeRemain: PlantCareUtils.calculateGrowRemain(new Date(plant.created_at), plant.grow_time),
+      updatedPlantStage: PlantCareUtils.calculatePlantStage(new Date(plant.created_at), plant.grow_time),
+    };
+  }
+
+  // async protectPlant(farmSlotId: string, toolId: string) {
+  //   const slot = await this.farmSlotRepo.findOne({
+  //     where: { id: farmSlotId },
+  //     relations: ['currentSlotPlant'],
+  //   });
+
+  //   if (!slot?.currentSlotPlant) throw new NotFoundException('No plant on this slot');
+      
+  //   const plant = slot.currentSlotPlant;
+  // }
 
   async waterPlant(userId: string, farmSlotId: string) {
     const slot = await this.farmSlotRepo.findOne({
@@ -452,14 +549,14 @@ export class FarmSlotService {
     let warehouseItem = await this.clanWarehouseRepo.findOne({
       where: {
         clan_id: user.clan.id,
-        item_id: slotPlant.plant_id,
+        plant_id: slotPlant.plant_id,
         is_harvested: true,
       },
     });
     if (!warehouseItem) {
       warehouseItem = this.clanWarehouseRepo.create({
         clan_id: user.clan.id,
-        item_id: slotPlant.plant_id,
+        plant_id: slotPlant.plant_id,
         quantity: 0,
         is_harvested: true,
       });
