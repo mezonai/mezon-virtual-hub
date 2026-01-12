@@ -24,6 +24,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { plainToInstance } from 'class-transformer';
 import { Repository } from 'typeorm';
 import { FoodInventoryResDto, ItemInventoryResDto } from './dto/inventory.dto';
+import { SlotWheelEntity } from '@modules/slot-wheel/entity/slot-wheel.entity';
+import { CLanWarehouseService } from '@modules/clan-warehouse/clan-warehouse.service';
 
 @Injectable()
 export class InventoryService extends BaseService<Inventory> {
@@ -38,6 +40,7 @@ export class InventoryService extends BaseService<Inventory> {
     private readonly itemRepository: Repository<ItemEntity>,
     private readonly foodService: FoodService,
     private readonly petPlayerService: PetPlayersService,
+    private readonly clanWarehouseService: CLanWarehouseService,
   ) {
     super(inventoryRepository, Inventory.name);
   }
@@ -343,6 +346,57 @@ export class InventoryService extends BaseService<Inventory> {
         diamond: user.diamond,
         gold: user.gold,
       });
+    }
+  }
+
+  async awardSpinItemToUser(user: UserEntity, rewardItem: SlotWheelEntity) {
+    switch (rewardItem.type_item) {
+      case RewardItemType.ITEM: {
+        if (rewardItem.item_id) {
+          await this.addItemToInventory(
+            user,
+            rewardItem.item_id,
+            rewardItem.quantity,
+          );
+        }
+        break;
+      }
+      case RewardItemType.FOOD: {
+        if (rewardItem.food_id) {
+          await this.addFoodToInventory(
+            user,
+            rewardItem.food_id,
+            rewardItem.quantity,
+          );
+        }
+        break;
+      }
+      case RewardItemType.PET: {
+        if (rewardItem.pet_id) {
+          await this.petPlayerService.createPetPlayers({
+            room_code: '',
+            user_id: user.id,
+            pet_id: rewardItem.pet_id,
+            current_rarity: rewardItem.pet!.rarity,
+          });
+        }
+        break;
+      }
+      case RewardItemType.PLANT: {
+        if (rewardItem.plant_id) {
+          await this.clanWarehouseService.rewardSeedToClans(
+            user.clan_id!,
+            rewardItem.plant_id,
+            rewardItem.quantity,
+          );
+        }
+        break;
+      }
+      default:
+        this.logger.warn(
+          `Unknown slot wheel reward type_item=${rewardItem.type_item}, user=${user.username}, rewardId=${rewardItem.id}`,
+        );
+        break;
     }
   }
 

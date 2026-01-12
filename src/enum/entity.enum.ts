@@ -264,6 +264,10 @@ export enum QuestFrequency {
   ONCE = 'once'
 }
 
+export enum SlotWheelType {
+  NORMAL_WHEEL = 'normal_wheel',
+}
+
 export enum RewardItemType {
   GOLD = 'gold',
   DIAMOND = 'diamond',

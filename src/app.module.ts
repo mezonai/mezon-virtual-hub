@@ -46,6 +46,7 @@ import { ClanActivityModule } from './modules/clan-activity/clan-activity.module
 import { GameConfigModule } from './modules/admin/game-config/game-config.module';
 import { NumberRarityModule } from '@modules/number-rarity/number-rarity.module';
 import { ScheduleModule } from '@nestjs/schedule';
+import { SlotWheelModule } from './modules/slot-wheel/slot-wheel.module';
 
 @Module({
   imports: [
@@ -102,6 +103,7 @@ import { ScheduleModule } from '@nestjs/schedule';
     ClanActivityModule,
     GameConfigModule,
     NumberRarityModule,
+    SlotWheelModule,
   ],
 })
 export class AppModule {}
