@@ -1,3 +1,5 @@
+import { InventoryClanType } from "@enum";
+
 export const CLAN_WAREHOUSE = {
   ITEM_TYPE: {
     SEED: false,
@@ -8,6 +10,29 @@ export const CLAN_WAREHOUSE = {
     ADD_ONE_SEED: 1,
     ADD_ONE_HARVEST: 1,
   },
+};
+
+export const TOOL_RATE_MAP: Partial<Record<InventoryClanType, number>> = {
+  // Harvest
+  [InventoryClanType.HARVEST_TOOL_1]: 0.1,
+  [InventoryClanType.HARVEST_TOOL_2]: 0.2,
+  [InventoryClanType.HARVEST_TOOL_3]: 0.3,
+  [InventoryClanType.HARVEST_TOOL_4]: 0.4,
+  [InventoryClanType.HARVEST_TOOL_5]: 0.5,
+
+  // Growth plant
+  [InventoryClanType.GROWTH_PLANT_TOOL_1]: 0.1,
+  [InventoryClanType.GROWTH_PLANT_TOOL_2]: 0.2,
+  [InventoryClanType.GROWTH_PLANT_TOOL_3]: 0.3,
+  [InventoryClanType.GROWTH_PLANT_TOOL_4]: 0.4,
+  [InventoryClanType.GROWTH_PLANT_TOOL_5]: 0.5,
+
+  // Interrupt harvest
+  [InventoryClanType.INTERRUPT_HARVEST_TOOL_1]: 0.1,
+  [InventoryClanType.INTERRUPT_HARVEST_TOOL_2]: 0.2,
+  [InventoryClanType.INTERRUPT_HARVEST_TOOL_3]: 0.3,
+  [InventoryClanType.INTERRUPT_HARVEST_TOOL_4]: 0.4,
+  [InventoryClanType.INTERRUPT_HARVEST_TOOL_5]: 0.5,
 };
 
 export const FARM_CONFIG = {

@@ -5,6 +5,7 @@ import { PlantEntity } from '@modules/plant/entity/plant.entity';
 import { Exclude } from 'class-transformer';
 import { InventoryClanType } from '@enum';
 import { ClanEntity } from '@modules/clan/entity/clan.entity';
+import { ItemEntity } from '@modules/item/entity/item.entity';
 
 @Entity({ name: 'clan_warehouses' })
 export class ClanWarehouseEntity {
@@ -15,9 +16,19 @@ export class ClanWarehouseEntity {
   @Column({ type: 'uuid' })
   clan_id: string;
 
-  @ApiProperty({ description: 'FK to item/plant id' })
-  @Column({ type: 'uuid' })
-  item_id: string;
+  @Column({ type: 'uuid', nullable: true })
+  plant_id?: string;
+
+  @ManyToOne(() => PlantEntity, { nullable: true })
+  @JoinColumn({ name: 'plant_id' })
+  plant?: PlantEntity;
+
+  @Column({ type: 'uuid', nullable: true })
+  item_id?: string;
+
+  @ManyToOne(() => ItemEntity, { nullable: true })
+  @JoinColumn({ name: 'item_id' })
+  item?: ItemEntity;
 
   @ApiProperty({ enum: InventoryClanType, description: 'Type of item (PLANT, MATERIAL, TOOL, etc.)' })
   @IsEnum(InventoryClanType)
@@ -44,10 +55,6 @@ export class ClanWarehouseEntity {
   @ManyToOne(() => ClanEntity, (clan) => clan.warehouse)
   @JoinColumn({ name: 'clan_id', foreignKeyConstraintName: 'FK_clan_id_warehouse' })
   clan: ClanEntity;
-
-  @ManyToOne(() => PlantEntity, { nullable: true })
-  @JoinColumn({ name: 'item_id', foreignKeyConstraintName: 'FK_item_id_warehouse' })
-  plant?: PlantEntity;
 
   @ApiProperty({ description: 'User who purchased this item for the clan', required: false })
   @Column({ type: 'uuid', nullable: true })

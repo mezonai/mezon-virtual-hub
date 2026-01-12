@@ -5,7 +5,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { plainToInstance } from 'class-transformer';
 import { EntityManager, In, Not, Repository } from 'typeorm';
-import { ItemDto, ItemDtoRequest } from './dto/item.dto';
+import { GetItemsQueryDto, ItemDto, ItemDtoRequest } from './dto/item.dto';
 import { ItemEntity } from './entity/item.entity';
 
 @Injectable()
@@ -27,8 +27,10 @@ export class ItemService extends BaseService<ItemEntity> {
     return plainToInstance(ItemDto, items);
   }
 
-  async getAllItems() {
-    const items = await this.itemRepository.find();
+  async getAllItems(query: GetItemsQueryDto) {
+    const items = await this.itemRepository.find({
+      where: { ...query },
+    });
     return plainToInstance(ItemDto, items);
   }
 

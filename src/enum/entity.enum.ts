@@ -24,6 +24,7 @@ export enum ItemType {
   GLASSES = 'glasses',
   PET_CARD = 'pet_card',
   PET_FOOD = 'pet_food',
+  FARM_TOOL = 'farm_tool',
 }
 
 export enum ItemTypeCloth {
@@ -42,6 +43,19 @@ export enum ItemCode {
   RARITY_CARD_RARE = 'rarity_card_rare',
   RARITY_CARD_EPIC = 'rarity_card_epic',
   RARITY_CARD_LEGENDARY = 'rarity_card_legendary',
+  HARVEST_TOOL_1 = 'harvest_tool_1',
+  HARVEST_TOOL_2 = 'harvest_tool_2',
+  HARVEST_TOOL_3 = 'harvest_tool_3',
+  HARVEST_TOOL_4 = 'harvest_tool_4',
+  HARVEST_TOOL_5 = 'harvest_tool_5',
+  GROWTH_PLANT_TOOL_1 = 'growth_plant_tool_1',
+  GROWTH_PLANT_TOOL_2 = 'growth_plant_tool_2',
+  GROWTH_PLANT_TOOL_3 = 'growth_plant_tool_3',
+  GROWTH_PLANT_TOOL_4 = 'growth_plant_tool_4',
+  GROWTH_PLANT_TOOL_5 = 'growth_plant_tool_5',
+  LOCK_PLANT_TOOL = 'lock_plant_tool',
+  LOCK_PICK_TOOL = 'lock_pick_tool',
+  BREAK_THEFT_TOOL = 'break_theft_tool',
   // Cosmetic items ....
 }
 
@@ -77,7 +91,28 @@ export enum InventoryType {
 }
 
 export enum InventoryClanType {
-  PLANT = 'plant'
+  PLANT = 'plant',
+
+  HARVEST_TOOL_1 = 'harvest_tool_1',
+  HARVEST_TOOL_2 = 'harvest_tool_2',
+  HARVEST_TOOL_3 = 'harvest_tool_3',
+  HARVEST_TOOL_4 = 'harvest_tool_4',
+  HARVEST_TOOL_5 = 'harvest_tool_5',
+
+  GROWTH_PLANT_TOOL_1 = 'growth_plant_tool_1',
+  GROWTH_PLANT_TOOL_2 = 'growth_plant_tool_2',
+  GROWTH_PLANT_TOOL_3 = 'growth_plant_tool_3',
+  GROWTH_PLANT_TOOL_4 = 'growth_plant_tool_4',
+  GROWTH_PLANT_TOOL_5 = 'growth_plant_tool_5',
+
+  INTERRUPT_HARVEST_TOOL_1 = 'interrupt_harvest_tool_1',
+  INTERRUPT_HARVEST_TOOL_2 = 'interrupt_harvest_tool_2',
+  INTERRUPT_HARVEST_TOOL_3 = 'interrupt_harvest_tool_3',
+  INTERRUPT_HARVEST_TOOL_4 = 'interrupt_harvest_tool_4',
+  INTERRUPT_HARVEST_TOOL_5 = 'interrupt_harvest_tool_5',
+  
+  LOCK_PLANT_TOOL = 'lock_plant_tool',
+  LOCK_PICK_TOOL = 'lock_pick_tool',
 }
 
 export enum AnimalRarity {

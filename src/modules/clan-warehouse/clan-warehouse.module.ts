@@ -8,9 +8,11 @@ import { CLanWarehouseService } from './clan-warehouse.service';
 import { ClanWarehouseController } from './clan-warehouse.controller';
 import { ClanActivityService } from '@modules/clan-activity/clan-activity.service';
 import { ClanActivityModule } from '@modules/clan-activity/clan-activity.module';
+import { ItemEntity } from '@modules/item/entity/item.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([ClanWarehouseEntity, PlantEntity, ClanFundEntity]), ClsModule, ClanActivityModule],
+  imports: [
+    TypeOrmModule.forFeature([ClanWarehouseEntity, PlantEntity, ClanFundEntity, ItemEntity]), ClsModule, ClanActivityModule],
   providers: [CLanWarehouseService],
   controllers: [ClanWarehouseController],
   exports: [CLanWarehouseService],

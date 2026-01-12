@@ -402,9 +402,7 @@ export class BaseGameRoom extends Room<RoomState> {
       },
     );
 
-    this.onMessage(
-      'onExchangeDiamondToCoin',
-      async (client: AuthenticatedClient, data) => {
+    this.onMessage('onExchangeDiamondToCoin', async (client: AuthenticatedClient, data) => {
         const { diamondTransfer } = data;
         const userId = client.userData?.id;
 
@@ -900,9 +898,7 @@ export class BaseGameRoom extends Room<RoomState> {
       });
     });
 
-    this.onMessage(
-      MessageTypes.ON_BUY_CLAN_ITEM,
-      async (client, payload: { itemId: string; quantity: number }) => {
+    this.onMessage(MessageTypes.ON_BUY_CLAN_ITEM, async (client, payload: { itemId: string; quantity: number; type: InventoryClanType }) => {
         const player = this.state.players.get(client.sessionId);
         const user = player &&
           (await this.userRepository.findOne({
@@ -946,7 +942,7 @@ export class BaseGameRoom extends Room<RoomState> {
             {
               itemId: payload.itemId,
               quantity: payload.quantity,
-              type: InventoryClanType.PLANT,
+              type: payload.type,
             },
           );
 
