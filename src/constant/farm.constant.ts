@@ -1,4 +1,3 @@
-import { InventoryClanType } from "@enum";
 
 export const CLAN_WAREHOUSE = {
   ITEM_TYPE: {
@@ -12,27 +11,27 @@ export const CLAN_WAREHOUSE = {
   },
 };
 
-export const TOOL_RATE_MAP: Partial<Record<InventoryClanType, number>> = {
+export const TOOL_RATE_MAP: Partial<Record<string, number>> = {
   // Harvest
-  [InventoryClanType.HARVEST_TOOL_1]: 0.1,
-  [InventoryClanType.HARVEST_TOOL_2]: 0.2,
-  [InventoryClanType.HARVEST_TOOL_3]: 0.3,
-  [InventoryClanType.HARVEST_TOOL_4]: 0.4,
-  [InventoryClanType.HARVEST_TOOL_5]: 0.5,
+  'harvest_tool_1': 0.1,
+  'harvest_tool_2': 0.2,
+  'harvest_tool_3': 0.3,
+  'harvest_tool_4': 0.4,
+  'harvest_tool_5': 0.5,
 
   // Growth plant
-  [InventoryClanType.GROWTH_PLANT_TOOL_1]: 0.1,
-  [InventoryClanType.GROWTH_PLANT_TOOL_2]: 0.2,
-  [InventoryClanType.GROWTH_PLANT_TOOL_3]: 0.3,
-  [InventoryClanType.GROWTH_PLANT_TOOL_4]: 0.4,
-  [InventoryClanType.GROWTH_PLANT_TOOL_5]: 0.5,
+  'growth_plant_tool_1': 0.1,
+  'growth_plant_tool_2': 0.2,
+  'growth_plant_tool_3': 0.3,
+  'growth_plant_tool_4': 0.4,
+  'growth_plant_tool_5': 0.5,
 
   // Interrupt harvest
-  [InventoryClanType.INTERRUPT_HARVEST_TOOL_1]: 0.1,
-  [InventoryClanType.INTERRUPT_HARVEST_TOOL_2]: 0.2,
-  [InventoryClanType.INTERRUPT_HARVEST_TOOL_3]: 0.3,
-  [InventoryClanType.INTERRUPT_HARVEST_TOOL_4]: 0.4,
-  [InventoryClanType.INTERRUPT_HARVEST_TOOL_5]: 0.5,
+  'interrupt_harvest_tool_1': 0.1,
+  'interrupt_harvest_tool_2': 0.2,
+  'interrupt_harvest_tool_3': 0.3,
+  'interrupt_harvest_tool_4': 0.4,
+  'interrupt_harvest_tool_5': 0.5,
 };
 
 export const FARM_CONFIG = {

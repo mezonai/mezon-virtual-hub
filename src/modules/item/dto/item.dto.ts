@@ -29,6 +29,9 @@ export class ItemDto implements Partial<ItemEntity> {
 
   @Expose()
   is_stackable: boolean;
+
+  @Expose()
+  rate?: number;
 }
 
 export class ItemDtoRequest {

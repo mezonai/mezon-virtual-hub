@@ -19,7 +19,7 @@ import { FarmEntity } from '@modules/farm/entity/farm.entity';
 import { ClanWarehouseEntity } from '@modules/clan-warehouse/entity/clan-warehouse.entity';
 import { PlantCareUtils } from '@modules/plant/plant-care.service';
 import { CLanWarehouseService } from '@modules/clan-warehouse/clan-warehouse.service';
-import { ClanActivityActionType, ClanFundType, InventoryClanType, PlantState } from '@enum';
+import { ClanActivityActionType, ClanFundType, PlantState } from '@enum';
 import { CLAN_WAREHOUSE, FARM_CONFIG, TOOL_RATE_MAP } from '@constant/farm.constant';
 import { UserClanStatEntity as UserClanStatEntity } from '@modules/user-clan-stat/entity/user-clan-stat.entity';
 import { UserClanStatService } from '@modules/user-clan-stat/user-clan-stat.service';
@@ -332,7 +332,7 @@ export class FarmSlotService {
       throw new NotFoundException('Tool not found');
     }
 
-    const rate = TOOL_RATE_MAP[tool.type as InventoryClanType];
+    const rate = TOOL_RATE_MAP[tool.type];
 
     if (rate === undefined) {
       throw new BadRequestException('Item is not a supported tool');

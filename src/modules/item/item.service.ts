@@ -7,6 +7,7 @@ import { plainToInstance } from 'class-transformer';
 import { EntityManager, In, Not, Repository } from 'typeorm';
 import { GetItemsQueryDto, ItemDto, ItemDtoRequest } from './dto/item.dto';
 import { ItemEntity } from './entity/item.entity';
+import { TOOL_RATE_MAP } from '@constant/farm.constant';
 
 @Injectable()
 export class ItemService extends BaseService<ItemEntity> {
@@ -30,8 +31,18 @@ export class ItemService extends BaseService<ItemEntity> {
   async getAllItems(query: GetItemsQueryDto) {
     const items = await this.itemRepository.find({
       where: { ...query },
+      order: { created_at: 'ASC' },
     });
-    return plainToInstance(ItemDto, items);
+
+    const itemDtos = plainToInstance(ItemDto, items);
+
+    if (query.type === ItemType.FARM_TOOL) {
+      for (const item of itemDtos) {
+        item.rate = TOOL_RATE_MAP[item.item_code!] ?? 0;
+      }
+    }
+
+    return itemDtos;
   }
 
   async getItemById(id: string) {
