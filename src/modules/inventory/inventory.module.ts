@@ -12,6 +12,7 @@ import { FoodEntity } from '@modules/food/entity/food.entity';
 import { UserModule } from '@modules/user/user.module';
 import { PetPlayersModule } from '@modules/pet-players/pet-players.module';
 import { ClanWarehouseModule } from '@modules/clan-warehouse/clan-warehouse.module';
+import { PlantModule } from '@modules/plant/plant.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { ClanWarehouseModule } from '@modules/clan-warehouse/clan-warehouse.modu
     UserModule,
     PetPlayersModule,
     ClanWarehouseModule,
+    PlantModule,
   ],
   providers: [InventoryService],
   controllers: [InventoryController],

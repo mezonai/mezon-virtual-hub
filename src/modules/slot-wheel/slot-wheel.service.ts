@@ -90,9 +90,7 @@ export class SlotWheelService extends BaseService<SlotWheelEntity> {
       rewards.push(rewardItem);
     }
 
-    for (const reward of rewards) {
-      await this.inventoryService.awardSpinItemToUser(user, reward);
-    }
+    await this.inventoryService.awardSpinItemToUser(user, rewards);
 
     return rewards;
   }
