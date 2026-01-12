@@ -80,6 +80,7 @@ export class GameRoom extends BaseGameRoom {
           rarity: a?.current_rarity,
         }))) ?? []
     );
+    player.totalPetBattle = userData?.pet_players?.filter(pet => pet?.battle_slot > 0)?.length ?? 0;
     player.isInBattle = false;
     player.clan_id = userData?.clan?.id ?? '';
     this.state.players.set(client.sessionId, player);
