@@ -37,7 +37,7 @@ export class SlotWheelController {
   @Get('random')
   getRandom(@Query() query: SpinQueryDto) {
     const user = this.cls.get<UserEntity>(USER_TOKEN);
-    return this.slotWheelService.getRandomItems(user, query.type, query.quantity);
+    return this.slotWheelService.getRandomItems(user, query.type, query.quantity, query.fee);
   }
 
   @Patch(':id')

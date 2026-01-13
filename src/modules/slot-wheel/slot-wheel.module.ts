@@ -9,10 +9,11 @@ import { PetsEntity } from '@modules/pets/entity/pets.entity';
 import { PlantEntity } from '@modules/plant/entity/plant.entity';
 import { ClsModule } from 'nestjs-cls';
 import { InventoryModule } from '@modules/inventory/inventory.module';
+import { UserEntity } from '@modules/user/entity/user.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([SlotWheelEntity, ItemEntity, FoodEntity, PetsEntity, PlantEntity]),
+    TypeOrmModule.forFeature([SlotWheelEntity, ItemEntity, FoodEntity, PetsEntity, PlantEntity, UserEntity]),
     InventoryModule,
     ClsModule,
   ],

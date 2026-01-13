@@ -30,6 +30,9 @@ export class SlotWheelService extends BaseService<SlotWheelEntity> {
     @InjectRepository(PlantEntity)
     private readonly plantRepo: Repository<PlantEntity>,
 
+    @InjectRepository(UserEntity)
+    private readonly userRepository: Repository<UserEntity>,
+
     private readonly inventoryService: InventoryService,
   ) {
     super(slotWheelRepo, SlotWheelEntity.name);
@@ -47,7 +50,8 @@ export class SlotWheelService extends BaseService<SlotWheelEntity> {
   async getRandomItems(
     user: UserEntity,
     type: SlotWheelType,
-    count = 3,
+    quantity = 3,
+    fee = 100,
   ) {
     const items = await this.slotWheelRepo.find({
       where: { type },
@@ -69,7 +73,7 @@ export class SlotWheelService extends BaseService<SlotWheelEntity> {
 
     const rewards: SlotWheelEntity[] = [];
 
-    for (let i = 0; i < count; i++) {
+    for (let i = 0; i < quantity; i++) {
       const random = Math.random() * totalWeight;
 
       let cumulativeWeight = 0;
@@ -91,6 +95,10 @@ export class SlotWheelService extends BaseService<SlotWheelEntity> {
     }
 
     await this.inventoryService.awardSpinItemToUser(user, rewards);
+
+    await this.userRepository.update(user.id, {
+      gold: user.gold - fee,
+    });
 
     return rewards;
   }

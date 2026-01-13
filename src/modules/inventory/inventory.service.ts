@@ -442,6 +442,12 @@ export class InventoryService extends BaseService<Inventory> {
 
           if (!user.clan_id) {
             const plant = await this.plantService.getPlantById(rewardItem.plant_id);
+            if (!plant) {
+              this.logger.warn(
+                `Plant not found: plant_id=${rewardItem.plant_id}, user=${user.username}`,
+              );
+              break;
+            }
 
             goldDelta += plant.buy_price * rewardItem.quantity;
             break;
@@ -467,12 +473,9 @@ export class InventoryService extends BaseService<Inventory> {
           break;
       }
     }
-    if (goldDelta) {
+    if (goldDelta > 0) {
       user.gold += goldDelta;
-      await this.userRepository.update(user.id, {
-        diamond: user.diamond,
-        gold: user.gold,
-      });
+      await this.userRepository.update(user.id, { gold: user.gold });
     }
   }
 

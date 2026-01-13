@@ -21,7 +21,7 @@ export class SpinQueryDto {
   type: SlotWheelType;
 
   @ApiPropertyOptional({
-    description: 'Number of items to spin',
+    description: 'Number of reward items',
     type: Number,
     required: false,
     default: 3,
@@ -30,6 +30,17 @@ export class SpinQueryDto {
   @IsOptional()
   @Type(() => Number)
   quantity?: number = 3;
+
+  @ApiPropertyOptional({
+    description: 'Fee to spin the slot wheel',
+    type: Number,
+    required: false,
+    default: 100,
+  })
+  @IsNumber()
+  @IsOptional()
+  @Type(() => Number)
+  fee?: number = 100;
 }
 
 export class CreateSlotWheelDto {
