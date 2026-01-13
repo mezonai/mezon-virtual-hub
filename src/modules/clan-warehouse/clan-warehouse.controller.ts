@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Body, Query, BadRequestException, Param, ParseUUIDPipe} from '@nestjs/common';
 import {ApiBearerAuth, ApiOperation, ApiTags, ApiQuery} from '@nestjs/swagger';
 import { CLanWarehouseService } from './clan-warehouse.service';
-import { BuyPlantDto, SeedClanWarehouseDto } from './dto/clan-warehouse.dto';
+import { BuyItemDto, SeedClanWarehouseDto } from './dto/clan-warehouse.dto';
 import { UserEntity } from '@modules/user/entity/user.entity';
 import { USER_TOKEN } from '@constant';
 import { ClsService } from 'nestjs-cls';
@@ -35,7 +35,7 @@ export class ClanWarehouseController {
 
   @Post('buy-items-clan')
   @ApiOperation({ summary: 'Buy plant for a clan farm' })
-  async buyItemsForClan(@Body() dto: BuyPlantDto) {
+  async buyItemsForClan(@Body() dto: BuyItemDto) {
     const user = this.cls.get<UserEntity>(USER_TOKEN);
     return this.farmWarehouseService.buyItemsForClanFarm(user, dto);
   }

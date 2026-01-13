@@ -1,35 +1,25 @@
-import { InventoryClanType } from '@enum';
 import { SlotsPlantEntity } from '@modules/slots-plant/entity/slots-plant.entity';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { IsInt, Min, IsUUID, IsOptional, IsEnum, Max, IsArray } from 'class-validator';
 
-export class BuyPlantDto {
-  @ApiProperty({
-    example: '1c23a3d4-abc1-4d7a-b123-1a2b3c4d5e6f',
-    description: 'Item Farm ID (UUID)',
-  })
-  @IsUUID()
-  itemId: string;
-
-  @ApiProperty({ example: 5, description: 'Quantity to buy', minimum: 1 })
+export class BuyItemDto {
+  @ApiPropertyOptional({ description: 'Plant ID (UUID)' })
   @IsOptional()
+  @IsUUID()
+  plantId?: string;
+
+  @ApiPropertyOptional({ description: 'Item ID (UUID)' })
+  @IsOptional()
+  @IsUUID()
+  itemId?: string;
+
+  @ApiProperty({ example: 5, minimum: 1 })
   @Type(() => Number)
   @IsInt()
-  @Max(100000, { message: 'Quantity must not exceed 100000' })
   @Min(1)
+  @Max(100000)
   quantity: number;
-
-  @ApiPropertyOptional({
-    name: 'type',
-    enum: InventoryClanType,
-    required: false,
-    description: 'Type of inventory to buy',
-    default: InventoryClanType.PLANT,
-  })
-  @IsOptional()
-  @IsEnum(InventoryClanType)
-  type: InventoryClanType = InventoryClanType.PLANT;
 }
 
 export class HarvestPlantStatusDto {
@@ -65,5 +55,5 @@ export class SeedClanWarehouseDto {
   @IsArray()
   @IsOptional()
   @IsUUID('4', { each: true }) // kiểm tra từng phần tử là UUID version 4
-  itemIds?: string[];
+  plantIds?: string[];
 }

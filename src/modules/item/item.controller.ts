@@ -1,4 +1,4 @@
-import { Controller, Get, ParseUUIDPipe, Post } from '@nestjs/common';
+import { Controller, Get, ParseUUIDPipe, Post, Query } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiBody,
@@ -13,7 +13,7 @@ import { RequireAdmin } from '@libs/decorator';
 import { Body, Delete, Param, Put } from '@nestjs/common';
 import { ClsService } from 'nestjs-cls';
 import { UserService } from '../user/user.service';
-import { ItemDtoRequest } from './dto/item.dto';
+import { GetItemsQueryDto, ItemDtoRequest } from './dto/item.dto';
 import { ItemService } from './item.service';
 
 @ApiBearerAuth()
@@ -41,8 +41,8 @@ export class ItemController {
   @ApiOperation({
     summary: 'Get list all Items',
   })
-  async getAllItems() {
-    return await this.itemService.getAllItems();
+  async getAllItems(@Query() query: GetItemsQueryDto) {
+    return await this.itemService.getAllItems(query);
   }
 
   @Post()
