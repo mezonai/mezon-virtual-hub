@@ -365,7 +365,7 @@ export class FarmRoom extends BaseGameRoom {
       if (payload.harvest_tool_id) {
         reductionRate = await this.farmSlotsService.getToolRate(payload.harvest_tool_id)
 
-        await this.farmSlotsService.decreaseToolQuantityInClanWarehouse(payload.harvest_tool_id);
+        await this.farmSlotsService.decreaseToolQuantityInClanWarehouse(Player.clan_id, payload.harvest_tool_id);
       }
 
       const baseDelayMs = farmConfig.HARVEST.DELAY_MS;
@@ -451,7 +451,7 @@ export class FarmRoom extends BaseGameRoom {
         if (interrupt_tool_id) {
           increaseRate = await this.farmSlotsService.getToolRate(interrupt_tool_id);
 
-          await this.farmSlotsService.decreaseToolQuantityInClanWarehouse(interrupt_tool_id);
+          await this.farmSlotsService.decreaseToolQuantityInClanWarehouse(interrupter.clan_id, interrupt_tool_id);
         }
 
         const successRate = Math.min(farmConfig.HARVEST.INTERRUPT_RATE + increaseRate, 1);
@@ -623,6 +623,7 @@ export class FarmRoom extends BaseGameRoom {
 
         const result =
           await this.farmSlotsService.decreasePlantGrowTime(
+            player.clan_id,
             farm_slot_id,
             growth_plant_tool_id,
           );

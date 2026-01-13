@@ -17,6 +17,10 @@ export class PlantOnSlotDto {
 export class DecreaseGrowthTimeDto {
   @IsUUID()
   @ApiProperty({ example: '0b071122-8ac2-4886-a8bd-64e1694f3ba7', description: 'Farm Slot ID' })
+  clan_id: string;
+
+  @IsUUID()
+  @ApiProperty({ example: '0b071122-8ac2-4886-a8bd-64e1694f3ba7', description: 'Farm Slot ID' })
   farm_slot_id: string;
 
   @IsUUID()
