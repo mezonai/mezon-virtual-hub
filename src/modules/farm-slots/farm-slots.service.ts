@@ -341,9 +341,9 @@ export class FarmSlotService {
     return rate;
   }
 
-  async decreaseToolQuantityInClanWarehouse(toolId: string) {
+  async decreaseToolQuantityInClanWarehouse(clanId:string, toolId: string) {
     const tool = await this.clanWarehouseRepo.findOne({
-      where: { item_id: toolId },
+      where: { clan_id: clanId, item_id: toolId },
     });
 
     if (!tool) throw new NotFoundException('Tool not found');
@@ -360,7 +360,7 @@ export class FarmSlotService {
     return tool;
   }
 
-  async decreasePlantGrowTime(farmSlotId: string, toolId: string) {
+  async decreasePlantGrowTime(clanId: string, farmSlotId: string, toolId: string) {
     const slot = await this.farmSlotRepo.findOne({
       where: { id: farmSlotId },
       relations: ['currentSlotPlant'],
@@ -398,25 +398,15 @@ export class FarmSlotService {
 
     await this.slotPlantRepo.save(plant);
 
-    await this.decreaseToolQuantityInClanWarehouse(toolId);
+    const tool = await this.decreaseToolQuantityInClanWarehouse(clanId, toolId);
 
     return {
       message: `Plant grow time reduced by ${reductionRate * 100}%`,
+      typeTool: tool.type,
       newGrowTimeRemain: PlantCareUtils.calculateGrowRemain(new Date(plant.created_at), plant.grow_time),
       updatedPlantStage: PlantCareUtils.calculatePlantStage(new Date(plant.created_at), plant.grow_time),
     };
   }
-
-  // async protectPlant(farmSlotId: string, toolId: string) {
-  //   const slot = await this.farmSlotRepo.findOne({
-  //     where: { id: farmSlotId },
-  //     relations: ['currentSlotPlant'],
-  //   });
-
-  //   if (!slot?.currentSlotPlant) throw new NotFoundException('No plant on this slot');
-      
-  //   const plant = slot.currentSlotPlant;
-  // }
 
   async waterPlant(userId: string, farmSlotId: string) {
     const slot = await this.farmSlotRepo.findOne({
