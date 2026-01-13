@@ -11,6 +11,8 @@ import { FoodModule } from '@modules/food/food.module';
 import { FoodEntity } from '@modules/food/entity/food.entity';
 import { UserModule } from '@modules/user/user.module';
 import { PetPlayersModule } from '@modules/pet-players/pet-players.module';
+import { ClanWarehouseModule } from '@modules/clan-warehouse/clan-warehouse.module';
+import { PlantModule } from '@modules/plant/plant.module';
 
 @Module({
   imports: [
@@ -20,6 +22,8 @@ import { PetPlayersModule } from '@modules/pet-players/pet-players.module';
     FoodModule,
     UserModule,
     PetPlayersModule,
+    ClanWarehouseModule,
+    PlantModule,
   ],
   providers: [InventoryService],
   controllers: [InventoryController],

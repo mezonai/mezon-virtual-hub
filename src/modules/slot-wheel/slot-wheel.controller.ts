@@ -1,0 +1,58 @@
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
+import { SlotWheelService } from './slot-wheel.service';
+import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
+import { RequireAdmin } from '@libs/decorator';
+import { CreateSlotWheelDto, SlotWheelQueryDto, SpinQueryDto, UpdateSlotWheelDto } from '@modules/slot-wheel/dto/slot-wheel.dto';
+import { SlotWheelType } from '@enum';
+import { ClsService } from 'nestjs-cls';
+import { UserEntity } from '@modules/user/entity/user.entity';
+import { USER_TOKEN } from '@constant';
+
+@ApiTags('Slot Wheel')
+@Controller('slot-wheel')
+@RequireAdmin()
+@ApiBearerAuth()
+export class SlotWheelController {
+  constructor(
+    private readonly slotWheelService: SlotWheelService,
+    private readonly cls: ClsService,
+  ) {}
+
+  @Post()
+  @ApiOperation({
+    summary: 'Create a new slot wheel item',
+  })
+  createSlotWheelItem(@Query() body: CreateSlotWheelDto) {
+    return this.slotWheelService.createSlotWheelItem(body);
+  }
+
+  @Get()
+  @ApiOperation({
+    summary: 'Get list all slot wheel items',
+  })
+  getAll(@Query() query: SlotWheelQueryDto) {
+    return this.slotWheelService.getAll(query);
+  }
+
+  @Get('random')
+  getRandom(@Query() query: SpinQueryDto) {
+    const user = this.cls.get<UserEntity>(USER_TOKEN);
+    return this.slotWheelService.getRandomItems(user, query.type, query.quantity, query.fee);
+  }
+
+  @Patch(':id')
+  @ApiOperation({
+    summary: 'Update a slot wheel item',
+  })
+  updateSlotWheelItem(@Param('id') id: string, @Body() updateSlotWheelDto: UpdateSlotWheelDto) {
+    return this.slotWheelService.updateSlotWheelItem(id, updateSlotWheelDto);
+  }
+
+  @Delete(':id')
+  @ApiOperation({
+    summary: 'Delete a slot wheel item',
+  })
+  deleteSlotWheelItem(@Param('id') id: string) {
+    return this.slotWheelService.deleteSlotWheelItem(id);
+  }
+}

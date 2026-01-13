@@ -24,6 +24,9 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { plainToInstance } from 'class-transformer';
 import { Repository } from 'typeorm';
 import { FoodInventoryResDto, ItemInventoryResDto } from './dto/inventory.dto';
+import { SlotWheelEntity } from '@modules/slot-wheel/entity/slot-wheel.entity';
+import { CLanWarehouseService } from '@modules/clan-warehouse/clan-warehouse.service';
+import { PlantService } from '@modules/plant/plant.service';
 
 @Injectable()
 export class InventoryService extends BaseService<Inventory> {
@@ -38,6 +41,8 @@ export class InventoryService extends BaseService<Inventory> {
     private readonly itemRepository: Repository<ItemEntity>,
     private readonly foodService: FoodService,
     private readonly petPlayerService: PetPlayersService,
+    private readonly clanWarehouseService: CLanWarehouseService,
+    private readonly plantService: PlantService,
   ) {
     super(inventoryRepository, Inventory.name);
   }
@@ -343,6 +348,134 @@ export class InventoryService extends BaseService<Inventory> {
         diamond: user.diamond,
         gold: user.gold,
       });
+    }
+  }
+
+  async awardSpinItemToUser(user: UserEntity, rewardItems: SlotWheelEntity[]) {
+    let goldDelta = 0;
+
+    for (const rewardItem of rewardItems) {
+      switch (rewardItem.type_item) {
+        case RewardItemType.GOLD: {
+          goldDelta += rewardItem.quantity;
+          break;
+        }
+
+        case RewardItemType.ITEM: {
+          if (!rewardItem.item_id) {
+            this.logger.warn(
+              `Reward ITEM missing item_id for user=${user.username}, rewardId=${rewardItem.id}`,
+            );
+          }
+
+          const item = await this.itemRepository.findOne({
+            where: { id: rewardItem.item_id! },
+          });
+
+          if (!item) {
+            this.logger.warn(
+              `Item not found: item_id=${rewardItem.item_id}, user=${user.username}`,
+            );
+            break;
+          }
+
+          let inventoryItem = await this.getUserInventoryItem(
+            user.id,
+            rewardItem.item_id!,
+          );
+
+          if (!inventoryItem) {
+            await this.addItemToInventory(user, item.id);
+          } else if (item.is_stackable) {
+            inventoryItem.quantity += rewardItem.quantity;
+            await this.save(inventoryItem);
+          }
+          break;
+        }
+
+        case RewardItemType.FOOD: {
+          if (!rewardItem.food_id) {
+            this.logger.warn(
+              `Reward FOOD missing food_id for user=${user.username}, rewardId=${rewardItem.id}`,
+            );
+            break;
+          }
+
+          const addedFood = await this.addFoodToInventory(user, rewardItem.food_id, rewardItem.quantity);
+          if (!addedFood) {
+            this.logger.warn(
+              `Food not found: food_id=${rewardItem.food_id}, user=${user.username}`,
+            );
+          }
+          break;
+        }
+
+        case RewardItemType.PET: {
+          if (!rewardItem.pet_id) {
+            this.logger.warn(
+              `Reward PET missing pet_id for user=${user.username}, rewardId=${rewardItem.id}`,
+            );
+            break;
+          }
+
+          const addedPet = await this.petPlayerService.createPetPlayers({
+            room_code: '',
+            user_id: user.id,
+            pet_id: rewardItem.pet_id,
+            current_rarity: rewardItem.pet!.rarity,
+          });
+          if (!addedPet) {
+            this.logger.warn(
+              `Pet not found: pet_id=${rewardItem.pet_id}, user=${user.username}`,
+            );
+          }
+          break;
+        }
+
+        case RewardItemType.PLANT: {
+          if (!rewardItem.plant_id) {
+            this.logger.warn(
+              `Reward Plant missing plant_id for user=${user.username}, rewardId=${rewardItem.id}`,
+            );
+            break;
+          }
+
+          if (!user.clan_id) {
+            const plant = await this.plantService.getPlantById(rewardItem.plant_id);
+            if (!plant) {
+              this.logger.warn(
+                `Plant not found: plant_id=${rewardItem.plant_id}, user=${user.username}`,
+              );
+              break;
+            }
+
+            goldDelta += plant.buy_price * rewardItem.quantity;
+            break;
+          } else {
+            const addedPlants = await this.clanWarehouseService.rewardSeedToClans(
+              user.clan_id!,
+              rewardItem.plant_id,
+              rewardItem.quantity,
+            );
+            if (!addedPlants) {
+              this.logger.warn(
+                `Plant not found: plant_id=${rewardItem.plant_id}, user=${user.username}`,
+              );
+            }
+            break;
+          }
+        }
+
+        default:
+          this.logger.warn(
+            `Unknown slot wheel reward type_item=${rewardItem.type_item}, user=${user.username}, rewardId=${rewardItem.id}`,
+          );
+          break;
+      }
+    }
+    if (goldDelta > 0) {
+      user.gold += goldDelta;
+      await this.userRepository.update(user.id, { gold: user.gold });
     }
   }
 
