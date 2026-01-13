@@ -38,6 +38,7 @@ export class FarmSlotsController {
   @ApiOperation({ summary: 'Decrease the growth time of a plant on a slot' })
   async decreaseGrowthTime(@Body() dto: DecreaseGrowthTimeDto) {
     return this.farmSlotsService.decreasePlantGrowTime(
+      dto.clan_id,
       dto.farm_slot_id,
       dto.tool_clan_warehouse_id,
     );
