@@ -13,7 +13,7 @@ import { ClanFundEntity } from '@modules/clan-fund/entity/clan-fund.entity';
 import { BuyItemDto, SeedClanWarehouseDto } from './dto/clan-warehouse.dto';
 import { ClanActivityService } from '@modules/clan-activity/clan-activity.service';
 import { ItemEntity } from '@modules/item/entity/item.entity';
-import { TOOL_RATE_MAP } from '@constant/farm.constant';
+import { ITEM_CODE_TO_INVENTORY_TYPE, TOOL_RATE_MAP } from '@constant/farm.constant';
 
 @Injectable()
 export class CLanWarehouseService {
@@ -53,7 +53,7 @@ export class CLanWarehouseService {
 
     for (const item of items) {
       if (item.type !== InventoryClanType.PLANT) {
-        if(item.item) {
+        if (item.item) {
           item.item['rate'] = TOOL_RATE_MAP[item.item.item_code!] ?? 0
         }
       }
@@ -72,13 +72,31 @@ export class CLanWarehouseService {
 
     if (!user.clan_id) throw new BadRequestException('User not found clan');
 
-    const plant = await this.plantRepo.findOne({ where: { id: dto.itemId } });
+    if (!dto.plantId && !dto.itemId) {
+      throw new BadRequestException('plantId or itemId is required');
+    }
 
-    let item;
-    if (!plant) {
-      item = await this.itemRepo.findOne({ where: { id: dto.itemId } });
+    if (dto.plantId && dto.itemId) {
+      throw new BadRequestException('Only one of plantId or itemId is allowed');
+    }
 
-      if (!item) throw new NotFoundException('Item not found');
+    let plant: PlantEntity | null = null;
+    let item: ItemEntity | null = null;
+
+    if (dto.plantId) {
+      plant = await this.plantRepo.findOne({
+        where: { id: dto.plantId },
+      });
+    }
+
+    if (!plant && dto.itemId) {
+      item = await this.itemRepo.findOne({
+        where: { id: dto.itemId },
+      });
+    }
+
+    if (!plant && !item) {
+      throw new NotFoundException('Item not found');
     }
 
     const fundRecord = await this.clanFundRepo.findOne({
@@ -86,13 +104,18 @@ export class CLanWarehouseService {
     });
     if (!fundRecord) throw new NotFoundException('Clan fund record not found');
 
-    const totalPrice = plant?.buy_price ? plant.buy_price * dto.quantity : item.gold * dto.quantity;
+    const pricePerUnit = plant
+      ? plant.buy_price
+      : item!.gold;
+
+    const totalPrice = pricePerUnit * dto.quantity;
+
     if (fundRecord.amount < totalPrice)
       throw new BadRequestException('Not enough clan fund');
 
     fundRecord.amount -= totalPrice;
-    fundRecord.spent_amount += totalPrice,
-      await this.clanFundRepo.save(fundRecord);
+    fundRecord.spent_amount += totalPrice;
+    await this.clanFundRepo.save(fundRecord);
 
     let warehouseItem = await this.warehouseRepo.findOne({
       where: {
@@ -108,12 +131,14 @@ export class CLanWarehouseService {
     } else {
       warehouseItem = this.warehouseRepo.create({
         clan_id: user.clan_id,
-        type: dto.type,
+        type: plant
+          ? InventoryClanType.PLANT
+          : ITEM_CODE_TO_INVENTORY_TYPE[item?.item_code!],
         quantity: dto.quantity,
         is_harvested: false,
         purchased_by: user.id,
-        plant_id: plant ? plant.id : undefined,
-        item_id: item ? item.id : undefined,
+        plant_id: plant?.id,
+        item_id: item?.id,
       });
     }
 

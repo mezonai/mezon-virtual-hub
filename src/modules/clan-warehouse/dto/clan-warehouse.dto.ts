@@ -1,4 +1,3 @@
-import { InventoryClanType } from '@enum';
 import { SlotsPlantEntity } from '@modules/slots-plant/entity/slots-plant.entity';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
@@ -15,14 +14,6 @@ export class BuyItemDto {
   @IsUUID()
   itemId?: string;
 
-  @ApiPropertyOptional({
-    enum: InventoryClanType,
-    default: InventoryClanType.PLANT,
-  })
-  @IsOptional()
-  @IsEnum(InventoryClanType)
-  type: InventoryClanType = InventoryClanType.PLANT;
-
   @ApiProperty({ example: 5, minimum: 1 })
   @Type(() => Number)
   @IsInt()
@@ -30,7 +21,6 @@ export class BuyItemDto {
   @Max(100000)
   quantity: number;
 }
-
 
 export class HarvestPlantStatusDto {
   @ApiProperty()

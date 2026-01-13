@@ -350,6 +350,7 @@ export class BaseGameRoom extends Room<RoomState> {
         this.broadcast('onPlayerUpdateGold', responseData);
       }
     });
+
     this.onMessage('onPlayerUpdateDiamond', (client, data) => {
       const { newValue, amountChange, needUpdate } = data;
       if (client?.userData?.diamond != null) {
@@ -371,89 +372,87 @@ export class BaseGameRoom extends Room<RoomState> {
       }
     });
 
-    this.onMessage(
-      'onWithrawDiamond',
-      async (client: AuthenticatedClient, data: WithdrawMezonPayload) => {
-        const user = client.userData;
+    this.onMessage('onWithrawDiamond', async (client: AuthenticatedClient, data: WithdrawMezonPayload) => {
+      const user = client.userData;
 
-        if (!user?.id) {
-          return client.send('onWithdrawFailed', {
-            reason: 'Không xác định được người dùng',
-          });
-        }
+      if (!user?.id) {
+        return client.send('onWithdrawFailed', {
+          reason: 'Không xác định được người dùng',
+        });
+      }
 
-        const result = await this.mezonService.withdrawTokenRequest(
-          data,
-          user.id,
-        );
+      const result = await this.mezonService.withdrawTokenRequest(
+        data,
+        user.id,
+      );
 
-        if (!result.success) {
-          return client.send('onWithdrawFailed', {
-            reason: result.message ?? SYSTEM_ERROR,
-          });
-        }
+      if (!result.success) {
+        return client.send('onWithdrawFailed', {
+          reason: result.message ?? SYSTEM_ERROR,
+        });
+      }
 
-        const responseData = {
-          sessionId: client.sessionId,
-          amountChange: data.amount,
-        };
+      const responseData = {
+        sessionId: client.sessionId,
+        amountChange: data.amount,
+      };
 
-        this.broadcast('onWithrawDiamond', responseData);
-      },
+      this.broadcast('onWithrawDiamond', responseData);
+    },
     );
 
     this.onMessage('onExchangeDiamondToCoin', async (client: AuthenticatedClient, data) => {
-        const { diamondTransfer } = data;
-        const userId = client.userData?.id;
+      const { diamondTransfer } = data;
+      const userId = client.userData?.id;
 
-        if (!userId) {
-          return client.send('onExchangeFailed', {
-            reason: 'Không xác định được người dùng',
-          });
-        }
-
-        const user = await this.userRepository.findOne({
-          where: { id: userId },
+      if (!userId) {
+        return client.send('onExchangeFailed', {
+          reason: 'Không xác định được người dùng',
         });
+      }
 
-        if (!user) {
-          return client.send('onExchangeFailed', {
-            reason: 'Không tìm thấy thông tin người dùng',
-          });
-        }
+      const user = await this.userRepository.findOne({
+        where: { id: userId },
+      });
 
-        if (user.diamond < diamondTransfer) {
-          return client.send('onExchangeFailed', {
-            reason: 'Không đủ diamond để quy đổi',
-          });
-        }
+      if (!user) {
+        return client.send('onExchangeFailed', {
+          reason: 'Không tìm thấy thông tin người dùng',
+        });
+      }
 
-        const coinToAdd = Math.floor(diamondTransfer / EXCHANGERATE);
-        if (coinToAdd <= 0) {
-          return client.send('onExchangeFailed', {
-            reason: 'Không đủ diamond để quy đổi',
-          });
-        }
+      if (user.diamond < diamondTransfer) {
+        return client.send('onExchangeFailed', {
+          reason: 'Không đủ diamond để quy đổi',
+        });
+      }
 
-        const newGold = user.gold + coinToAdd;
-        const newDiamond = user.diamond - diamondTransfer;
-        const responseData = {
-          sessionId: client.sessionId,
-          coinChange: coinToAdd,
-          diamondChange: -diamondTransfer,
-        };
-        this.broadcast('onExchangeDiamondToCoin', responseData);
-        try {
-          await this.userRepository.update(userId, {
-            gold: newGold,
-            diamond: newDiamond,
-          });
-        } catch (err) {
-          return client.send('onExchangeFailed', {
-            reason: 'Lỗi hệ thống khi cập nhật dữ liệu. Vui lòng thử lại.',
-          });
-        }
-      },
+      const coinToAdd = Math.floor(diamondTransfer / EXCHANGERATE);
+      if (coinToAdd <= 0) {
+        return client.send('onExchangeFailed', {
+          reason: 'Không đủ diamond để quy đổi',
+        });
+      }
+
+      const newGold = user.gold + coinToAdd;
+      const newDiamond = user.diamond - diamondTransfer;
+      const responseData = {
+        sessionId: client.sessionId,
+        coinChange: coinToAdd,
+        diamondChange: -diamondTransfer,
+      };
+      this.broadcast('onExchangeDiamondToCoin', responseData);
+      try {
+        await this.userRepository.update(userId, {
+          gold: newGold,
+          diamond: newDiamond,
+        });
+      } catch (err) {
+        return client.send('onExchangeFailed', {
+          reason: 'Lỗi hệ thống khi cập nhật dữ liệu. Vui lòng thử lại.',
+        });
+      }
+    },
     );
 
     this.onMessage('p2pAction', (sender, data) => {
@@ -773,6 +772,7 @@ export class BaseGameRoom extends Room<RoomState> {
         this.broadcast('onUseItem', message);
       }
     });
+
     this.onMessage('catchPet', async (client: AuthenticatedClient, message) => {
       if (client.userData == null) return;
       this.petQueueManager.handleCatchRequest(
@@ -782,6 +782,7 @@ export class BaseGameRoom extends Room<RoomState> {
       );
       QuestEventEmitter.emitProgress(client.userData.id, QuestType.CATCH_PETS, 1);
     });
+
     this.onMessage('sendPetFollowPlayer', async (client, data) => {
       const { pets } = data;
       if (!Array.isArray(pets)) return;
@@ -815,18 +816,17 @@ export class BaseGameRoom extends Room<RoomState> {
         console.error(`[sendPetFollowPlayer] Failed to update DB`, err);
       }
     });
-    this.petQueueManager = new PetQueueManager(
-      this,
-      async (playerId, petId, foodId) => {
-        const client = this.clients.find((c) => c.sessionId === playerId);
-        if (!client) return false;
-        return await this.petPlayersService.catchPetPlayers(
-          petId,
-          client.userData,
-          foodId,
-        );
-      },
-    );
+
+    this.petQueueManager = new PetQueueManager(this, async (playerId, petId, foodId) => {
+      const client = this.clients.find((c) => c.sessionId === playerId);
+      if (!client) return false;
+      return await this.petPlayersService.catchPetPlayers(
+        petId,
+        client.userData,
+        foodId,
+      );
+    });
+
     this.onMessage('sendTouchPet', async (client, data) => {
       const {
         touchPlayerId,
@@ -852,6 +852,7 @@ export class BaseGameRoom extends Room<RoomState> {
       };
       this.petQueueManager.addPetTouch(targetPetId, handler);
     });
+
     this.onMessage(MessageTypes.END_BATTLE, (sender, data) => {
       const playerEnd = this.state.players.get(sender.sessionId);
       this.playersInBattle.delete(sender.sessionId);
@@ -861,6 +862,7 @@ export class BaseGameRoom extends Room<RoomState> {
         playerUpdateStatusBattle: sender.sessionId,
       });
     });
+
     this.spawnPetInRoom();
 
     this.onMessage(MessageTypes.SEND_CLAN_FUND, async (client, payload) => {
@@ -904,70 +906,78 @@ export class BaseGameRoom extends Room<RoomState> {
       });
     });
 
-    this.onMessage(MessageTypes.ON_BUY_CLAN_ITEM, async (client, payload: { itemId: string; quantity: number; type: InventoryClanType }) => {
-        const player = this.state.players.get(client.sessionId);
-        const user = player &&
-          (await this.userRepository.findOne({
-            where: { id: player.user_id },
-          }));
+    this.onMessage(MessageTypes.ON_BUY_CLAN_ITEM, async (client, payload: { itemId?: string; plantId?: string; quantity: number }) => {
+      const player = this.state.players.get(client.sessionId);
+      const user = player &&
+        (await this.userRepository.findOne({
+          where: { id: player.user_id },
+        }));
 
-        if (!payload.itemId || typeof payload.itemId !== 'string') {
-          client.send(MessageTypes.ON_BUY_CLAN_ITEM_FAILED, {
-            message: 'ItemId không hợp lệ',
-          });
-          return;
-        }
-        if (
-          !payload.quantity ||
-          typeof payload.quantity !== 'number' ||
-          payload.quantity <= 0
-        ) {
-          client.send(MessageTypes.ON_BUY_CLAN_ITEM_FAILED, {
-            message: 'Số lượng phải lớn hơn 0',
-          });
-          return;
-        }
-        if (
-          !player ||
-          !user ||
-          !user.clan_id
-        ) {
-          client.send(MessageTypes.ON_BUY_CLAN_ITEM_FAILED, {
-            message: !player
-              ? 'Không tìm thấy người chơi'
-              : !user
-                ? 'Không tìm thấy thông tin người dùng'
-                : 'Người dùng chưa thuộc clan nào'
-          });
-          return;
-        }
+      const hasPlantId = typeof payload.plantId === 'string';
+      const hasItemId = typeof payload.itemId === 'string';
 
-        try {
-          const result = await this.cLanWarehouseService.buyItemsForClanFarm(
-            user,
-            {
-              itemId: payload.itemId,
-              quantity: payload.quantity,
-              type: payload.type,
-            },
-          );
+      if (!hasPlantId && !hasItemId) {
+        client.send(MessageTypes.ON_BUY_CLAN_ITEM_FAILED, {
+          message: 'plantId hoặc itemId là bắt buộc',
+        });
+        return;
+      }
 
-          client.send(MessageTypes.ON_BUY_CLAN_ITEM_SUCCESS, {
-            clanId: user.clan_id,
-            item: result.item,
-            fund: result.fund,
-          });
+      if (hasPlantId && hasItemId) {
+        client.send(MessageTypes.ON_BUY_CLAN_ITEM_FAILED, {
+          message: 'Chỉ được truyền plantId hoặc itemId',
+        });
+        return;
+      }
 
-          this.broadcast(MessageTypes.ON_BUY_CLAN_UPDATE_FUND, {
-            clanId: user.clan_id,
-            fund: result.fund,
-          });
-        } catch (err) {
-          client.send(MessageTypes.ON_BUY_CLAN_ITEM_FAILED, {
-            message: err instanceof Error ? err.message : 'Lỗi không xác định',
-          });
-        }
-      },
+      if (!Number.isInteger(payload.quantity) || payload.quantity <= 0) {
+        client.send(MessageTypes.ON_BUY_CLAN_ITEM_FAILED, {
+          message: 'Số lượng phải là số nguyên lớn hơn 0',
+        });
+        return;
+      }
+
+      if (
+        !player ||
+        !user ||
+        !user.clan_id
+      ) {
+        client.send(MessageTypes.ON_BUY_CLAN_ITEM_FAILED, {
+          message: !player
+            ? 'Không tìm thấy người chơi'
+            : !user
+              ? 'Không tìm thấy thông tin người dùng'
+              : 'Người dùng chưa thuộc clan nào'
+        });
+        return;
+      }
+
+      try {
+        const result = await this.cLanWarehouseService.buyItemsForClanFarm(
+          user,
+          {
+            itemId: payload.itemId,
+            plantId: payload.plantId,
+            quantity: payload.quantity,
+          },
+        );
+
+        client.send(MessageTypes.ON_BUY_CLAN_ITEM_SUCCESS, {
+          clanId: user.clan_id,
+          item: result.item,
+          fund: result.fund,
+        });
+
+        this.broadcast(MessageTypes.ON_BUY_CLAN_UPDATE_FUND, {
+          clanId: user.clan_id,
+          fund: result.fund,
+        });
+      } catch (err) {
+        client.send(MessageTypes.ON_BUY_CLAN_ITEM_FAILED, {
+          message: err instanceof Error ? err.message : 'Lỗi không xác định',
+        });
+      }
+    },
     );
 
     //combat
@@ -1181,6 +1191,7 @@ export class BaseGameRoom extends Room<RoomState> {
   removePet(petId: string) {
     this.state.pets.delete(petId);
   }
+
   spawnPetInRoom() {
     this.handlePetAsync().then(() => {
       if (this.state.pets.size === 0) {
@@ -1195,6 +1206,7 @@ export class BaseGameRoom extends Room<RoomState> {
       }, 100);
     });
   }
+
   async createBattleRoom(player1Id: string, player2Id: string, valueChallenge: number, isDiamond: boolean) {
     try {
       const room = await matchMaker.createRoom(this.batteRoomName, {
