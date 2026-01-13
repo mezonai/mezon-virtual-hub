@@ -44,7 +44,7 @@ export class CLanWarehouseService {
       .leftJoinAndSelect('w.item', 'item')
       .where('w.clan_id = :clanId', { clanId })
       .andWhere('w.quantity > 0')
-      .orderBy('plant.harvest_point', 'DESC')
+      .orderBy('plant.buy_price', 'ASC')
       .getMany();
 
     if (items.length === 0) {
