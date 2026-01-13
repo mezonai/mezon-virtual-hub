@@ -47,6 +47,8 @@ import { GameConfigModule } from './modules/admin/game-config/game-config.module
 import { NumberRarityModule } from '@modules/number-rarity/number-rarity.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { SlotWheelModule } from './modules/slot-wheel/slot-wheel.module';
+import { FragmentModule } from './modules/fragment/fragment.module';
+import { FragmentItemModule } from '@modules/fragment-item/fragment-item.module';
 
 @Module({
   imports: [
@@ -104,6 +106,8 @@ import { SlotWheelModule } from './modules/slot-wheel/slot-wheel.module';
     GameConfigModule,
     NumberRarityModule,
     SlotWheelModule,
+    FragmentModule,
+    FragmentItemModule,
   ],
 })
 export class AppModule {}
