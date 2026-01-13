@@ -8,11 +8,12 @@ import { In, IsNull, MoreThan, Repository } from 'typeorm';
 import { ClanWarehouseEntity } from './entity/clan-warehouse.entity';
 import { PlantEntity } from '@modules/plant/entity/plant.entity';
 import { UserEntity } from '@modules/user/entity/user.entity';
-import { ClanActivityActionType, ClanFundType, ClanRole } from '@enum';
+import { ClanActivityActionType, ClanFundType, ClanRole, InventoryClanType } from '@enum';
 import { ClanFundEntity } from '@modules/clan-fund/entity/clan-fund.entity';
 import { BuyItemDto, SeedClanWarehouseDto } from './dto/clan-warehouse.dto';
 import { ClanActivityService } from '@modules/clan-activity/clan-activity.service';
 import { ItemEntity } from '@modules/item/entity/item.entity';
+import { TOOL_RATE_MAP } from '@constant/farm.constant';
 
 @Injectable()
 export class CLanWarehouseService {
@@ -45,6 +46,18 @@ export class CLanWarehouseService {
       .andWhere('w.quantity > 0')
       .orderBy('plant.harvest_point', 'DESC')
       .getMany();
+
+    if (items.length === 0) {
+      throw new NotFoundException('No items found in clan warehouse');
+    }
+
+    for (const item of items) {
+      if (item.type !== InventoryClanType.PLANT) {
+        if(item.item) {
+          item.item['rate'] = TOOL_RATE_MAP[item.item.item_code!] ?? 0
+        }
+      }
+    }
 
     return {
       clanId,
