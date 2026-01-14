@@ -25,6 +25,7 @@ export enum ItemType {
   PET_CARD = 'pet_card',
   PET_FOOD = 'pet_food',
   FARM_TOOL = 'farm_tool',
+  PET_FRAGMENT = 'pet_fragment',
 }
 
 export enum ItemTypeCloth {
@@ -58,6 +59,10 @@ export enum ItemCode {
   INTERRUPT_HARVEST_TOOL_3 = 'interrupt_harvest_tool_3',
   INTERRUPT_HARVEST_TOOL_4 = 'interrupt_harvest_tool_4',
   INTERRUPT_HARVEST_TOOL_5 = 'interrupt_harvest_tool_5',
+  PET_FRAGMENT_1 = 'pet_fragment_1',
+  PET_FRAGMENT_2 = 'pet_fragment_2',
+  PET_FRAGMENT_3 = 'pet_fragment_3',
+  PET_FRAGMENT_4 = 'pet_fragment_4',
   // Cosmetic items ....
 }
 
