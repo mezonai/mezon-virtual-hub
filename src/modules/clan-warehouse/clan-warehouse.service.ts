@@ -4,13 +4,13 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, IsNull, MoreThan, Repository } from 'typeorm';
+import { In, IsNull, Repository } from 'typeorm';
 import { ClanWarehouseEntity } from './entity/clan-warehouse.entity';
 import { PlantEntity } from '@modules/plant/entity/plant.entity';
 import { UserEntity } from '@modules/user/entity/user.entity';
-import { ClanActivityActionType, ClanFundType, ClanRole, InventoryClanType } from '@enum';
+import { ClanActivityActionType, ClanFundType, InventoryClanType } from '@enum';
 import { ClanFundEntity } from '@modules/clan-fund/entity/clan-fund.entity';
-import { BuyItemDto, SeedClanWarehouseDto } from './dto/clan-warehouse.dto';
+import { BuyItemDto, GetAllItemsInWarehouseQueryDto, SeedClanWarehouseDto } from './dto/clan-warehouse.dto';
 import { ClanActivityService } from '@modules/clan-activity/clan-activity.service';
 import { ItemEntity } from '@modules/item/entity/item.entity';
 import { ITEM_CODE_TO_INVENTORY_TYPE, TOOL_RATE_MAP } from '@constant/farm.constant';
@@ -33,19 +33,49 @@ export class CLanWarehouseService {
     private readonly clanActivityService: ClanActivityService
   ) {}
 
-  async getAllItemsInWarehouse(clanId: string) {
-    if (!clanId) {
+  async getAllItemsInWarehouse(query: GetAllItemsInWarehouseQueryDto) {
+    if (!query.clanId) {
       throw new BadRequestException('Clan ID not found');
     }
 
-    const items = await this.warehouseRepo
+    const qb = await this.warehouseRepo
       .createQueryBuilder('w')
       .leftJoinAndSelect('w.plant', 'plant')
       .leftJoinAndSelect('w.item', 'item')
-      .where('w.clan_id = :clanId', { clanId })
+      .where('w.clan_id = :clanId', { clanId: query.clanId })
       .andWhere('w.quantity > 0')
-      .orderBy('plant.buy_price', 'ASC')
-      .getMany();
+
+    if (query.type === 'Plant') {
+      qb.andWhere('w.type = :plantType', {
+        plantType: InventoryClanType.PLANT,
+      });
+
+      if (query.is_harvested !== undefined) {
+        qb.andWhere('w.is_harvested = :isHarvested', {
+          isHarvested: query.is_harvested,
+        });
+      }
+
+      qb.addOrderBy('plant.buy_price', 'ASC');
+    }
+
+    if (query.type === 'Tool') {
+      qb.andWhere('w.type != :plantType', {
+        plantType: InventoryClanType.PLANT,
+      });
+
+      qb.addOrderBy(`
+        CASE
+          WHEN w.type::text LIKE 'harvest_tool_%' THEN 1
+          WHEN w.type::text LIKE 'growth_plant_tool_%' THEN 2
+          WHEN w.type::text LIKE 'interrupt_harvest_tool_%' THEN 3
+          ELSE 99
+        END
+      `, 'ASC')
+      .addOrderBy('item.gold', 'ASC');
+    }
+
+    const items = await qb.getMany();
 
     if (items.length === 0) {
       throw new NotFoundException('No items found in clan warehouse');
@@ -60,7 +90,7 @@ export class CLanWarehouseService {
     }
 
     return {
-      clanId,
+      clanId: query.clanId,
       totalItems: items.length,
       items,
     };
@@ -198,6 +228,11 @@ export class CLanWarehouseService {
     warehouseItem.quantity += quantity;
     if (warehouseItem.quantity < 0) {
       throw new BadRequestException('Insufficient quantity in clan warehouse');
+    }
+
+    if (warehouseItem.quantity === 0) {
+      await this.warehouseRepo.remove(warehouseItem);
+      return null;
     }
 
     return await this.warehouseRepo.save(warehouseItem);
