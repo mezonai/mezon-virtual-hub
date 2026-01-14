@@ -2,13 +2,12 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { BaseService } from '@libs/base/base.service';
 import { FragmentEntity } from '@modules/fragment/entity/fragment.entity';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 import { Inventory } from '@modules/inventory/entity/inventory.entity';
 import { UserEntity } from '@modules/user/entity/user.entity';
 import { InventoryService } from '@modules/inventory/inventory.service';
 import { PetPlayersService } from '@modules/pet-players/pet-players.service';
-import { CreateFragmentDto, UpdateFragmentDto } from '@modules/fragment/dto/fragment.dto';
-import { ExchangeFragmentDto } from '@modules/slot-wheel/dto/slot-wheel.dto';
+import { CreateFragmentDto, ExchangeFragmentDto, UpdateFragmentDto } from '@modules/fragment/dto/fragment.dto';
 import { ItemType } from '@enum';
 import { ItemEntity } from '@modules/item/entity/item.entity';
 
