@@ -825,7 +825,7 @@ export class FarmRoom extends BaseGameRoom {
     if (!Player) return;
 
     const slot = this.state.farmSlotState.get(slotId);
-    if (!slot || !slot.currentPlant) return;
+    if (!slot || !slot.currentPlant || slot.harvestingBy !== sessionId ) return;
 
     this.harvestTimers.delete(slotId);
     Player.isHarvesting = false;
