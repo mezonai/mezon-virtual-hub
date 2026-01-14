@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Body, Query, BadRequestException, Param, ParseUUIDPipe} from '@nestjs/common';
 import {ApiBearerAuth, ApiOperation, ApiTags, ApiQuery} from '@nestjs/swagger';
 import { CLanWarehouseService } from './clan-warehouse.service';
-import { BuyItemDto, SeedClanWarehouseDto } from './dto/clan-warehouse.dto';
+import { BuyItemDto, GetAllItemsInWarehouseQueryDto, SeedClanWarehouseDto } from './dto/clan-warehouse.dto';
 import { UserEntity } from '@modules/user/entity/user.entity';
 import { USER_TOKEN } from '@constant';
 import { ClsService } from 'nestjs-cls';
@@ -20,17 +20,9 @@ export class ClanWarehouseController {
   @Get()
   @ApiOperation({ summary: 'Get all item in warehouse for a clan' })
   async getAllItemsInWarehouse(
-    @Param('clan_id', ParseUUIDPipe) clanId: string,
+    @Query() query: GetAllItemsInWarehouseQueryDto
   ) {
-    return this.farmWarehouseService.getAllItemsInWarehouse(clanId);
-  }
-
-  @Get('items-for-planting')
-  @ApiOperation({ summary: 'Get all item for planting' })
-  async getItemsForPlanting(
-    @Param('clan_id', ParseUUIDPipe)clanId: string,
-  ) {
-    return this.farmWarehouseService.getItemsForPlant(clanId);
+    return this.farmWarehouseService.getAllItemsInWarehouse(query);
   }
 
   @Post('buy-items-clan')

@@ -29,7 +29,6 @@ type ClanItemCode =
   | ItemCode.INTERRUPT_HARVEST_TOOL_4
   | ItemCode.INTERRUPT_HARVEST_TOOL_5
 
-
 export const ITEM_CODE_TO_INVENTORY_TYPE: Record<ClanItemCode, InventoryClanType> = {
   [ItemCode.HARVEST_TOOL_1]: InventoryClanType.HARVEST_TOOL_1,
   [ItemCode.HARVEST_TOOL_2]: InventoryClanType.HARVEST_TOOL_2,

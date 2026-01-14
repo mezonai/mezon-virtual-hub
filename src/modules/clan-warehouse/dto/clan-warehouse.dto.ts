@@ -1,7 +1,32 @@
 import { SlotsPlantEntity } from '@modules/slots-plant/entity/slots-plant.entity';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
-import { IsInt, Min, IsUUID, IsOptional, IsEnum, Max, IsArray } from 'class-validator';
+import { Transform, Type } from 'class-transformer';
+import { IsInt, Min, IsUUID, IsOptional, Max, IsArray, IsEnum, IsBoolean, IsIn } from 'class-validator';
+
+export class GetAllItemsInWarehouseQueryDto {
+  @ApiProperty({ description: 'Clan ID (UUID)' })
+  @IsUUID()
+  clanId: string;
+
+  @ApiPropertyOptional({
+    description: 'Filter item type: Plant or Tool',
+    enum: ['Plant', 'Tool'],
+  })
+  @IsOptional()
+  @IsIn(['Plant', 'Tool'])
+  type?: 'Plant' | 'Tool';
+
+  @ApiPropertyOptional({
+    description: 'Filter harvested plant (only for Plant)',
+  })
+  @IsOptional()
+  @Transform(({ value }) => {
+    if (value === undefined) return undefined;
+    return value === 'true';
+  })
+  @IsBoolean()
+  is_harvested?: boolean;
+}
 
 export class BuyItemDto {
   @ApiPropertyOptional({ description: 'Plant ID (UUID)' })
