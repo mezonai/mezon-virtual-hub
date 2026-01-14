@@ -1,5 +1,5 @@
 import { RewardItemType, SlotWheelType } from "@enum";
-import { ApiProperty, ApiPropertyOptional, PartialType } from "@nestjs/swagger";
+import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 import { Type } from "class-transformer";
 import { IsEnum, IsNumber, IsOptional, IsUUID } from "class-validator";
 

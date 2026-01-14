@@ -19,6 +19,7 @@ import {
   CreateFragmentDto,
   UpdateFragmentDto,
 } from '@modules/fragment/dto/fragment.dto';
+import { ExchangeFragmentDto } from '@modules/slot-wheel/dto/slot-wheel.dto';
 import { ClsService } from 'nestjs-cls';
 import { USER_TOKEN } from '@constant';
 import { UserEntity } from '@modules/user/entity/user.entity';
@@ -84,5 +85,12 @@ export class FragmentController {
   assembleFragment(@Param('id') fragmentId: string) {
     const user = this.cls.get<UserEntity>(USER_TOKEN);
     return this.fragmentService.assembleFragment(user, fragmentId);
+  }
+
+  @Post(':id/exchange')
+  @ApiOperation({ summary: 'Exchange excess fragment items' })
+  exchangeFragmentItems(@Query() dto: ExchangeFragmentDto) {
+    const user = this.cls.get<UserEntity>(USER_TOKEN);
+    return this.fragmentService.exchangeFragmentItems(user, dto);
   }
 }

@@ -179,12 +179,26 @@ export class InventoryService extends BaseService<Inventory> {
     itemId: string,
     quantity = 1,
   ): Promise<Inventory> {
+
+    const existingInventory = await this.inventoryRepository.findOne({
+      where: {
+        user: { id: user.id },
+        item: { id: itemId },
+      },
+    });
+
+    if (existingInventory) {
+      existingInventory.quantity += quantity;
+      return await this.inventoryRepository.save(existingInventory);
+    }
+
     const newInventoryItem = this.inventoryRepository.create({
-      user,
+      user: { id: user.id },
       item: { id: itemId },
       quantity,
       inventory_type: InventoryType.ITEM,
     });
+
     return await this.inventoryRepository.save(newInventoryItem);
   }
 
