@@ -8,6 +8,9 @@ import { UserEntity } from '@modules/user/entity/user.entity';
 import { InventoryService } from '@modules/inventory/inventory.service';
 import { PetPlayersService } from '@modules/pet-players/pet-players.service';
 import { CreateFragmentDto, UpdateFragmentDto } from '@modules/fragment/dto/fragment.dto';
+import { ExchangeFragmentDto } from '@modules/slot-wheel/dto/slot-wheel.dto';
+import { ItemType } from '@enum';
+import { ItemEntity } from '@modules/item/entity/item.entity';
 
 @Injectable()
 export class FragmentService extends BaseService<FragmentEntity> {
@@ -17,6 +20,8 @@ export class FragmentService extends BaseService<FragmentEntity> {
     private readonly fragmentRepo: Repository<FragmentEntity>,
     @InjectRepository(Inventory)
     private readonly inventoryRepo: Repository<Inventory>,
+    @InjectRepository(ItemEntity)
+    private readonly itemRepo: Repository<ItemEntity>,
     private readonly inventoryService: InventoryService,
     private readonly petPlayersService: PetPlayersService,
   ) {
@@ -97,6 +102,104 @@ export class FragmentService extends BaseService<FragmentEntity> {
     return {
       success: true,
       pet: fragment.pet,
+    };
+  }
+
+  async randomFragmentItemByFragmentId(fragmentId: string): Promise<string> {
+    const fragment = await this.getFragmentById(fragmentId);
+
+    if (!fragment.fragmentItems?.length) {
+      throw new BadRequestException('Fragment has no fragment items');
+    }
+
+    const randomFragmentItem =
+      fragment.fragmentItems[
+      Math.floor(Math.random() * fragment.fragmentItems.length)
+      ];
+
+    return randomFragmentItem.item.id;
+  }
+
+  async exchangeFragmentItems(user: UserEntity, dto: ExchangeFragmentDto) {
+    const { minExchange, fragmentId } = dto;
+
+    const ownFragmentsInventory = await this.inventoryService.getItemsByType(
+      user,
+      ItemType.PET_FRAGMENT,
+    );
+
+    if (!ownFragmentsInventory.length) {
+      throw new BadRequestException('No fragment found');
+    }
+
+    const excessList = ownFragmentsInventory
+      .map(f => ({
+        itemId: f.item.id,
+        excessQuantity: Math.max(0, f.quantity - 1),
+      }))
+      .filter(f => f.excessQuantity > 0);
+
+    if (!excessList.length) {
+      throw new BadRequestException('No excess fragment');
+    }
+
+    const pool: string[] = [];
+
+    for (const f of excessList) {
+      for (let i = 0; i < f.excessQuantity; i++) {
+        pool.push(f.itemId);
+      }
+    }
+
+    if (pool.length < minExchange) {
+      throw new BadRequestException('Not enough fragment excess');
+    }
+
+    for (let i = pool.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [pool[i], pool[j]] = [pool[j], pool[i]];
+    }
+
+    const selected = pool.slice(0, minExchange);
+
+    const takenMap: Record<string, number> = {};
+    for (const itemId of selected) {
+      takenMap[itemId] = (takenMap[itemId] || 0) + 1;
+    }
+
+    let removedListFragmentItem: ItemEntity[] = [];
+
+    for (const [fragmentItemId, taken] of Object.entries(takenMap)) {
+      const fragmentInventory = await this.inventoryRepo.findOne({
+        where: {
+          user: { id: user.id },
+          item: { id: fragmentItemId }
+        },
+        relations: ['item'],
+      });
+
+      if (!fragmentInventory?.item) {
+        throw new NotFoundException('Inventory not found for fragment');
+      }
+
+      fragmentInventory.quantity -= taken;
+
+      await this.inventoryRepo.save(fragmentInventory);
+      fragmentInventory.item['takenQuantity'] = taken;
+      removedListFragmentItem.push(fragmentInventory.item);
+    }
+
+    const rewardItemId = await this.randomFragmentItemByFragmentId(fragmentId);
+    const rewardItem = await this.itemRepo.findOne({ where: { id: rewardItemId } });
+    if (!rewardItem) {
+      throw new NotFoundException('Reward item not found');
+    }
+
+    await this.inventoryService.addItemToInventory(user, rewardItemId);
+
+    return {
+      removed: removedListFragmentItem,
+      reward: rewardItem,
     };
   }
 

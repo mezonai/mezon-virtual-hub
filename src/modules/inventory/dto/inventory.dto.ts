@@ -28,6 +28,9 @@ export class InventoryDto {
   @Expose()
   @Type(() => FoodDto)
   food: FoodDto;
+
+  @Expose()
+  quantity: number;
 }
 
 export class FoodInventoryResDto extends OmitType(InventoryDto, ['item']) {

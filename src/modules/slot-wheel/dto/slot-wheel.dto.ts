@@ -43,6 +43,25 @@ export class SpinQueryDto {
   fee?: number = 100;
 }
 
+export class ExchangeFragmentDto {
+  @ApiProperty({
+    description: 'Fragment ID to random reward from',
+    example: '550e8400-e29b-41d4-a716-446655440000',
+  })
+  @IsUUID()
+  fragmentId: string;
+
+  @ApiProperty({
+    description: 'Minimum fragments to exchange',
+    type: Number,
+    default: 3,
+  })
+  @IsNumber()
+  @Type(() => Number)
+  minExchange: number = 3;
+}
+
+
 export class CreateSlotWheelDto {
   @ApiProperty({ enum: SlotWheelType })
   @IsEnum(SlotWheelType)
