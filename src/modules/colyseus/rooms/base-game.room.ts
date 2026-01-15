@@ -906,7 +906,7 @@ export class BaseGameRoom extends Room<RoomState> {
       });
     });
 
-    this.onMessage(MessageTypes.ON_BUY_CLAN_ITEM, async (client, payload: { itemId?: string; plantId?: string; quantity: number }) => {
+    this.onMessage(MessageTypes.ON_BUY_CLAN_ITEM, async (client, payload: { recipeId?: string; plantId?: string; quantity: number }) => {
       const player = this.state.players.get(client.sessionId);
       const user = player &&
         (await this.userRepository.findOne({
@@ -914,18 +914,18 @@ export class BaseGameRoom extends Room<RoomState> {
         }));
 
       const hasPlantId = typeof payload.plantId === 'string';
-      const hasItemId = typeof payload.itemId === 'string';
+      const hasRecipeId = typeof payload.recipeId === 'string';
 
-      if (!hasPlantId && !hasItemId) {
+      if (!hasPlantId && !hasRecipeId) {
         client.send(MessageTypes.ON_BUY_CLAN_ITEM_FAILED, {
-          message: 'plantId hoặc itemId là bắt buộc',
+          message: 'plantId hoặc recipeId là bắt buộc',
         });
         return;
       }
 
-      if (hasPlantId && hasItemId) {
+      if (hasPlantId && hasRecipeId) {
         client.send(MessageTypes.ON_BUY_CLAN_ITEM_FAILED, {
-          message: 'Chỉ được truyền plantId hoặc itemId',
+          message: 'Chỉ được truyền plantId hoặc recipeId',
         });
         return;
       }
@@ -956,7 +956,7 @@ export class BaseGameRoom extends Room<RoomState> {
         const result = await this.cLanWarehouseService.buyItemsForClanFarm(
           user,
           {
-            itemId: payload.itemId,
+            recipeId: payload.recipeId,
             plantId: payload.plantId,
             quantity: payload.quantity,
           },
