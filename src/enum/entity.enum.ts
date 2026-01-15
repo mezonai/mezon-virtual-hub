@@ -28,6 +28,12 @@ export enum ItemType {
   PET_FRAGMENT = 'pet_fragment',
 }
 
+export enum RecipeType {
+  PET = 'pet',
+  FARM_TOOL = 'farm_tool',
+  PLANT = 'plant',
+}
+
 export enum ItemTypeCloth {
   Hair = 1,
   Hat = 2,

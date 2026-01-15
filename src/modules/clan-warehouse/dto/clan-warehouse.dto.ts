@@ -34,10 +34,10 @@ export class BuyItemDto {
   @IsUUID()
   plantId?: string;
 
-  @ApiPropertyOptional({ description: 'Item ID (UUID)' })
+  @ApiPropertyOptional({ description: 'Recipe ID (UUID)' })
   @IsOptional()
   @IsUUID()
-  itemId?: string;
+  recipeId?: string;
 
   @ApiProperty({ example: 5, minimum: 1 })
   @Type(() => Number)
