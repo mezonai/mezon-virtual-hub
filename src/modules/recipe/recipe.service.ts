@@ -31,6 +31,7 @@ export class RecipeService extends BaseService<RecipeEntity> {
       .leftJoinAndSelect('recipe.item', 'item')
       .leftJoinAndSelect('recipe.pet', 'pet')
       .leftJoinAndSelect('recipe.plant', 'plant')
+      .leftJoinAndSelect('recipe.pet_clan', 'pet_clan')
       .leftJoinAndSelect('recipe.ingredients', 'ingredients')
       .leftJoinAndSelect('ingredients.item', 'ingredient_items')
       .leftJoinAndSelect('ingredients.plant', 'ingredient_plants')
@@ -60,7 +61,7 @@ export class RecipeService extends BaseService<RecipeEntity> {
   async getRecipeById(id: string) {
     const recipe = await this.recipeRepo.findOne({
       where: { id },
-      relations: ['ingredients', 'ingredients.item', 'ingredients.plant', 'pet', 'item', 'plant'],
+      relations: ['ingredients', 'ingredients.item', 'ingredients.plant', 'pet', 'item', 'plant', 'pet_clan'],
     });
 
     if (!recipe) {
@@ -95,9 +96,33 @@ export class RecipeService extends BaseService<RecipeEntity> {
       }
     }
 
+    if (dto.plant_id) {
+      const existingPlantRecipe = await this.recipeRepo.findOne({
+        where: { plant_id: dto.plant_id },
+      });
+      if (existingPlantRecipe) {
+        throw new BadRequestException(
+          'A recipe for this plant already exists',
+        );
+      }
+    }
+
+    if (dto.pet_clan_id) {
+      const existingPetClanRecipe = await this.recipeRepo.findOne({
+        where: { pet_clan_id: dto.pet_clan_id },
+      });
+      if (existingPetClanRecipe) {
+        throw new BadRequestException(
+          'A recipe for this pet clan already exists',
+        );
+      }
+    }
+
     const recipe = this.recipeRepo.create({
       pet_id: dto.pet_id ?? dto.pet_id,
       item_id: dto.item_id ?? dto.item_id,
+      plant_id: dto.plant_id ?? dto.plant_id,
+      pet_clan_id: dto.pet_clan_id ?? dto.pet_clan_id,
       type: dto.type,
     });
 

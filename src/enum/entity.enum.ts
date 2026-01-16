@@ -32,6 +32,7 @@ export enum RecipeType {
   PET = 'pet',
   FARM_TOOL = 'farm_tool',
   PLANT = 'plant',
+  PET_CLAN = 'pet_clan',
 }
 
 export enum ItemTypeCloth {
@@ -142,6 +143,13 @@ export enum PetType {
   WATER = 'water',
   ELECTRIC = 'electric',
   GRASS = 'grass',
+  DRAGON = 'dragon',
+}
+
+export enum PetClanType {
+  DOG = 'dog',
+  CAT = 'cat',
+  BIRD = 'bird',
   DRAGON = 'dragon',
 }
 

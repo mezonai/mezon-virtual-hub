@@ -21,6 +21,7 @@ import {
   UpdateRecipeDto,
 } from './dto/recipe.dto';
 import { RequireAdmin } from '@libs/decorator';
+import { query } from 'express';
 
 @ApiBearerAuth()
 @ApiTags('Recipe')
@@ -49,7 +50,7 @@ export class RecipeController {
   @Post()
   @RequireAdmin()
   @ApiOperation({ summary: 'Create recipe' })
-  createRecipe(@Query() dto: CreateRecipeDto) {
+  createRecipe(@Body() dto: CreateRecipeDto) {
     return this.recipeService.createRecipe(dto);
   }
 

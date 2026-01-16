@@ -21,6 +21,22 @@ export class CreateRecipeDto {
   @IsUUID()
   item_id?: string;
 
+  @ApiPropertyOptional({
+    description: 'Plant ID associated with the recipe',
+    example: '550e8400-e29b-41d4-a716-446655440000',
+  })
+  @IsOptional()
+  @IsUUID()
+  plant_id?: string;
+
+  @ApiPropertyOptional({
+    description: 'Pet clan ID associated with the recipe',
+    example: '550e8400-e29b-41d4-a716-446655440000',
+  })
+  @IsOptional()
+  @IsUUID()
+  pet_clan_id?: string;
+
   @ApiProperty({
     description: 'Type of the recipe',
     enum: RecipeType,
