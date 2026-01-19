@@ -8,12 +8,14 @@ import { In, IsNull, Repository } from 'typeorm';
 import { ClanWarehouseEntity } from './entity/clan-warehouse.entity';
 import { PlantEntity } from '@modules/plant/entity/plant.entity';
 import { UserEntity } from '@modules/user/entity/user.entity';
-import { ClanActivityActionType, ClanFundType, InventoryClanType } from '@enum';
+import { ClanActivityActionType, ClanFundType, InventoryClanType, RecipeType } from '@enum';
 import { ClanFundEntity } from '@modules/clan-fund/entity/clan-fund.entity';
 import { BuyItemDto, GetAllItemsInWarehouseQueryDto, SeedClanWarehouseDto } from './dto/clan-warehouse.dto';
 import { ClanActivityService } from '@modules/clan-activity/clan-activity.service';
 import { ItemEntity } from '@modules/item/entity/item.entity';
 import { ITEM_CODE_TO_INVENTORY_TYPE, TOOL_RATE_MAP } from '@constant/farm.constant';
+import { RecipeService } from '@modules/recipe/recipe.service';
+import { RecipeEntity } from '@modules/recipe/entity/recipe.entity';
 
 @Injectable()
 export class CLanWarehouseService {
@@ -27,10 +29,9 @@ export class CLanWarehouseService {
     @InjectRepository(ClanFundEntity)
     private readonly clanFundRepo: Repository<ClanFundEntity>,
 
-    @InjectRepository(ItemEntity)
-    private readonly itemRepo: Repository<ItemEntity>,
+    private readonly clanActivityService: ClanActivityService,
 
-    private readonly clanActivityService: ClanActivityService
+    private readonly recipeService: RecipeService,
   ) {}
 
   async getAllItemsInWarehouse(clanId: string, query: GetAllItemsInWarehouseQueryDto) {
@@ -98,16 +99,17 @@ export class CLanWarehouseService {
 
     if (!user.clan_id) throw new BadRequestException('User not found clan');
 
-    if (!dto.plantId && !dto.itemId) {
+    if (!dto.plantId && !dto.recipeId) {
       throw new BadRequestException('plantId or itemId is required');
     }
 
-    if (dto.plantId && dto.itemId) {
+    if (dto.plantId && dto.recipeId) {
       throw new BadRequestException('Only one of plantId or itemId is allowed');
     }
 
     let plant: PlantEntity | null = null;
     let item: ItemEntity | null = null;
+    let recipe: RecipeEntity | null = null;
 
     if (dto.plantId) {
       plant = await this.plantRepo.findOne({
@@ -115,10 +117,10 @@ export class CLanWarehouseService {
       });
     }
 
-    if (!plant && dto.itemId) {
-      item = await this.itemRepo.findOne({
-        where: { id: dto.itemId },
-      });
+    if (!plant && dto.recipeId) {
+      recipe = await this.recipeService.getRecipeById(dto.recipeId)
+      if (recipe.type === RecipeType.PLANT) plant = recipe.plant || null;
+      item = recipe.item || null;
     }
 
     if (!plant && !item) {
@@ -129,6 +131,23 @@ export class CLanWarehouseService {
       where: { clan_id: user.clan_id, type: ClanFundType.GOLD },
     });
     if (!fundRecord) throw new NotFoundException('Clan fund record not found');
+
+    for (const ingredient of recipe?.ingredients || []) {
+      const requiredQuantity = ingredient.required_quantity * dto.quantity;
+      const warehouseItem = await this.warehouseRepo.findOne({
+        where: {
+          clan_id: user.clan_id,
+          plant_id: ingredient.plant_id,
+          item_id: ingredient.item_id,
+          is_harvested: ingredient.plant_id ? true : false,
+        },
+      });
+      if (!warehouseItem || warehouseItem.quantity < requiredQuantity) {
+        throw new BadRequestException(`Not enough ${ingredient.item?.name || ingredient.plant?.name} in clan warehouse`);
+      }
+      warehouseItem.quantity -= requiredQuantity;
+      await this.warehouseRepo.save(warehouseItem);
+    }   
 
     const pricePerUnit = plant
       ? plant.buy_price
@@ -174,7 +193,7 @@ export class CLanWarehouseService {
       clanId: user.clan_id,
       userId: user.id,
       actionType: ClanActivityActionType.PURCHASE,
-      itemName: item?.name || '',
+      itemName: item?.name || plant?.name || 'Unknown Item',
       quantity: dto.quantity,
       officeName: user.clan?.farm.name
     });
