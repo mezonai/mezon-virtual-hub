@@ -11,6 +11,7 @@ import { PetsEntity } from '@modules/pets/entity/pets.entity';
 import { PlantEntity } from '@modules/plant/entity/plant.entity';
 import { InventoryService } from '@modules/inventory/inventory.service';
 import { UserEntity } from '@modules/user/entity/user.entity';
+import { WheelEntity } from '@modules/wheel/entity/wheel.entity';
 
 @Injectable()
 export class SlotWheelService extends BaseService<SlotWheelEntity> {
@@ -33,6 +34,9 @@ export class SlotWheelService extends BaseService<SlotWheelEntity> {
     @InjectRepository(UserEntity)
     private readonly userRepository: Repository<UserEntity>,
 
+    @InjectRepository(WheelEntity)
+    private readonly wheelRepo: Repository<WheelEntity>,
+
     private readonly inventoryService: InventoryService,
   ) {
     super(slotWheelRepo, SlotWheelEntity.name);
@@ -44,31 +48,42 @@ export class SlotWheelService extends BaseService<SlotWheelEntity> {
       relations: ['item', 'food', 'pet', 'plant'],
     });
 
+    for (const slot of slotWheelItems) {
+      slot["rate"] = (slot.weight_point / slotWheelItems.reduce((sum, s) => sum + s.weight_point, 0)) * 100;
+    }
+
     return slotWheelItems;
   }
 
-  async getRandomItems(
-    user: UserEntity,
-    type: SlotWheelType,
-    quantity = 3,
-    fee = 100,
-  ) {
-    const items = await this.slotWheelRepo.find({
-      where: { type },
+  async spinWheel(user: UserEntity, wheelId: string, quantity = 1,) {
+    const wheel = await this.wheelRepo.findOne({
+      where: { id: wheelId },
+    });
+
+    if (!wheel) {
+      throw new NotFoundException('Wheel not found');
+    }
+
+    if (user.gold < wheel.base_fee) {
+      throw new BadRequestException('Not enough gold');
+    }
+
+    const slots = await this.slotWheelRepo.find({
+      where: { wheel_id: wheelId },
       relations: ['item', 'food', 'pet', 'plant'],
     });
 
-    if (!items.length) {
+    if (!slots.length) {
       throw new NotFoundException('No slot wheel items found');
     }
 
-    const totalWeight = items.reduce(
-      (sum, item) => sum + item.weight_point,
+    const totalWeight = slots.reduce(
+      (sum, s) => sum + s.weight_point,
       0,
     );
 
     if (totalWeight <= 0) {
-      throw new BadRequestException('Total weight_point must be greater than 0');
+      throw new BadRequestException('Invalid weight config');
     }
 
     const rewards: SlotWheelEntity[] = [];
@@ -76,31 +91,26 @@ export class SlotWheelService extends BaseService<SlotWheelEntity> {
     for (let i = 0; i < quantity; i++) {
       const random = Math.random() * totalWeight;
 
-      let cumulativeWeight = 0;
-      let rewardItem: SlotWheelEntity | null = null;
-
-      for (const item of items) {
-        cumulativeWeight += item.weight_point;
-        if (random < cumulativeWeight) {
-          rewardItem = item;
+      let current = 0;
+      for (const slot of slots) {
+        current += slot.weight_point;
+        if (random <= current) {
+          rewards.push(slot);
           break;
         }
       }
-
-      if (!rewardItem) {
-        rewardItem = items[items.length - 1];
-      }
-
-      rewards.push(rewardItem);
     }
 
     await this.inventoryService.awardSpinItemToUser(user, rewards);
 
-    await this.userRepository.update(user.id, {
-      gold: user.gold - fee,
-    });
+    user.gold -= wheel.base_fee*quantity;
+    await this.userRepository.save(user);
 
-    return rewards;
+    return {
+      wheel_type: wheel.type,
+      rewards,
+      user_balance: user.gold,
+    };
   }
 
   async createSlotWheelItem(dto: CreateSlotWheelDto) {
@@ -117,7 +127,7 @@ export class SlotWheelService extends BaseService<SlotWheelEntity> {
         if (!item) throw new NotFoundException('Item not found');
 
         return this.slotWheelRepo.save({
-          type: dto.type,
+          wheel_id: dto.wheel_id,
           type_item: dto.type_item,
           quantity: dto.quantity,
           weight_point: dto.weight_point,
@@ -137,7 +147,7 @@ export class SlotWheelService extends BaseService<SlotWheelEntity> {
         if (!food) throw new NotFoundException('Food not found');
 
         return this.slotWheelRepo.save({
-          type: dto.type,
+          wheel_id: dto.wheel_id,
           type_item: dto.type_item,
           quantity: dto.quantity,
           weight_point: dto.weight_point,
@@ -157,7 +167,7 @@ export class SlotWheelService extends BaseService<SlotWheelEntity> {
         if (!pet) throw new NotFoundException('Pet not found');
 
         return this.slotWheelRepo.save({
-          type: dto.type,
+          wheel_id: dto.wheel_id,
           type_item: dto.type_item,
           quantity: dto.quantity,
           weight_point: dto.weight_point,
@@ -167,7 +177,7 @@ export class SlotWheelService extends BaseService<SlotWheelEntity> {
 
       case RewardItemType.GOLD: {
         return this.slotWheelRepo.save({
-          type: dto.type,
+          wheel_id: dto.wheel_id,
           type_item: dto.type_item,
           quantity: dto.quantity,
           weight_point: dto.weight_point,
@@ -183,7 +193,7 @@ export class SlotWheelService extends BaseService<SlotWheelEntity> {
         });
         if (!plant) throw new NotFoundException('Plant not found');
         return this.slotWheelRepo.save({
-          type: dto.type,
+          wheel_id: dto.wheel_id,
           type_item: dto.type_item,
           quantity: dto.quantity,
           weight_point: dto.weight_point,

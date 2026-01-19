@@ -49,6 +49,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { SlotWheelModule } from './modules/slot-wheel/slot-wheel.module';
 import { RecipeModule } from '@modules/recipe/recipe.module';
 import { IngredientModule } from '@modules/ingredient/ingredient.module';
+import { WheelModule } from '@modules/wheel/wheel.module';
 
 @Module({
   imports: [
@@ -108,6 +109,7 @@ import { IngredientModule } from '@modules/ingredient/ingredient.module';
     SlotWheelModule,
     RecipeModule,
     IngredientModule,
+    WheelModule,
   ],
 })
 export class AppModule {}
