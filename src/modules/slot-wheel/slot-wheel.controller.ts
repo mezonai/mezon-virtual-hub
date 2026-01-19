@@ -1,6 +1,6 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
 import { SlotWheelService } from './slot-wheel.service';
-import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { RequireAdmin } from '@libs/decorator';
 import { CreateSlotWheelDto, SlotWheelQueryDto, SpinQueryDto, UpdateSlotWheelDto } from '@modules/slot-wheel/dto/slot-wheel.dto';
 import { SlotWheelType } from '@enum';
@@ -34,10 +34,11 @@ export class SlotWheelController {
     return this.slotWheelService.getAll(query);
   }
 
-  @Get('random')
+  @Get('spin')
+  @ApiOperation({ summary: 'Spin a wheel' })
   getRandom(@Query() query: SpinQueryDto) {
     const user = this.cls.get<UserEntity>(USER_TOKEN);
-    return this.slotWheelService.getRandomItems(user, query.type, query.quantity, query.fee);
+    return this.slotWheelService.spinWheel(user, query.wheel_id, query.quantity);
   }
 
   @Patch(':id')

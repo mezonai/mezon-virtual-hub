@@ -16,6 +16,7 @@ import { PetsEntity } from '@modules/pets/entity/pets.entity';
 import { PetsDtoResponse } from '@modules/pets/dto/pets.dto';
 import { ItemDto } from '@modules/item/dto/item.dto';
 import { PlantEntity } from '@modules/plant/entity/plant.entity';
+import { WheelEntity } from '@modules/wheel/entity/wheel.entity';
 
 @Entity('slot_wheel')
 export class SlotWheelEntity {
@@ -24,11 +25,6 @@ export class SlotWheelEntity {
     primaryKeyConstraintName: 'PK_slot_wheel_id',
   })
   id: string;
-
-  @ApiProperty({ enum: SlotWheelType })
-  @Column({ type: 'varchar', length: 50 })
-  @IsEnum(SlotWheelType)
-  type: SlotWheelType;
 
   @ApiProperty({ enum: RewardItemType })
   @Column({ type: 'varchar', length: 50 })
@@ -92,6 +88,20 @@ export class SlotWheelEntity {
     name: 'plant_id',
     foreignKeyConstraintName: 'FK_slot_wheel_plant_id',
   })
-  @Type(() => FoodDto)
+  @Type(() => PlantEntity)
   plant: PlantEntity | null;
+
+  @Column({ type: 'uuid' })
+  @Exclude()
+  wheel_id: string;
+
+  @ManyToOne(() => WheelEntity, (wheel) => wheel.slots, {
+    nullable: false,
+    onDelete: 'CASCADE',
+  })
+  @JoinColumn({
+    name: 'wheel_id',
+    foreignKeyConstraintName: 'FK_slot_wheel_wheel_id',
+  })
+  wheel: WheelEntity;
 }
