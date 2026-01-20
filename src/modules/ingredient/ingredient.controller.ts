@@ -74,8 +74,8 @@ export class IngredientController {
 
   @Post(':recipe_id/assemble')
   @ApiOperation({ summary: 'Assemble pet from recipe' })
-  assembleRecipe(@Param('recipe_id') recipeId: string) {
+  assembleRecipe(@Param('recipe_id') recipeId: string, @Query('quantity') quantity: number = 1) {
     const user = this.cls.get<UserEntity>(USER_TOKEN);
-    return this.ingredientService.assembleIngredientToRecipe(user, recipeId);
+    return this.ingredientService.assembleIngredientToRecipe(user, recipeId, quantity);
   }
 }
