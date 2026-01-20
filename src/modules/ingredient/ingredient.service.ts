@@ -49,7 +49,11 @@ export class IngredientService extends BaseService<IngredientEntity> {
     return ingredient;
   }
 
-  async assembleIngredientToRecipe(user: UserEntity, recipeId: string) {
+  async assembleIngredientToRecipe(user: UserEntity, recipeId: string, quantity: number = 1) {
+    if (quantity <= 0) {
+      throw new BadRequestException('Quantity must be greater than 0');
+    }
+
     const recipe = await this.recipeService.getRecipeById(recipeId);
 
     if (!recipe.ingredients?.length) {
@@ -64,7 +68,7 @@ export class IngredientService extends BaseService<IngredientEntity> {
         },
       });
 
-      if (!inventory || inventory.quantity < ing.required_quantity) {
+      if (!inventory || inventory.quantity < ing.required_quantity * quantity) {
         throw new BadRequestException(
           'Not enough fragment items to assemble recipe',
         );
@@ -83,7 +87,7 @@ export class IngredientService extends BaseService<IngredientEntity> {
         throw new NotFoundException('Inventory not found for ingredient');
       }
 
-      inventory.quantity -= ing.required_quantity;
+      inventory.quantity -= ing.required_quantity * quantity;
 
       if (inventory.quantity <= 0) {
         await this.inventoryRepo.remove(inventory);
@@ -97,10 +101,11 @@ export class IngredientService extends BaseService<IngredientEntity> {
       user_id: user.id,
       pet_id: recipe.pet_id,
       current_rarity: recipe.pet?.rarity,
-    });
+    },quantity);
 
     return {
       success: true,
+      quantity,
       pet: recipe.pet,
     };
   }

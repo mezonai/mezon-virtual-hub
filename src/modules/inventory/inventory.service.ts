@@ -562,6 +562,7 @@ export class InventoryService extends BaseService<Inventory> {
     }
 
     return {
+      recipe_id: recipe.id,
       species, 
       fragmentItems: plainToInstance(ItemInventoryResDto, fragmentItems.reverse()),
     }
