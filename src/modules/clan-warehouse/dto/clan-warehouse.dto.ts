@@ -4,10 +4,6 @@ import { Transform, Type } from 'class-transformer';
 import { IsInt, Min, IsUUID, IsOptional, Max, IsArray, IsEnum, IsBoolean, IsIn } from 'class-validator';
 
 export class GetAllItemsInWarehouseQueryDto {
-  @ApiProperty({ description: 'Clan ID (UUID)' })
-  @IsUUID()
-  clanId: string;
-
   @ApiPropertyOptional({
     description: 'Filter item type: Plant or Tool',
     enum: ['Plant', 'Tool'],
