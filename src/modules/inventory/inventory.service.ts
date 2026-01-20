@@ -27,6 +27,7 @@ import { FoodInventoryResDto, ItemInventoryResDto } from './dto/inventory.dto';
 import { SlotWheelEntity } from '@modules/slot-wheel/entity/slot-wheel.entity';
 import { CLanWarehouseService } from '@modules/clan-warehouse/clan-warehouse.service';
 import { PlantService } from '@modules/plant/plant.service';
+import { RecipeEntity } from '@modules/recipe/entity/recipe.entity';
 
 @Injectable()
 export class InventoryService extends BaseService<Inventory> {
@@ -39,6 +40,8 @@ export class InventoryService extends BaseService<Inventory> {
     private readonly userService: UserService,
     @InjectRepository(ItemEntity)
     private readonly itemRepository: Repository<ItemEntity>,
+    @InjectRepository(RecipeEntity)
+    private readonly recipeRepo: Repository<RecipeEntity>,
     private readonly foodService: FoodService,
     private readonly petPlayerService: PetPlayersService,
     private readonly clanWarehouseService: CLanWarehouseService,
@@ -512,6 +515,55 @@ export class InventoryService extends BaseService<Inventory> {
       },
       relations: ['item'],
     });
+
+
+    if (type === ItemType.PET_FRAGMENT) {
+      const recipe = await this.recipeRepo.findOne({
+        where: { ingredients: { item: { type: ItemType.PET_FRAGMENT } } },
+        relations: ['pet'],
+      });
+      for (const inv of inventory) {
+        if (!inv.item) continue;
+        inv['species'] = recipe ? recipe.pet?.species : null;
+      }
+    }
     return plainToInstance(ItemInventoryResDto, inventory);
+  }
+
+  async getListFragmentItemsBySpecies(user: UserEntity, species: string) {
+    const recipe = await this.recipeRepo.findOne({
+      where: { pet: { species } },
+      relations: ['ingredients', 'ingredients.item'],
+    });
+
+    if (!recipe) {
+      throw new NotFoundException('Recipe not found for the given species');
+    }
+
+    const fragmentItems: Inventory[] = [];
+
+    for (const ingredient of recipe.ingredients) {
+      if (!ingredient.item) continue;
+
+      if (ingredient.item.type !== ItemType.PET_FRAGMENT) continue;
+
+      const inventoryItem = await this.inventoryRepository.findOne({
+        where: {
+          user: { id: user.id },
+          item: { id: ingredient.item.id },
+          inventory_type: InventoryType.ITEM,
+        },
+        relations: ['item'],
+      })
+
+      if (!inventoryItem) continue;
+      inventoryItem['index'] = ingredient.part;
+      fragmentItems.push(inventoryItem);
+    }
+
+    return {
+      species, 
+      fragmentItems: plainToInstance(ItemInventoryResDto, fragmentItems.reverse()),
+    }
   }
 }

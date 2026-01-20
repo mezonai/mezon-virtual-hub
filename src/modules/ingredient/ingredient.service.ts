@@ -123,16 +123,22 @@ export class IngredientService extends BaseService<IngredientEntity> {
   async exchangeExcessIngredients(user: UserEntity, dto: ExchangeRecipeDto) {
     const { minExchange, recipeId } = dto;
 
-    const ownFragmentsInventory = await this.inventoryService.getItemsByType(
+    const recipe = await this.recipeService.getRecipeById(recipeId);
+
+    if (!recipe.pet) {
+      throw new NotFoundException('Pet recipe not found');
+    }
+
+    const ownFragmentsInventory = await this.inventoryService.getListFragmentItemsBySpecies(
       user,
-      ItemType.PET_FRAGMENT,
+      recipe.pet.species,
     );
 
-    if (!ownFragmentsInventory.length) {
+    if (!ownFragmentsInventory.fragmentItems.length) {
       throw new BadRequestException('No fragment found');
     }
 
-    const excessList = ownFragmentsInventory
+    const excessList = ownFragmentsInventory.fragmentItems
       .map((f) => ({
         itemId: f.item.id,
         excessQuantity: Math.max(0, f.quantity - 1),

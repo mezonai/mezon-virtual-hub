@@ -92,4 +92,19 @@ export class InventoryController {
     const user = this.cls.get<UserEntity>(USER_TOKEN);
     return await this.inventoryService.getItemsByType(user, type);
   }
+
+  @Get('item-fragment/:species')
+  @ApiParam({
+    name: 'species',
+    description: 'Species of the pet fragment to filter items',
+  })
+  @ApiOperation({
+    summary: 'Get items of user with specific pet fragment species',
+  })
+  async getListFragmentItemsBySpecies(
+    @Param('species') species: string,
+  ) {
+    const user = this.cls.get<UserEntity>(USER_TOKEN);
+    return await this.inventoryService.getListFragmentItemsBySpecies(user, species);
+  }
 }
