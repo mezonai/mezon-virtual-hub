@@ -22,7 +22,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { plainToInstance } from 'class-transformer';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { FoodInventoryResDto, ItemInventoryResDto } from './dto/inventory.dto';
 import { SlotWheelEntity } from '@modules/slot-wheel/entity/slot-wheel.entity';
 import { CLanWarehouseService } from '@modules/clan-warehouse/clan-warehouse.service';
@@ -540,31 +540,52 @@ export class InventoryService extends BaseService<Inventory> {
       throw new NotFoundException('Recipe not found for the given species');
     }
 
-    const fragmentItems: Inventory[] = [];
-
-    for (const ingredient of recipe.ingredients) {
-      if (!ingredient.item) continue;
-
-      if (ingredient.item.type !== ItemType.PET_FRAGMENT) continue;
-
-      const inventoryItem = await this.inventoryRepository.findOne({
-        where: {
-          user: { id: user.id },
-          item: { id: ingredient.item.id },
-          inventory_type: InventoryType.ITEM,
-        },
-        relations: ['item'],
-      })
-
-      if (!inventoryItem) continue;
-      inventoryItem['index'] = ingredient.part;
-      fragmentItems.push(inventoryItem);
+    if (!recipe.ingredients?.length) {
+      throw new BadRequestException('Recipe has no ingredients');
     }
+
+    const itemIds = recipe.ingredients
+      .filter(i => i.item?.type === ItemType.PET_FRAGMENT)
+      .map(i => i.item!.id);
+
+    const inventories = await this.inventoryRepository.find({
+      where: {
+        user: { id: user.id },
+        inventory_type: InventoryType.ITEM,
+        item: { id: In(itemIds) },
+      },
+      relations: ['item'],
+    });
+
+    const inventoryMap = new Map(
+      inventories.map(inv => [inv.item!.id, inv]),
+    );
+
+    const fragmentItems = recipe.ingredients
+      .filter(i => i.item?.type === ItemType.PET_FRAGMENT)
+      .map(ingredient => {
+        const inventory = inventoryMap.get(ingredient.item!.id);
+
+        if (inventory) {
+          inventory['index'] = ingredient.part;
+          return inventory;
+        }
+
+        return {
+          id: null,
+          inventory_type: InventoryType.ITEM,
+          equipped: false,
+          quantity: 0,
+          item: ingredient.item,
+          index: ingredient.part,
+        };
+      })
 
     return {
       recipe_id: recipe.id,
-      species, 
+      species,
       fragmentItems: plainToInstance(ItemInventoryResDto, fragmentItems.reverse()),
-    }
+    };
   }
+
 }
