@@ -1,5 +1,6 @@
+import { AnimalRarity } from '@enum';
 import { ApiProperty } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
+import { Exclude, Expose, Type } from 'class-transformer';
 import { IsInt, IsNumber, IsOptional, IsUUID, Min } from 'class-validator';
 
 export class CreateIngredientDto {
@@ -70,4 +71,46 @@ export class ExchangeRecipeDto {
   @IsNumber()
   @Type(() => Number)
   minExchange: number = 3;
+}
+
+@Exclude()
+export class CreatedPetResponseDto {
+  @Expose() 
+  level: number;
+
+  @Expose() 
+  exp: number;
+
+  @Expose() 
+  stars: number;
+
+  @Expose() 
+  hp: number;
+
+  @Expose() 
+  attack: number;
+
+  @Expose() 
+  defense: number;
+
+  @Expose() 
+  speed: number;
+
+  @Expose() 
+  is_brought: boolean;
+
+  @Expose() 
+  is_caught: boolean;
+
+  @Expose() 
+  battle_slot: number;
+
+  @Expose() 
+  individual_value: number;
+
+  @Expose() 
+  current_rarity: AnimalRarity;
+
+  @Expose() 
+  name: string | null;
 }
