@@ -49,8 +49,12 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { SlotWheelModule } from './modules/slot-wheel/slot-wheel.module';
 import { RecipeModule } from '@modules/recipe/recipe.module';
 import { IngredientModule } from '@modules/ingredient/ingredient.module';
+<<<<<<< HEAD
 import { PetClanModule } from '@modules/pet-clan/pet-clan.module';
 import { ClanAnimalsModule } from '@modules/clan-animals/clan-animals.module';
+=======
+import { WheelModule } from '@modules/wheel/wheel.module';
+>>>>>>> e634161733451e8a9999c694e8bad4485dd1f6f8
 
 @Module({
   imports: [
@@ -112,6 +116,7 @@ import { ClanAnimalsModule } from '@modules/clan-animals/clan-animals.module';
     IngredientModule,
     PetClanModule,
     ClanAnimalsModule,
+    WheelModule,
   ],
 })
 export class AppModule {}

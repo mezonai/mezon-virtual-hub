@@ -1,5 +1,5 @@
 import { BaseService } from '@libs/base/base.service';
-import { CreateIngredientDto, ExchangeRecipeDto, UpdateIngredientDto } from './dto/ingredient.dto';
+import { CreatedPetResponseDto, CreateIngredientDto, ExchangeRecipeDto, UpdateIngredientDto } from './dto/ingredient.dto';
 import { IngredientEntity } from '@modules/ingredient/entity/ingredient.entity';
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -11,6 +11,7 @@ import { PetPlayersService } from '@modules/pet-players/pet-players.service';
 import { ItemType } from '@enum';
 import { ItemEntity } from '@modules/item/entity/item.entity';
 import { RecipeService } from '@modules/recipe/recipe.service';
+import { plainToInstance } from 'class-transformer';
 
 @Injectable()
 export class IngredientService extends BaseService<IngredientEntity> {
@@ -49,7 +50,11 @@ export class IngredientService extends BaseService<IngredientEntity> {
     return ingredient;
   }
 
-  async assembleIngredientToRecipe(user: UserEntity, recipeId: string) {
+  async assembleIngredientToRecipe(user: UserEntity, recipeId: string, quantity: number = 1) {
+    if (quantity <= 0) {
+      throw new BadRequestException('Quantity must be greater than 0');
+    }
+
     const recipe = await this.recipeService.getRecipeById(recipeId);
 
     if (!recipe.ingredients?.length) {
@@ -64,7 +69,7 @@ export class IngredientService extends BaseService<IngredientEntity> {
         },
       });
 
-      if (!inventory || inventory.quantity < ing.required_quantity) {
+      if (!inventory || inventory.quantity < ing.required_quantity * quantity) {
         throw new BadRequestException(
           'Not enough fragment items to assemble recipe',
         );
@@ -83,7 +88,7 @@ export class IngredientService extends BaseService<IngredientEntity> {
         throw new NotFoundException('Inventory not found for ingredient');
       }
 
-      inventory.quantity -= ing.required_quantity;
+      inventory.quantity -= ing.required_quantity * quantity;
 
       if (inventory.quantity <= 0) {
         await this.inventoryRepo.remove(inventory);
@@ -92,16 +97,17 @@ export class IngredientService extends BaseService<IngredientEntity> {
       }
     }
 
-    await this.petPlayersService.createPetPlayers({
-      room_code: '',
-      user_id: user.id,
-      pet_id: recipe.pet_id,
-      current_rarity: recipe.pet?.rarity,
-    });
+    const createdPetPlayers = await this.petPlayersService.createPetPlayers({
+        room_code: '',
+        user_id: user.id,
+        pet_id: recipe.pet_id,
+        current_rarity: recipe.pet?.rarity,
+      });
 
     return {
       success: true,
-      pet: recipe.pet,
+      quantity,
+      createdPet: plainToInstance(CreatedPetResponseDto, createdPetPlayers[0]),
     };
   }
 
@@ -123,16 +129,22 @@ export class IngredientService extends BaseService<IngredientEntity> {
   async exchangeExcessIngredients(user: UserEntity, dto: ExchangeRecipeDto) {
     const { minExchange, recipeId } = dto;
 
-    const ownFragmentsInventory = await this.inventoryService.getItemsByType(
+    const recipe = await this.recipeService.getRecipeById(recipeId);
+
+    if (!recipe.pet) {
+      throw new NotFoundException('Pet recipe not found');
+    }
+
+    const ownFragmentsInventory = await this.inventoryService.getListFragmentItemsBySpecies(
       user,
-      ItemType.PET_FRAGMENT,
+      recipe.pet.species,
     );
 
-    if (!ownFragmentsInventory.length) {
+    if (!ownFragmentsInventory.fragmentItems.length) {
       throw new BadRequestException('No fragment found');
     }
 
-    const excessList = ownFragmentsInventory
+    const excessList = ownFragmentsInventory.fragmentItems
       .map((f) => ({
         itemId: f.item.id,
         excessQuantity: Math.max(0, f.quantity - 1),

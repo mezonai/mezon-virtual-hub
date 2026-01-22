@@ -143,6 +143,10 @@ export class FarmRoom extends BaseGameRoom {
         this.schedulePlant(slotId, newPlant);
       } catch (err: any) {
         this.logger.error(`[PlantToSlot] Error: ${err.message}`);
+        client.send(MessageTypes.ON_PLANT_TO_PLANT_FAILED, {
+          message:
+            'Vật phẩm đã được sử dụng hết hoặc đang được người khác dùng. Vui lòng thử lại sau.',
+        });
       } finally {
         this.slotLocks.delete(slotId);
       }
@@ -314,81 +318,87 @@ export class FarmRoom extends BaseGameRoom {
       if (!client.sessionId || !payload.farm_slot_id) return;
       const Player = this.state.players.get(client.sessionId);
       if (!Player) return;
+      try {
+        if (Player.isHarvesting) {
+          client.send(MessageTypes.ON_HARVEST_DENIED, {
+            sessionId: client.sessionId,
+            message: 'Bạn đang thu hoạch, hãy đợi xong!',
+          });
+          return;
+        }
 
-      if (Player.isHarvesting) {
+        const slot = this.state.farmSlotState.get(payload.farm_slot_id);
+        if (!slot?.currentPlant) {
+          client.send(MessageTypes.ON_HARVEST_DENIED, {
+            sessionId: client.sessionId,
+            message: 'Không có cây ở ô này!',
+          });
+          return;
+        }
+
+        const userStat = await this.farmSlotsService.getUserHarvestStat(
+          Player.user_id,
+          Player.clan_id,
+        );
+        const farmConfigs = this.getFarmConfig();
+        if (farmConfigs.HARVEST.ENABLE_LIMIT && userStat.remaining <= 0) {
+          client.send(MessageTypes.ON_HARVEST_DENIED, {
+            sessionId: client.sessionId,
+            message: 'Bạn đã hết lượt thu hoạch!',
+          });
+          return;
+        }
+
+        if (!slot.currentPlant.can_harvest) {
+          client.send(MessageTypes.ON_HARVEST_DENIED, {
+            sessionId: client.sessionId,
+            message: 'Cây chưa sẵn sàng thu hoạch!',
+          });
+          return;
+        }
+
+        if (slot.harvestingBy && slot.harvestingBy !== client.sessionId) {
+          const otherPlayer = this.state.players.get(slot.harvestingBy);
+          client.send(MessageTypes.ON_HARVEST_DENIED, {
+            sessionId: client.sessionId,
+            message: `Ô này đang được thu hoạch bởi ${otherPlayer?.display_name || 'người khác'}!`,
+          });
+          return;
+        }
+        const farmConfig = this.getFarmConfig();
+
+        let reductionRate = 0;
+        if (payload.harvest_tool_id) {
+          reductionRate = await this.farmSlotsService.getToolRate(payload.harvest_tool_id)
+
+          await this.farmSlotsService.decreaseToolQuantityInClanWarehouse(Player.clan_id, payload.harvest_tool_id);
+        }
+
+        const baseDelayMs = farmConfig.HARVEST.DELAY_MS;
+        const finalDelayMs = Math.floor(baseDelayMs * (1 - reductionRate));
+
+        slot.harvestingBy = client.sessionId;
+        slot.harvestEndTime = Date.now() + finalDelayMs;
+
+        Player.isHarvesting = true;
+        const timer = setTimeout(async () => {
+          await this.finishHarvest(slot.id, client.sessionId);
+        }, finalDelayMs);
+        this.harvestTimers.set(slot.id, timer);
+        this.broadcast(MessageTypes.ON_HARVEST_STARTED, {
+          slotId: slot.id,
+          sessionId: client.sessionId,
+          playerName: Player.display_name,
+          endTime: slot.harvestEndTime,
+        });
+      } catch (err: any) {
         client.send(MessageTypes.ON_HARVEST_DENIED, {
           sessionId: client.sessionId,
-          message: 'Bạn đang thu hoạch, hãy đợi xong!',
+          message:
+            'Vật phẩm đã được sử dụng hết hoặc đang được người khác dùng. Vui lòng thử lại sau.',
         });
-        return;
       }
-
-      const slot = this.state.farmSlotState.get(payload.farm_slot_id);
-      if (!slot?.currentPlant) {
-        client.send(MessageTypes.ON_HARVEST_DENIED, {
-          sessionId: client.sessionId,
-          message: 'Không có cây ở ô này!',
-        });
-        return;
-      }
-
-      const userStat = await this.farmSlotsService.getUserHarvestStat(
-        Player.user_id,
-        Player.clan_id,
-      );
-      const farmConfigs = this.getFarmConfig();
-      if (farmConfigs.HARVEST.ENABLE_LIMIT && userStat.remaining <= 0) {
-        client.send(MessageTypes.ON_HARVEST_DENIED, {
-          sessionId: client.sessionId,
-          message: 'Bạn đã hết lượt thu hoạch!',
-        });
-        return;
-      }
-
-      if (!slot.currentPlant.can_harvest) {
-        client.send(MessageTypes.ON_HARVEST_DENIED, {
-          sessionId: client.sessionId,
-          message: 'Cây chưa sẵn sàng thu hoạch!',
-        });
-        return;
-      }
-
-      if (slot.harvestingBy && slot.harvestingBy !== client.sessionId) {
-        const otherPlayer = this.state.players.get(slot.harvestingBy);
-        client.send(MessageTypes.ON_HARVEST_DENIED, {
-          sessionId: client.sessionId,
-          message: `Ô này đang được thu hoạch bởi ${otherPlayer?.display_name || 'người khác'}!`,
-        });
-        return;
-      }
-      const farmConfig = this.getFarmConfig();
-
-      let reductionRate = 0;
-      if (payload.harvest_tool_id) {
-        reductionRate = await this.farmSlotsService.getToolRate(payload.harvest_tool_id)
-
-        await this.farmSlotsService.decreaseToolQuantityInClanWarehouse(Player.clan_id, payload.harvest_tool_id);
-      }
-
-      const baseDelayMs = farmConfig.HARVEST.DELAY_MS;
-      const finalDelayMs = Math.floor(baseDelayMs * (1 - reductionRate));
-
-      slot.harvestingBy = client.sessionId;
-      slot.harvestEndTime = Date.now() + finalDelayMs;
-
-      Player.isHarvesting = true;
-      const timer = setTimeout(async () => {
-        await this.finishHarvest(slot.id, client.sessionId);
-      }, finalDelayMs);
-      this.harvestTimers.set(slot.id, timer);
-      this.broadcast(MessageTypes.ON_HARVEST_STARTED, {
-        slotId: slot.id,
-        sessionId: client.sessionId,
-        playerName: Player.display_name,
-        endTime: slot.harvestEndTime,
-      });
-    },
-    );
+    });
 
     this.onMessage('interruptHarvest', async (client, payload) => {
       const { fromPlayerId, farm_slot_id, interrupt_tool_id } = payload;
@@ -658,6 +668,10 @@ export class FarmRoom extends BaseGameRoom {
         });
       } catch (err: any) {
         this.logger.error(`[GrowthPlantToolUse] Error: ${err.message}`);
+        client.send(MessageTypes.ON_DECREASE_GROWTH_TIME_FAILED, {
+          message:
+            'Vật phẩm đã được sử dụng hết hoặc đang được người khác dùng. Vui lòng thử lại sau.',
+        });
       } finally {
         this.slotLocks.delete(farm_slot_id);
       }
@@ -902,7 +916,7 @@ export class FarmRoom extends BaseGameRoom {
     if (!Player) return;
 
     const slot = this.state.farmSlotState.get(slotId);
-    if (!slot || !slot.currentPlant) return;
+    if (!slot || !slot.currentPlant || slot.harvestingBy !== sessionId ) return;
 
     this.harvestTimers.delete(slotId);
     Player.isHarvesting = false;

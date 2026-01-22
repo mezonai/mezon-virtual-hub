@@ -21,7 +21,9 @@ import {
   UpdateRecipeDto,
 } from './dto/recipe.dto';
 import { RequireAdmin } from '@libs/decorator';
-import { query } from 'express';
+import { USER_TOKEN } from '@constant';
+import { UserEntity } from '@modules/user/entity/user.entity';
+import { ClsService } from 'nestjs-cls';
 
 @ApiBearerAuth()
 @ApiTags('Recipe')
@@ -29,12 +31,14 @@ import { query } from 'express';
 export class RecipeController {
   constructor(
     private readonly recipeService: RecipeService,
+    private readonly cls: ClsService,
   ) {}
 
   @Get()
   @ApiOperation({ summary: 'Get all recipes' })
   getAllRecipes(@Query() query: RecipeQueryDto) {
-    return this.recipeService.getAllRecipes(query);
+    const user = this.cls.get<UserEntity>(USER_TOKEN);
+    return this.recipeService.getAllRecipes(user, query);
   }
 
   @Get(':id')

@@ -15,17 +15,24 @@ import {
 } from './dto/recipe.dto';
 import { RecipeType } from '@enum';
 import { TOOL_RATE_MAP } from '@constant/farm.constant';
+import { ClanWarehouseEntity } from '@modules/clan-warehouse/entity/clan-warehouse.entity';
+import { ClanFundEntity } from '@modules/clan-fund/entity/clan-fund.entity';
+import { UserEntity } from '@modules/user/entity/user.entity';
 
 @Injectable()
 export class RecipeService extends BaseService<RecipeEntity> {
   constructor(
     @InjectRepository(RecipeEntity)
     private readonly recipeRepo: Repository<RecipeEntity>,
+    @InjectRepository(ClanWarehouseEntity)
+    private readonly clanWarehouseRepo: Repository<ClanWarehouseEntity>,
+    @InjectRepository(ClanFundEntity)
+    private readonly clanFundRepo: Repository<ClanFundEntity>,
   ) {
     super(recipeRepo, RecipeEntity.name);
   }
 
-  async getAllRecipes(query: RecipeQueryDto) {
+  async getAllRecipes(user: UserEntity, query: RecipeQueryDto) {
     const recipes = await this.recipeRepo
       .createQueryBuilder('recipe')
       .leftJoinAndSelect('recipe.item', 'item')
@@ -52,6 +59,31 @@ export class RecipeService extends BaseService<RecipeEntity> {
     if (query.type === RecipeType.FARM_TOOL) {
       for (const recipe of recipes) {
         recipe.item!['rate'] = TOOL_RATE_MAP[recipe.item?.item_code!] ?? 0;
+      }
+    }
+
+    if (!user.clan_id) {
+      throw new BadRequestException('User is not in a clan');
+    }
+    const clanfund = await this.clanFundRepo.findOne({ where: { clan_id: user.clan_id } });
+
+    for (const recipe of recipes) {
+      for (const ingredient of recipe.ingredients!) {
+        if (ingredient.plant_id) {
+          const harvestedPlant = await this.clanWarehouseRepo.findOne({
+            where: {
+              clan_id: user.clan_id,
+              plant_id: ingredient.plant_id,
+              is_harvested: true,
+            },
+          });
+
+          ingredient['current_quantity'] = harvestedPlant?.quantity ?? 0;
+        }
+
+        if (ingredient.gold > 0) {
+          ingredient['current_quantity'] = clanfund ? clanfund.amount : 0;
+        }
       }
     }
 

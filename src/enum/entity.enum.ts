@@ -70,6 +70,10 @@ export enum ItemCode {
   PET_FRAGMENT_2 = 'pet_fragment_2',
   PET_FRAGMENT_3 = 'pet_fragment_3',
   PET_FRAGMENT_4 = 'pet_fragment_4',
+  VOLTSTRIDER_FRAGMENT_1 = 'voltstrider_fragment_1',
+  VOLTSTRIDER_FRAGMENT_2 = 'voltstrider_fragment_2',
+  VOLTSTRIDER_FRAGMENT_3 = 'voltstrider_fragment_3',
+  VOLTSTRIDER_FRAGMENT_4 = 'voltstrider_fragment_4',
   // Cosmetic items ....
 }
 

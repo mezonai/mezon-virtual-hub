@@ -13,10 +13,11 @@ import { UserModule } from '@modules/user/user.module';
 import { PetPlayersModule } from '@modules/pet-players/pet-players.module';
 import { ClanWarehouseModule } from '@modules/clan-warehouse/clan-warehouse.module';
 import { PlantModule } from '@modules/plant/plant.module';
+import { RecipeEntity } from '@modules/recipe/entity/recipe.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Inventory, UserEntity, ItemEntity, FoodEntity]),
+    TypeOrmModule.forFeature([Inventory, UserEntity, ItemEntity, FoodEntity, RecipeEntity]),
     ClsModule,
     ItemModule,
     FoodModule,

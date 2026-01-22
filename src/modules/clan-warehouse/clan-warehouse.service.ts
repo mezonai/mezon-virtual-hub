@@ -34,16 +34,12 @@ export class CLanWarehouseService {
     private readonly recipeService: RecipeService,
   ) {}
 
-  async getAllItemsInWarehouse(query: GetAllItemsInWarehouseQueryDto) {
-    if (!query.clanId) {
-      throw new BadRequestException('Clan ID not found');
-    }
-
+  async getAllItemsInWarehouse(clanId: string, query: GetAllItemsInWarehouseQueryDto) {
     const qb = await this.warehouseRepo
       .createQueryBuilder('w')
       .leftJoinAndSelect('w.plant', 'plant')
       .leftJoinAndSelect('w.item', 'item')
-      .where('w.clan_id = :clanId', { clanId: query.clanId })
+      .where('w.clan_id = :clanId', { clanId: clanId })
       .andWhere('w.quantity > 0')
 
     if (query.type === 'Plant') {
@@ -78,10 +74,6 @@ export class CLanWarehouseService {
 
     const items = await qb.getMany();
 
-    if (items.length === 0) {
-      throw new NotFoundException('No items found in clan warehouse');
-    }
-
     for (const item of items) {
       if (item.type !== InventoryClanType.PLANT) {
         if (item.item) {
@@ -91,7 +83,7 @@ export class CLanWarehouseService {
     }
 
     return {
-      clanId: query.clanId,
+      clanId: clanId,
       totalItems: items.length,
       items,
     };

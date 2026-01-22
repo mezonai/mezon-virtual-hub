@@ -20,9 +20,10 @@ export class ClanWarehouseController {
   @Get()
   @ApiOperation({ summary: 'Get all item in warehouse for a clan' })
   async getAllItemsInWarehouse(
+    @Param('clan_id', ParseUUIDPipe) clanId: string,
     @Query() query: GetAllItemsInWarehouseQueryDto
   ) {
-    return this.farmWarehouseService.getAllItemsInWarehouse(query);
+    return this.farmWarehouseService.getAllItemsInWarehouse(clanId, query);
   }
 
   @Post('buy-items-clan')

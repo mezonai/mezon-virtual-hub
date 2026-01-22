@@ -22,11 +22,12 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { plainToInstance } from 'class-transformer';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { FoodInventoryResDto, ItemInventoryResDto } from './dto/inventory.dto';
 import { SlotWheelEntity } from '@modules/slot-wheel/entity/slot-wheel.entity';
 import { CLanWarehouseService } from '@modules/clan-warehouse/clan-warehouse.service';
 import { PlantService } from '@modules/plant/plant.service';
+import { RecipeEntity } from '@modules/recipe/entity/recipe.entity';
 
 @Injectable()
 export class InventoryService extends BaseService<Inventory> {
@@ -39,6 +40,8 @@ export class InventoryService extends BaseService<Inventory> {
     private readonly userService: UserService,
     @InjectRepository(ItemEntity)
     private readonly itemRepository: Repository<ItemEntity>,
+    @InjectRepository(RecipeEntity)
+    private readonly recipeRepo: Repository<RecipeEntity>,
     private readonly foodService: FoodService,
     private readonly petPlayerService: PetPlayersService,
     private readonly clanWarehouseService: CLanWarehouseService,
@@ -512,6 +515,77 @@ export class InventoryService extends BaseService<Inventory> {
       },
       relations: ['item'],
     });
+
+
+    if (type === ItemType.PET_FRAGMENT) {
+      const recipe = await this.recipeRepo.findOne({
+        where: { ingredients: { item: { type: ItemType.PET_FRAGMENT } } },
+        relations: ['pet'],
+      });
+      for (const inv of inventory) {
+        if (!inv.item) continue;
+        inv['species'] = recipe ? recipe.pet?.species : null;
+      }
+    }
     return plainToInstance(ItemInventoryResDto, inventory);
   }
+
+  async getListFragmentItemsBySpecies(user: UserEntity, species: string) {
+    const recipe = await this.recipeRepo.findOne({
+      where: { pet: { species } },
+      relations: ['ingredients', 'ingredients.item'],
+    });
+
+    if (!recipe) {
+      throw new NotFoundException('Recipe not found for the given species');
+    }
+
+    if (!recipe.ingredients?.length) {
+      throw new BadRequestException('Recipe has no ingredients');
+    }
+
+    const itemIds = recipe.ingredients
+      .filter(i => i.item?.type === ItemType.PET_FRAGMENT)
+      .map(i => i.item!.id);
+
+    const inventories = await this.inventoryRepository.find({
+      where: {
+        user: { id: user.id },
+        inventory_type: InventoryType.ITEM,
+        item: { id: In(itemIds) },
+      },
+      relations: ['item'],
+    });
+
+    const inventoryMap = new Map(
+      inventories.map(inv => [inv.item!.id, inv]),
+    );
+
+    const fragmentItems = recipe.ingredients
+      .filter(i => i.item?.type === ItemType.PET_FRAGMENT)
+      .map(ingredient => {
+        const inventory = inventoryMap.get(ingredient.item!.id);
+
+        if (inventory) {
+          inventory['index'] = ingredient.part;
+          return inventory;
+        }
+
+        return {
+          id: null,
+          inventory_type: InventoryType.ITEM,
+          equipped: false,
+          quantity: 0,
+          item: ingredient.item,
+          index: ingredient.part,
+        };
+      })
+
+    return {
+      recipe_id: recipe.id,
+      species,
+      fragmentItems: plainToInstance(ItemInventoryResDto, fragmentItems.reverse()),
+    };
+  }
+
 }
