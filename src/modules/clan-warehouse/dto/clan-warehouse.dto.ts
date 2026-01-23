@@ -1,35 +1,46 @@
-import { InventoryClanType } from '@enum';
 import { SlotsPlantEntity } from '@modules/slots-plant/entity/slots-plant.entity';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
-import { IsInt, Min, IsUUID, IsOptional, IsEnum, Max, IsArray } from 'class-validator';
+import { Transform, Type } from 'class-transformer';
+import { IsInt, Min, IsUUID, IsOptional, Max, IsArray, IsEnum, IsBoolean, IsIn } from 'class-validator';
 
-export class BuyPlantDto {
-  @ApiProperty({
-    example: '1c23a3d4-abc1-4d7a-b123-1a2b3c4d5e6f',
-    description: 'Item Farm ID (UUID)',
+export class GetAllItemsInWarehouseQueryDto {
+  @ApiPropertyOptional({
+    description: 'Filter item type: Plant or Tool',
+    enum: ['Plant', 'Tool'],
   })
-  @IsUUID()
-  itemId: string;
-
-  @ApiProperty({ example: 5, description: 'Quantity to buy', minimum: 1 })
   @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Max(100000, { message: 'Quantity must not exceed 100000' })
-  @Min(1)
-  quantity: number;
+  @IsIn(['Plant', 'Tool'])
+  type?: 'Plant' | 'Tool';
 
   @ApiPropertyOptional({
-    name: 'type',
-    enum: InventoryClanType,
-    required: false,
-    description: 'Type of inventory to buy',
-    default: InventoryClanType.PLANT,
+    description: 'Filter harvested plant (only for Plant)',
   })
   @IsOptional()
-  @IsEnum(InventoryClanType)
-  type: InventoryClanType = InventoryClanType.PLANT;
+  @Transform(({ value }) => {
+    if (value === undefined) return undefined;
+    return value === 'true';
+  })
+  @IsBoolean()
+  is_harvested?: boolean;
+}
+
+export class BuyItemDto {
+  @ApiPropertyOptional({ description: 'Plant ID (UUID)' })
+  @IsOptional()
+  @IsUUID()
+  plantId?: string;
+
+  @ApiPropertyOptional({ description: 'Recipe ID (UUID)' })
+  @IsOptional()
+  @IsUUID()
+  recipeId?: string;
+
+  @ApiProperty({ example: 5, minimum: 1 })
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(100000)
+  quantity: number;
 }
 
 export class HarvestPlantStatusDto {
@@ -65,5 +76,5 @@ export class SeedClanWarehouseDto {
   @IsArray()
   @IsOptional()
   @IsUUID('4', { each: true }) // kiểm tra từng phần tử là UUID version 4
-  itemIds?: string[];
+  plantIds?: string[];
 }

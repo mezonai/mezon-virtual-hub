@@ -5,8 +5,9 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { plainToInstance } from 'class-transformer';
 import { EntityManager, In, Not, Repository } from 'typeorm';
-import { ItemDto, ItemDtoRequest } from './dto/item.dto';
+import { GetItemsQueryDto, ItemDto, ItemDtoRequest } from './dto/item.dto';
 import { ItemEntity } from './entity/item.entity';
+import { TOOL_RATE_MAP } from '@constant/farm.constant';
 
 @Injectable()
 export class ItemService extends BaseService<ItemEntity> {
@@ -27,9 +28,21 @@ export class ItemService extends BaseService<ItemEntity> {
     return plainToInstance(ItemDto, items);
   }
 
-  async getAllItems() {
-    const items = await this.itemRepository.find();
-    return plainToInstance(ItemDto, items);
+  async getAllItems(query: GetItemsQueryDto) {
+    const items = await this.itemRepository.find({
+      where: { ...query },
+      order: { created_at: 'ASC' },
+    });
+
+    const itemDtos = plainToInstance(ItemDto, items);
+
+    if (query.type === ItemType.FARM_TOOL) {
+      for (const item of itemDtos) {
+        item.rate = TOOL_RATE_MAP[item.item_code!] ?? 0;
+      }
+    }
+
+    return itemDtos;
   }
 
   async getItemById(id: string) {

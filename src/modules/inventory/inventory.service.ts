@@ -22,8 +22,12 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { plainToInstance } from 'class-transformer';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { FoodInventoryResDto, ItemInventoryResDto } from './dto/inventory.dto';
+import { SlotWheelEntity } from '@modules/slot-wheel/entity/slot-wheel.entity';
+import { CLanWarehouseService } from '@modules/clan-warehouse/clan-warehouse.service';
+import { PlantService } from '@modules/plant/plant.service';
+import { RecipeEntity } from '@modules/recipe/entity/recipe.entity';
 
 @Injectable()
 export class InventoryService extends BaseService<Inventory> {
@@ -36,8 +40,12 @@ export class InventoryService extends BaseService<Inventory> {
     private readonly userService: UserService,
     @InjectRepository(ItemEntity)
     private readonly itemRepository: Repository<ItemEntity>,
+    @InjectRepository(RecipeEntity)
+    private readonly recipeRepo: Repository<RecipeEntity>,
     private readonly foodService: FoodService,
     private readonly petPlayerService: PetPlayersService,
+    private readonly clanWarehouseService: CLanWarehouseService,
+    private readonly plantService: PlantService,
   ) {
     super(inventoryRepository, Inventory.name);
   }
@@ -174,12 +182,26 @@ export class InventoryService extends BaseService<Inventory> {
     itemId: string,
     quantity = 1,
   ): Promise<Inventory> {
+
+    const existingInventory = await this.inventoryRepository.findOne({
+      where: {
+        user: { id: user.id },
+        item: { id: itemId },
+      },
+    });
+
+    if (existingInventory) {
+      existingInventory.quantity += quantity;
+      return await this.inventoryRepository.save(existingInventory);
+    }
+
     const newInventoryItem = this.inventoryRepository.create({
-      user,
+      user: { id: user.id },
       item: { id: itemId },
       quantity,
       inventory_type: InventoryType.ITEM,
     });
+
     return await this.inventoryRepository.save(newInventoryItem);
   }
 
@@ -346,6 +368,134 @@ export class InventoryService extends BaseService<Inventory> {
     }
   }
 
+  async awardSpinItemToUser(user: UserEntity, rewardItems: SlotWheelEntity[]) {
+    let goldDelta = 0;
+
+    for (const rewardItem of rewardItems) {
+      switch (rewardItem.type_item) {
+        case RewardItemType.GOLD: {
+          goldDelta += rewardItem.quantity;
+          break;
+        }
+
+        case RewardItemType.ITEM: {
+          if (!rewardItem.item_id) {
+            this.logger.warn(
+              `Reward ITEM missing item_id for user=${user.username}, rewardId=${rewardItem.id}`,
+            );
+          }
+
+          const item = await this.itemRepository.findOne({
+            where: { id: rewardItem.item_id! },
+          });
+
+          if (!item) {
+            this.logger.warn(
+              `Item not found: item_id=${rewardItem.item_id}, user=${user.username}`,
+            );
+            break;
+          }
+
+          let inventoryItem = await this.getUserInventoryItem(
+            user.id,
+            rewardItem.item_id!,
+          );
+
+          if (!inventoryItem) {
+            await this.addItemToInventory(user, item.id);
+          } else if (item.is_stackable) {
+            inventoryItem.quantity += rewardItem.quantity;
+            await this.save(inventoryItem);
+          }
+          break;
+        }
+
+        case RewardItemType.FOOD: {
+          if (!rewardItem.food_id) {
+            this.logger.warn(
+              `Reward FOOD missing food_id for user=${user.username}, rewardId=${rewardItem.id}`,
+            );
+            break;
+          }
+
+          const addedFood = await this.addFoodToInventory(user, rewardItem.food_id, rewardItem.quantity);
+          if (!addedFood) {
+            this.logger.warn(
+              `Food not found: food_id=${rewardItem.food_id}, user=${user.username}`,
+            );
+          }
+          break;
+        }
+
+        case RewardItemType.PET: {
+          if (!rewardItem.pet_id) {
+            this.logger.warn(
+              `Reward PET missing pet_id for user=${user.username}, rewardId=${rewardItem.id}`,
+            );
+            break;
+          }
+
+          const addedPet = await this.petPlayerService.createPetPlayers({
+            room_code: '',
+            user_id: user.id,
+            pet_id: rewardItem.pet_id,
+            current_rarity: rewardItem.pet!.rarity,
+          });
+          if (!addedPet) {
+            this.logger.warn(
+              `Pet not found: pet_id=${rewardItem.pet_id}, user=${user.username}`,
+            );
+          }
+          break;
+        }
+
+        case RewardItemType.PLANT: {
+          if (!rewardItem.plant_id) {
+            this.logger.warn(
+              `Reward Plant missing plant_id for user=${user.username}, rewardId=${rewardItem.id}`,
+            );
+            break;
+          }
+
+          if (!user.clan_id) {
+            const plant = await this.plantService.getPlantById(rewardItem.plant_id);
+            if (!plant) {
+              this.logger.warn(
+                `Plant not found: plant_id=${rewardItem.plant_id}, user=${user.username}`,
+              );
+              break;
+            }
+
+            goldDelta += plant.buy_price * rewardItem.quantity;
+            break;
+          } else {
+            const addedPlants = await this.clanWarehouseService.rewardSeedToClans(
+              user.clan_id!,
+              rewardItem.plant_id,
+              rewardItem.quantity,
+            );
+            if (!addedPlants) {
+              this.logger.warn(
+                `Plant not found: plant_id=${rewardItem.plant_id}, user=${user.username}`,
+              );
+            }
+            break;
+          }
+        }
+
+        default:
+          this.logger.warn(
+            `Unknown slot wheel reward type_item=${rewardItem.type_item}, user=${user.username}, rewardId=${rewardItem.id}`,
+          );
+          break;
+      }
+    }
+    if (goldDelta > 0) {
+      user.gold += goldDelta;
+      await this.userRepository.update(user.id, { gold: user.gold });
+    }
+  }
+
   async getItemsByType(user: UserEntity, type: ItemType) {
     if (type === ItemType.PET_FOOD) {
       const inventory = await this.find({
@@ -365,6 +515,77 @@ export class InventoryService extends BaseService<Inventory> {
       },
       relations: ['item'],
     });
+
+
+    if (type === ItemType.PET_FRAGMENT) {
+      const recipe = await this.recipeRepo.findOne({
+        where: { ingredients: { item: { type: ItemType.PET_FRAGMENT } } },
+        relations: ['pet'],
+      });
+      for (const inv of inventory) {
+        if (!inv.item) continue;
+        inv['species'] = recipe ? recipe.pet?.species : null;
+      }
+    }
     return plainToInstance(ItemInventoryResDto, inventory);
   }
+
+  async getListFragmentItemsBySpecies(user: UserEntity, species: string) {
+    const recipe = await this.recipeRepo.findOne({
+      where: { pet: { species } },
+      relations: ['ingredients', 'ingredients.item'],
+    });
+
+    if (!recipe) {
+      throw new NotFoundException('Recipe not found for the given species');
+    }
+
+    if (!recipe.ingredients?.length) {
+      throw new BadRequestException('Recipe has no ingredients');
+    }
+
+    const itemIds = recipe.ingredients
+      .filter(i => i.item?.type === ItemType.PET_FRAGMENT)
+      .map(i => i.item!.id);
+
+    const inventories = await this.inventoryRepository.find({
+      where: {
+        user: { id: user.id },
+        inventory_type: InventoryType.ITEM,
+        item: { id: In(itemIds) },
+      },
+      relations: ['item'],
+    });
+
+    const inventoryMap = new Map(
+      inventories.map(inv => [inv.item!.id, inv]),
+    );
+
+    const fragmentItems = recipe.ingredients
+      .filter(i => i.item?.type === ItemType.PET_FRAGMENT)
+      .map(ingredient => {
+        const inventory = inventoryMap.get(ingredient.item!.id);
+
+        if (inventory) {
+          inventory['index'] = ingredient.part;
+          return inventory;
+        }
+
+        return {
+          id: null,
+          inventory_type: InventoryType.ITEM,
+          equipped: false,
+          quantity: 0,
+          item: ingredient.item,
+          index: ingredient.part,
+        };
+      })
+
+    return {
+      recipe_id: recipe.id,
+      species,
+      fragmentItems: plainToInstance(ItemInventoryResDto, fragmentItems.reverse()),
+    };
+  }
+
 }

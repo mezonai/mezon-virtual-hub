@@ -2,7 +2,7 @@ import { Body, Controller, Get, Param, Patch, Post } from '@nestjs/common';
 import { FarmSlotService } from './farm-slots.service';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ClsService } from 'nestjs-cls';
-import { PlantOnSlotDto } from './dto/farm-slot.dto';
+import { DecreaseGrowthTimeDto, PlantOnSlotDto } from './dto/farm-slot.dto';
 import { USER_TOKEN } from '@constant';
 import { UserEntity } from '@modules/user/entity/user.entity';
 
@@ -32,6 +32,16 @@ export class FarmSlotsController {
   async plant(@Body() dto: PlantOnSlotDto) {
     const user = this.clsService.get<UserEntity>(USER_TOKEN);
     return this.farmSlotsService.plantToSlot(user.id, dto);
+  }
+  
+  @Post('/decrease-growth-time')
+  @ApiOperation({ summary: 'Decrease the growth time of a plant on a slot' })
+  async decreaseGrowthTime(@Body() dto: DecreaseGrowthTimeDto) {
+    return this.farmSlotsService.decreasePlantGrowTime(
+      dto.clan_id,
+      dto.farm_slot_id,
+      dto.tool_clan_warehouse_id,
+    );
   }
 
   @Patch(':farm_slot_id/harvest')

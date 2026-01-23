@@ -24,6 +24,14 @@ export enum ItemType {
   GLASSES = 'glasses',
   PET_CARD = 'pet_card',
   PET_FOOD = 'pet_food',
+  FARM_TOOL = 'farm_tool',
+  PET_FRAGMENT = 'pet_fragment',
+}
+
+export enum RecipeType {
+  PET = 'pet',
+  FARM_TOOL = 'farm_tool',
+  PLANT = 'plant',
 }
 
 export enum ItemTypeCloth {
@@ -42,6 +50,29 @@ export enum ItemCode {
   RARITY_CARD_RARE = 'rarity_card_rare',
   RARITY_CARD_EPIC = 'rarity_card_epic',
   RARITY_CARD_LEGENDARY = 'rarity_card_legendary',
+  HARVEST_TOOL_1 = 'harvest_tool_1',
+  HARVEST_TOOL_2 = 'harvest_tool_2',
+  HARVEST_TOOL_3 = 'harvest_tool_3',
+  HARVEST_TOOL_4 = 'harvest_tool_4',
+  HARVEST_TOOL_5 = 'harvest_tool_5',
+  GROWTH_PLANT_TOOL_1 = 'growth_plant_tool_1',
+  GROWTH_PLANT_TOOL_2 = 'growth_plant_tool_2',
+  GROWTH_PLANT_TOOL_3 = 'growth_plant_tool_3',
+  GROWTH_PLANT_TOOL_4 = 'growth_plant_tool_4',
+  GROWTH_PLANT_TOOL_5 = 'growth_plant_tool_5',
+  INTERRUPT_HARVEST_TOOL_1 = 'interrupt_harvest_tool_1',
+  INTERRUPT_HARVEST_TOOL_2 = 'interrupt_harvest_tool_2',
+  INTERRUPT_HARVEST_TOOL_3 = 'interrupt_harvest_tool_3',
+  INTERRUPT_HARVEST_TOOL_4 = 'interrupt_harvest_tool_4',
+  INTERRUPT_HARVEST_TOOL_5 = 'interrupt_harvest_tool_5',
+  PET_FRAGMENT_1 = 'pet_fragment_1',
+  PET_FRAGMENT_2 = 'pet_fragment_2',
+  PET_FRAGMENT_3 = 'pet_fragment_3',
+  PET_FRAGMENT_4 = 'pet_fragment_4',
+  VOLTSTRIDER_FRAGMENT_1 = 'voltstrider_fragment_1',
+  VOLTSTRIDER_FRAGMENT_2 = 'voltstrider_fragment_2',
+  VOLTSTRIDER_FRAGMENT_3 = 'voltstrider_fragment_3',
+  VOLTSTRIDER_FRAGMENT_4 = 'voltstrider_fragment_4',
   // Cosmetic items ....
 }
 
@@ -77,7 +108,28 @@ export enum InventoryType {
 }
 
 export enum InventoryClanType {
-  PLANT = 'plant'
+  PLANT = 'plant',
+
+  HARVEST_TOOL_1 = 'harvest_tool_1',
+  HARVEST_TOOL_2 = 'harvest_tool_2',
+  HARVEST_TOOL_3 = 'harvest_tool_3',
+  HARVEST_TOOL_4 = 'harvest_tool_4',
+  HARVEST_TOOL_5 = 'harvest_tool_5',
+
+  GROWTH_PLANT_TOOL_1 = 'growth_plant_tool_1',
+  GROWTH_PLANT_TOOL_2 = 'growth_plant_tool_2',
+  GROWTH_PLANT_TOOL_3 = 'growth_plant_tool_3',
+  GROWTH_PLANT_TOOL_4 = 'growth_plant_tool_4',
+  GROWTH_PLANT_TOOL_5 = 'growth_plant_tool_5',
+
+  INTERRUPT_HARVEST_TOOL_1 = 'interrupt_harvest_tool_1',
+  INTERRUPT_HARVEST_TOOL_2 = 'interrupt_harvest_tool_2',
+  INTERRUPT_HARVEST_TOOL_3 = 'interrupt_harvest_tool_3',
+  INTERRUPT_HARVEST_TOOL_4 = 'interrupt_harvest_tool_4',
+  INTERRUPT_HARVEST_TOOL_5 = 'interrupt_harvest_tool_5',
+  
+  LOCK_PLANT_TOOL = 'lock_plant_tool',
+  LOCK_PICK_TOOL = 'lock_pick_tool',
 }
 
 export enum AnimalRarity {
@@ -125,6 +177,8 @@ export enum SkillCode {
   THUNDERBOLT = 'ELECTRIC01',
   THUNDER_WAVE = 'ELECTRIC02',
   ELECTRO_BALL = 'ELECTRIC03',
+  STORM_DOMINON = 'ELECTRIC04',
+  ELECTRIC_CHARGE = 'ELECTRIC05',
   WATER_GUN = 'WATER01',
   BUBBLE = 'WATER02',
   AQUA_CUTTER = 'WATER03',
@@ -227,6 +281,10 @@ export enum QuestFrequency {
   DAILY = 'daily',
   WEEKLY = 'weekly',
   ONCE = 'once'
+}
+
+export enum SlotWheelType {
+  NORMAL_WHEEL = 'normal_wheel',
 }
 
 export enum RewardItemType {

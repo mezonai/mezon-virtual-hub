@@ -141,184 +141,182 @@ export class FarmRoom extends BaseGameRoom {
         this.schedulePlant(slotId, newPlant);
       } catch (err: any) {
         this.logger.error(`[PlantToSlot] Error: ${err.message}`);
+        client.send(MessageTypes.ON_PLANT_TO_PLANT_FAILED, {
+          message:
+            'Vật phẩm đã được sử dụng hết hoặc đang được người khác dùng. Vui lòng thử lại sau.',
+        });
       } finally {
         this.slotLocks.delete(slotId);
       }
     });
 
-    this.onMessage(
-      'waterPlant',
-      async (client, payload: { farm_slot_id: string }) => {
-        if (!client.sessionId || !payload.farm_slot_id) return;
-        const slotId = payload.farm_slot_id;
-        if (this.slotLocks.get(slotId)) {
-          client.send(MessageTypes.ON_WATER_PLANT_FAILED, {
-            sessionId: client.sessionId,
-            message: 'Ô này đang được tưới nước bởi người khác!',
-          });
+    this.onMessage('waterPlant', async (client, payload: { farm_slot_id: string }) => {
+      if (!client.sessionId || !payload.farm_slot_id) return;
+      const slotId = payload.farm_slot_id;
+      if (this.slotLocks.get(slotId)) {
+        client.send(MessageTypes.ON_WATER_PLANT_FAILED, {
+          sessionId: client.sessionId,
+          message: 'Ô này đang được tưới nước bởi người khác!',
+        });
+        return;
+      }
+
+      this.slotLocks.set(slotId, true);
+      try {
+        const player = this.state.players.get(client.sessionId);
+        if (!player) throw new Error('Player not found in room');
+
+        const user = await this.userRepository.findOne({
+          where: { id: player.user_id },
+        });
+        if (!user) throw new Error('User not found');
+
+        const slotBefore = await this.farmSlotsService.getSlotWithPlantById(
+          payload.farm_slot_id,
+        );
+
+        if (!slotBefore || !slotBefore.currentPlant) return;
+
+        const plantStage = PlantCareUtils.calculatePlantStage(
+          slotBefore.currentPlant.created_at,
+          slotBefore.currentPlant.grow_time,
+        );
+        const canHarvest = PlantCareUtils.checkCanHarvest(
+          slotBefore.currentPlant.created_at,
+          slotBefore.currentPlant.grow_time,
+          slotBefore.currentPlant.harvest_count,
+          this.getFarmConfig(),
+        );
+
+        if (plantStage === PlantState.HARVESTABLE || canHarvest) {
           return;
         }
 
-        this.slotLocks.set(slotId, true);
-        try {
-          const player = this.state.players.get(client.sessionId);
-          if (!player) throw new Error('Player not found in room');
+        const result = await this.farmSlotsService.waterPlant(
+          user.id,
+          slotId,
+        );
+        const updatedSlot =
+          await this.farmSlotsService.getSlotWithPlantById(slotId);
+        if (!updatedSlot || !updatedSlot.currentPlant) return;
 
-          const user = await this.userRepository.findOne({
-            where: { id: player.user_id },
-          });
-          if (!user) throw new Error('User not found');
+        const slotState =
+          this.state.farmSlotState.get(updatedSlot.id) || new FarmSlotState();
+        const newSlotState = new FarmSlotState();
+        Object.assign(newSlotState, slotState);
 
-          const slotBefore = await this.farmSlotsService.getSlotWithPlantById(
-            payload.farm_slot_id,
-          );
+        if (!slotState.currentPlant) return;
+        const newPlant = new PlantDataSchema();
+        Object.assign(newPlant, slotState.currentPlant);
+        newPlant.need_water = false;
+        newPlant.stage = slotState.currentPlant.stage;
+        newPlant.has_bug = slotState.currentPlant.has_bug;
+        newPlant.can_harvest = slotState.currentPlant.can_harvest;
+        newPlant.grow_time_remain = PlantCareUtils.calculateGrowRemain(
+          new Date(slotState.currentPlant.created_at),
+          slotState.currentPlant.grow_time,
+        );
 
-          if (!slotBefore || !slotBefore.currentPlant) return;
-
-          const plantStage = PlantCareUtils.calculatePlantStage(
-            slotBefore.currentPlant.created_at,
-            slotBefore.currentPlant.grow_time,
-          );
-          const canHarvest = PlantCareUtils.checkCanHarvest(
-            slotBefore.currentPlant.created_at,
-            slotBefore.currentPlant.grow_time,
-            slotBefore.currentPlant.harvest_count,
-            this.getFarmConfig(),
-          );
-
-          if (plantStage === PlantState.HARVESTABLE || canHarvest) {
-            return;
-          }
-
-          const result = await this.farmSlotsService.waterPlant(
-            user.id,
-            slotId,
-          );
-          const updatedSlot =
-            await this.farmSlotsService.getSlotWithPlantById(slotId);
-          if (!updatedSlot || !updatedSlot.currentPlant) return;
-
-          const slotState =
-            this.state.farmSlotState.get(updatedSlot.id) || new FarmSlotState();
-          const newSlotState = new FarmSlotState();
-          Object.assign(newSlotState, slotState);
-
-          if (!slotState.currentPlant) return;
-          const newPlant = new PlantDataSchema();
-          Object.assign(newPlant, slotState.currentPlant);
-          newPlant.need_water = false;
-          newPlant.stage = slotState.currentPlant.stage;
-          newPlant.has_bug = slotState.currentPlant.has_bug;
-          newPlant.can_harvest = slotState.currentPlant.can_harvest;
-          newPlant.grow_time_remain = PlantCareUtils.calculateGrowRemain(
-            new Date(slotState.currentPlant.created_at),
-            slotState.currentPlant.grow_time,
-          );
-
-          newSlotState.currentPlant = newPlant;
-          this.state.farmSlotState.set(updatedSlot.id, newSlotState);
-          client.send(MessageTypes.ON_WATER_PLANT, {
-            slotId,
-            sessionId: client.sessionId,
-            message: result.message,
-          });
-        } catch (err: any) {
-          this.logger.error(`[WaterPlant] Error: ${err.message}`);
-        } finally {
-          this.slotLocks.delete(slotId);
-        }
-      },
+        newSlotState.currentPlant = newPlant;
+        this.state.farmSlotState.set(updatedSlot.id, newSlotState);
+        client.send(MessageTypes.ON_WATER_PLANT, {
+          slotId,
+          sessionId: client.sessionId,
+          message: result.message,
+        });
+      } catch (err: any) {
+        this.logger.error(`[WaterPlant] Error: ${err.message}`);
+      } finally {
+        this.slotLocks.delete(slotId);
+      }
+    },
     );
 
-    this.onMessage(
-      'catchBug',
-      async (client, payload: { farm_slot_id: string }) => {
-        if (!client.sessionId || !payload.farm_slot_id) return;
-        const slotId = payload.farm_slot_id;
-        if (this.slotLocks.get(slotId)) {
-          client.send(MessageTypes.ON_CATCH_BUG_FAILED, {
-            sessionId: client.sessionId,
-            message: 'Ô này đang được bắt bọ bởi người khác!',
-          });
+    this.onMessage('catchBug', async (client, payload: { farm_slot_id: string }) => {
+      if (!client.sessionId || !payload.farm_slot_id) return;
+      const slotId = payload.farm_slot_id;
+      if (this.slotLocks.get(slotId)) {
+        client.send(MessageTypes.ON_CATCH_BUG_FAILED, {
+          sessionId: client.sessionId,
+          message: 'Ô này đang được bắt bọ bởi người khác!',
+        });
+        return;
+      }
+
+      this.slotLocks.set(slotId, true);
+      try {
+        const player = this.state.players.get(client.sessionId);
+        if (!player) throw new Error('Player not found in room');
+
+        const user = await this.userRepository.findOne({
+          where: { id: player.user_id },
+        });
+        if (!user) throw new Error('User not found');
+
+        const slotBefore = await this.farmSlotsService.getSlotWithPlantById(
+          payload.farm_slot_id,
+        );
+        if (!slotBefore || !slotBefore.currentPlant)
+          throw new Error('No plant in this slot');
+
+        const canHarvest = PlantCareUtils.checkCanHarvest(
+          slotBefore.currentPlant.created_at,
+          slotBefore.currentPlant.grow_time,
+          slotBefore.currentPlant.harvest_count,
+          this.getFarmConfig(),
+        );
+        if (canHarvest) {
           return;
         }
 
-        this.slotLocks.set(slotId, true);
-        try {
-          const player = this.state.players.get(client.sessionId);
-          if (!player) throw new Error('Player not found in room');
+        const result = await this.farmSlotsService.catchBug(
+          user.id,
+          payload.farm_slot_id,
+        );
 
-          const user = await this.userRepository.findOne({
-            where: { id: player.user_id },
-          });
-          if (!user) throw new Error('User not found');
+        const updatedSlot = await this.farmSlotsService.getSlotWithPlantById(
+          payload.farm_slot_id,
+        );
+        if (!updatedSlot) return;
 
-          const slotBefore = await this.farmSlotsService.getSlotWithPlantById(
-            payload.farm_slot_id,
-          );
-          if (!slotBefore || !slotBefore.currentPlant)
-            throw new Error('No plant in this slot');
+        const slotState =
+          this.state.farmSlotState.get(updatedSlot.id) || new FarmSlotState();
+        const newSlotState = new FarmSlotState();
+        Object.assign(newSlotState, slotState);
 
-          const canHarvest = PlantCareUtils.checkCanHarvest(
-            slotBefore.currentPlant.created_at,
-            slotBefore.currentPlant.grow_time,
-            slotBefore.currentPlant.harvest_count,
-            this.getFarmConfig(),
-          );
-          if (canHarvest) {
-            return;
-          }
+        if (!slotState.currentPlant) return;
+        const newPlant = new PlantDataSchema();
+        Object.assign(newPlant, slotState.currentPlant);
+        newPlant.need_water = slotState.currentPlant.need_water;
+        newPlant.stage = slotState.currentPlant.stage;
+        newPlant.has_bug = false;
+        newPlant.can_harvest = slotState.currentPlant.can_harvest;
+        newPlant.grow_time_remain = PlantCareUtils.calculateGrowRemain(
+          new Date(slotState.currentPlant.created_at),
+          slotState.currentPlant.grow_time,
+        );
 
-          const result = await this.farmSlotsService.catchBug(
-            user.id,
-            payload.farm_slot_id,
-          );
+        newSlotState.currentPlant = newPlant;
+        this.state.farmSlotState.set(updatedSlot.id, newSlotState);
 
-          const updatedSlot = await this.farmSlotsService.getSlotWithPlantById(
-            payload.farm_slot_id,
-          );
-          if (!updatedSlot) return;
-
-          const slotState =
-            this.state.farmSlotState.get(updatedSlot.id) || new FarmSlotState();
-          const newSlotState = new FarmSlotState();
-          Object.assign(newSlotState, slotState);
-
-          if (!slotState.currentPlant) return;
-          const newPlant = new PlantDataSchema();
-          Object.assign(newPlant, slotState.currentPlant);
-          newPlant.need_water = slotState.currentPlant.need_water;
-          newPlant.stage = slotState.currentPlant.stage;
-          newPlant.has_bug = false;
-          newPlant.can_harvest = slotState.currentPlant.can_harvest;
-          newPlant.grow_time_remain = PlantCareUtils.calculateGrowRemain(
-            new Date(slotState.currentPlant.created_at),
-            slotState.currentPlant.grow_time,
-          );
-
-          newSlotState.currentPlant = newPlant;
-          this.state.farmSlotState.set(updatedSlot.id, newSlotState);
-
-          client.send(MessageTypes.ON_CATCH_BUG, {
-            slotId: payload.farm_slot_id,
-            sessionId: client.sessionId,
-            message: result.message,
-          });
-        } catch (err: any) {
-          this.logger.error(`[CatchBug] Error: ${err.message}`);
-        } finally {
-          this.slotLocks.delete(slotId);
-        }
-      },
+        client.send(MessageTypes.ON_CATCH_BUG, {
+          slotId: payload.farm_slot_id,
+          sessionId: client.sessionId,
+          message: result.message,
+        });
+      } catch (err: any) {
+        this.logger.error(`[CatchBug] Error: ${err.message}`);
+      } finally {
+        this.slotLocks.delete(slotId);
+      }
+    },
     );
 
-    this.onMessage(
-      'startHarvest',
-      async (client, payload: { farm_slot_id: string }) => {
-        if (!client.sessionId || !payload.farm_slot_id) return;
-        const Player = this.state.players.get(client.sessionId);
-        if (!Player) return;
-
+    this.onMessage('startHarvest', async (client, payload: { farm_slot_id: string, harvest_tool_id?: string }) => {
+      if (!client.sessionId || !payload.farm_slot_id) return;
+      const Player = this.state.players.get(client.sessionId);
+      if (!Player) return;
+      try {
         if (Player.isHarvesting) {
           client.send(MessageTypes.ON_HARVEST_DENIED, {
             sessionId: client.sessionId,
@@ -341,7 +339,7 @@ export class FarmRoom extends BaseGameRoom {
           Player.clan_id,
         );
         const farmConfigs = this.getFarmConfig();
-        if (farmConfigs.HARVEST.ENABLE_LIMIT &&  userStat.remaining <= 0) {
+        if (farmConfigs.HARVEST.ENABLE_LIMIT && userStat.remaining <= 0) {
           client.send(MessageTypes.ON_HARVEST_DENIED, {
             sessionId: client.sessionId,
             message: 'Bạn đã hết lượt thu hoạch!',
@@ -366,13 +364,24 @@ export class FarmRoom extends BaseGameRoom {
           return;
         }
         const farmConfig = this.getFarmConfig();
+
+        let reductionRate = 0;
+        if (payload.harvest_tool_id) {
+          reductionRate = await this.farmSlotsService.getToolRate(payload.harvest_tool_id)
+
+          await this.farmSlotsService.decreaseToolQuantityInClanWarehouse(Player.clan_id, payload.harvest_tool_id);
+        }
+
+        const baseDelayMs = farmConfig.HARVEST.DELAY_MS;
+        const finalDelayMs = Math.floor(baseDelayMs * (1 - reductionRate));
+
         slot.harvestingBy = client.sessionId;
-        slot.harvestEndTime = Date.now() + farmConfig.HARVEST.DELAY_MS;
+        slot.harvestEndTime = Date.now() + finalDelayMs;
 
         Player.isHarvesting = true;
         const timer = setTimeout(async () => {
           await this.finishHarvest(slot.id, client.sessionId);
-        }, farmConfig.HARVEST.DELAY_MS);
+        }, finalDelayMs);
         this.harvestTimers.set(slot.id, timer);
         this.broadcast(MessageTypes.ON_HARVEST_STARTED, {
           slotId: slot.id,
@@ -380,11 +389,17 @@ export class FarmRoom extends BaseGameRoom {
           playerName: Player.display_name,
           endTime: slot.harvestEndTime,
         });
-      },
-    );
+      } catch (err: any) {
+        client.send(MessageTypes.ON_HARVEST_DENIED, {
+          sessionId: client.sessionId,
+          message:
+            'Vật phẩm đã được sử dụng hết hoặc đang được người khác dùng. Vui lòng thử lại sau.',
+        });
+      }
+    });
 
     this.onMessage('interruptHarvest', async (client, payload) => {
-      const { fromPlayerId, farm_slot_id } = payload;
+      const { fromPlayerId, farm_slot_id, interrupt_tool_id } = payload;
       if (!client.sessionId || !payload.farm_slot_id || !payload.fromPlayerId)
         return;
       const slot = this.state.farmSlotState.get(farm_slot_id);
@@ -441,7 +456,15 @@ export class FarmRoom extends BaseGameRoom {
 
         const chance = Math.random(); // 0 → 1
         const farmConfig = this.getFarmConfig();
-        const successRate = farmConfig.HARVEST.INTERRUPT_RATE;
+
+        let increaseRate = 0;
+        if (interrupt_tool_id) {
+          increaseRate = await this.farmSlotsService.getToolRate(interrupt_tool_id);
+
+          await this.farmSlotsService.decreaseToolQuantityInClanWarehouse(interrupter.clan_id, interrupt_tool_id);
+        }
+
+        const successRate = Math.min(farmConfig.HARVEST.INTERRUPT_RATE + increaseRate, 1);
 
         if (chance > successRate) {
           client.send(MessageTypes.ON_HARVEST_INTERRUPTED_FAILED, {
@@ -569,6 +592,90 @@ export class FarmRoom extends BaseGameRoom {
         });
       }
     });
+
+    this.onMessage('decreaseGrowthTime', async (client, payload: { farm_slot_id: string; growth_plant_tool_id: string }) => {
+      if (!client.sessionId || !payload.farm_slot_id) return;
+
+      const { farm_slot_id, growth_plant_tool_id } = payload;
+      if (this.slotLocks.get(farm_slot_id)) {
+        client.send(MessageTypes.ON_DECREASE_GROWTH_TIME_FAILED, {
+          sessionId: client.sessionId,
+          message: 'Ô này đang được sử dụng!',
+        });
+        return;
+      }
+
+      this.slotLocks.set(farm_slot_id, true);
+      try {
+        const player = this.state.players.get(client.sessionId);
+        if (!player) throw new Error('Player not found in room');
+
+        const user = await this.userRepository.findOne({
+          where: { id: player.user_id },
+        });
+        if (!user) throw new Error('User not found');
+
+        const slotBefore = await this.farmSlotsService.getSlotWithPlantById(
+          payload.farm_slot_id,
+        );
+        if (!slotBefore || !slotBefore.currentPlant)
+          throw new Error('No plant in this slot');
+
+        const canHarvest = PlantCareUtils.checkCanHarvest(
+          slotBefore.currentPlant.created_at,
+          slotBefore.currentPlant.grow_time,
+          slotBefore.currentPlant.harvest_count,
+          this.getFarmConfig(),
+        );
+        if (canHarvest) {
+          return;
+        }
+
+        const result =
+          await this.farmSlotsService.decreasePlantGrowTime(
+            player.clan_id,
+            farm_slot_id,
+            growth_plant_tool_id,
+          );
+
+        const updatedSlot = await this.farmSlotsService.getSlotWithPlantById(
+          payload.farm_slot_id,
+        );
+        if (!updatedSlot) return;
+
+        const slotState =
+          this.state.farmSlotState.get(updatedSlot.id) || new FarmSlotState();
+
+        const newPlant = this.mapSlotEntityToPlantSchema(updatedSlot);
+        if (!newPlant) return;
+
+        const newSlotState = new FarmSlotState();
+        Object.assign(newSlotState, slotState);
+        newSlotState.currentPlant = newPlant;
+
+        this.state.farmSlotState.set(updatedSlot.id, newSlotState);
+        this.schedulePlant(updatedSlot.id, newPlant);
+
+        this.broadcast(MessageTypes.ON_DECREASE_GROWTH_TIME, {
+          slotId: updatedSlot.id,
+          sessionId: client.sessionId,
+          typeTool: result.typeTool,
+          message: result.message,
+          growTimeRemain: result.newGrowTimeRemain,
+          stage: result.updatedPlantStage,
+        });
+      } catch (err: any) {
+        this.logger.error(`[GrowthPlantToolUse] Error: ${err.message}`);
+        client.send(MessageTypes.ON_DECREASE_GROWTH_TIME_FAILED, {
+          message:
+            'Vật phẩm đã được sử dụng hết hoặc đang được người khác dùng. Vui lòng thử lại sau.',
+        });
+      } finally {
+        this.slotLocks.delete(farm_slot_id);
+      }
+    },
+    );
+
   }
 
   getClientBySessionId(sessionId: string) {
@@ -602,6 +709,7 @@ export class FarmRoom extends BaseGameRoom {
           rarity: a?.current_rarity,
         })) ?? [],
     );
+    player.totalPetBattle = userData?.pet_players?.filter(pet => pet?.battle_slot > 0)?.length ?? 0;
     player.isInBattle = false;
     player.isHarvesting = false;
     player.clan_id = userData?.clan?.id ?? '';
@@ -731,7 +839,7 @@ export class FarmRoom extends BaseGameRoom {
     if (!Player) return;
 
     const slot = this.state.farmSlotState.get(slotId);
-    if (!slot || !slot.currentPlant) return;
+    if (!slot || !slot.currentPlant || slot.harvestingBy !== sessionId ) return;
 
     this.harvestTimers.delete(slotId);
     Player.isHarvesting = false;

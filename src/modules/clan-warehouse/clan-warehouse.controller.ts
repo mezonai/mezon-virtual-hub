@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Body, Query, BadRequestException, Param, ParseUUIDPipe} from '@nestjs/common';
 import {ApiBearerAuth, ApiOperation, ApiTags, ApiQuery} from '@nestjs/swagger';
 import { CLanWarehouseService } from './clan-warehouse.service';
-import { BuyPlantDto, SeedClanWarehouseDto } from './dto/clan-warehouse.dto';
+import { BuyItemDto, GetAllItemsInWarehouseQueryDto, SeedClanWarehouseDto } from './dto/clan-warehouse.dto';
 import { UserEntity } from '@modules/user/entity/user.entity';
 import { USER_TOKEN } from '@constant';
 import { ClsService } from 'nestjs-cls';
@@ -19,13 +19,16 @@ export class ClanWarehouseController {
 
   @Get()
   @ApiOperation({ summary: 'Get all item in warehouse for a clan' })
-  async getAllItemsInWarehouse(@Param('clan_id', ParseUUIDPipe) clanId: string) {
-    return this.farmWarehouseService.getAllItemsInWarehouse(clanId);
+  async getAllItemsInWarehouse(
+    @Param('clan_id', ParseUUIDPipe) clanId: string,
+    @Query() query: GetAllItemsInWarehouseQueryDto
+  ) {
+    return this.farmWarehouseService.getAllItemsInWarehouse(clanId, query);
   }
 
   @Post('buy-items-clan')
   @ApiOperation({ summary: 'Buy plant for a clan farm' })
-  async buyItemsForClan(@Body() dto: BuyPlantDto) {
+  async buyItemsForClan(@Body() dto: BuyItemDto) {
     const user = this.cls.get<UserEntity>(USER_TOKEN);
     return this.farmWarehouseService.buyItemsForClanFarm(user, dto);
   }
@@ -33,8 +36,10 @@ export class ClanWarehouseController {
   @Post('seed-plant-to-warehouse')
   @RequireAdmin()
   @ApiOperation({ summary: 'Add item in warehouse for a clan' })
-  async seedWarehouse(@Param('clan_id', ParseUUIDPipe) clanId: string,
-  @Body() dto: SeedClanWarehouseDto) {
+  async seedWarehouse(
+    @Param('clan_id', ParseUUIDPipe) clanId: string,
+    @Body() dto: SeedClanWarehouseDto,
+  ) {
     return await this.farmWarehouseService.seedClanWarehouse(clanId, dto);
   }
 }

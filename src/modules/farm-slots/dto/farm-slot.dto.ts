@@ -14,6 +14,20 @@ export class PlantOnSlotDto {
   plant_id: string;
 }
 
+export class DecreaseGrowthTimeDto {
+  @IsUUID()
+  @ApiProperty({ example: '0b071122-8ac2-4886-a8bd-64e1694f3ba7', description: 'Clan ID' })
+  clan_id: string;
+
+  @IsUUID()
+  @ApiProperty({ example: '0b071122-8ac2-4886-a8bd-64e1694f3ba7', description: 'Farm Slot ID' })
+  farm_slot_id: string;
+
+  @IsUUID()
+  @ApiProperty({ example: '1c23a3d4-abc1-4d7a-b123-1a2b3c4d5e6f', description: 'Plant ID (UUID)' })
+  tool_clan_warehouse_id: string;
+}
+
 export class PlantStatusDto {
   @IsUUID()
   @ApiProperty({ example: '1e8bfcfa-d145-44cf-8195-59dd2659c19e', description: 'SlotPlant ID' })

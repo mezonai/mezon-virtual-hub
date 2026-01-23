@@ -22,6 +22,10 @@ export class HealHandler implements ISkillHandler {
         if (skill.id === SkillCode.REST) {
             return this.handleRest(attacker);
         }
+
+        if (skill.id === SkillCode.ELECTRIC_CHARGE) {
+            return this.handleHeal(attacker);
+        }
         // Mặc định: hồi 30 máu
         return this.handleDefaultHeal(attacker);
     }
@@ -53,6 +57,15 @@ export class HealHandler implements ISkillHandler {
 
         // Gán trạng thái ngủ trong 2 lượt
         attacker.sleepTurns = 1;
+        return { damage: 0, effectValue: healAmount };
+    }
+
+    private handleHeal(attacker: PetState): {
+        damage: number;
+        effectValue: number;
+    } {
+        const healAmount = attacker.totalHp - attacker.currentHp;
+        attacker.currentHp = Math.min(attacker.totalHp, attacker.currentHp + healAmount);
         return { damage: 0, effectValue: healAmount };
     }
 }

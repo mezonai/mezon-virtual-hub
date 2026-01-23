@@ -9,5 +9,6 @@ import { PlantService } from './plant.service';
   imports: [TypeOrmModule.forFeature([PlantEntity]), ClsModule],
   providers: [PlantService],
   controllers: [PlantController],
+  exports: [PlantService],
 })
 export class PlantModule {}
