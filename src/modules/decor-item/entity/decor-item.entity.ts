@@ -6,13 +6,10 @@ import { Column, Entity, OneToMany } from 'typeorm';
 @Entity({ name: 'decor_items' })
 export class DecorItemEntity extends AuditEntity {
   @Column({ type: 'varchar', length: 50 })
-  type: string; // TREE, HOUSE
+  type: string;
 
   @Column({ type: 'varchar', length: 100 })
   name: string;
-
-  @Column({ type: 'varchar', length: 30, nullable: true })
-  rarity?: string;
 
   @OneToMany(() => ClanDecorInventoryEntity, (inv) => inv.decorItem)
   inventories: ClanDecorInventoryEntity[];

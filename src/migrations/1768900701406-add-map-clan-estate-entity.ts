@@ -49,7 +49,6 @@ export class AddMapClanEstateEntity1768900701406 implements MigrationInterface {
                 "id" uuid NOT NULL DEFAULT uuid_generate_v4(),
                 "type" character varying(50) NOT NULL,
                 "name" character varying(100) NOT NULL,
-                "rarity" character varying(30),
                 "created_at" TIMESTAMP NOT NULL DEFAULT now(),
                 "updated_at" TIMESTAMP NOT NULL DEFAULT now(),
                 "deleted_at" TIMESTAMP,
