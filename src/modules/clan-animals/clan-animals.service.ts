@@ -37,7 +37,7 @@ export class ClanAnimalsService {
     private readonly clanActivityService: ClanActivityService,
 
     private readonly recipeService: RecipeService,
-  ) {}
+  ) { }
 
   async buyAnimalForClan(user: UserEntity, dto: BuyAnimalForClanDto) {
     if (!user.clan_id) {
@@ -57,14 +57,14 @@ export class ClanAnimalsService {
       throw new NotFoundException('Pet clan not found');
     }
 
-    const existed = await this.clanAnimalRepository.findOne({
+    const existedPetClan = await this.clanAnimalRepository.findOne({
       where: {
         clan_id: user.clan_id,
         pet_clan_id: recipePetClan.pet_clan_id,
       },
     });
 
-    if (existed) {
+    if (existedPetClan) {
       throw new BadRequestException('Clan already has this pet');
     }
 
@@ -100,14 +100,14 @@ export class ClanAnimalsService {
         continue;
       }
     }
-    
+
     await this.clanActivityService.logActivity({
-          clanId: user.clan_id,
-          userId: user.id,
-          actionType: ClanActivityActionType.PURCHASE,
-          itemName: recipePetClan?.pet_clan!.name,
-          officeName: user.clan?.farm.name
-        });
+      clanId: user.clan_id,
+      userId: user.id,
+      actionType: ClanActivityActionType.PURCHASE,
+      itemName: recipePetClan?.pet_clan!.name,
+      officeName: user.clan?.farm.name
+    });
     const clanAnimal = this.clanAnimalRepository.create({
       clan_id: user.clan_id,
       pet_clan_id: recipePetClan.pet_clan_id,
@@ -137,6 +137,7 @@ export class ClanAnimalsService {
         id: clanAnimalId,
         clan_id: user.clan_id,
       },
+      relations: ['pet_clan'],
     });
 
     if (!clanAnimal) {
@@ -145,6 +146,23 @@ export class ClanAnimalsService {
 
     if (clanAnimal.is_active) {
       return clanAnimal;
+    }
+
+    const existedSameType = await this.clanAnimalRepository.findOne({
+      where: {
+        clan_id: user.clan_id,
+        is_active: true,
+        pet_clan: {
+          type: clanAnimal.pet_clan.type,
+        },
+      },
+      relations: ['pet_clan'],
+    });
+
+    if (existedSameType) {
+      throw new BadRequestException(
+        `Clan đã có pet loại ${clanAnimal.pet_clan.type} đang hoạt động`,
+      );
     }
 
     const activeCount = await this.clanAnimalRepository.count({
@@ -201,7 +219,7 @@ export class ClanAnimalsService {
     return this.clanAnimalRepository.save(clanAnimal);
   }
 
-  async getDogBiteInterruptRate(clanAnimalId: string, targetClanId: string) {
+  async getPetRate(clanAnimalId: string) {
     const clanAnimal = await this.clanAnimalRepository.findOne({
       where: {
         id: clanAnimalId,
@@ -214,20 +232,54 @@ export class ClanAnimalsService {
       throw new NotFoundException('Clan animal not found or inactive');
     }
 
-    if (clanAnimal.clan_id === targetClanId) return 0;
-
     const baseRate = clanAnimal.pet_clan?.base_rate_affect ?? 0;
     const bonusRate = clanAnimal.bonus_rate_affect ?? 0;
 
-    return Math.min(baseRate + bonusRate, 1);
+    return {
+      pet: clanAnimal.pet_clan?.name,
+      totalRate: baseRate + bonusRate
+    }
+  }
+
+  async gainExpForActiveClanAnimals(clanId: string, expGain = 1) {
+    const activeAnimals = await this.clanAnimalRepository.find({
+      where: {
+        clan_id: clanId,
+        is_active: true,
+      },
+      relations: ['pet_clan'],
+    });
+
+    for (const animal of activeAnimals) {
+      if (animal.level >= 10) continue;
+
+      animal.exp += expGain;
+
+      const requiredExp = this.getExpRequiredForNextLevel(animal.level);
+
+      if (animal.exp >= requiredExp) {
+        animal.level += 1;
+        animal.exp = 0;
+        animal.bonus_rate_affect += animal.pet_clan.base_rate_affect * 0.5;
+      }
+
+      await this.clanAnimalRepository.save(animal);
+    }
   }
 
   async getListClanAnimalsByClanId(query: GetListClanAnimalsDto) {
-    return this.clanAnimalRepository.find({
+    const listPet = await this.clanAnimalRepository.find({
       where: { ...query },
       relations: ['pet_clan'],
       order: { created_at: 'ASC' },
     });
+
+    for (const pet of listPet) {
+      pet['required_exp'] = this.getExpRequiredForNextLevel(pet.level);
+      pet['total_rate_affect'] = (pet.pet_clan?.base_rate_affect ?? 0) + (pet.bonus_rate_affect ?? 0);
+    }
+
+    return listPet;
   }
 
   async deleteClanAnimal(user: UserEntity, clanAnimalId: string) {
@@ -270,4 +322,14 @@ export class ClanAnimalsService {
 
     return null;
   }
+
+  getExpRequiredForNextLevel(level: number) {
+    const BASE_EXP = 100;
+    const INCREMENT = 50;
+    const MAX_LEVEL = 10;
+
+    if (level >= MAX_LEVEL) return Infinity;
+
+    return BASE_EXP + (level - 1) * INCREMENT;
+  };
 }

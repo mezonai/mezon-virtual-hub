@@ -1,5 +1,5 @@
 import { AnimalRarity } from '@enum';
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Exclude, Expose, Type } from 'class-transformer';
 import { IsInt, IsNumber, IsOptional, IsUUID, Min } from 'class-validator';
 
