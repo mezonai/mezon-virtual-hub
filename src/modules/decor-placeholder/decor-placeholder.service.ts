@@ -79,17 +79,35 @@ export class DecorPlaceholderService extends BaseService<DecorPlaceholderEntity>
       code: dto.code,
       type: dto.type,
       position_index: dto.position_index ?? 1,
-      max_items: dto.max_items ?? 1,
     });
 
     return this.placeholderRepo.save(placeholder);
   }
 
-  async updatePlaceholder(
-    id: string,
-    dto: UpdateDecorPlaceholderDto,
-  ) {
+  async updatePlaceholder(id: string, dto: UpdateDecorPlaceholderDto) {
     const placeholder = await this.getPlaceholderById(id);
+
+    if (dto.type && placeholder.configs?.length) {
+      throw new BadRequestException(
+        'Cannot change placeholder type when it is already used',
+      );
+    }
+
+    const newMapId = dto.map_id ?? placeholder.map.id;
+    const newCode = dto.code ?? placeholder.code;
+
+    const existed = await this.placeholderRepo.findOne({
+      where: {
+        map: { id: newMapId },
+        code: newCode,
+      },
+    });
+
+    if (existed && existed.id !== id) {
+      throw new BadRequestException(
+        'Placeholder code already exists in this map',
+      );
+    }
 
     if (dto.map_id && dto.map_id !== placeholder.map.id) {
       const map = await this.mapRepo.findOne({
@@ -103,7 +121,9 @@ export class DecorPlaceholderService extends BaseService<DecorPlaceholderEntity>
       placeholder.map = map;
     }
 
-    Object.assign(placeholder, dto);
+    const { map_id, ...rest } = dto;
+    Object.assign(placeholder, rest);
+
     return this.placeholderRepo.save(placeholder);
   }
 

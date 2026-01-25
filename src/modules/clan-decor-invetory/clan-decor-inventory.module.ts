@@ -5,6 +5,7 @@ import { ClanDecorInventoryService } from './clan-decor-inventory.service';
 import { ClanDecorInventoryController } from './clan-decor-inventory.controller';
 import { ClanEntity } from '@modules/clan/entity/clan.entity';
 import { DecorItemEntity } from '@modules/decor-item/entity/decor-item.entity';
+import { MapDecorConfigEntity } from '@modules/map-decor-config/entity/map-decor-config.entity';
 
 @Module({
   imports: [
@@ -12,6 +13,7 @@ import { DecorItemEntity } from '@modules/decor-item/entity/decor-item.entity';
       ClanDecorInventoryEntity,
       ClanEntity,
       DecorItemEntity,
+      MapDecorConfigEntity,
     ]),
   ],
   controllers: [ClanDecorInventoryController],

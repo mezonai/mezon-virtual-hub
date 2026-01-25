@@ -65,11 +65,15 @@ export class DecorItemService extends BaseService<DecorItemEntity> {
     return this.decorItemRepo.save(decor);
   }
 
-  async updateDecorItem(
-    id: string,
-    dto: UpdateDecorItemDto,
-  ) {
+  async updateDecorItem(id: string, dto: UpdateDecorItemDto) {
     const decor = await this.getDecorItemById(id);
+
+    if (dto.type && decor.mapConfigs?.length) {
+      throw new BadRequestException(
+        'Cannot change type of decor item already used on map',
+      );
+    }
+
     Object.assign(decor, dto);
     return this.decorItemRepo.save(decor);
   }

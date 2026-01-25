@@ -3,19 +3,19 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { MapDecorConfigEntity } from './entity/map-decor-config.entity';
 import { MapDecorConfigService } from './map-decor-config.service';
 import { MapDecorConfigController } from './map-decor-config.controller';
-import { ClanEntity } from '@modules/clan/entity/clan.entity';
-import { MapEntity } from '@modules/map/entity/map.entity';
 import { DecorPlaceholderEntity } from '@modules/decor-placeholder/entity/decor-placeholder.entity';
 import { DecorItemEntity } from '@modules/decor-item/entity/decor-item.entity';
+import { ClanEstateEntity } from '@modules/clan-estate/entity/clan-estate.entity';
+import { ClanDecorInventoryEntity } from '@modules/clan-decor-invetory/entity/clan-decor-inventory.entity';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([
       MapDecorConfigEntity,
-      ClanEntity,
-      MapEntity,
       DecorPlaceholderEntity,
       DecorItemEntity,
+      ClanEstateEntity,
+      ClanDecorInventoryEntity,
     ]),
   ],
   controllers: [MapDecorConfigController],

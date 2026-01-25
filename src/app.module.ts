@@ -54,8 +54,8 @@ import { MapModule } from '@modules/map/map.module';
 import { ClanEstateModule } from '@modules/clan-estate/clan-estate.module';
 import { DecorItemModule } from '@modules/decor-item/decor-item.module';
 import { MapDecorConfigModule } from '@modules/map-decor-config/map-decor-config.module';
-import { DecorPlaceholderController } from '@modules/decor-placeholder/decor-placeholder.controller';
 import { ClanDecorInventoryModule } from '@modules/clan-decor-invetory/clan-decor-inventory.module';
+import { DecorPlaceholderModule } from '@modules/decor-placeholder/decor-placeholder.module';
 
 @Module({
   imports: [
@@ -119,7 +119,7 @@ import { ClanDecorInventoryModule } from '@modules/clan-decor-invetory/clan-deco
     MapModule,
     ClanEstateModule,
     DecorItemModule,
-    DecorPlaceholderController,
+    DecorPlaceholderModule,
     ClanDecorInventoryModule,
     MapDecorConfigModule,
   ],

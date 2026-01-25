@@ -18,7 +18,6 @@ import { RequireAdmin } from '@libs/decorator';
 import { MapService } from './map.service';
 import {
   CreateMapDto,
-  MapQueryDto,
   UpdateMapDto,
 } from './dto/map.dto';
 
@@ -30,8 +29,8 @@ export class MapController {
 
   @Get()
   @ApiOperation({ summary: 'Get all maps' })
-  getAllMaps(@Query() query: MapQueryDto) {
-    return this.mapService.getAllMaps(query);
+  getAllMaps() {
+    return this.mapService.getAllMaps();
   }
 
   @Get(':id')

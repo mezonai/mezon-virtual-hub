@@ -21,16 +21,13 @@ export class DecorPlaceholderEntity extends AuditEntity {
   map: MapEntity;
 
   @Column({ type: 'varchar', length: 50 })
-  code: string; // TREE_1, MAIN_HOUSE
+  code: string;
 
   @Column({ type: 'varchar', length: 50 })
-  type: string; // TREE, HOUSE
+  type: string;
 
   @Column({ type: 'int', default: 1 })
   position_index: number;
-
-  @Column({ type: 'int', default: 1 })
-  max_items: number;
 
   @OneToMany(() => MapDecorConfigEntity, (cfg) => cfg.placeholder)
   configs: MapDecorConfigEntity[];

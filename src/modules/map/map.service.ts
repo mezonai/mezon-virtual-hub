@@ -9,7 +9,6 @@ import { BaseService } from '@libs/base/base.service';
 import { MapEntity } from './entity/map.entity';
 import {
   CreateMapDto,
-  MapQueryDto,
   UpdateMapDto,
 } from './dto/map.dto';
 
@@ -22,14 +21,8 @@ export class MapService extends BaseService<MapEntity> {
     super(mapRepo, MapEntity.name);
   }
 
-  async getAllMaps(query: MapQueryDto) {
+  async getAllMaps() {
     const qb = this.mapRepo.createQueryBuilder('map');
-
-    if (query.is_locked !== undefined) {
-      qb.where('map.is_locked = :is_locked', {
-        is_locked: query.is_locked,
-      });
-    }
 
     qb.orderBy('map.index', 'ASC');
 
@@ -60,12 +53,31 @@ export class MapService extends BaseService<MapEntity> {
       );
     }
 
+    const existedIndex = await this.mapRepo.findOne({
+      where: { index: dto.index },
+    });
+
+    if (existedIndex) {
+      throw new BadRequestException('Map index already exists');
+    }
+
     const map = this.mapRepo.create(dto);
     return this.mapRepo.save(map);
   }
 
   async updateMap(id: string, dto: UpdateMapDto) {
     const map = await this.getMapById(id);
+
+    if (dto.index !== undefined && dto.index !== map.index) {
+      const existedIndex = await this.mapRepo.findOne({
+        where: { index: dto.index },
+      });
+
+      if (existedIndex) {
+        throw new BadRequestException('Map index already exists');
+      }
+    }
+
     Object.assign(map, dto);
     return this.mapRepo.save(map);
   }

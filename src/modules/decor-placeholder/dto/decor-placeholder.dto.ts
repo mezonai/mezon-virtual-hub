@@ -35,12 +35,6 @@ export class CreateDecorPlaceholderDto {
   @IsInt()
   @Min(1)
   position_index?: number;
-
-  @ApiPropertyOptional({ example: 1 })
-  @IsOptional()
-  @IsInt()
-  @Min(1)
-  max_items?: number;
 }
 
 export class UpdateDecorPlaceholderDto extends PartialType(

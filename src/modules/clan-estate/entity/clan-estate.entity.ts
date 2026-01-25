@@ -8,7 +8,8 @@ import { MapEntity } from '@modules/map/entity/map.entity';
 export class ClanEstateEntity extends AuditEntity {
 
   @ManyToOne(() => ClanEntity, (clan) => clan.estates, {
-    nullable: false
+    nullable: false,
+    onDelete: 'CASCADE',
   })
   @JoinColumn({
     name: 'clan_id',
@@ -17,7 +18,8 @@ export class ClanEstateEntity extends AuditEntity {
   clan: ClanEntity;
 
   @ManyToOne(() => MapEntity, (map) => map.clanEstates, {
-    nullable: false
+    nullable: false,
+    onDelete: 'CASCADE',
   })
   @JoinColumn({
     name: 'real_estate_id',

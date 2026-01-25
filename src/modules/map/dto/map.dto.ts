@@ -27,10 +27,3 @@ export class CreateMapDto {
 }
 
 export class UpdateMapDto extends PartialType(CreateMapDto) {}
-
-export class MapQueryDto {
-  @ApiPropertyOptional({ example: false })
-  @IsOptional()
-  @IsBoolean()
-  is_locked?: boolean;
-}

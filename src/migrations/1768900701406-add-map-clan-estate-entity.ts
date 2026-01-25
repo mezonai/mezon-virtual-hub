@@ -37,7 +37,6 @@ export class AddMapClanEstateEntity1768900701406 implements MigrationInterface {
                 "code" character varying(50) NOT NULL,
                 "type" character varying(50) NOT NULL,
                 "position_index" integer NOT NULL DEFAULT 1,
-                "max_items" integer NOT NULL DEFAULT 1,
                 "created_at" TIMESTAMP NOT NULL DEFAULT now(),
                 "updated_at" TIMESTAMP NOT NULL DEFAULT now(),
                 "deleted_at" TIMESTAMP,

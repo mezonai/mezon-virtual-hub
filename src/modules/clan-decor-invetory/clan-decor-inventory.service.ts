@@ -13,6 +13,7 @@ import {
 } from './dto/clan-decor-inventory.dto';
 import { ClanEntity } from '@modules/clan/entity/clan.entity';
 import { DecorItemEntity } from '@modules/decor-item/entity/decor-item.entity';
+import { MapDecorConfigEntity } from '@modules/map-decor-config/entity/map-decor-config.entity';
 
 @Injectable()
 export class ClanDecorInventoryService extends BaseService<ClanDecorInventoryEntity> {
@@ -23,17 +24,18 @@ export class ClanDecorInventoryService extends BaseService<ClanDecorInventoryEnt
     private readonly clanRepo: Repository<ClanEntity>,
     @InjectRepository(DecorItemEntity)
     private readonly decorItemRepo: Repository<DecorItemEntity>,
+    @InjectRepository(MapDecorConfigEntity)
+    private readonly configRepo: Repository<MapDecorConfigEntity>,
   ) {
     super(inventoryRepo, ClanDecorInventoryEntity.name);
   }
 
-  async getAllClanDecorInventories(
-    query: ClanDecorInventoryQueryDto,
-  ) {
+  async getAllClanDecorInventories(query: ClanDecorInventoryQueryDto) {
     const qb = this.inventoryRepo
       .createQueryBuilder('inventory')
       .leftJoinAndSelect('inventory.clan', 'clan')
-      .leftJoinAndSelect('inventory.decorItem', 'decorItem');
+      .leftJoinAndSelect('inventory.decorItem', 'decorItem')
+      .orderBy('inventory.created_at', 'DESC');
 
     if (query.clan_id) {
       qb.andWhere('clan.id = :clan_id', {
@@ -59,46 +61,49 @@ export class ClanDecorInventoryService extends BaseService<ClanDecorInventoryEnt
     return inventory;
   }
 
-  async addDecorItemToClan(
-    dto: CreateClanDecorInventoryDto,
-  ) {
+  async addDecorItemToClan(dto: CreateClanDecorInventoryDto) {
     const clan = await this.clanRepo.findOne({
       where: { id: dto.clan_id },
     });
-    if (!clan) {
-      throw new NotFoundException('Clan not found');
-    }
+    if (!clan) throw new NotFoundException('Clan not found');
 
     const decorItem = await this.decorItemRepo.findOne({
       where: { id: dto.decor_item_id },
     });
-    if (!decorItem) {
-      throw new NotFoundException('Decor item not found');
-    }
-
-    const existed = await this.inventoryRepo.findOne({
-      where: {
-        clan: { id: dto.clan_id },
-        decorItem: { id: dto.decor_item_id },
-      },
-    });
-
-    if (existed) {
-      throw new BadRequestException(
-        'Clan already owns this decor item',
-      );
-    }
+    if (!decorItem) throw new NotFoundException('Decor item not found');
 
     const inventory = this.inventoryRepo.create({
       clan,
       decorItem,
     });
 
-    return this.inventoryRepo.save(inventory);
+    try {
+      return await this.inventoryRepo.save(inventory);
+    } catch (e) {
+      throw new BadRequestException(
+        'Clan already owns this decor item',
+      );
+    }
   }
 
   async removeDecorItemFromClan(id: string) {
     const inventory = await this.getClanDecorInventoryById(id);
+
+    const used = await this.configRepo.exist({
+      where: {
+        decorItem: { id: inventory.decorItem.id },
+        clanEstate: {
+          clan: { id: inventory.clan.id },
+        },
+      },
+    });
+
+    if (used) {
+      throw new BadRequestException(
+        'Cannot remove decor item that is currently placed on map',
+      );
+    }
+
     await this.inventoryRepo.remove(inventory);
     return { success: true };
   }
