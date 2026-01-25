@@ -4,100 +4,100 @@
       "name": "Tóc hắc phong chiến binh",
       "type": "hair",
       "gold": 10,
-      "gender": "male",
+      "gender": "not specified",
       "item_code": null,
       "is_purchasable": false,
-      "is_stackable": false
+      "is_stackable": true
     },
     {
       "id": "fe1750c8-999c-47c3-89e7-453ac0bd4a83",
       "name": "Tóc băng quang lãng tử",
       "type": "hair",
       "gold": 10,
-      "gender": "male",
+      "gender": "not specified",
       "item_code": null,
       "is_purchasable": false,
-      "is_stackable": false
+      "is_stackable": true
     },
     {
       "id": "ecc51601-f713-4425-add7-9051ee0cdc08",
       "name": "Tóc tuyết linh dịu dàng",
       "type": "hair",
       "gold": 10,
-      "gender": "male",
+      "gender": "not specified",
       "item_code": null,
       "is_purchasable": false,
-      "is_stackable": false
+      "is_stackable": true
     },
     {
       "id": "39de7bf9-8233-4dcc-a8f0-49087e5e8bd5",
       "name": "Tóc hỏa diễm nổi loạn",
       "type": "hair",
       "gold": 10,
-      "gender": "male",
+      "gender": "not specified",
       "item_code": null,
       "is_purchasable": false,
-      "is_stackable": false
+      "is_stackable": true
     },
     {
       "id": "b4047ae0-e565-4edc-93aa-6bd44663829f",
       "name": "Tóc hồng Phản Nghịch",
       "type": "hair",
       "gold": 10,
-      "gender": "male",
+      "gender": "not specified",
       "item_code": null,
       "is_purchasable": false,
-      "is_stackable": false
+      "is_stackable": true
     },
     {
       "id": "f929197c-7234-4e7b-8828-a75b62135da3",
       "name": "Tóc song linh băng hỏa",
       "type": "hair",
       "gold": 10,
-      "gender": "female",
+      "gender": "not specified",
       "item_code": null,
       "is_purchasable": false,
-      "is_stackable": false
+      "is_stackable": true
     },
     {
       "id": "f35b2720-f224-41ea-a46d-b3fe48029985",
       "name": "Tóc lam hoa pháp sư",
       "type": "hair",
       "gold": 10,
-      "gender": "female",
+      "gender": "not specified",
       "item_code": null,
       "is_purchasable": false,
-      "is_stackable": false
+      "is_stackable": true
     },
     {
       "id": "b05b537b-436d-4d80-aa64-34f425126fc7",
       "name": "Tóc mộng tím ngọt ngào",
       "type": "hair",
       "gold": 10,
-      "gender": "female",
+      "gender": "not specified",
       "item_code": null,
       "is_purchasable": false,
-      "is_stackable": false
+      "is_stackable": true
     },
     {
       "id": "cfbff037-ec54-41b5-982e-bf8d5dbe6425",
       "name": "Tóc cầu vồng nhiệt huyết",
       "type": "hair",
       "gold": 10,
-      "gender": "female",
+      "gender": "not specified",
       "item_code": null,
       "is_purchasable": false,
-      "is_stackable": false
+      "is_stackable": true
     },
     {
       "id": "7f8558e9-13d2-48ff-afe6-2cd9dc68b90c",
       "name": "Tóc bạch hồ linh thú",
       "type": "hair",
       "gold": 10,
-      "gender": "female",
+      "gender": "not specified",
       "item_code": null,
       "is_purchasable": false,
-      "is_stackable": false
+      "is_stackable": true
     },
 
     {
@@ -105,99 +105,99 @@
       "name": "Áo Xuân Hồng Phát",
       "type": "upper",
       "gold": 10,
-      "gender": "male",
+      "gender": "not specified",
       "item_code": null,
       "is_purchasable": false,
-      "is_stackable": false
+      "is_stackable": true
     },
     {
       "id": "d50fb4d1-69c2-499a-a559-df5008444f51",
       "name": "Áo Naruto Khai Lộc",
       "type": "upper",
       "gold": 10,
-      "gender": "male",
+      "gender": "not specified",
       "item_code": null,
       "is_purchasable": false,
-      "is_stackable": false
+      "is_stackable": true
     },
     {
       "id": "315485ad-6dfa-4060-a0de-784beef502ff",
       "name": "Quần Xuân Sung Túc",
       "type": "lower",
       "gold": 10,
-      "gender": "male",
+      "gender": "not specified",
       "item_code": null,
       "is_purchasable": false,
-      "is_stackable": false
+      "is_stackable": true
     },
     {
       "id": "cc0372c3-5363-4f87-a2df-cfa92c6bf8f3",
       "name": "Quần Naruto Khai Lộc",
       "type": "lower",
       "gold": 10,
-      "gender": "male",
+      "gender": "not specified",
       "item_code": null,
       "is_purchasable": false,
-      "is_stackable": false
+      "is_stackable": true
     },
     {
       "id": "8a3cd13c-abc9-4ed4-a580-9c4d5b796b9a",
       "name": "Áo Hồng Phúc",
       "type": "upper",
       "gold": 10,
-      "gender": "female",
+      "gender": "not specified",
       "item_code": null,
       "is_purchasable": false,
-      "is_stackable": false
+      "is_stackable": true
     },
     {
       "id": "edbc3446-6304-4ca1-87b9-5ecfa4aff525",
       "name": "Áo Dài Hỷ Sắc",
       "type": "upper",
       "gold": 10,
-      "gender": "female",
+      "gender": "not specified",
       "item_code": null,
       "is_purchasable": false,
-      "is_stackable": false
+      "is_stackable": true
     },
     {
       "id": "e9da65c4-205a-46f7-a25e-2ff36df34547",
       "name": "Váy Hồng Phúc",
-      "type": "hair",
+      "type": "lower",
       "gold": 10,
-      "gender": "female",
+      "gender": "not specified",
       "item_code": null,
       "is_purchasable": false,
-      "is_stackable": false
+      "is_stackable": true
     },
     {
       "id": "33dfbb0b-1bf4-4827-a56b-e1d43604a797",
       "name": "Váy Dài Hỷ Sắc",
-      "type": "hair",
+      "type": "lower",
       "gold": 10,
-      "gender": "female",
+      "gender": "not specified",
       "item_code": null,
       "is_purchasable": false,
-      "is_stackable": false
+      "is_stackable": true
     },
     {
       "id": "cd3905b7-ae23-453c-b1b5-c913e9dade38",
       "name": "Áo sắc cờ Việt Nam",
-      "type": "hair",
+      "type": "upper",
       "gold": 10,
       "gender": "not specified",
       "item_code": null,
       "is_purchasable": false,
-      "is_stackable": false
+      "is_stackable": true
     },
     {
       "id": "06efbb32-b6ba-44a1-af83-63b311efe012",
       "name": "Quần Jean cá tính",
-      "type": "hair",
+      "type": "lower",
       "gold": 10,
       "gender": "not specified",
       "item_code": null,
       "is_purchasable": false,
-      "is_stackable": false
+      "is_stackable": true
     }
   ]

@@ -50,6 +50,12 @@ import { SlotWheelModule } from './modules/slot-wheel/slot-wheel.module';
 import { RecipeModule } from '@modules/recipe/recipe.module';
 import { IngredientModule } from '@modules/ingredient/ingredient.module';
 import { WheelModule } from '@modules/wheel/wheel.module';
+import { MapModule } from '@modules/map/map.module';
+import { ClanEstateModule } from '@modules/clan-estate/clan-estate.module';
+import { DecorItemModule } from '@modules/decor-item/decor-item.module';
+import { MapDecorConfigModule } from '@modules/map-decor-config/map-decor-config.module';
+import { DecorPlaceholderController } from '@modules/decor-placeholder/decor-placeholder.controller';
+import { ClanDecorInventoryModule } from '@modules/clan-decor-invetory/clan-decor-inventory.module';
 
 @Module({
   imports: [
@@ -110,6 +116,12 @@ import { WheelModule } from '@modules/wheel/wheel.module';
     RecipeModule,
     IngredientModule,
     WheelModule,
+    MapModule,
+    ClanEstateModule,
+    DecorItemModule,
+    DecorPlaceholderController,
+    ClanDecorInventoryModule,
+    MapDecorConfigModule,
   ],
 })
 export class AppModule {}

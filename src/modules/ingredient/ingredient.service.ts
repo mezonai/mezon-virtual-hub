@@ -1,5 +1,5 @@
 import { BaseService } from '@libs/base/base.service';
-import { CreateIngredientDto, ExchangeRecipeDto, UpdateIngredientDto } from './dto/ingredient.dto';
+import { CreatedPetResponseDto, CreateIngredientDto, ExchangeRecipeDto, UpdateIngredientDto } from './dto/ingredient.dto';
 import { IngredientEntity } from '@modules/ingredient/entity/ingredient.entity';
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -11,6 +11,7 @@ import { PetPlayersService } from '@modules/pet-players/pet-players.service';
 import { ItemType } from '@enum';
 import { ItemEntity } from '@modules/item/entity/item.entity';
 import { RecipeService } from '@modules/recipe/recipe.service';
+import { plainToInstance } from 'class-transformer';
 
 @Injectable()
 export class IngredientService extends BaseService<IngredientEntity> {
@@ -96,17 +97,17 @@ export class IngredientService extends BaseService<IngredientEntity> {
       }
     }
 
-    await this.petPlayersService.createPetPlayers({
-      room_code: '',
-      user_id: user.id,
-      pet_id: recipe.pet_id,
-      current_rarity: recipe.pet?.rarity,
-    },quantity);
+    const createdPetPlayers = await this.petPlayersService.createPetPlayers({
+        room_code: '',
+        user_id: user.id,
+        pet_id: recipe.pet_id,
+        current_rarity: recipe.pet?.rarity,
+      });
 
     return {
       success: true,
       quantity,
-      pet: recipe.pet,
+      createdPet: plainToInstance(CreatedPetResponseDto, createdPetPlayers[0]),
     };
   }
 

@@ -74,10 +74,6 @@ export class CLanWarehouseService {
 
     const items = await qb.getMany();
 
-    if (items.length === 0) {
-      throw new NotFoundException('No items found in clan warehouse');
-    }
-
     for (const item of items) {
       if (item.type !== InventoryClanType.PLANT) {
         if (item.item) {

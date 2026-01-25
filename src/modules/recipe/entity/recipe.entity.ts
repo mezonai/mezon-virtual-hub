@@ -11,6 +11,8 @@ import { ItemEntity } from '@modules/item/entity/item.entity';
 import { IngredientEntity } from '@modules/ingredient/entity/ingredient.entity';
 import { RecipeType } from '@enum';
 import { PlantEntity } from '@modules/plant/entity/plant.entity';
+import { MapEntity } from '@modules/map/entity/map.entity';
+import { DecorItemEntity } from '@modules/decor-item/entity/decor-item.entity';
 
 @Entity('recipe')
 export class RecipeEntity {
@@ -56,6 +58,27 @@ export class RecipeEntity {
     foreignKeyConstraintName: 'FK_recipe_plant_id',
   })
   plant?: PlantEntity;
+
+  @Column({ type: 'uuid', nullable: true })
+  map_id?: string;
+
+  @ManyToOne(() => MapEntity, { eager: true, nullable: true })
+  @JoinColumn({
+    name: 'map_id',
+    foreignKeyConstraintName: 'FK_recipe_map_id',
+  })
+  map?: MapEntity;
+
+  
+  @Column({ type: 'uuid', nullable: true })
+  decor_item_id?: string;
+
+  @ManyToOne(() => DecorItemEntity, { eager: true, nullable: true })
+  @JoinColumn({
+    name: 'decor_item_id',
+    foreignKeyConstraintName: 'FK_recipe_decor_item_id',
+  })
+  decor_item?: DecorItemEntity;
 
   @OneToMany(() => IngredientEntity, (ing) => ing.recipe, {
     cascade: true,
