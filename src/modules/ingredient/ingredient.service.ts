@@ -1,5 +1,5 @@
 import { BaseService } from '@libs/base/base.service';
-import { CreatedPetResponseDto, CreateIngredientDto, ExchangeRecipeDto, UpdateIngredientDto } from './dto/ingredient.dto';
+import { CreatedPetResponseDto, CreateIngredientDto, UpdateIngredientDto } from './dto/ingredient.dto';
 import { IngredientEntity } from '@modules/ingredient/entity/ingredient.entity';
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -8,10 +8,10 @@ import { Inventory } from '@modules/inventory/entity/inventory.entity';
 import { UserEntity } from '@modules/user/entity/user.entity';
 import { InventoryService } from '@modules/inventory/inventory.service';
 import { PetPlayersService } from '@modules/pet-players/pet-players.service';
-import { ItemType } from '@enum';
 import { ItemEntity } from '@modules/item/entity/item.entity';
 import { RecipeService } from '@modules/recipe/recipe.service';
 import { plainToInstance } from 'class-transformer';
+import { EXCHANGE_REQUIRED_FRAGMENT_QUANTITY } from '@constant';
 
 @Injectable()
 export class IngredientService extends BaseService<IngredientEntity> {
@@ -50,11 +50,7 @@ export class IngredientService extends BaseService<IngredientEntity> {
     return ingredient;
   }
 
-  async assembleIngredientToRecipe(user: UserEntity, recipeId: string, quantity: number = 1) {
-    if (quantity <= 0) {
-      throw new BadRequestException('Quantity must be greater than 0');
-    }
-
+  async assembleIngredientToRecipe(user: UserEntity, recipeId: string) {
     const recipe = await this.recipeService.getRecipeById(recipeId);
 
     if (!recipe.ingredients?.length) {
@@ -69,7 +65,7 @@ export class IngredientService extends BaseService<IngredientEntity> {
         },
       });
 
-      if (!inventory || inventory.quantity < ing.required_quantity * quantity) {
+      if (!inventory || inventory.quantity < ing.required_quantity) {
         throw new BadRequestException(
           'Not enough fragment items to assemble recipe',
         );
@@ -88,7 +84,7 @@ export class IngredientService extends BaseService<IngredientEntity> {
         throw new NotFoundException('Inventory not found for ingredient');
       }
 
-      inventory.quantity -= ing.required_quantity * quantity;
+      inventory.quantity -= ing.required_quantity;
 
       if (inventory.quantity <= 0) {
         await this.inventoryRepo.remove(inventory);
@@ -106,7 +102,6 @@ export class IngredientService extends BaseService<IngredientEntity> {
 
     return {
       success: true,
-      quantity,
       createdPet: plainToInstance(CreatedPetResponseDto, createdPetPlayers[0]),
     };
   }
@@ -126,10 +121,18 @@ export class IngredientService extends BaseService<IngredientEntity> {
     return randomIngredient.item!.id;
   }
 
-  async exchangeExcessIngredients(user: UserEntity, dto: ExchangeRecipeDto) {
-    const { minExchange, recipeId } = dto;
+  async exchangeExcessIngredients(user: UserEntity, recipeId: string) {
+    const minExchange = EXCHANGE_REQUIRED_FRAGMENT_QUANTITY;
 
     const recipe = await this.recipeService.getRecipeById(recipeId);
+
+    if (recipe.type !== 'pet') {
+      throw new BadRequestException('Recipe is not for pet');
+    }
+
+    if (!recipe.ingredients?.length) {
+      throw new BadRequestException('Recipe has no ingredients');
+    }
 
     if (!recipe.pet) {
       throw new NotFoundException('Pet recipe not found');

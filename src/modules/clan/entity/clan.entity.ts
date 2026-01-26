@@ -16,7 +16,7 @@ import {
 } from 'typeorm';
 import { ClanEstateEntity } from '@modules/clan-estate/entity/clan-estate.entity';
 import { ClanDecorInventoryEntity } from '@modules/clan-decor-invetory/entity/clan-decor-inventory.entity';
-import { MapDecorConfigEntity } from '@modules/map-decor-config/entity/map-decor-config.entity';
+import { ClanAnimalEntity } from '@modules/clan-animals/entity/clan-animal.entity';
 
 @Entity({ name: 'clans' })
 @Unique('UQ_clan_name', ['name'])
@@ -70,6 +70,14 @@ export class ClanEntity extends AuditEntity {
   @Type(() => Number)
   max_members: number = 20;
 
+  @Column({ type: 'int', default: 1 })
+  @ApiProperty({
+    description: 'Max number of active pets per type in clan',
+  })
+  @IsInt()
+  @Type(() => Number)
+  max_slot_pet_active: number = 1;
+
   @OneToMany(() => UserEntity, (user) => user.clan)
   members: UserEntity[];
 
@@ -89,4 +97,6 @@ export class ClanEntity extends AuditEntity {
 
   @OneToMany(() => ClanDecorInventoryEntity, (inv) => inv.clan)
   decorInventory: ClanDecorInventoryEntity[];
+  @OneToMany(() => ClanAnimalEntity, (animal) => animal.clan)
+  animals: ClanAnimalEntity[];
 }
