@@ -27,10 +27,30 @@ export class PetClanEntity extends AuditEntity {
   @IsEnum(PetClanType)
   type: PetClanType = PetClanType.DOG;
 
-  @Column({ type: 'float', default: 0.1 })
+  @Column({ type: 'float', default: 10.0 })
   @ApiProperty()
   @IsNumber()
   base_rate_affect: number;
+
+  @Column({ type: 'int', default: 100 })
+  @ApiProperty()
+  @IsNumber()
+  base_exp_per_level: number;
+
+  @Column({ type: 'int', default: 50 })
+  @ApiProperty()
+  @IsNumber()
+  base_exp_increment_per_level: number;
+
+  @Column({ type: 'int', default: 10 })
+  @ApiProperty()
+  @IsNumber()
+  max_level: number;
+
+  @Column({ type: 'float', default: 0.5 })
+  @ApiProperty()
+  @IsNumber()
+  level_up_rate_multiplier: number;
 
   @OneToMany(() => ClanAnimalEntity, (animal) => animal.pet_clan)
   clan_animals: ClanAnimalEntity[];

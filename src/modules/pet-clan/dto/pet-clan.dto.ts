@@ -11,24 +11,38 @@ export class getListPetClansDto {
 }
 
 export class CreatePetClanDto {
-  @ApiProperty({ example: 'Alpha Dog' })
+  @ApiProperty()
   @IsString()
-  @Transform(({ value }) => value?.trim())
   name: string;
 
-  @ApiProperty({ enum: PetClanType, example: PetClanType.DOG })
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  description?: string;
+
+  @ApiProperty({ enum: PetClanType })
   @IsEnum(PetClanType)
   type: PetClanType;
 
-  @ApiProperty({ example: 0.1, minimum: 0, maximum: 1 })
+  @ApiProperty({ default: 0.1 })
   @IsNumber()
-  @Min(0)
-  @Max(1)
   base_rate_affect: number;
 
-  @ApiProperty({ required: false })
-  @IsString()
-  description?: string;
+  @ApiProperty({ default: 100 })
+  @IsNumber()
+  base_exp_per_level: number;
+
+  @ApiProperty({ default: 50 })
+  @IsNumber()
+  base_exp_increment_per_level: number;
+
+  @ApiProperty({ default: 10 })
+  @IsNumber()
+  max_level: number;
+
+  @ApiProperty({ default: 0.5 })
+  @IsNumber()
+  level_up_rate_multiplier: number;
 }
 
 export class UpdatePetClanDto extends PartialType(CreatePetClanDto) {}

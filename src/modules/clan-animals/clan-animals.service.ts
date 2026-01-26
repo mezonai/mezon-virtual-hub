@@ -21,176 +21,168 @@ export class ClanAnimalsService {
   constructor(
     @InjectRepository(ClanAnimalEntity)
     private readonly clanAnimalRepository: Repository<ClanAnimalEntity>,
-
-    @InjectRepository(ClanEntity)
-    private readonly clanRepository: Repository<ClanEntity>,
-
-    @InjectRepository(PetClanEntity)
-    private readonly petClanRepository: Repository<PetClanEntity>,
-
-    @InjectRepository(ClanFundEntity)
-    private readonly clanFundRepo: Repository<ClanFundEntity>,
-
-    @InjectRepository(ClanWarehouseEntity)
-    private readonly clanWarehouseRepo: Repository<ClanWarehouseEntity>,
-
     private readonly clanActivityService: ClanActivityService,
-
     private readonly recipeService: RecipeService,
-  ) { }
+  ) {}
 
   async buyAnimalForClan(user: UserEntity, dto: BuyAnimalForClanDto) {
-    if (!user.clan_id) {
-      throw new BadRequestException('User does not belong to any clan');
-    }
+    return this.clanAnimalRepository.manager.transaction(async (manager) => {
+      const clanAnimalRepo = manager.getRepository(ClanAnimalEntity);
+      const clanFundRepo = manager.getRepository(ClanFundEntity);
+      const clanWarehouseRepo = manager.getRepository(ClanWarehouseEntity);
+      const petClanRepo = manager.getRepository(PetClanEntity);
 
-    const recipePetClan = await this.recipeService.getRecipeById(dto.recipe_id);
-    if (!recipePetClan) {
-      throw new NotFoundException('Recipe not found');
-    }
-
-    const petClan = await this.petClanRepository.findOne({
-      where: { id: recipePetClan.pet_clan_id },
-    });
-
-    if (!petClan) {
-      throw new NotFoundException('Pet clan not found');
-    }
-
-    const existedPetClan = await this.clanAnimalRepository.findOne({
-      where: {
-        clan_id: user.clan_id,
-        pet_clan_id: recipePetClan.pet_clan_id,
-      },
-    });
-
-    if (existedPetClan) {
-      throw new BadRequestException('Clan already has this pet');
-    }
-
-    const clanFund = await this.clanFundRepo.findOne({
-      where: { clan_id: user.clan_id },
-    });
-    if (!clanFund) {
-      throw new NotFoundException('Clan fund not found');
-    }
-
-    for (const ingredient of recipePetClan.ingredients) {
-      if (ingredient.gold > 0) {
-        if (clanFund.amount < ingredient.gold) {
-          throw new BadRequestException('Insufficient clan fund');
-        }
-
-        clanFund.amount -= ingredient.gold;
-        await this.clanFundRepo.save(clanFund);
-        continue;
+      if (!user.clan_id) {
+        throw new BadRequestException('User does not belong to any clan');
       }
 
-      if (ingredient.item_id || ingredient.plant_id) {
-        const clanWarehouse = await this.clanWarehouseRepo.findOne({
-          where: { clan_id: user.clan_id, item_id: ingredient.item_id, plant_id: ingredient.plant_id },
-        });
+      const recipePetClan = await this.recipeService.getRecipeById(dto.recipe_id);
+      if (!recipePetClan) {
+        throw new NotFoundException('Recipe not found');
+      }
+
+      const petClan = await petClanRepo.findOne({
+        where: { id: recipePetClan.pet_clan_id },
+      });
+      if (!petClan) {
+        throw new NotFoundException('Pet clan not found');
+      }
+
+      const existedPet = await clanAnimalRepo.findOne({
+        where: {
+          clan_id: user.clan_id,
+          pet_clan_id: recipePetClan.pet_clan_id,
+        },
+      });
+      if (existedPet) {
+        throw new BadRequestException('Clan already has this pet');
+      }
+
+      const clanFund = await clanFundRepo.findOne({
+        where: { clan_id: user.clan_id },
+      });
+      if (!clanFund) {
+        throw new NotFoundException('Clan fund not found');
+      }
+
+      // 👉 Trừ nguyên liệu
+      for (const ingredient of recipePetClan.ingredients) {
+        if (ingredient.gold > 0) {
+          if (clanFund.amount < ingredient.gold) {
+            throw new BadRequestException('Insufficient clan fund');
+          }
+          clanFund.amount -= ingredient.gold;
+          continue;
+        }
+
+        const where: any = { clan_id: user.clan_id };
+        if (ingredient.item_id) where.item_id = ingredient.item_id;
+        if (ingredient.plant_id) where.plant_id = ingredient.plant_id;
+
+        const clanWarehouse = await clanWarehouseRepo.findOne({ where });
 
         if (!clanWarehouse || clanWarehouse.quantity < ingredient.required_quantity) {
           throw new BadRequestException('Insufficient items in clan warehouse');
         }
 
         clanWarehouse.quantity -= ingredient.required_quantity;
-        await this.clanWarehouseRepo.save(clanWarehouse);
-        continue;
+        await clanWarehouseRepo.save(clanWarehouse);
       }
-    }
 
-    await this.clanActivityService.logActivity({
-      clanId: user.clan_id,
-      userId: user.id,
-      actionType: ClanActivityActionType.PURCHASE,
-      itemName: recipePetClan?.pet_clan!.name,
-      officeName: user.clan?.farm.name
-    });
-    const clanAnimal = this.clanAnimalRepository.create({
-      clan_id: user.clan_id,
-      pet_clan_id: recipePetClan.pet_clan_id,
-      is_active: false,
-      level: 1,
-      exp: 0,
-    });
+      await clanFundRepo.save(clanFund);
 
-    return this.clanAnimalRepository.save(clanAnimal);
+      const clanAnimal = clanAnimalRepo.create({
+        clan_id: user.clan_id,
+        pet_clan_id: petClan.id,
+        level: 1,
+        exp: 0,
+        is_active: false,
+        bonus_rate_affect: 0,
+      });
+
+      const saved = await clanAnimalRepo.save(clanAnimal);
+
+      await this.clanActivityService.logActivity({
+        clanId: user.clan_id,
+        userId: user.id,
+        actionType: ClanActivityActionType.PURCHASE,
+        itemName: petClan.name,
+        officeName: user.clan?.farm.name,
+      });
+
+      return saved;
+    });
   }
 
   async activateClanAnimal(user: UserEntity, clanAnimalId: string) {
-    if (!user.clan_id) {
-      throw new BadRequestException('User does not belong to any clan');
-    }
+    return this.clanAnimalRepository.manager.transaction(async (manager) => {
+      const clanAnimalRepo = manager.getRepository(ClanAnimalEntity);
+      const clanRepo = manager.getRepository(ClanEntity);
 
-    const clan = await this.clanRepository.findOne({
-      where: { id: user.clan_id },
-    });
+      if (!user.clan_id) {
+        throw new BadRequestException('User does not belong to any clan');
+      }
 
-    if (!clan) {
-      throw new NotFoundException('Clan not found');
-    }
+      const clan = await clanRepo.findOne({
+        where: { id: user.clan_id },
+      });
+      if (!clan) {
+        throw new NotFoundException('Clan not found');
+      }
 
-    const clanAnimal = await this.clanAnimalRepository.findOne({
-      where: {
-        id: clanAnimalId,
-        clan_id: user.clan_id,
-      },
-      relations: ['pet_clan'],
-    });
+      const clanAnimal = await clanAnimalRepo.findOne({
+        where: { id: clanAnimalId, clan_id: user.clan_id },
+        relations: ['pet_clan'],
+      });
+      if (!clanAnimal) {
+        throw new NotFoundException('Clan pet not found');
+      }
 
-    if (!clanAnimal) {
-      throw new NotFoundException('Clan pet not found');
-    }
+      if (clanAnimal.is_active) return clanAnimal;
 
-    if (clanAnimal.is_active) {
-      return clanAnimal;
-    }
-
-    const existedSameType = await this.clanAnimalRepository.findOne({
-      where: {
-        clan_id: user.clan_id,
-        is_active: true,
-        pet_clan: {
-          type: clanAnimal.pet_clan.type,
+      const existedSameType = await clanAnimalRepo.findOne({
+        where: {
+          clan_id: user.clan_id,
+          is_active: true,
+          pet_clan: { type: clanAnimal.pet_clan.type },
         },
-      },
-      relations: ['pet_clan'],
+        relations: ['pet_clan'],
+      });
+
+      if (existedSameType) {
+        throw new BadRequestException(
+          `Clan đã có pet loại ${clanAnimal.pet_clan.type} đang hoạt động`,
+        );
+      }
+
+      const activePets = await clanAnimalRepo.find({
+        where: { clan_id: user.clan_id, is_active: true },
+        select: ['slot_index'],
+      });
+
+      if (activePets.length >= clan.max_slot_pet_active) {
+        throw new BadRequestException('Maximum active pets reached');
+      }
+
+      const usedSlots = new Set(activePets.map(p => p.slot_index));
+      let slotIndex: number | null = null;
+
+      for (let i = 1; i <= clan.max_slot_pet_active; i++) {
+        if (!usedSlots.has(i)) {
+          slotIndex = i;
+          break;
+        }
+      }
+
+      if (!slotIndex) {
+        throw new BadRequestException('No available slot');
+      }
+
+      clanAnimal.is_active = true;
+      clanAnimal.slot_index = slotIndex;
+
+      return clanAnimalRepo.save(clanAnimal);
     });
-
-    if (existedSameType) {
-      throw new BadRequestException(
-        `Clan đã có pet loại ${clanAnimal.pet_clan.type} đang hoạt động`,
-      );
-    }
-
-    const activeCount = await this.clanAnimalRepository.count({
-      where: {
-        clan_id: user.clan_id,
-        is_active: true,
-      },
-    });
-
-    if (activeCount >= clan.max_slot_pet_active) {
-      throw new BadRequestException(
-        `Maximum ${clan.max_slot_pet_active} active pets allowed`,
-      );
-    }
-
-    const slotIndex = await this.getNextAvailableSlot(
-      user.clan_id,
-      clan.max_slot_pet_active,
-    );
-
-    if (!slotIndex) {
-      throw new BadRequestException('No available slot');
-    }
-
-    clanAnimal.is_active = true;
-    clanAnimal.slot_index = slotIndex;
-
-    return this.clanAnimalRepository.save(clanAnimal);
   }
 
   async deactivateClanAnimal(user: UserEntity, clanAnimalId: string) {
@@ -251,35 +243,49 @@ export class ClanAnimalsService {
     });
 
     for (const animal of activeAnimals) {
-      if (animal.level >= 10) continue;
+      const petClan = animal.pet_clan;
+
+      if (animal.level >= petClan.max_level) continue;
 
       animal.exp += expGain;
 
-      const requiredExp = this.getExpRequiredForNextLevel(animal.level);
+      const requiredExp = this.getExpRequiredForNextLevel(
+        animal.level,
+        petClan,
+      );
 
-      if (animal.exp >= requiredExp) {
-        animal.level += 1;
-        animal.exp = 0;
-        animal.bonus_rate_affect += animal.pet_clan.base_rate_affect * 0.5;
+      if (animal.exp < requiredExp) {
+        await this.clanAnimalRepository.save(animal);
+        continue;
       }
+
+      animal.level += 1;
+
+      animal.exp = 0;
+
+      animal.bonus_rate_affect +=
+        petClan.base_rate_affect *
+        petClan.level_up_rate_multiplier;
 
       await this.clanAnimalRepository.save(animal);
     }
   }
 
+
   async getListClanAnimalsByClanId(query: GetListClanAnimalsDto) {
-    const listPet = await this.clanAnimalRepository.find({
+    const pets = await this.clanAnimalRepository.find({
       where: { ...query },
       relations: ['pet_clan'],
       order: { created_at: 'ASC' },
     });
 
-    for (const pet of listPet) {
-      pet['required_exp'] = this.getExpRequiredForNextLevel(pet.level);
-      pet['total_rate_affect'] = (pet.pet_clan?.base_rate_affect ?? 0) + (pet.bonus_rate_affect ?? 0);
-    }
-
-    return listPet;
+    return pets.map(pet => ({
+      ...pet,
+      required_exp: this.getExpRequiredForNextLevel(pet.level, pet.pet_clan),
+      total_rate_affect:
+        (pet.pet_clan?.base_rate_affect ?? 0) +
+        (pet.bonus_rate_affect ?? 0),
+    }));
   }
 
   async deleteClanAnimal(user: UserEntity, clanAnimalId: string) {
@@ -301,35 +307,12 @@ export class ClanAnimalsService {
     return this.clanAnimalRepository.remove(clanAnimal);
   }
 
-  private async getNextAvailableSlot(clanId: string, maxSlot: number) {
-    const actives = await this.clanAnimalRepository.find({
-      where: {
-        clan_id: clanId,
-        is_active: true,
-      },
-      select: ['slot_index'],
-    });
+  getExpRequiredForNextLevel(level: number, petClan: PetClanEntity) {
+    if (level >= petClan.max_level) return Infinity;
 
-    const usedSlots = new Set(
-      actives.map((a) => a.slot_index).filter(Boolean),
+    return (
+      petClan.base_exp_per_level +
+      (level - 1) * petClan.base_exp_increment_per_level
     );
-
-    for (let i = 1; i <= maxSlot; i++) {
-      if (!usedSlots.has(i)) {
-        return i;
-      }
-    }
-
-    return null;
   }
-
-  getExpRequiredForNextLevel(level: number) {
-    const BASE_EXP = 100;
-    const INCREMENT = 50;
-    const MAX_LEVEL = 10;
-
-    if (level >= MAX_LEVEL) return Infinity;
-
-    return BASE_EXP + (level - 1) * INCREMENT;
-  };
 }

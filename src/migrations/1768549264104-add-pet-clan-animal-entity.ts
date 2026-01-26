@@ -13,7 +13,11 @@ export class AddPetClanAnimalEntity1768549264104 implements MigrationInterface {
                 "name" character varying(50) NOT NULL,
                 "description" text,
                 "type" character varying(50) NOT NULL DEFAULT 'dog',
-                "base_rate_affect" double precision NOT NULL DEFAULT 0.1,
+                "base_rate_affect" double precision NOT NULL DEFAULT 10,
+                "base_exp_per_level" integer NOT NULL DEFAULT 100,
+                "base_exp_increment_per_level" integer NOT NULL DEFAULT 50,
+                "max_level" integer NOT NULL DEFAULT 10,
+                "level_up_rate_multiplier" double precision NOT NULL DEFAULT 0.5,
                 CONSTRAINT "PK_a6f54b4cb4001dcbde96c58b36c" PRIMARY KEY ("id")
             )
         `);
