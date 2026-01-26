@@ -291,7 +291,7 @@ export class CLanWarehouseService {
     let warehouseItem = await this.warehouseRepo.findOne({
       where: {
         clan_id: clanId,
-        item_id: seedId,
+        plant_id: seedId,
         is_harvested: false,
       },
     });
@@ -301,7 +301,7 @@ export class CLanWarehouseService {
     } else {
       warehouseItem = this.warehouseRepo.create({
         clan_id: clanId,
-        item_id: seedId,
+        plant_id: seedId,
         quantity,
         is_harvested: false,
       });
