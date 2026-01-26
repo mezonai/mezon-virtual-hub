@@ -52,6 +52,12 @@ import { IngredientModule } from '@modules/ingredient/ingredient.module';
 import { PetClanModule } from '@modules/pet-clan/pet-clan.module';
 import { ClanAnimalsModule } from '@modules/clan-animals/clan-animals.module';
 import { WheelModule } from '@modules/wheel/wheel.module';
+import { MapModule } from '@modules/map/map.module';
+import { ClanEstateModule } from '@modules/clan-estate/clan-estate.module';
+import { DecorItemModule } from '@modules/decor-item/decor-item.module';
+import { MapDecorConfigModule } from '@modules/map-decor-config/map-decor-config.module';
+import { ClanDecorInventoryModule } from '@modules/clan-decor-invetory/clan-decor-inventory.module';
+import { DecorPlaceholderModule } from '@modules/decor-placeholder/decor-placeholder.module';
 
 @Module({
   imports: [
@@ -114,6 +120,12 @@ import { WheelModule } from '@modules/wheel/wheel.module';
     PetClanModule,
     ClanAnimalsModule,
     WheelModule,
+    MapModule,
+    ClanEstateModule,
+    DecorItemModule,
+    DecorPlaceholderModule,
+    ClanDecorInventoryModule,
+    MapDecorConfigModule,
   ],
 })
 export class AppModule {}

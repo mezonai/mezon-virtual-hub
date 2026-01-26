@@ -14,6 +14,8 @@ import {
   OneToOne,
   Unique,
 } from 'typeorm';
+import { ClanEstateEntity } from '@modules/clan-estate/entity/clan-estate.entity';
+import { ClanDecorInventoryEntity } from '@modules/clan-decor-invetory/entity/clan-decor-inventory.entity';
 import { ClanAnimalEntity } from '@modules/clan-animals/entity/clan-animal.entity';
 
 @Entity({ name: 'clans' })
@@ -90,6 +92,11 @@ export class ClanEntity extends AuditEntity {
   @JoinColumn({ name: 'warehouse_id', foreignKeyConstraintName: 'FK_warehouse_id_clan' })
   warehouse: ClanWarehouseEntity;
 
+  @OneToMany(() => ClanEstateEntity, (ce) => ce.clan)
+  estates: ClanEstateEntity[];
+
+  @OneToMany(() => ClanDecorInventoryEntity, (inv) => inv.clan)
+  decorInventory: ClanDecorInventoryEntity[];
   @OneToMany(() => ClanAnimalEntity, (animal) => animal.clan)
   animals: ClanAnimalEntity[];
 }
