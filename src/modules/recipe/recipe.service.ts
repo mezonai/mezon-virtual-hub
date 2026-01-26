@@ -13,11 +13,12 @@ import {
   RecipeQueryDto,
   UpdateRecipeDto,
 } from './dto/recipe.dto';
-import { RecipeType } from '@enum';
+import { InventoryType, RecipeType } from '@enum';
 import { TOOL_RATE_MAP } from '@constant/farm.constant';
 import { ClanWarehouseEntity } from '@modules/clan-warehouse/entity/clan-warehouse.entity';
 import { ClanFundEntity } from '@modules/clan-fund/entity/clan-fund.entity';
 import { UserEntity } from '@modules/user/entity/user.entity';
+import { Inventory } from '@modules/inventory/entity/inventory.entity';
 
 @Injectable()
 export class RecipeService extends BaseService<RecipeEntity> {
@@ -28,6 +29,8 @@ export class RecipeService extends BaseService<RecipeEntity> {
     private readonly clanWarehouseRepo: Repository<ClanWarehouseEntity>,
     @InjectRepository(ClanFundEntity)
     private readonly clanFundRepo: Repository<ClanFundEntity>,
+    @InjectRepository(Inventory)
+    private readonly inventoryRepository: Repository<Inventory>,
   ) {
     super(recipeRepo, RecipeEntity.name);
   }
@@ -79,6 +82,18 @@ export class RecipeService extends BaseService<RecipeEntity> {
           });
 
           ingredient['current_quantity'] = harvestedPlant?.quantity ?? 0;
+        }
+
+        if (ingredient.item_id) {
+          const inventoryItem = await this.inventoryRepository.findOne({
+            where: {
+              user: { id: user.id },
+              item: { id: ingredient.item_id },
+              inventory_type: InventoryType.ITEM,
+            },
+          });
+
+          ingredient['current_quantity'] = inventoryItem?.quantity ?? 0;
         }
 
         if (ingredient.gold > 0) {
