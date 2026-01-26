@@ -11,10 +11,11 @@ import { ClsModule } from 'nestjs-cls';
 import { InventoryModule } from '@modules/inventory/inventory.module';
 import { UserEntity } from '@modules/user/entity/user.entity';
 import { WheelEntity } from '@modules/wheel/entity/wheel.entity';
+import { RecipeEntity } from '@modules/recipe/entity/recipe.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([SlotWheelEntity, ItemEntity, FoodEntity, PetsEntity, PlantEntity, UserEntity, WheelEntity]),
+    TypeOrmModule.forFeature([SlotWheelEntity, ItemEntity, FoodEntity, PetsEntity, PlantEntity, UserEntity, WheelEntity, RecipeEntity]),
     InventoryModule,
     ClsModule,
   ],

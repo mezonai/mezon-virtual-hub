@@ -507,6 +507,7 @@ export class InventoryService extends BaseService<Inventory> {
       });
       return plainToInstance(FoodInventoryResDto, inventory);
     }
+    
     const inventory = await this.find({
       where: {
         user: { id: user.id },
@@ -516,17 +517,43 @@ export class InventoryService extends BaseService<Inventory> {
       relations: ['item'],
     });
 
-
     if (type === ItemType.PET_FRAGMENT) {
-      const recipe = await this.recipeRepo.findOne({
+      const recipes = await this.recipeRepo.find({
         where: { ingredients: { item: { type: ItemType.PET_FRAGMENT } } },
-        relations: ['pet'],
+        relations: ['pet', 'ingredients', 'ingredients.item'],
       });
+
+      if (!recipes.length) {
+        throw new NotFoundException('Recipe not found for pet fragments');
+      }
+
+      const fragmentMap = new Map<
+        string,
+        { index: number; species?: string }
+      >();
+
+      for (const recipe of recipes) {
+        for (const ing of recipe.ingredients ?? []) {
+          if (!ing.item) continue;
+
+          fragmentMap.set(ing.item.id, {
+            index: ing.part,
+            species: recipe.pet?.species,
+          });
+        }
+      }
+
       for (const inv of inventory) {
         if (!inv.item) continue;
-        inv['species'] = recipe ? recipe.pet?.species : null;
+
+        const data = fragmentMap.get(inv.item?.id);
+        if (!data) continue;
+
+        inv.item['index'] = data.index;
+        inv['species'] = data.species;
       }
     }
+
     return plainToInstance(ItemInventoryResDto, inventory);
   }
 
@@ -567,7 +594,11 @@ export class InventoryService extends BaseService<Inventory> {
         const inventory = inventoryMap.get(ingredient.item!.id);
 
         if (inventory) {
-          inventory['index'] = ingredient.part;
+          if (!inventory.item) {
+            throw new NotFoundException('Item not found in inventory');
+          }
+
+          inventory.item['index'] = ingredient.part;
           return inventory;
         }
 
@@ -576,8 +607,10 @@ export class InventoryService extends BaseService<Inventory> {
           inventory_type: InventoryType.ITEM,
           equipped: false,
           quantity: 0,
-          item: ingredient.item,
-          index: ingredient.part,
+          item: {
+            ...ingredient.item,
+            index: ingredient.part,
+          }
         };
       })
 
