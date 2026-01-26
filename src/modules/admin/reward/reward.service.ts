@@ -46,8 +46,8 @@ export class RewardManagementService extends BaseService<RewardEntity> {
   }
 
   async getRewardByType(type: RewardType) {
-    return await this.rewardRepo.findOne({ 
-      where: { type }, 
+    return await this.rewardRepo.findOne({
+      where: { type },
       relations: ['items', 'items.food', 'items.item', 'items.plant', 'items.pet'],
     });
   }
@@ -155,6 +155,8 @@ export class RewardManagementService extends BaseService<RewardEntity> {
 
       rewardedClans.push(clan);
     }
+
+    await this.clanService.resetWeeklyScores();
 
     return rewardedClans;
   }
