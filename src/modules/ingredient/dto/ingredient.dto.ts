@@ -56,23 +56,6 @@ export class UpdateIngredientDto {
   required_quantity?: number;
 }
 
-export class ExchangeRecipeDto {
-  @ApiProperty({
-    description: 'Recipe ID',
-    example: '550e8400-e29b-41d4-a716-446655440000',
-  })
-  @IsUUID()
-  recipeId: string;
-
-  @ApiProperty({
-    description: 'Minimum fragments to exchange',
-    default: 3,
-  })
-  @IsNumber()
-  @Type(() => Number)
-  minExchange: number = 3;
-}
-
 @Exclude()
 export class CreatedPetResponseDto {
   @Expose() 

@@ -32,6 +32,9 @@ export class ItemDto implements Partial<ItemEntity> {
 
   @Expose()
   rate?: number;
+
+  @Expose()
+  index?: number;
 }
 
 export class ItemDtoRequest {

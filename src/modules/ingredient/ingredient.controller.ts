@@ -10,7 +10,7 @@ import {
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import { IngredientService } from './ingredient.service';
-import { CreateIngredientDto, ExchangeRecipeDto, UpdateIngredientDto } from './dto/ingredient.dto';
+import { CreateIngredientDto, UpdateIngredientDto } from './dto/ingredient.dto';
 import { RequireAdmin } from '@libs/decorator';
 import { USER_TOKEN } from '@constant';
 import { UserEntity } from '@modules/user/entity/user.entity';
@@ -48,11 +48,11 @@ export class IngredientController {
     return this.ingredientService.createIngredient(dto);
   }
   
-  @Post('exchange')
+  @Post('exchange/:recipeId')
   @ApiOperation({ summary: 'Exchange excess fragment items' })
-  exchangeFragments(@Query() dto: ExchangeRecipeDto) {
+  exchangeFragments(@Param('recipeId') recipeId: string) {
     const user = this.cls.get<UserEntity>(USER_TOKEN);
-    return this.ingredientService.exchangeExcessIngredients(user, dto);
+    return this.ingredientService.exchangeExcessIngredients(user, recipeId);
   }
 
   @Patch(':id')
@@ -74,8 +74,8 @@ export class IngredientController {
 
   @Post(':recipe_id/assemble')
   @ApiOperation({ summary: 'Assemble pet from recipe' })
-  assembleRecipe(@Param('recipe_id') recipeId: string, @Query('quantity') quantity: number = 1) {
+  assembleRecipe(@Param('recipe_id') recipeId: string) {
     const user = this.cls.get<UserEntity>(USER_TOKEN);
-    return this.ingredientService.assembleIngredientToRecipe(user, recipeId, quantity);
+    return this.ingredientService.assembleIngredientToRecipe(user, recipeId);
   }
 }
