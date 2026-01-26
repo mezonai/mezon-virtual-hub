@@ -49,6 +49,8 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { SlotWheelModule } from './modules/slot-wheel/slot-wheel.module';
 import { RecipeModule } from '@modules/recipe/recipe.module';
 import { IngredientModule } from '@modules/ingredient/ingredient.module';
+import { PetClanModule } from '@modules/pet-clan/pet-clan.module';
+import { ClanAnimalsModule } from '@modules/clan-animals/clan-animals.module';
 import { WheelModule } from '@modules/wheel/wheel.module';
 
 @Module({
@@ -109,6 +111,8 @@ import { WheelModule } from '@modules/wheel/wheel.module';
     SlotWheelModule,
     RecipeModule,
     IngredientModule,
+    PetClanModule,
+    ClanAnimalsModule,
     WheelModule,
   ],
 })
