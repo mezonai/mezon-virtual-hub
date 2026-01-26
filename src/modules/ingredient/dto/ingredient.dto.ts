@@ -1,5 +1,5 @@
 import { AnimalRarity } from '@enum';
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Exclude, Expose, Type } from 'class-transformer';
 import { IsInt, IsNumber, IsOptional, IsUUID, Min } from 'class-validator';
 
@@ -26,6 +26,24 @@ export class CreateIngredientDto {
   @IsOptional()
   @IsUUID()
   plant_id?: string;
+
+  @ApiPropertyOptional({
+    description: 'Gold cost of the ingredient item',
+    example: 1000,
+  })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  gold?: number;
+
+  @ApiPropertyOptional({
+    description: 'Diamonds cost of the ingredient item',
+    example: 50,
+  })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  diamonds?: number;
 
   @ApiProperty({
     description: 'Part number of the ingredient item',
