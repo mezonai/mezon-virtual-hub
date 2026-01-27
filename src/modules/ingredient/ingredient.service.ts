@@ -94,11 +94,11 @@ export class IngredientService extends BaseService<IngredientEntity> {
     }
 
     const createdPetPlayers = await this.petPlayersService.createPetPlayers({
-        room_code: '',
-        user_id: user.id,
-        pet_id: recipe.pet_id,
-        current_rarity: recipe.pet?.rarity,
-      });
+      room_code: '',
+      user_id: user.id,
+      pet_id: recipe.pet_id,
+      current_rarity: recipe.pet?.rarity,
+    });
 
     return {
       success: true,
@@ -124,6 +124,11 @@ export class IngredientService extends BaseService<IngredientEntity> {
   async exchangeExcessIngredients(user: UserEntity, recipeId: string) {
     const minExchange = EXCHANGE_REQUIRED_FRAGMENT_QUANTITY;
 
+    const emptyResult = {
+      removed: [],
+      reward: {},
+    };
+
     const recipe = await this.recipeService.getRecipeById(recipeId);
 
     if (recipe.type !== 'pet') {
@@ -144,7 +149,7 @@ export class IngredientService extends BaseService<IngredientEntity> {
     );
 
     if (!ownFragmentsInventory.fragmentItems.length) {
-      throw new BadRequestException('No fragment found');
+      return emptyResult;
     }
 
     const excessList = ownFragmentsInventory.fragmentItems
@@ -155,7 +160,7 @@ export class IngredientService extends BaseService<IngredientEntity> {
       .filter((f) => f.excessQuantity > 0);
 
     if (!excessList.length) {
-      throw new BadRequestException('No excess fragment');
+      return emptyResult;
     }
 
     const pool: string[] = [];
@@ -167,7 +172,7 @@ export class IngredientService extends BaseService<IngredientEntity> {
     }
 
     if (pool.length < minExchange) {
-      throw new BadRequestException('Not enough fragment excess');
+      return emptyResult;
     }
 
     for (let i = pool.length - 1; i > 0; i--) {
@@ -200,7 +205,16 @@ export class IngredientService extends BaseService<IngredientEntity> {
       inventory.quantity -= taken;
       await this.inventoryRepo.save(inventory);
 
+      const removedIngredient = await this.ingredientRepo.findOne({
+        where: {
+          recipe_id: recipeId,
+          item_id: inventory.item.id,
+        },
+      });
+
       inventory.item['takenQuantity'] = taken;
+      inventory.item['remainingQuantity'] = inventory.quantity;
+      inventory.item['index'] = removedIngredient?.part || 0;
       removedItems.push(inventory.item);
     }
 
@@ -210,6 +224,22 @@ export class IngredientService extends BaseService<IngredientEntity> {
     const rewardItem = await this.itemRepo.findOne({
       where: { id: rewardItemId },
     });
+
+    const rewardInventory = await this.inventoryRepo.findOne({
+      where: {
+        user: { id: user.id },
+        item: { id: rewardItemId },
+      },
+    });
+    rewardItem!['currentQuantity'] = rewardInventory?.quantity || 0;
+
+    const rewardIngredient = await this.ingredientRepo.findOne({
+      where: {
+        recipe_id: recipeId,
+        item_id: rewardItemId,
+      },
+    });
+    rewardItem!['index'] = rewardIngredient?.part || 0;
 
     if (!rewardItem) {
       throw new NotFoundException('Reward item not found');

@@ -1,4 +1,4 @@
-import { AnimalRarity } from '@enum';
+import { AnimalRarity, PetType } from '@enum';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Exclude, Expose, Type } from 'class-transformer';
 import { IsInt, IsNumber, IsOptional, IsUUID, Min } from 'class-validator';
@@ -75,7 +75,16 @@ export class UpdateIngredientDto {
 }
 
 @Exclude()
+export class PetResponseIntoIngredientDto {
+  @Expose()
+  type: PetType;
+}
+
+@Exclude()
 export class CreatedPetResponseDto {
+  @Expose()
+  id: string;
+
   @Expose() 
   level: number;
 
@@ -114,4 +123,8 @@ export class CreatedPetResponseDto {
 
   @Expose() 
   name: string | null;
+
+  @Expose()
+  @Type(() => PetResponseIntoIngredientDto)
+  pet: PetResponseIntoIngredientDto;
 }
