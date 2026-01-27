@@ -148,10 +148,6 @@ export class IngredientService extends BaseService<IngredientEntity> {
       recipe.pet.species,
     );
 
-    if (!ownFragmentsInventory.fragmentItems.length) {
-      return emptyResult;
-    }
-
     const excessList = ownFragmentsInventory.fragmentItems
       .map((f) => ({
         itemId: f.item.id,
@@ -159,7 +155,8 @@ export class IngredientService extends BaseService<IngredientEntity> {
       }))
       .filter((f) => f.excessQuantity > 0);
 
-    if (!excessList.length) {
+    const totalExcessQuantity = excessList.reduce((sum, item) => sum + item.excessQuantity, 0);
+    if (totalExcessQuantity < minExchange) {
       return emptyResult;
     }
 
