@@ -148,10 +148,6 @@ export class IngredientService extends BaseService<IngredientEntity> {
       recipe.pet.species,
     );
 
-    if (!ownFragmentsInventory.fragmentItems.length) {
-      return emptyResult;
-    }
-
     const excessList = ownFragmentsInventory.fragmentItems
       .map((f) => ({
         itemId: f.item.id,
@@ -159,7 +155,8 @@ export class IngredientService extends BaseService<IngredientEntity> {
       }))
       .filter((f) => f.excessQuantity > 0);
 
-    if (!excessList.length) {
+    const totalExcessQuantity = excessList.reduce((sum, item) => sum + item.excessQuantity, 0);
+    if (totalExcessQuantity < minExchange) {
       return emptyResult;
     }
 
@@ -225,6 +222,15 @@ export class IngredientService extends BaseService<IngredientEntity> {
       where: { id: rewardItemId },
     });
 
+    if (!rewardItem) {
+      throw new NotFoundException('Reward item not found');
+    }
+
+    await this.inventoryService.addItemToInventory(
+      user,
+      rewardItemId,
+    );
+
     const rewardInventory = await this.inventoryRepo.findOne({
       where: {
         user: { id: user.id },
@@ -240,15 +246,6 @@ export class IngredientService extends BaseService<IngredientEntity> {
       },
     });
     rewardItem!['index'] = rewardIngredient?.part || 0;
-
-    if (!rewardItem) {
-      throw new NotFoundException('Reward item not found');
-    }
-
-    await this.inventoryService.addItemToInventory(
-      user,
-      rewardItemId,
-    );
 
     return {
       removed: removedItems,
