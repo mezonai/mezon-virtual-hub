@@ -222,6 +222,15 @@ export class IngredientService extends BaseService<IngredientEntity> {
       where: { id: rewardItemId },
     });
 
+    if (!rewardItem) {
+      throw new NotFoundException('Reward item not found');
+    }
+
+    await this.inventoryService.addItemToInventory(
+      user,
+      rewardItemId,
+    );
+
     const rewardInventory = await this.inventoryRepo.findOne({
       where: {
         user: { id: user.id },
@@ -237,15 +246,6 @@ export class IngredientService extends BaseService<IngredientEntity> {
       },
     });
     rewardItem!['index'] = rewardIngredient?.part || 0;
-
-    if (!rewardItem) {
-      throw new NotFoundException('Reward item not found');
-    }
-
-    await this.inventoryService.addItemToInventory(
-      user,
-      rewardItemId,
-    );
 
     return {
       removed: removedItems,
