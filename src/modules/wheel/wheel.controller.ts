@@ -32,14 +32,14 @@ export class WheelController {
 
   @Get()
   @ApiOperation({ summary: 'Get all wheels' })
-  getAll(@Query() query: WheelQueryDto) {
-    return this.wheelService.getAll(query);
+  getAllWheels(@Query() query: WheelQueryDto) {
+    return this.wheelService.getAllWheels(query);
   }
 
   @Get(':id')
   @ApiOperation({ summary: 'Get wheel detail' })
-  getById(@Param('id') id: string) {
-    return this.wheelService.getById(id);
+  getWheelById(@Param('id') id: string) {
+    return this.wheelService.getWheelById(id);
   }
 
   @Patch(':id')
