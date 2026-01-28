@@ -4,8 +4,10 @@ import { Repository } from 'typeorm';
 import { WheelEntity } from './entity/wheel.entity';
 import { CreateWheelDto, UpdateWheelDto, WheelQueryDto } from './dto/wheel.dto';
 import { BaseService } from '@libs/base/base.service';
-import { ItemType } from '@enum';
+import { ItemType, RewardItemType, SlotWheelType } from '@enum';
 import { RecipeEntity } from '@modules/recipe/entity/recipe.entity';
+import { FOOD_TYPE_ORDER, ITEM_TYPE_ORDER, PET_CARD_RARITY_ORDER, SLOT_TYPE_ORDER } from '@constant/slot-wheel.constant';
+import { SlotWheelEntity } from '@modules/slot-wheel/entity/slot-wheel.entity';
 
 @Injectable()
 export class WheelService extends BaseService<WheelEntity> {
@@ -39,13 +41,67 @@ export class WheelService extends BaseService<WheelEntity> {
     }
 
     for (const w of wheel) {
-      for (const slot of w.slots) {
-        slot["rate"] = (slot.weight_point / w.slots.reduce((sum, s) => sum + s.weight_point, 0)) * 100;
+      const totalWeight = w.slots.reduce(
+        (sum, s) => sum + s.weight_point,
+        0,
+      );
 
-        if (slot.item && slot.item.type === ItemType.PET_FRAGMENT) {
-          slot.item['index'] = fragmentIndexMap.get(slot.item.id);
+      for (const slot of w.slots) {
+        slot['rate'] = (slot.weight_point / totalWeight) * 100;
+
+        if (
+          slot.item &&
+          slot.item.type === ItemType.PET_FRAGMENT
+        ) {
+          slot.item['index'] =
+            fragmentIndexMap.get(slot.item.id) ?? null;
         }
       }
+
+      w.slots.sort((a, b) => {
+        const typeOrderA = this.getSlotTypeOrder(a);
+        const typeOrderB = this.getSlotTypeOrder(b);
+
+        if (typeOrderA !== typeOrderB) {
+          return typeOrderA - typeOrderB;
+        }
+
+        if (a.type_item === 'gold' && b.type_item === 'gold') {
+          return a.quantity - b.quantity;
+        }
+
+        if (a.food && b.food) {
+          return (
+            FOOD_TYPE_ORDER[a.food.type] -
+            FOOD_TYPE_ORDER[b.food.type]
+          );
+        }
+
+        if (
+          a.item?.type === ItemType.PET_FRAGMENT &&
+          b.item?.type === ItemType.PET_FRAGMENT
+        ) {
+          return (a.item['index'] ?? 0) - (b.item['index'] ?? 0);
+        }
+
+        if (
+          a.item?.type === ItemType.PET_CARD &&
+          b.item?.type === ItemType.PET_CARD
+        ) {
+          const orderA = PET_CARD_RARITY_ORDER[a.item.item_code!] ?? 999;
+          const orderB = PET_CARD_RARITY_ORDER[b.item.item_code!] ?? 999;
+          return orderA - orderB;
+        }
+
+        if (a.item && b.item) {
+          return (
+            ITEM_TYPE_ORDER[a.item.type] -
+            ITEM_TYPE_ORDER[b.item.type]
+          );
+        }
+
+        return 0;
+      });
     }
 
     return wheel;
@@ -88,5 +144,22 @@ export class WheelService extends BaseService<WheelEntity> {
     if (!wheel) throw new NotFoundException('Wheel not found');
 
     await this.wheelRepo.remove(wheel);
+  }
+
+  private getSlotTypeOrder(slot: SlotWheelEntity) {
+    switch (slot.type_item) {
+      case RewardItemType.GOLD:
+        return SLOT_TYPE_ORDER.gold;
+      case RewardItemType.FOOD:
+        return SLOT_TYPE_ORDER.food;
+      case RewardItemType.PLANT:
+        return SLOT_TYPE_ORDER.plant;
+      case RewardItemType.ITEM:
+        return SLOT_TYPE_ORDER.item;
+      case RewardItemType.PET:
+        return SLOT_TYPE_ORDER.pet;
+      default:
+        return 999;
+    }
   }
 }
