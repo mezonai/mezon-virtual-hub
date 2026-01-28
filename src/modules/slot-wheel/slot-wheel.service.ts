@@ -4,7 +4,7 @@ import { BaseService } from '@libs/base/base.service';
 import { SlotWheelEntity } from '@modules/slot-wheel/entity/slot-wheel.entity';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
-import { ItemType, RewardItemType } from '@enum';
+import { ItemType, QuestType, RewardItemType } from '@enum';
 import { ItemEntity } from '@modules/item/entity/item.entity';
 import { FoodEntity } from '@modules/food/entity/food.entity';
 import { PetsEntity } from '@modules/pets/entity/pets.entity';
@@ -13,6 +13,7 @@ import { InventoryService } from '@modules/inventory/inventory.service';
 import { UserEntity } from '@modules/user/entity/user.entity';
 import { WheelEntity } from '@modules/wheel/entity/wheel.entity';
 import { RecipeEntity } from '@modules/recipe/entity/recipe.entity';
+import { QuestEventEmitter } from '@modules/player-quest/events/quest.events';
 
 @Injectable()
 export class SlotWheelService extends BaseService<SlotWheelEntity> {
@@ -134,6 +135,8 @@ export class SlotWheelService extends BaseService<SlotWheelEntity> {
 
     user.gold -= wheel.base_fee * quantity;
     await this.userRepository.save(user);
+
+    QuestEventEmitter.emitProgress(user.id, QuestType.SPIN_LUCKY_WHEEL, quantity);
 
     return {
       wheel_type: wheel.type,
