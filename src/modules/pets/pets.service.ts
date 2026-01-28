@@ -8,14 +8,17 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { EntityManager, In, Repository } from 'typeorm';
-import { PetsDtoRequest } from './dto/pets.dto';
+import { PetsDtoRequest, UpdatePetSkillIndexItemDto } from './dto/pets.dto';
 import { PetsEntity } from './entity/pets.entity';
+import { PetSkillUsageEntity } from '@modules/pet-skill-usages/entity/pet-skill-usages.entity';
 
 @Injectable()
 export class PetsService extends BaseService<PetsEntity> {
   constructor(
     @InjectRepository(PetsEntity)
     private readonly petsRepository: Repository<PetsEntity>,
+    @InjectRepository(PetSkillUsageEntity)
+    private readonly petSkillUsageRepo: Repository<PetSkillUsageEntity>,
     private readonly petSkillsService: PetSkillsService,
     private manager: EntityManager,
   ) {
@@ -55,23 +58,56 @@ export class PetsService extends BaseService<PetsEntity> {
     return await this.save(newSpecies);
   }
 
-  async updatePets(id: string, payload: PetsDtoRequest) {
-    const pets = await this.findOne({
-      where: { id },
-    });
-
-    if (!pets) {
-      throw new NotFoundException(`Pet not found`);
+  async updateSkillIndexes(petId: string, skills: UpdatePetSkillIndexItemDto[]) {
+    const indexes = skills.map(s => s.skill_index);
+    if (new Set(indexes).size !== indexes.length) {
+      throw new BadRequestException('Duplicate skill_index');
     }
 
-    if (payload.species !== pets.species) {
+    return await this.petSkillUsageRepo.manager.transaction(async (trx) => {
+      for (const skill of skills) {
+        await trx.update(
+          PetSkillUsageEntity,
+          {
+            pet: { id: petId },
+            skill: { skill_code: skill.skill_code },
+          },
+          {
+            skill_index: skill.skill_index,
+          },
+        );
+      }
+    });
+  }
+
+  async updatePets(id: string, payload: PetsDtoRequest) {
+    const { skill_codes, ...petData } = payload;
+
+    const pet = await this.findOne({
+      where: { id },
+      relations: ['pet_skills'],
+    });
+
+    if (!pet) {
+      throw new NotFoundException('Pet not found');
+    }
+
+    if (payload.species !== pet.species) {
       await this.checkExistedSpecies(payload.species, payload.rarity);
     }
 
-    await this.petsRepository.update(id, payload);
+    await this.petsRepository.update(id, petData);
 
-    Object.assign(pets, payload);
-    return pets;
+    if (skill_codes) {
+      const petSkills = await this.petSkillsService.find({
+        where: { skill_code: In(skill_codes) },
+      });
+
+      pet.pet_skills = petSkills;
+      await this.petsRepository.save(pet);
+    }
+
+    return pet;
   }
 
   async deletePets(id: string) {
