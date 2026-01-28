@@ -6,10 +6,11 @@ import { ClsModule } from 'nestjs-cls';
 import { PetsEntity } from './entity/pets.entity';
 import { PetsController } from './pets.controller';
 import { PetsService } from './pets.service';
+import { PetSkillUsageEntity } from '@modules/pet-skill-usages/entity/pet-skill-usages.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([PetsEntity]),
+    TypeOrmModule.forFeature([PetsEntity, PetSkillUsageEntity]),
     ClsModule,
     PetSkillsModule,
     forwardRef(() => UserModule),

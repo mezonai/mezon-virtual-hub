@@ -1,9 +1,11 @@
 import {
+  Body,
   Controller,
   Delete,
   Get,
   Param,
   ParseUUIDPipe,
+  Patch,
   Post,
   Put,
   Query
@@ -20,7 +22,7 @@ import { Logger } from '@libs/logger';
 import { RequireAdmin } from '@libs/decorator';
 import { ClsService } from 'nestjs-cls';
 import { UserService } from '../user/user.service';
-import { PetsDtoRequest } from './dto/pets.dto';
+import { PetsDtoRequest, UpdatePetSkillIndexDto } from './dto/pets.dto';
 import { PetsService } from './pets.service';
 
 @ApiBearerAuth()
@@ -80,5 +82,24 @@ export class PetsController {
     @Param('pet_id', ParseUUIDPipe) pet_id: string,
   ) {
     return await this.petsService.deletePets(pet_id);
+  }
+
+  @Patch(':pet_id/skills/indexes')
+  @ApiParam({
+    name: 'pet_id',
+    example: '61bfc137-82ed-4be0-a227-318261545972',
+  })
+  @ApiOperation({
+    summary: 'Update skill indexes of a pet',
+  })
+  async updatePetSkillIndexes(
+    @Param('pet_id', ParseUUIDPipe) petId: string,
+    @Body() body: UpdatePetSkillIndexDto,
+  ) {
+    await this.petsService.updateSkillIndexes(petId, body.skills);
+    return {
+      success: true,
+      message: 'Update pet skill indexes successfully',
+    };
   }
 }
