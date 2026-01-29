@@ -92,6 +92,13 @@ export class GameController {
     return this.gameService.giveInitialReward(user);
   }
 
+  @Get('event-reward')
+  @ApiOperation({ summary: 'Claim event reward for user' })
+  async claimEventReward() {
+    const user = this.cls.get<UserEntity>(USER_TOKEN);
+    return this.gameService.giveEventReward(user);
+  }
+
   @Get('weekly-reward')
   @ApiOperation({ summary: 'Claim weekly reward for user' })
   async claimWeeklyReward() {

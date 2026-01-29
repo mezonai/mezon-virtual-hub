@@ -154,13 +154,13 @@ export class GameService {
           coinReward =
             Math.floor(
               Math.random() *
-                (RewardConfig.HIGH_COIN_MAX - RewardConfig.HIGH_COIN_MIN + 1),
+              (RewardConfig.HIGH_COIN_MAX - RewardConfig.HIGH_COIN_MIN + 1),
             ) + RewardConfig.HIGH_COIN_MIN;
         } else {
           coinReward =
             Math.floor(
               Math.random() *
-                (RewardConfig.LOW_COIN_MAX - RewardConfig.LOW_COIN_MIN + 1),
+              (RewardConfig.LOW_COIN_MAX - RewardConfig.LOW_COIN_MIN + 1),
             ) + RewardConfig.LOW_COIN_MIN;
         }
 
@@ -245,8 +245,35 @@ export class GameService {
     return { rewards };
   }
 
+  async giveEventReward(user: UserEntity) {
+    if (user.has_event_reward) {
+      return {
+        success: false,
+        message: 'Event reward has already been claimed.',
+      };
+    }
+
+    const reward = await this.rewardManagementService.getRewardByType(
+      RewardType.EVENT_REWARD,
+    );
+
+    if (!reward) {
+      return { success: false, message: 'No event reward available.' };
+    }
+
+    await this.inventoryService.processRewardItems(
+      user,
+      reward.items,
+    );
+
+    user.has_event_reward = true;
+    await this.userRepository.save(user);
+
+    return { rewards: reward.items };
+  }
+
   async giveWeeklyReward(user: UserEntity) {
-    if(!user.has_weekly_reward) return
+    if (!user.has_weekly_reward) return
 
     const weeklyReward = await this.rewardManagementService.getRewardByType(
       user.reward_type as RewardType,
@@ -275,9 +302,9 @@ export class GameService {
       this.foodNormalPercent +
       this.foodPremiumPercent +
       this.foodUltraPercent;
-      const farmConfig = this.configStore.get<typeof FARM_CONFIG>(GAME_CONFIG_KEYS.FARM) ??FARM_CONFIG
-      const plantEnabled = farmConfig?.PLANT?.ENABLE_LIMIT ?? false;
-      const harvestEnabled = farmConfig?.HARVEST?.ENABLE_LIMIT ?? false;
+    const farmConfig = this.configStore.get<typeof FARM_CONFIG>(GAME_CONFIG_KEYS.FARM) ?? FARM_CONFIG
+    const plantEnabled = farmConfig?.PLANT?.ENABLE_LIMIT ?? false;
+    const harvestEnabled = farmConfig?.HARVEST?.ENABLE_LIMIT ?? false;
     return {
       costs: {
         spinGold: this.SPIN_COST,
