@@ -18,7 +18,7 @@ import { ClanAnimalsService } from './clan-animals.service';
 import { ClsService } from 'nestjs-cls';
 import { USER_TOKEN } from '@constant';
 import { UserEntity } from '@modules/user/entity/user.entity';
-import { BuyAnimalForClanDto, GetListClanAnimalsDto } from '@modules/clan-animals/dto/clan-animals.dto';
+import { GetListClanAnimalsDto } from '@modules/clan-animals/dto/clan-animals.dto';
 
 @ApiBearerAuth()
 @ApiTags('Clan Animals')
@@ -37,13 +37,24 @@ export class ClanAnimalsController {
     return this.clanAnimalsService.getListClanAnimalsByClanId(query);
   }
 
-  @Post('buy-animal')
+  @Post('buy-animal/:recipe_id')
   @ApiOperation({
     summary: 'Buy animal for clan',
   })
-  buyAnimalForClan(@Query() dto: BuyAnimalForClanDto) {
+  @ApiParam({ name: 'recipe_id', example: '91bea29f-0e87-42a5-b851-d9d0386ac32f' })
+  buyAnimalForClan(@Param('recipe_id') recipe_id: string) {
     const user = this.cls.get<UserEntity>(USER_TOKEN);
-    return this.clanAnimalsService.buyAnimalForClan(user, dto);
+    return this.clanAnimalsService.buyAnimalForClan(user, recipe_id);
+  }
+
+  @Post('buy-slot-clan-pet/:recipe_id')
+  @ApiOperation({
+    summary: 'Buy slot for clan pet',
+  })
+  @ApiParam({ name: 'recipe_id', example: '91bea29f-0e87-42a5-b851-d9d0386ac32f' })
+  buySlotForClanPet(@Param('recipe_id') recipe_id: string) {
+    const user = this.cls.get<UserEntity>(USER_TOKEN);
+    return this.clanAnimalsService.buyPetClanSlot(user, recipe_id);
   }
 
   @Patch(':clanAnimalId/activate')

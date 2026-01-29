@@ -4,6 +4,7 @@ import {
   Get,
   Param,
   ParseUUIDPipe,
+  Patch,
   Put,
   Query
 } from '@nestjs/common';
@@ -44,6 +45,14 @@ export class UserManagementController {
   })
   async getUsers(@Query() query: UsersManagementQueryDto) {
     return await this.userService.getUsers(query);
+  }
+
+  @Patch()
+  @ApiOperation({
+    summary: 'Update all users event reward status',
+  })
+  async updateAllUsersEventRewardStatus(@Query('has_event_reward') has_event_reward: boolean,) {
+    return await this.userService.updateAllUsersEventRewardStatus(has_event_reward);
   }
 
   @Put(':user_id')

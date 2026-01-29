@@ -60,6 +60,17 @@ export class DecorPlaceholderService extends BaseService<DecorPlaceholderEntity>
       throw new BadRequestException('Map not found');
     }
 
+    const usedIndexes = await this.placeholderRepo.find({
+      where: { map: { id: dto.map_id } },
+      select: ['position_index'],
+    });
+
+    if (usedIndexes.some((ph) => ph.position_index === dto.position_index)) {
+      throw new BadRequestException(
+        'Position index already exists in this map',
+      );
+    }
+
     const existed = await this.placeholderRepo.findOne({
       where: {
         map: { id: dto.map_id },

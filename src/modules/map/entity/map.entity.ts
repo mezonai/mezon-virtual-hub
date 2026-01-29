@@ -1,4 +1,5 @@
 import { ClanEstateEntity } from '@modules/clan-estate/entity/clan-estate.entity';
+import { DecorPlaceholderEntity } from '@modules/decor-placeholder/entity/decor-placeholder.entity';
 import { ApiProperty } from '@nestjs/swagger';
 import { AuditEntity } from '@types';
 import { Column, Entity, OneToMany, Unique } from 'typeorm';
@@ -19,4 +20,7 @@ export class MapEntity extends AuditEntity {
 
   @OneToMany(() => ClanEstateEntity, (ce) => ce.realEstate)
   clanEstates: ClanEstateEntity[];
+
+  @OneToMany(() => DecorPlaceholderEntity, (dp) => dp.map)
+  decorPlaceholders: DecorPlaceholderEntity[];
 }

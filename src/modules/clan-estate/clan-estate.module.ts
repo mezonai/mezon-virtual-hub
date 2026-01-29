@@ -5,6 +5,9 @@ import { ClanEstateService } from './clan-estate.service';
 import { ClanEstateController } from './clan-estate.controller';
 import { ClanEntity } from '@modules/clan/entity/clan.entity';
 import { MapEntity } from '@modules/map/entity/map.entity';
+import { RecipeEntity } from '@modules/recipe/entity/recipe.entity';
+import { ClanFundEntity } from '@modules/clan-fund/entity/clan-fund.entity';
+import { ClanWarehouseEntity } from '@modules/clan-warehouse/entity/clan-warehouse.entity';
 
 @Module({
   imports: [
@@ -12,6 +15,9 @@ import { MapEntity } from '@modules/map/entity/map.entity';
       ClanEstateEntity,
       ClanEntity,
       MapEntity,
+      RecipeEntity,
+      ClanFundEntity,
+      ClanWarehouseEntity,
     ]),
   ],
   controllers: [ClanEstateController],

@@ -28,7 +28,7 @@ export class MapDecorConfigService extends BaseService<MapDecorConfigEntity> {
     @InjectRepository(ClanEstateEntity)
     private readonly clanEstateRepo: Repository<ClanEstateEntity>,
     @InjectRepository(ClanDecorInventoryEntity)
-    private readonly inventoryRepo: Repository<ClanDecorInventoryEntity>,
+    private readonly clanInventoryRepo: Repository<ClanDecorInventoryEntity>,
   ) {
     super(configRepo, MapDecorConfigEntity.name);
   }
@@ -82,9 +82,7 @@ export class MapDecorConfigService extends BaseService<MapDecorConfigEntity> {
     }
 
     if (placeholder.map.id !== clanEstate.realEstate.id) {
-      throw new BadRequestException(
-        'Placeholder does not belong to this clan estate map',
-      );
+      throw new BadRequestException('Placeholder does not belong to this clan estate map');
     }
 
     const decorItem = await this.decorItemRepo.findOne({
@@ -95,24 +93,26 @@ export class MapDecorConfigService extends BaseService<MapDecorConfigEntity> {
       throw new NotFoundException('Decor item not found');
     }
 
-    const owned = await this.inventoryRepo.findOne({
+    const ownedInventory = await this.clanInventoryRepo.findOne({
       where: {
         clan: { id: clanEstate.clan.id },
         decorItem: { id: decorItem.id },
       },
     });
 
-    if (!owned) {
-      throw new BadRequestException(
-        'Clan does not own this decor item',
-      );
+    if (!ownedInventory) {
+      throw new BadRequestException('Clan does not own this decor item');
     }
 
     if (decorItem.type !== placeholder.type) {
-      throw new BadRequestException(
-        'Decor item type does not match placeholder type',
-      );
+      throw new BadRequestException('Decor item type does not match placeholder type');
     }
+
+    const usedItem = await this.configRepo.findOne({
+      where: { decorItem: { id: decorItem.id } },
+    });
+
+    if (usedItem) throw new BadRequestException('Decor item is already placed');
 
     let config = await this.configRepo.findOne({
       where: {
@@ -136,7 +136,7 @@ export class MapDecorConfigService extends BaseService<MapDecorConfigEntity> {
 
   async removeDecorFromPlaceholder(id: string) {
     const config = await this.getMapDecorConfigById(id);
-    await this.configRepo.remove(config);
+    await this.configRepo.softRemove(config);
     return { success: true };
   }
 }

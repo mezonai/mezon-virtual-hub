@@ -6,15 +6,6 @@ import {
   IsUUID,
 } from 'class-validator';
 
-export class BuyAnimalForClanDto {
-  @ApiProperty({
-    description: 'Recipe id',
-    example: '91bea29f-0e87-42a5-b851-d9d0386ac32f',
-  })
-  @IsUUID()
-  recipe_id: string;
-}
-
 export class GetListClanAnimalsDto {
   @ApiProperty({
     description: 'Clan id',

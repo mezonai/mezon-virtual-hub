@@ -21,15 +21,6 @@ export class CreateDecorItemDto {
   @IsString()
   @MaxLength(100)
   name: string;
-
-  @ApiPropertyOptional({
-    description: 'Decor rarity',
-    example: 'RARE',
-  })
-  @IsOptional()
-  @IsString()
-  @MaxLength(30)
-  rarity?: string;
 }
 
 export class UpdateDecorItemDto extends PartialType(CreateDecorItemDto) {}

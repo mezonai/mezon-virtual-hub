@@ -15,10 +15,10 @@ import {
 } from '@nestjs/swagger';
 import { RequireAdmin } from '@libs/decorator';
 import { ClanEstateService } from './clan-estate.service';
-import {
-  CreateClanEstateDto,
-  ClanEstateQueryDto,
-} from './dto/clan-estate.dto';
+import { ClanEstateQueryDto } from './dto/clan-estate.dto';
+import { UserEntity } from '@modules/user/entity/user.entity';
+import { USER_TOKEN } from '@constant';
+import { ClsService } from 'nestjs-cls';
 
 @ApiBearerAuth()
 @ApiTags('Clan Estate')
@@ -26,18 +26,15 @@ import {
 export class ClanEstateController {
   constructor(
     private readonly clanEstateService: ClanEstateService,
+    private readonly cls: ClsService,
   ) {}
 
   @Get()
   @ApiOperation({
     summary: 'Get all clan estates',
   })
-  getAllClanEstates(
-    @Query() query: ClanEstateQueryDto,
-  ) {
-    return this.clanEstateService.getAllClanEstates(
-      query,
-    );
+  getAllClanEstates(@Query() query: ClanEstateQueryDto) {
+    return this.clanEstateService.getAllClanEstates(query);
   }
 
   @Get(':id')
@@ -46,20 +43,20 @@ export class ClanEstateController {
   })
   @ApiParam({ name: 'id', format: 'uuid' })
   getClanEstateById(@Param('id') id: string) {
-    return this.clanEstateService.getClanEstateById(
-      id,
-    );
+    return this.clanEstateService.getClanEstateById(id);
   }
 
-  @Post()
-  @RequireAdmin()
+  @Post('buy-map/:recipe_id')
   @ApiOperation({
-    summary: 'Assign map to clan (create clan estate)',
+    summary: 'Buy map for clan',
   })
-  createClanEstate(@Body() dto: CreateClanEstateDto) {
-    return this.clanEstateService.createClanEstate(
-      dto,
-    );
+  @ApiParam({
+    name: 'recipe_id',
+    example: '550e8400-e29b-41d4-a716-446655440000',
+  })
+  buyMapForClan(@Param('recipe_id') recipe_id: string) {
+    const user = this.cls.get<UserEntity>(USER_TOKEN);
+    return this.clanEstateService.buyMapForClan(user, recipe_id);
   }
 
   @Delete(':id')
@@ -68,8 +65,6 @@ export class ClanEstateController {
     summary: 'Remove clan estate by id',
   })
   deleteClanEstateById(@Param('id') id: string) {
-    return this.clanEstateService.deleteClanEstateById(
-      id,
-    );
+    return this.clanEstateService.deleteClanEstateById(id);
   }
 }
