@@ -247,10 +247,7 @@ export class GameService {
 
   async giveEventReward(user: UserEntity) {
     if (user.has_event_reward) {
-      return {
-        success: false,
-        message: 'Event reward has already been claimed.',
-      };
+      return { success: false, rewards: [] };
     }
 
     const reward = await this.rewardManagementService.getRewardByType(
@@ -258,7 +255,7 @@ export class GameService {
     );
 
     if (!reward) {
-      return { success: false, message: 'No event reward available.' };
+      return { success: false, rewards: [] };
     }
 
     await this.inventoryService.processRewardItems(
