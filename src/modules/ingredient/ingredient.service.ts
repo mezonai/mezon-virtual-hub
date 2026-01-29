@@ -254,6 +254,17 @@ export class IngredientService extends BaseService<IngredientEntity> {
   }
 
   async createIngredient(dto: CreateIngredientDto) {
+    const existingPart = await this.ingredientRepo.findOne({
+      where: {
+        recipe_id: dto.recipe_id,
+        part: dto.part,
+      },
+    });
+
+    if (existingPart) {
+      throw new BadRequestException('Ingredient part already exists for this recipe');
+    }
+    
     const ingredient = this.ingredientRepo.create(dto);
     return this.ingredientRepo.save(ingredient);
   }

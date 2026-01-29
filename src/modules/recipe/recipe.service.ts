@@ -19,6 +19,12 @@ import { ClanWarehouseEntity } from '@modules/clan-warehouse/entity/clan-warehou
 import { ClanFundEntity } from '@modules/clan-fund/entity/clan-fund.entity';
 import { UserEntity } from '@modules/user/entity/user.entity';
 import { Inventory } from '@modules/inventory/entity/inventory.entity';
+import { PetsEntity } from '@modules/pets/entity/pets.entity';
+import { ItemEntity } from '@modules/item/entity/item.entity';
+import { PlantEntity } from '@modules/plant/entity/plant.entity';
+import { PetClanEntity } from '@modules/pet-clan/entity/pet-clan.entity';
+import { MapEntity } from '@modules/map/entity/map.entity';
+import { DecorItemEntity } from '@modules/decor-item/entity/decor-item.entity';
 
 @Injectable()
 export class RecipeService extends BaseService<RecipeEntity> {
@@ -31,6 +37,18 @@ export class RecipeService extends BaseService<RecipeEntity> {
     private readonly clanFundRepo: Repository<ClanFundEntity>,
     @InjectRepository(Inventory)
     private readonly inventoryRepository: Repository<Inventory>,
+    @InjectRepository(PetsEntity)
+    private readonly petsRepository: Repository<PetsEntity>,
+    @InjectRepository(ItemEntity)
+    private readonly itemRepository: Repository<ItemEntity>,
+    @InjectRepository(PlantEntity)
+    private readonly plantRepository: Repository<PlantEntity>,
+    @InjectRepository(PetClanEntity)
+    private readonly petClanRepository: Repository<PetClanEntity>,
+    @InjectRepository(MapEntity)
+    private readonly mapRepository: Repository<MapEntity>,
+    @InjectRepository(DecorItemEntity)
+    private readonly decorItemRepository: Repository<DecorItemEntity>,
   ) {
     super(recipeRepo, RecipeEntity.name);
   }
@@ -41,6 +59,8 @@ export class RecipeService extends BaseService<RecipeEntity> {
       .leftJoinAndSelect('recipe.item', 'item')
       .leftJoinAndSelect('recipe.pet', 'pet')
       .leftJoinAndSelect('recipe.plant', 'plant')
+      .leftJoinAndSelect('recipe.map', 'map')
+      .leftJoinAndSelect('recipe.decor_item', 'decor_item')
       .leftJoinAndSelect('recipe.pet_clan', 'pet_clan')
       .leftJoinAndSelect('recipe.ingredients', 'ingredients')
       .leftJoinAndSelect('ingredients.item', 'ingredient_items')
@@ -120,49 +140,87 @@ export class RecipeService extends BaseService<RecipeEntity> {
 
   async createRecipe(dto: CreateRecipeDto) {
     if (dto.pet_id) {
+      const pet = await this.petsRepository.findOne({
+        where: { id: dto.pet_id },
+      });
+
+      if (!pet) throw new NotFoundException('Pet not found');
+
       const existingPetRecipe = await this.recipeRepo.findOne({
         where: { pet_id: dto.pet_id },
       });
 
-      if (existingPetRecipe) {
-        throw new BadRequestException(
-          'A recipe for this pet already exists',
-        );
-      }
+      if (existingPetRecipe) throw new BadRequestException('A recipe for this pet already exists');
     }
 
     if (dto.item_id) {
+      const item = await this.itemRepository.findOne({
+        where: { id: dto.item_id },
+      });
+
+      if (!item) throw new NotFoundException('Item not found');
+
       const existingItemRecipe = await this.recipeRepo.findOne({
         where: { item_id: dto.item_id },
       });
 
-      if (existingItemRecipe) {
-        throw new BadRequestException(
-          'A recipe for this item already exists',
-        );
-      }
+      if (existingItemRecipe) throw new BadRequestException('A recipe for this item already exists');
     }
 
     if (dto.plant_id) {
+      const plant = await this.plantRepository.findOne({
+        where: { id: dto.plant_id },
+      });
+
+      if (!plant) throw new NotFoundException('Plant not found');
+
       const existingPlantRecipe = await this.recipeRepo.findOne({
         where: { plant_id: dto.plant_id },
       });
-      if (existingPlantRecipe) {
-        throw new BadRequestException(
-          'A recipe for this plant already exists',
-        );
-      }
+
+      if (existingPlantRecipe) throw new BadRequestException('A recipe for this plant already exists');
     }
 
     if (dto.pet_clan_id) {
+      const petClan = await this.petClanRepository.findOne({
+        where: { id: dto.pet_clan_id },
+      });
+
+      if (!petClan) throw new NotFoundException('Pet clan not found');
+
       const existingPetClanRecipe = await this.recipeRepo.findOne({
         where: { pet_clan_id: dto.pet_clan_id },
       });
-      if (existingPetClanRecipe) {
-        throw new BadRequestException(
-          'A recipe for this pet clan already exists',
-        );
-      }
+
+      if (existingPetClanRecipe) throw new BadRequestException('A recipe for this pet clan already exists');
+    }
+
+    if (dto.map_id) {
+      const map = await this.mapRepository.findOne({
+        where: { id: dto.map_id },
+      });
+
+      if (!map) throw new NotFoundException('Map not found');
+
+      const existingMapRecipe = await this.recipeRepo.findOne({
+        where: { map_id: dto.map_id },
+      });
+
+      if (existingMapRecipe) throw new BadRequestException('A recipe for this map already exists');
+    }
+
+    if (dto.decor_item_id) {
+      const decorItem = await this.decorItemRepository.findOne({
+        where: { id: dto.decor_item_id },
+      });
+
+      if (!decorItem) throw new NotFoundException('Decor item not found');
+
+      const existingDecorItemRecipe = await this.recipeRepo.findOne({
+        where: { decor_item_id: dto.decor_item_id },
+      });
+
+      if (existingDecorItemRecipe) throw new BadRequestException('A recipe for this decor item already exists');
     }
 
     const recipe = this.recipeRepo.create({
@@ -170,6 +228,8 @@ export class RecipeService extends BaseService<RecipeEntity> {
       item_id: dto.item_id ?? dto.item_id,
       plant_id: dto.plant_id ?? dto.plant_id,
       pet_clan_id: dto.pet_clan_id ?? dto.pet_clan_id,
+      map_id: dto.map_id ?? dto.map_id,
+      decor_item_id: dto.decor_item_id ?? dto.decor_item_id,
       type: dto.type,
     });
 

@@ -9,6 +9,7 @@ import { RecipeModule } from '@modules/recipe/recipe.module';
 import { ClanActivityModule } from '@modules/clan-activity/clan-activity.module';
 import { ClanFundEntity } from '@modules/clan-fund/entity/clan-fund.entity';
 import { ClanWarehouseEntity } from '@modules/clan-warehouse/entity/clan-warehouse.entity';
+import { RecipeEntity } from '@modules/recipe/entity/recipe.entity';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { ClanWarehouseEntity } from '@modules/clan-warehouse/entity/clan-warehou
       PetClanEntity,
       ClanFundEntity,
       ClanWarehouseEntity,
+      RecipeEntity,
     ]),
     RecipeModule,
     ClanActivityModule

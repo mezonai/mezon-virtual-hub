@@ -3,7 +3,7 @@ import {
   ApiPropertyOptional,
   PartialType,
 } from '@nestjs/swagger';
-import { IsBoolean, IsInt, IsOptional, IsString, MaxLength, Min } from 'class-validator';
+import { IsInt, IsOptional, IsString, MaxLength, Min } from 'class-validator';
 
 export class CreateMapDto {
   @ApiProperty({ example: 'Green Land' })
@@ -20,10 +20,6 @@ export class CreateMapDto {
   @IsInt()
   @Min(1)
   index: number;
-
-  @ApiProperty({ example: true })
-  @IsBoolean()
-  is_locked: boolean;
 }
 
 export class UpdateMapDto extends PartialType(CreateMapDto) {}

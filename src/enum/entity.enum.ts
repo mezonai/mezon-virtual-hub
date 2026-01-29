@@ -33,6 +33,9 @@ export enum RecipeType {
   FARM_TOOL = 'farm_tool',
   PLANT = 'plant',
   PET_CLAN = 'pet_clan',
+  MAP = 'map',
+  DECOR_ITEM = 'decor_item',
+  PET_CLAN_SLOT= 'pet_clan_slot',
 }
 
 export enum ItemTypeCloth {
