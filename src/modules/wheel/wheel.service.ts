@@ -71,10 +71,14 @@ export class WheelService extends BaseService<WheelEntity> {
         }
 
         if (a.food && b.food) {
-          return (
-            FOOD_TYPE_ORDER[a.food.type] -
-            FOOD_TYPE_ORDER[b.food.type]
-          );
+          const foodTypeA = FOOD_TYPE_ORDER[a.food.type] ?? 999;
+          const foodTypeB = FOOD_TYPE_ORDER[b.food.type] ?? 999;
+
+          if (foodTypeA !== foodTypeB) {
+            return foodTypeA - foodTypeB;
+          }
+
+          return a.quantity - b.quantity;
         }
 
         if (
