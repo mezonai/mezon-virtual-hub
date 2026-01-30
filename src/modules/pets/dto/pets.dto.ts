@@ -12,8 +12,13 @@ import {
   ArrayNotEmpty,
   IsArray,
   IsEnum,
+  IsInt,
   IsOptional,
+  IsString,
   IsUUID,
+  Max,
+  Min,
+  ValidateNested,
 } from 'class-validator';
 import { PetsEntity } from '../entity/pets.entity';
 
@@ -87,4 +92,24 @@ export class BringPetsDtoList {
   @ArrayNotEmpty()
   @Type(() => BringPetsDto)
   pets: BringPetsDto[];
+}
+
+export class UpdatePetSkillIndexItemDto {
+  @ApiProperty({ example: 'ELECTRIC02' })
+  @IsString()
+  skill_code: string;
+
+  @ApiProperty({ example: 1 })
+  @IsInt()
+  @Min(1)
+  @Max(4)
+  skill_index: number;
+}
+
+export class UpdatePetSkillIndexDto {
+  @ApiProperty({ type: [UpdatePetSkillIndexItemDto] })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => UpdatePetSkillIndexItemDto)
+  skills: UpdatePetSkillIndexItemDto[];
 }

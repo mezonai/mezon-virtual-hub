@@ -4,7 +4,7 @@ import { BaseService } from '@libs/base/base.service';
 import { SlotWheelEntity } from '@modules/slot-wheel/entity/slot-wheel.entity';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
-import { RewardItemType, SlotWheelType } from '@enum';
+import { ItemType, QuestType, RewardItemType } from '@enum';
 import { ItemEntity } from '@modules/item/entity/item.entity';
 import { FoodEntity } from '@modules/food/entity/food.entity';
 import { PetsEntity } from '@modules/pets/entity/pets.entity';
@@ -12,6 +12,8 @@ import { PlantEntity } from '@modules/plant/entity/plant.entity';
 import { InventoryService } from '@modules/inventory/inventory.service';
 import { UserEntity } from '@modules/user/entity/user.entity';
 import { WheelEntity } from '@modules/wheel/entity/wheel.entity';
+import { RecipeEntity } from '@modules/recipe/entity/recipe.entity';
+import { QuestEventEmitter } from '@modules/player-quest/events/quest.events';
 
 @Injectable()
 export class SlotWheelService extends BaseService<SlotWheelEntity> {
@@ -37,6 +39,9 @@ export class SlotWheelService extends BaseService<SlotWheelEntity> {
     @InjectRepository(WheelEntity)
     private readonly wheelRepo: Repository<WheelEntity>,
 
+    @InjectRepository(RecipeEntity)
+    private readonly recipeRepo: Repository<RecipeEntity>,
+
     private readonly inventoryService: InventoryService,
   ) {
     super(slotWheelRepo, SlotWheelEntity.name);
@@ -55,7 +60,7 @@ export class SlotWheelService extends BaseService<SlotWheelEntity> {
     return slotWheelItems;
   }
 
-  async spinWheel(user: UserEntity, wheelId: string, quantity = 1,) {
+  async spinWheel(user: UserEntity, wheelId: string, quantity = 1) {
     const wheel = await this.wheelRepo.findOne({
       where: { id: wheelId },
     });
@@ -100,11 +105,38 @@ export class SlotWheelService extends BaseService<SlotWheelEntity> {
         }
       }
     }
+    const fragmentIndexMap = new Map<string, number>();
+
+    const fragmentRecipes = await this.recipeRepo.find({
+      where: { ingredients: { item: { type: ItemType.PET_FRAGMENT } } },
+      relations: ['ingredients', 'ingredients.item'],
+    });
+
+    for (const recipe of fragmentRecipes) {
+      for (const ing of recipe.ingredients ?? []) {
+        if (!ing.item) continue;
+        
+        fragmentIndexMap.set(ing.item.id, ing.part);
+      }
+    }
+
+    for (const reward of rewards) {
+      if (!reward) {
+        throw new NotFoundException('Reward item not found');
+      }
+
+      if (reward.item?.type === ItemType.PET_FRAGMENT) {
+        const index = fragmentIndexMap.get(reward.item.id);
+        reward.item['index'] = index;
+      }
+    }
 
     await this.inventoryService.awardSpinItemToUser(user, rewards);
 
-    user.gold -= wheel.base_fee*quantity;
+    user.gold -= wheel.base_fee * quantity;
     await this.userRepository.save(user);
+
+    QuestEventEmitter.emitProgress(user.id, QuestType.SPIN_LUCKY_WHEEL, quantity);
 
     return {
       wheel_type: wheel.type,

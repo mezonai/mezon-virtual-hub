@@ -32,6 +32,10 @@ export enum RecipeType {
   PET = 'pet',
   FARM_TOOL = 'farm_tool',
   PLANT = 'plant',
+  PET_CLAN = 'pet_clan',
+  MAP = 'map',
+  DECOR_ITEM = 'decor_item',
+  PET_CLAN_SLOT= 'pet_clan_slot',
 }
 
 export enum ItemTypeCloth {
@@ -146,6 +150,13 @@ export enum PetType {
   WATER = 'water',
   ELECTRIC = 'electric',
   GRASS = 'grass',
+  DRAGON = 'dragon',
+}
+
+export enum PetClanType {
+  DOG = 'dog',
+  CAT = 'cat',
+  BIRD = 'bird',
   DRAGON = 'dragon',
 }
 
@@ -275,6 +286,8 @@ export enum RewardType {
   WEEKLY_RANKING_CLAN_1 = 'weekly_ranking_clan_1',
   WEEKLY_RANKING_CLAN_2 = 'weekly_ranking_clan_2',
   WEEKLY_RANKING_CLAN_3 = 'weekly_ranking_clan_3',
+
+  EVENT_REWARD = 'event_reward',
 }
 
 export enum QuestFrequency {

@@ -79,4 +79,8 @@ export class UserManagementService extends BaseService<UserEntity> {
     Object.assign(user, payload);
     return user;
   }
+
+  async updateAllUsersEventRewardStatus(has_event_reward: boolean) {
+    await this.userRepository.update({}, { has_event_reward });
+  }
 }

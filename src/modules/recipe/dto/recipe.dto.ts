@@ -21,6 +21,38 @@ export class CreateRecipeDto {
   @IsUUID()
   item_id?: string;
 
+  @ApiPropertyOptional({
+    description: 'Plant ID associated with the recipe',
+    example: '550e8400-e29b-41d4-a716-446655440000',
+  })
+  @IsOptional()
+  @IsUUID()
+  plant_id?: string;
+
+  @ApiPropertyOptional({
+    description: 'Pet clan ID associated with the recipe',
+    example: '550e8400-e29b-41d4-a716-446655440000',
+  })
+  @IsOptional()
+  @IsUUID()
+  pet_clan_id?: string;
+
+  @ApiPropertyOptional({
+    description: 'Map ID associated with the recipe',
+    example: '550e8400-e29b-41d4-a716-446655440000',
+  })
+  @IsOptional()
+  @IsUUID()
+  map_id?: string;
+
+  @ApiPropertyOptional({
+    description: 'Decor item ID associated with the recipe',
+    example: '550e8400-e29b-41d4-a716-446655440000',
+  })
+  @IsOptional()
+  @IsUUID()
+  decor_item_id?: string;
+
   @ApiProperty({
     description: 'Type of the recipe',
     enum: RecipeType,
@@ -30,7 +62,7 @@ export class CreateRecipeDto {
   type: RecipeType;
 }
 
-export class UpdateRecipeDto extends PartialType(CreateRecipeDto) {}
+export class UpdateRecipeDto extends PartialType(CreateRecipeDto) { }
 
 export class RecipeQueryDto {
   @ApiProperty({

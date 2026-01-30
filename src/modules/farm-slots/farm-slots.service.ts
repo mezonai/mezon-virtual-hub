@@ -27,6 +27,7 @@ import { ClanActivityService } from '@modules/clan-activity/clan-activity.servic
 import { ClanFundService } from '@modules/clan-fund/clan-fund.service';
 import { GameConfigStore } from '@modules/admin/game-config/game-config.store';
 import { GAME_CONFIG_KEYS } from '@constant/game-config.keys';
+import { ClanAnimalsService } from '@modules/clan-animals/clan-animals.service';
 
 @Injectable()
 export class FarmSlotService {
@@ -50,6 +51,7 @@ export class FarmSlotService {
     private readonly clanActivityService: ClanActivityService,
     private readonly clanFundService: ClanFundService,
     private readonly configStore: GameConfigStore,
+    private readonly clanAnimalsService: ClanAnimalsService,
   ) {}
 
   private getFarmConfig(): typeof FARM_CONFIG {
@@ -103,6 +105,19 @@ export class FarmSlotService {
       farm_id: farm.id,
       slots: slotsWithStatus,
     };
+  }
+
+  async getClanByFarmSlot(farm_slot_id: string) {
+    const slot = await this.farmSlotRepo.findOne({
+      where: { id: farm_slot_id },
+      relations: ['farm'],
+    });
+
+    if (!slot) {
+      throw new NotFoundException('Farm slot not found');
+    }
+
+    return slot.farm.clan_id;
   }
 
   private async mapSlotsWithStatus(
@@ -341,7 +356,7 @@ export class FarmSlotService {
     return rate;
   }
 
-  async decreaseToolQuantityInClanWarehouse(clanId:string, toolId: string) {
+  async decreaseToolQuantityInClanWarehouse(clanId: string, toolId: string) {
     const tool = await this.clanWarehouseRepo.findOne({
       where: { clan_id: clanId, item_id: toolId },
     });
@@ -356,7 +371,7 @@ export class FarmSlotService {
     } else {
       await this.clanWarehouseRepo.save(tool);
     }
-    
+
     return tool;
   }
 
@@ -372,7 +387,7 @@ export class FarmSlotService {
     const growRemain = PlantCareUtils.calculateGrowRemain(new Date(plant.created_at), plant.grow_time);
     const reductionRate = await this.getToolRate(toolId);
     const deltaMs = growRemain * reductionRate * 1000;
-    
+
     plant.created_at = new Date(plant.created_at.getTime() - deltaMs);
 
     const { totalWater, totalBug } = PlantCareUtils.calculateCareNeeds(plant.grow_time);
@@ -622,6 +637,13 @@ export class FarmSlotService {
     await this.farmSlotRepo.save(slot);
     await this.slotPlantRepo.softRemove(slotPlant);
 
+    if (slot.farm.clan_id === user.clan.id) {
+      await this.clanAnimalsService.gainExpForActiveClanAnimals(
+        user.clan.id,
+        1,
+      );
+    }
+
     return {
       success: true,
       message: isIntruder
@@ -664,7 +686,7 @@ export class FarmSlotService {
     if (
       farmConfig.HARVEST.ENABLE_LIMIT &&
       interrupterStat.harvest_interrupt_count_use >=
-        farmConfig.HARVEST.MAX_INTERRUPT
+      farmConfig.HARVEST.MAX_INTERRUPT
     ) {
       throw new BadRequestException('Người phá đã hết lượt phá thu hoạch!');
     }
@@ -708,7 +730,7 @@ export class FarmSlotService {
           : farmConfig.HARVEST.UNLIMITED,
         remaining: farmConfig.HARVEST.ENABLE_LIMIT
           ? farmConfig.HARVEST.MAX_INTERRUPT -
-            interrupterStat.harvest_interrupt_count_use
+          interrupterStat.harvest_interrupt_count_use
           : farmConfig.HARVEST.UNLIMITED,
       },
       target: {

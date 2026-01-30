@@ -1,5 +1,5 @@
-import { AnimalRarity } from '@enum';
-import { ApiProperty } from '@nestjs/swagger';
+import { AnimalRarity, PetType } from '@enum';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Exclude, Expose, Type } from 'class-transformer';
 import { IsInt, IsNumber, IsOptional, IsUUID, Min } from 'class-validator';
 
@@ -26,6 +26,24 @@ export class CreateIngredientDto {
   @IsOptional()
   @IsUUID()
   plant_id?: string;
+
+  @ApiPropertyOptional({
+    description: 'Gold cost of the ingredient item',
+    example: 1000,
+  })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  gold?: number;
+
+  @ApiPropertyOptional({
+    description: 'Diamonds cost of the ingredient item',
+    example: 50,
+  })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  diamonds?: number;
 
   @ApiProperty({
     description: 'Part number of the ingredient item',
@@ -56,25 +74,17 @@ export class UpdateIngredientDto {
   required_quantity?: number;
 }
 
-export class ExchangeRecipeDto {
-  @ApiProperty({
-    description: 'Recipe ID',
-    example: '550e8400-e29b-41d4-a716-446655440000',
-  })
-  @IsUUID()
-  recipeId: string;
-
-  @ApiProperty({
-    description: 'Minimum fragments to exchange',
-    default: 3,
-  })
-  @IsNumber()
-  @Type(() => Number)
-  minExchange: number = 3;
+@Exclude()
+export class PetResponseIntoIngredientDto {
+  @Expose()
+  type: PetType;
 }
 
 @Exclude()
 export class CreatedPetResponseDto {
+  @Expose()
+  id: string;
+
   @Expose() 
   level: number;
 
@@ -113,4 +123,8 @@ export class CreatedPetResponseDto {
 
   @Expose() 
   name: string | null;
+
+  @Expose()
+  @Type(() => PetResponseIntoIngredientDto)
+  pet: PetResponseIntoIngredientDto;
 }

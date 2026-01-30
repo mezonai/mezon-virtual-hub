@@ -123,7 +123,7 @@ export class UserEntity extends AuditEntity {
   @IsOptional()
   @Type(() => Boolean)
   has_first_reward: boolean;
-  
+
   @Column({ type: 'bool', default: false })
   @ApiProperty({
     type: Boolean,
@@ -131,7 +131,7 @@ export class UserEntity extends AuditEntity {
   })
   @IsBoolean()
   @IsOptional()
-  @Type(() => Boolean)  
+  @Type(() => Boolean)
   has_weekly_reward: boolean;
 
   @Column({ type: 'varchar', length: 50, nullable: true })
@@ -140,9 +140,19 @@ export class UserEntity extends AuditEntity {
     type: String,
     required: false,
   })
-  @IsString() 
+  @IsString()
   @IsOptional()
   reward_type: string;
+
+  @Column({ type: 'bool', default: false })
+  @ApiProperty({
+    type: Boolean,
+    required: false,
+  })
+  @IsBoolean()
+  @IsOptional()
+  @Type(() => Boolean)
+  has_event_reward: boolean;
 
   @Column({ type: 'int', default: Role.USER })
   @ApiProperty({
@@ -215,7 +225,7 @@ export class UserEntity extends AuditEntity {
   @Type(() => Boolean)
   isPetTutorialCompleted: boolean;
 
-  @ApiProperty({description: 'Score user in clan' })
+  @ApiProperty({ description: 'Score user in clan' })
   @OneToMany(() => UserClanStatEntity, (score) => score.user)
   scores: UserClanStatEntity[];
 }

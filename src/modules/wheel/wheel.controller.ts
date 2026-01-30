@@ -19,12 +19,12 @@ import {
 
 @ApiTags('Wheel')
 @ApiBearerAuth()
-@RequireAdmin()
 @Controller('wheel')
 export class WheelController {
   constructor(private readonly wheelService: WheelService) {}
 
   @Post()
+  @RequireAdmin()
   @ApiOperation({ summary: 'Create a new wheel' })
   create(@Body() dto: CreateWheelDto) {
     return this.wheelService.createWheel(dto);
@@ -32,17 +32,18 @@ export class WheelController {
 
   @Get()
   @ApiOperation({ summary: 'Get all wheels' })
-  getAll(@Query() query: WheelQueryDto) {
-    return this.wheelService.getAll(query);
+  getAllWheels(@Query() query: WheelQueryDto) {
+    return this.wheelService.getAllWheels(query);
   }
 
   @Get(':id')
   @ApiOperation({ summary: 'Get wheel detail' })
-  getById(@Param('id') id: string) {
-    return this.wheelService.getById(id);
+  getWheelById(@Param('id') id: string) {
+    return this.wheelService.getWheelById(id);
   }
 
   @Patch(':id')
+  @RequireAdmin()
   @ApiOperation({ summary: 'Update wheel' })
   update(
     @Param('id') id: string,
@@ -52,6 +53,7 @@ export class WheelController {
   }
 
   @Delete(':id')
+  @RequireAdmin()
   @ApiOperation({ summary: 'Delete wheel' })
   delete(@Param('id') id: string) {
     return this.wheelService.deleteWheel(id);

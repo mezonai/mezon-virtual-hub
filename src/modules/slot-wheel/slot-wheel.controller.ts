@@ -3,14 +3,12 @@ import { SlotWheelService } from './slot-wheel.service';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { RequireAdmin } from '@libs/decorator';
 import { CreateSlotWheelDto, SlotWheelQueryDto, SpinQueryDto, UpdateSlotWheelDto } from '@modules/slot-wheel/dto/slot-wheel.dto';
-import { SlotWheelType } from '@enum';
 import { ClsService } from 'nestjs-cls';
 import { UserEntity } from '@modules/user/entity/user.entity';
 import { USER_TOKEN } from '@constant';
 
 @ApiTags('Slot Wheel')
 @Controller('slot-wheel')
-@RequireAdmin()
 @ApiBearerAuth()
 export class SlotWheelController {
   constructor(
@@ -22,6 +20,7 @@ export class SlotWheelController {
   @ApiOperation({
     summary: 'Create a new slot wheel item',
   })
+  @RequireAdmin()
   createSlotWheelItem(@Query() body: CreateSlotWheelDto) {
     return this.slotWheelService.createSlotWheelItem(body);
   }
@@ -45,6 +44,7 @@ export class SlotWheelController {
   @ApiOperation({
     summary: 'Update a slot wheel item',
   })
+  @RequireAdmin()
   updateSlotWheelItem(@Param('id') id: string, @Body() updateSlotWheelDto: UpdateSlotWheelDto) {
     return this.slotWheelService.updateSlotWheelItem(id, updateSlotWheelDto);
   }
@@ -53,6 +53,7 @@ export class SlotWheelController {
   @ApiOperation({
     summary: 'Delete a slot wheel item',
   })
+  @RequireAdmin()
   deleteSlotWheelItem(@Param('id') id: string) {
     return this.slotWheelService.deleteSlotWheelItem(id);
   }

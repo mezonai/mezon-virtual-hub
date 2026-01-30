@@ -23,10 +23,11 @@ import { MezonService } from '@modules/mezon/mezon.service';
 import { PetPlayersService } from '@modules/pet-players/pet-players.service';
 import { PlayerQuestService } from '@modules/player-quest/player-quest.service';
 import { MessageTypes } from '../MessageTypes';
-import { PlantState } from '@enum';
+import { PetClanType, PlantState } from '@enum';
 import { FARM_CONFIG } from '@constant/farm.constant';
 import { GameConfigStore } from '@modules/admin/game-config/game-config.store';
 import { GAME_CONFIG_KEYS } from '@constant/game-config.keys';
+import { ClanAnimalsService } from '@modules/clan-animals/clan-animals.service';
 
 @Injectable()
 export class FarmRoom extends BaseGameRoom {
@@ -48,6 +49,7 @@ export class FarmRoom extends BaseGameRoom {
     cLanWarehouseService: CLanWarehouseService,
     @Inject() private readonly farmSlotsService: FarmSlotService,
     private readonly configStore: GameConfigStore,
+    @Inject() private readonly clanAnimalsService: ClanAnimalsService,
   ) {
     super(
       userRepository,
@@ -355,6 +357,36 @@ export class FarmRoom extends BaseGameRoom {
           return;
         }
 
+        const clanId = await this.farmSlotsService.getClanByFarmSlot(payload.farm_slot_id);
+
+        if (Player.clan_id !== clanId) {
+          const allActivePets = await this.clanAnimalsService.getListClanAnimalsByClanId({
+            clan_id: clanId,
+            is_active: true,
+          });
+
+          let totalDogRate = 0;
+
+          for (const pet of allActivePets) {
+            if (pet.pet_clan.type !== PetClanType.DOG) continue;
+
+            const petRateRes = await this.clanAnimalsService.getPetRate(pet.id);
+            totalDogRate += petRateRes.totalRate;
+          }
+
+          if (totalDogRate > 0) {
+            const roll = Math.random() * 100;
+
+            if (roll < totalDogRate) {
+              client.send(MessageTypes.ON_HARVEST_DENIED, {
+                sessionId: client.sessionId,
+                message: 'Bạn bị chó canh nông trại phát hiện! Thu hoạch thất bại 🐕',
+              });
+              return;
+            }
+          }
+        }
+
         if (slot.harvestingBy && slot.harvestingBy !== client.sessionId) {
           const otherPlayer = this.state.players.get(slot.harvestingBy);
           client.send(MessageTypes.ON_HARVEST_DENIED, {
@@ -615,6 +647,15 @@ export class FarmRoom extends BaseGameRoom {
         });
         if (!user) throw new Error('User not found');
 
+        const slotClanid = await this.farmSlotsService.getClanByFarmSlot(farm_slot_id);
+
+        if (player.clan_id !== slotClanid) {
+          client.send(MessageTypes.ON_DECREASE_GROWTH_TIME_FAILED, {
+            message:
+              'Bạn không thuộc clan sở hữu nông trại này.',
+          });
+        }
+
         const slotBefore = await this.farmSlotsService.getSlotWithPlantById(
           payload.farm_slot_id,
         );
@@ -673,9 +714,7 @@ export class FarmRoom extends BaseGameRoom {
       } finally {
         this.slotLocks.delete(farm_slot_id);
       }
-    },
-    );
-
+    });
   }
 
   getClientBySessionId(sessionId: string) {
@@ -839,7 +878,7 @@ export class FarmRoom extends BaseGameRoom {
     if (!Player) return;
 
     const slot = this.state.farmSlotState.get(slotId);
-    if (!slot || !slot.currentPlant || slot.harvestingBy !== sessionId ) return;
+    if (!slot || !slot.currentPlant || slot.harvestingBy !== sessionId) return;
 
     this.harvestTimers.delete(slotId);
     Player.isHarvesting = false;
