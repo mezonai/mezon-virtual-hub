@@ -28,6 +28,8 @@ import { FARM_CONFIG } from '@constant/farm.constant';
 import { GameConfigStore } from '@modules/admin/game-config/game-config.store';
 import { GAME_CONFIG_KEYS } from '@constant/game-config.keys';
 import { ClanAnimalsService } from '@modules/clan-animals/clan-animals.service';
+import { ClanDecorInventoryService } from '@modules/clan-decor-invetory/clan-decor-inventory.service';
+import { ClanEstateService } from '@modules/clan-estate/clan-estate.service';
 
 @Injectable()
 export class FarmRoom extends BaseGameRoom {
@@ -47,9 +49,11 @@ export class FarmRoom extends BaseGameRoom {
     playerQuestService: PlayerQuestService,
     clanFundService: ClanFundService,
     cLanWarehouseService: CLanWarehouseService,
+    clanDecorInventoryService: ClanDecorInventoryService,
+    clanAnimalService: ClanAnimalsService,
+    clanEstateService: ClanEstateService,
     @Inject() private readonly farmSlotsService: FarmSlotService,
     private readonly configStore: GameConfigStore,
-    @Inject() private readonly clanAnimalsService: ClanAnimalsService,
   ) {
     super(
       userRepository,
@@ -61,6 +65,9 @@ export class FarmRoom extends BaseGameRoom {
       playerQuestService,
       clanFundService,
       cLanWarehouseService,
+      clanDecorInventoryService,
+      clanAnimalService,
+      clanEstateService,
     );
   }
 
@@ -360,7 +367,7 @@ export class FarmRoom extends BaseGameRoom {
         const clanId = await this.farmSlotsService.getClanByFarmSlot(payload.farm_slot_id);
 
         if (Player.clan_id !== clanId) {
-          const allActivePets = await this.clanAnimalsService.getListClanAnimalsByClanId({
+          const allActivePets = await this.clanAnimalService.getListClanAnimalsByClanId({
             clan_id: clanId,
             is_active: true,
           });
@@ -370,7 +377,7 @@ export class FarmRoom extends BaseGameRoom {
           for (const pet of allActivePets) {
             if (pet.pet_clan.type !== PetClanType.DOG) continue;
 
-            const petRateRes = await this.clanAnimalsService.getPetRate(pet.id);
+            const petRateRes = await this.clanAnimalService.getPetRate(pet.id);
             totalDogRate += petRateRes.totalRate;
           }
 
