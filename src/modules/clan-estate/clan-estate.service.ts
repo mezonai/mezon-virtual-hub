@@ -127,7 +127,13 @@ export class ClanEstateService extends BaseService<ClanEstateEntity> {
       realEstate: recipe.map,
     });
 
-    return this.clanEstateRepo.save(clanEstate);
+    const savedMap = await this.clanEstateRepo.save(clanEstate);
+
+    return {
+      clan_id: user.clan_id,
+      item: savedMap,
+      fund: fundRecord.amount,
+    };
   }
 
   async deleteClanEstateById(id: string) {

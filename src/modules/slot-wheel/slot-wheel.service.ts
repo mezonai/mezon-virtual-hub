@@ -69,7 +69,7 @@ export class SlotWheelService extends BaseService<SlotWheelEntity> {
       throw new NotFoundException('Wheel not found');
     }
 
-    if (user.gold < wheel.base_fee) {
+    if (user.gold < wheel.base_fee * quantity) {
       throw new BadRequestException('Not enough gold');
     }
 

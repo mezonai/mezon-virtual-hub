@@ -28,6 +28,8 @@ import { FARM_CONFIG } from '@constant/farm.constant';
 import { GameConfigStore } from '@modules/admin/game-config/game-config.store';
 import { GAME_CONFIG_KEYS } from '@constant/game-config.keys';
 import { ClanAnimalsService } from '@modules/clan-animals/clan-animals.service';
+import { ClanDecorInventoryService } from '@modules/clan-decor-invetory/clan-decor-inventory.service';
+import { ClanEstateService } from '@modules/clan-estate/clan-estate.service';
 
 @Injectable()
 export class FarmRoom extends BaseGameRoom {
@@ -47,6 +49,9 @@ export class FarmRoom extends BaseGameRoom {
     playerQuestService: PlayerQuestService,
     clanFundService: ClanFundService,
     cLanWarehouseService: CLanWarehouseService,
+    clanDecorInventoryService: ClanDecorInventoryService,
+    clanAnimalService: ClanAnimalsService,
+    clanEstateService: ClanEstateService,
     @Inject() private readonly farmSlotsService: FarmSlotService,
     private readonly configStore: GameConfigStore,
     @Inject() private readonly clanAnimalsService: ClanAnimalsService,
@@ -61,6 +66,9 @@ export class FarmRoom extends BaseGameRoom {
       playerQuestService,
       clanFundService,
       cLanWarehouseService,
+      clanDecorInventoryService,
+      clanAnimalService,
+      clanEstateService,
     );
   }
 
