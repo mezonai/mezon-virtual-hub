@@ -95,7 +95,7 @@ export class BaseGameRoom extends Room<RoomState> {
     @Inject() private readonly clanFundService: ClanFundService,
     @Inject() private readonly cLanWarehouseService: CLanWarehouseService,
     @Inject() private readonly clanDecorInventoryService: ClanDecorInventoryService,
-    @Inject()  readonly clanAnimalService: ClanAnimalsService,
+    @Inject() readonly clanAnimalService: ClanAnimalsService,
     @Inject() private readonly clanEstateService: ClanEstateService,
   ) {
     super();
@@ -1006,8 +1006,7 @@ export class BaseGameRoom extends Room<RoomState> {
           message: err instanceof Error ? err.message : 'Lỗi không xác định',
         });
       }
-    },
-    );
+    });
 
     //combat
     this.onMessage('p2pCombatActionAccept', (sender, data) => {

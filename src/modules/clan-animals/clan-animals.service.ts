@@ -9,7 +9,7 @@ import { ClanAnimalEntity } from './entity/clan-animal.entity';
 import { ClanEntity } from '@modules/clan/entity/clan.entity';
 import { PetClanEntity } from '@modules/pet-clan/entity/pet-clan.entity';
 import { UserEntity } from '@modules/user/entity/user.entity';
-import { GetListClanAnimalsDto } from '@modules/clan-animals/dto/clan-animals.dto';
+import { GetListClanAnimalsDto, PickupIngredientsDto } from '@modules/clan-animals/dto/clan-animals.dto';
 import { RecipeService } from '@modules/recipe/recipe.service';
 import { ClanFundEntity } from '@modules/clan-fund/entity/clan-fund.entity';
 import { ClanActivityService } from '@modules/clan-activity/clan-activity.service';
@@ -74,7 +74,6 @@ export class ClanAnimalsService {
         throw new NotFoundException('Clan fund not found');
       }
 
-      // 👉 Trừ nguyên liệu
       for (const ingredient of recipePetClan.ingredients) {
         if (ingredient.gold > 0) {
           if (clanFund.amount < ingredient.gold) {
@@ -84,7 +83,7 @@ export class ClanAnimalsService {
           continue;
         }
 
-        const where: any = { clan_id: user.clan_id };
+        const where: PickupIngredientsDto = { clan_id: user.clan_id };
         if (ingredient.item_id) where.item_id = ingredient.item_id;
         if (ingredient.plant_id) where.plant_id = ingredient.plant_id;
 
@@ -109,7 +108,7 @@ export class ClanAnimalsService {
         bonus_rate_affect: 0,
       });
 
-      const saved = await clanAnimalRepo.save(clanAnimal);
+      const savedClanAnimal = await clanAnimalRepo.save(clanAnimal);
 
       await this.clanActivityService.logActivity({
         clanId: user.clan_id,
@@ -119,7 +118,11 @@ export class ClanAnimalsService {
         officeName: user.clan?.farm.name,
       });
 
-      return saved;
+      return {
+        clan_id: user.clan_id,
+        item: savedClanAnimal,
+        fund: clanFund.amount,
+      };
     });
   }
 
@@ -173,7 +176,13 @@ export class ClanAnimalsService {
     }
 
     clan.max_slot_pet_active += 1;
-    return await this.clanRepo.save(clan);
+    const savedClan = await this.clanRepo.save(clan);
+
+        return {
+      clan_id: user.clan_id,
+      item: savedClan,
+      fund: fundRecord.amount,
+    };
   }
 
   async activateClanAnimal(user: UserEntity, clanAnimalId: string) {
