@@ -14,7 +14,6 @@ import { ClanWarehouseEntity } from '@modules/clan-warehouse/entity/clan-warehou
     TypeOrmModule.forFeature([
       ClanEstateEntity,
       ClanEntity,
-      MapEntity,
       RecipeEntity,
       ClanFundEntity,
       ClanWarehouseEntity,

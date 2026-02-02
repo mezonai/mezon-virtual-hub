@@ -342,7 +342,6 @@ export class ClanAnimalsService {
     }
   }
 
-
   async getListClanAnimalsByClanId(query: GetListClanAnimalsDto) {
     const pets = await this.clanAnimalRepository.find({
       where: { ...query },

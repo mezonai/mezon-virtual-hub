@@ -12,6 +12,10 @@ import { PlantEntity } from '@modules/plant/entity/plant.entity';
 import { PetClanEntity } from '@modules/pet-clan/entity/pet-clan.entity';
 import { MapEntity } from '@modules/map/entity/map.entity';
 import { DecorItemEntity } from '@modules/decor-item/entity/decor-item.entity';
+import { ClanAnimalEntity } from '@modules/clan-animals/entity/clan-animal.entity';
+import { ClanEntity } from '@modules/clan/entity/clan.entity';
+import { ClanEstateEntity } from '@modules/clan-estate/entity/clan-estate.entity';
+import { ClanDecorInventoryEntity } from '@modules/clan-decor-invetory/entity/clan-decor-inventory.entity';
 
 @Module({
   imports: [
@@ -25,7 +29,11 @@ import { DecorItemEntity } from '@modules/decor-item/entity/decor-item.entity';
       PlantEntity,
       PetClanEntity,
       MapEntity,
-      DecorItemEntity
+      DecorItemEntity,
+      ClanAnimalEntity,
+      ClanEntity,
+      ClanEstateEntity,
+      ClanDecorInventoryEntity,
     ])
   ],
   controllers: [RecipeController],

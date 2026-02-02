@@ -23,8 +23,6 @@ export class ClanEstateService extends BaseService<ClanEstateEntity> {
     private readonly clanEstateRepo: Repository<ClanEstateEntity>,
     @InjectRepository(ClanEntity)
     private readonly clanRepo: Repository<ClanEntity>,
-    @InjectRepository(MapEntity)
-    private readonly mapRepo: Repository<MapEntity>,
     @InjectRepository(RecipeEntity)
     private readonly recipeRepo: Repository<RecipeEntity>,
     @InjectRepository(ClanWarehouseEntity)
