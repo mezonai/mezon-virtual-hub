@@ -178,7 +178,7 @@ export class ClanAnimalsService {
     clan.max_slot_pet_active += 1;
     const savedClan = await this.clanRepo.save(clan);
 
-        return {
+    return {
       clan_id: user.clan_id,
       item: savedClan,
       fund: fundRecord.amount,

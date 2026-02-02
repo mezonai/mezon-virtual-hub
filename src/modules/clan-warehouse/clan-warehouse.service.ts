@@ -69,7 +69,7 @@ export class CLanWarehouseService {
           ELSE 99
         END
       `, 'ASC')
-      .addOrderBy('item.gold', 'ASC');
+        .addOrderBy('item.gold', 'ASC');
     }
 
     const items = await qb.getMany();
@@ -143,7 +143,7 @@ export class CLanWarehouseService {
       }
       warehouseItem.quantity -= requiredQuantity;
       await this.warehouseRepo.save(warehouseItem);
-    }   
+    }
 
     const pricePerUnit = plant
       ? plant.buy_price
