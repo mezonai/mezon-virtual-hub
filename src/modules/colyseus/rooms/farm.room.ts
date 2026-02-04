@@ -1,9 +1,9 @@
 import { Inject, Injectable } from '@nestjs/common';
-import {AuthenticatedClient, FarmSlotState,GuardPet, PlantDataSchema, Player} from '@types';
+import { AuthenticatedClient, FarmSlotState, GuardPet, PlantDataSchema, Player } from '@types';
 import { BaseGameRoom } from './base-game.room';
 import { FarmSlotService } from '@modules/farm-slots/farm-slots.service';
 import { PlantCareUtils } from '@modules/plant/plant-care.service';
-import {PlantOnSlotDto,SlotWithStatusDto} from '@modules/farm-slots/dto/farm-slot.dto';
+import { PlantOnSlotDto, SlotWithStatusDto } from '@modules/farm-slots/dto/farm-slot.dto';
 import { UserEntity } from '@modules/user/entity/user.entity';
 import { Repository } from 'typeorm';
 import { UserService } from '@modules/user/user.service';
@@ -752,7 +752,6 @@ export class FarmRoom extends BaseGameRoom {
       this.state.guardPets.set(guardPet.id, guardPet);
     });
 
-
     this.onMessage('deactivateGuardPet', async (client, payload) => {
       if (!client.sessionId) return;
       const pet = await this.clanAnimalsService.deactivateClanAnimal(
@@ -955,8 +954,11 @@ export class FarmRoom extends BaseGameRoom {
         baseScore: result.baseScore,
         careBonus: result.careBonus,
         clanMultiplier: result.clanMultiplier,
-        totalScore: result.totalScore,
+        finalPlayerScore: result.finalPlayerScore,
+        finalGold: result.finalGold,
         bonusPercent: result.bonusPercent,
+        catBonusRate: result.catBonusRate,
+        birdBonusRate: result.birdBonusRate,
         remainingHarvest: result.remaining,
         maxHarvest: result.max,
       });

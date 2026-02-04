@@ -211,21 +211,6 @@ export class ClanAnimalsService {
 
       if (clanAnimal.is_active) return clanAnimal;
 
-      const existedSameType = await clanAnimalRepo.findOne({
-        where: {
-          clan_id: clan_id,
-          is_active: true,
-          pet_clan: { type: clanAnimal.pet_clan.type },
-        },
-        relations: ['pet_clan'],
-      });
-
-      if (existedSameType) {
-        throw new BadRequestException(
-          `Clan đã có pet loại ${clanAnimal.pet_clan.type} đang hoạt động`,
-        );
-      }
-
       const activePets = await clanAnimalRepo.find({
         where: { clan_id: clan_id, is_active: true },
         select: ['slot_index'],
@@ -304,7 +289,7 @@ export class ClanAnimalsService {
     }
   }
 
-  async gainExpForActiveClanAnimals(clanId: string, expGain = 1) {
+  async gainExpForActiveClanAnimals(clanId: string, expGain: number) {
     const activeAnimals = await this.clanAnimalRepository.find({
       where: {
         clan_id: clanId,
@@ -325,18 +310,14 @@ export class ClanAnimalsService {
         petClan,
       );
 
-      if (animal.exp < requiredExp) {
-        await this.clanAnimalRepository.save(animal);
-        continue;
+      if (animal.exp >= requiredExp) {
+        animal.exp -= requiredExp;
+        animal.level += 1;
+
+        animal.bonus_rate_affect +=
+          petClan.base_rate_affect *
+          petClan.level_up_rate_multiplier;
       }
-
-      animal.level += 1;
-
-      animal.exp = 0;
-
-      animal.bonus_rate_affect +=
-        petClan.base_rate_affect *
-        petClan.level_up_rate_multiplier;
 
       await this.clanAnimalRepository.save(animal);
     }
@@ -349,8 +330,13 @@ export class ClanAnimalsService {
       order: { created_at: 'ASC' },
     });
 
+    const clan = await this.clanRepo.findOne({
+      where: { id: query.clan_id },
+    });
+
     return pets.map(pet => ({
       ...pet,
+      max_slot_pet_active: clan?.max_slot_pet_active,
       required_exp: this.getExpRequiredForNextLevel(pet.level, pet.pet_clan),
       total_rate_affect:
         (pet.pet_clan?.base_rate_affect ?? 0) +
@@ -380,9 +366,9 @@ export class ClanAnimalsService {
   getExpRequiredForNextLevel(level: number, petClan: PetClanEntity) {
     if (level >= petClan.max_level) return Infinity;
 
-    return (
+    return Math.floor(
       petClan.base_exp_per_level +
-      (level - 1) * petClan.base_exp_increment_per_level
+      Math.pow(petClan.base_exp_increment_per_level, level - 1),
     );
   }
 }

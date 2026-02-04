@@ -24,7 +24,7 @@ export class CreatePetClanDto {
   @IsEnum(PetClanType)
   type: PetClanType;
 
-  @ApiProperty({ default: 0.1 })
+  @ApiProperty({ default: 10 })
   @IsNumber()
   base_rate_affect: number;
 
@@ -32,7 +32,7 @@ export class CreatePetClanDto {
   @IsNumber()
   base_exp_per_level: number;
 
-  @ApiProperty({ default: 50 })
+  @ApiProperty({ default: 5 })
   @IsNumber()
   base_exp_increment_per_level: number;
 
