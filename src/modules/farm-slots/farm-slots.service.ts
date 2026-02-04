@@ -512,22 +512,27 @@ export class FarmSlotService {
     });
     if (!user?.clan) throw new BadRequestException('Người chơi không có clan');
 
-    const activePetClanAnimals = await this.clanAnimalsService.getListClanAnimalsByClanId({
-      clan_id: user.clan.id,
-      is_active: true,
-    });
+    const slotClanId = await this.getClanByFarmSlot(farmSlotId);
+    if (!slotClanId) throw new BadRequestException('Farm slot không thuộc clan nào');
 
     let catRateBonus = 0;
     let birdRateBonus = 0;
 
-    for (const pet of activePetClanAnimals) {
-      switch (pet.pet_clan?.type) {
-        case PetClanType.CAT:
-          catRateBonus += pet.total_rate_affect ?? 0;
-          break;
-        case PetClanType.BIRD:
-          birdRateBonus += pet.total_rate_affect ?? 0;
-          break;
+    if (user.clan.id === slotClanId) {
+      const activePetClanAnimals = await this.clanAnimalsService.getListClanAnimalsByClanId({
+        clan_id: user.clan.id,
+        is_active: true,
+      });
+
+      for (const pet of activePetClanAnimals) {
+        switch (pet.pet_clan?.type) {
+          case PetClanType.CAT:
+            catRateBonus += pet.total_rate_affect ?? 0;
+            break;
+          case PetClanType.BIRD:
+            birdRateBonus += pet.total_rate_affect ?? 0;
+            break;
+        }
       }
     }
 
