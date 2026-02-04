@@ -17,7 +17,7 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
-import { AuthenticatedClient, FarmSlotState, Player, PlayerBattleInfo, WithdrawMezonPayload } from '@types';
+import { AuthenticatedClient, FarmSlotState, GuardPet, Player, PlayerBattleInfo, WithdrawMezonPayload } from '@types';
 import { Client, matchMaker, Room } from 'colyseus';
 import { IncomingMessage } from 'http';
 import { Repository } from 'typeorm';
@@ -67,6 +67,7 @@ export class RoomState extends Schema {
   @type({ map: Door }) doors = new MapSchema<Door>();
   @type({ map: PlayerBattleInfo }) battlePlayers = new MapSchema<PlayerBattleInfo>();
   @type({ map: FarmSlotState }) farmSlotState = new MapSchema<FarmSlotState>();
+  @type({ map: GuardPet }) guardPets = new MapSchema<GuardPet>();
 }
 
 @Injectable()

@@ -1,17 +1,9 @@
 import { Inject, Injectable } from '@nestjs/common';
-import {
-  AuthenticatedClient,
-  FarmSlotState,
-  PlantDataSchema,
-  Player,
-} from '@types';
+import {AuthenticatedClient, FarmSlotState,GuardPet, PlantDataSchema, Player} from '@types';
 import { BaseGameRoom } from './base-game.room';
 import { FarmSlotService } from '@modules/farm-slots/farm-slots.service';
 import { PlantCareUtils } from '@modules/plant/plant-care.service';
-import {
-  PlantOnSlotDto,
-  SlotWithStatusDto,
-} from '@modules/farm-slots/dto/farm-slot.dto';
+import {PlantOnSlotDto,SlotWithStatusDto} from '@modules/farm-slots/dto/farm-slot.dto';
 import { UserEntity } from '@modules/user/entity/user.entity';
 import { Repository } from 'typeorm';
 import { UserService } from '@modules/user/user.service';
@@ -85,6 +77,24 @@ export class FarmRoom extends BaseGameRoom {
     const farm = await this.farmSlotsService.getFarmWithSlotsByClan(
       this.roomName.split('-farm')[0],
     );
+
+    const pets = await this.clanAnimalsService.getListClanAnimalsByClanId({
+      clan_id: this.roomName.split('-farm')[0],
+      is_active: true,
+    });
+
+    pets.forEach((pet) => {
+      if (pet.pet_clan.type !== PetClanType.DOG) return;
+      const guardPet = new GuardPet();
+      guardPet.id = pet.id;
+      guardPet.name = pet.pet_clan.name;
+      guardPet.petClanId = pet.pet_clan_id;
+      guardPet.type = pet.pet_clan.type;
+      guardPet.slotIndex = Number(pet.slot_index ?? 0);
+      guardPet.isActive = true;
+      this.state.guardPets.set(guardPet.id, guardPet);
+    });
+
     farm.slots.forEach((slot) => {
       const slotState = new FarmSlotState();
       slotState.id = slot.id;
@@ -723,6 +733,41 @@ export class FarmRoom extends BaseGameRoom {
         this.slotLocks.delete(farm_slot_id);
       }
     });
+
+    this.onMessage('activateGuardPet', async (client, payload) => {
+      if (!client.sessionId) return;
+      const pet = await this.clanAnimalsService.activateClanAnimal(
+        payload.clan_id,
+        payload.id,
+      );
+
+      let guardPet = this.state.guardPets.get(pet.id);
+      guardPet = new GuardPet();
+      guardPet.id = pet.id;
+      guardPet.petClanId = pet.pet_clan_id;
+      guardPet.name = pet.pet_clan.name;
+      guardPet.type = pet.pet_clan.type;
+      guardPet.slotIndex = pet.slot_index!;
+      guardPet.isActive = true;
+      this.state.guardPets.set(guardPet.id, guardPet);
+    });
+
+
+    this.onMessage('deactivateGuardPet', async (client, payload) => {
+      if (!client.sessionId) return;
+      const pet = await this.clanAnimalsService.deactivateClanAnimal(
+        payload.clan_id,
+        payload.id,
+      );
+      let guardPet = this.state.guardPets.get(pet.id);
+      if (guardPet) {
+        guardPet = new GuardPet();
+        guardPet.id = pet.id;
+        guardPet.petClanId = pet.pet_clan_id;
+        guardPet.isActive = false;
+        this.state.guardPets.set(guardPet.id, guardPet);
+      }
+    });
   }
 
   getClientBySessionId(sessionId: string) {
@@ -873,8 +918,14 @@ export class FarmRoom extends BaseGameRoom {
       }
     }
 
+    if (this.playerCount <= 0) {
+      this.clearAllGuardPets();
+    }
     this.state.players.delete(sessionId);
-    this.logger.log(`Player ${sessionId} left FarmRoom`);
+  }
+
+  private clearAllGuardPets() {
+    this.state.guardPets.clear();
   }
 
   override onDispose() {
