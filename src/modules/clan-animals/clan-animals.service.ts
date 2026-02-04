@@ -185,24 +185,24 @@ export class ClanAnimalsService {
     };
   }
 
-  async activateClanAnimal(user: UserEntity, clanAnimalId: string) {
+  async activateClanAnimal(clan_id: string, clanAnimalId: string) {
     return this.clanAnimalRepository.manager.transaction(async (manager) => {
       const clanAnimalRepo = manager.getRepository(ClanAnimalEntity);
       const clanRepo = manager.getRepository(ClanEntity);
 
-      if (!user.clan_id) {
+      if (!clan_id) {
         throw new BadRequestException('User does not belong to any clan');
       }
 
       const clan = await clanRepo.findOne({
-        where: { id: user.clan_id },
+        where: { id: clan_id },
       });
       if (!clan) {
         throw new NotFoundException('Clan not found');
       }
 
       const clanAnimal = await clanAnimalRepo.findOne({
-        where: { id: clanAnimalId, clan_id: user.clan_id },
+        where: { id: clanAnimalId, clan_id: clan_id },
         relations: ['pet_clan'],
       });
       if (!clanAnimal) {
@@ -213,7 +213,7 @@ export class ClanAnimalsService {
 
       const existedSameType = await clanAnimalRepo.findOne({
         where: {
-          clan_id: user.clan_id,
+          clan_id: clan_id,
           is_active: true,
           pet_clan: { type: clanAnimal.pet_clan.type },
         },
@@ -227,7 +227,7 @@ export class ClanAnimalsService {
       }
 
       const activePets = await clanAnimalRepo.find({
-        where: { clan_id: user.clan_id, is_active: true },
+        where: { clan_id: clan_id, is_active: true },
         select: ['slot_index'],
       });
 
@@ -256,15 +256,15 @@ export class ClanAnimalsService {
     });
   }
 
-  async deactivateClanAnimal(user: UserEntity, clanAnimalId: string) {
-    if (!user.clan_id) {
+  async deactivateClanAnimal(clan_id: string, clanAnimalId: string) {
+    if (!clan_id) {
       throw new BadRequestException('User does not belong to any clan');
     }
 
     const clanAnimal = await this.clanAnimalRepository.findOne({
       where: {
         id: clanAnimalId,
-        clan_id: user.clan_id,
+        clan_id: clan_id,
       },
     });
 

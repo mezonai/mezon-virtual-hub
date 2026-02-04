@@ -1,5 +1,5 @@
 import { ArraySchema, MapSchema, Schema, type } from '@colyseus/schema';
-import { PetType, PlantState } from '@enum';
+import { PetClanType, PetType, PlantState } from '@enum';
 import { UserWithPetPlayers } from '@modules/user/dto/user.dto';
 import { Client as ColyseusClient } from 'colyseus';
 import { TokenSentEvent } from 'mezon-sdk/dist/cjs/api/api';
@@ -79,6 +79,15 @@ export class FarmSlotState extends Schema {
   @type('string') harvestingBy?: string;
   @type('number') harvestEndTime: number = 0;
   @type('number') harvest_count: number = 0;
+}
+
+export class GuardPet extends Schema {
+  @type('string') id: string;
+  @type('string') name: string;
+  @type('string') petClanId: string;
+  @type('string') type: PetClanType;
+  @type('number') slotIndex: number;
+  @type('boolean') isActive: boolean;
 }
 
 export interface WithdrawMezonPayload

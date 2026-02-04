@@ -64,7 +64,8 @@ export class ClanAnimalsController {
   @ApiParam({ name: 'clanAnimalId', example: '91bea29f-0e87-42a5-b851-d9d0386ac32f' })
   activateClanAnimal(@Param('clanAnimalId') clanAnimalId: string) {
     const user = this.cls.get<UserEntity>(USER_TOKEN);
-    return this.clanAnimalsService.activateClanAnimal(user, clanAnimalId);
+    if(!user.clan_id) return;
+    return this.clanAnimalsService.activateClanAnimal(user.clan_id, clanAnimalId);
   }
 
   @Patch(':clanAnimalId/deactivate')
@@ -74,7 +75,8 @@ export class ClanAnimalsController {
   @ApiParam({ name: 'clanAnimalId', example: '91bea29f-0e87-42a5-b851-d9d0386ac32f' })
   deactivateClanAnimal(@Param('clanAnimalId') clanAnimalId: string) {
     const user = this.cls.get<UserEntity>(USER_TOKEN);
-    return this.clanAnimalsService.deactivateClanAnimal(user, clanAnimalId);
+    if(!user.clan_id) return;
+    return this.clanAnimalsService.deactivateClanAnimal(user.clan_id, clanAnimalId);
   }
 
   @Delete(':clanAnimalId')
