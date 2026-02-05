@@ -77,6 +77,7 @@ export enum ItemCode {
   VOLTSTRIDER_FRAGMENT_2 = 'voltstrider_fragment_2',
   VOLTSTRIDER_FRAGMENT_3 = 'voltstrider_fragment_3',
   VOLTSTRIDER_FRAGMENT_4 = 'voltstrider_fragment_4',
+  PET_CLAN_SLOT_CARD = 'pet_clan_slot_card',
   // Cosmetic items ....
 }
 
@@ -134,6 +135,8 @@ export enum InventoryClanType {
   
   LOCK_PLANT_TOOL = 'lock_plant_tool',
   LOCK_PICK_TOOL = 'lock_pick_tool',
+
+  PET_CLAN_SLOT_CARD = 'pet_clan_slot_card',
 }
 
 export enum AnimalRarity {
