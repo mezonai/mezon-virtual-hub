@@ -149,7 +149,7 @@ export class ClanAnimalsService {
 
     for (const ingredient of recipe?.ingredients || []) {
       if (ingredient.item || ingredient.plant) {
-        const requiredQuantity = ingredient.required_quantity;
+        const requiredQuantity = ingredient.required_quantity * clan.max_slot_pet_active;
         const warehouseItem = await this.warehouseRepo.findOne({
           where: {
             clan_id: user.clan_id,

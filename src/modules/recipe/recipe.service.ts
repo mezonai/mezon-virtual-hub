@@ -113,6 +113,10 @@ export class RecipeService extends BaseService<RecipeEntity> {
           where: { id: user.clan_id },
         });
         recipe['current_slot_quantity'] = clan?.max_slot_pet_active ?? 0;
+        
+        for (const ingredient of recipe.ingredients || []) {
+          ingredient.required_quantity = ingredient.required_quantity * (clan?.max_slot_pet_active ?? 0);
+        }
       }
 
       if (query.type === RecipeType.DECOR_ITEM) {
