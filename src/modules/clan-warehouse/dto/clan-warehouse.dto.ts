@@ -43,6 +43,18 @@ export class BuyItemDto {
   quantity: number;
 }
 
+export class AddItemDto {
+  @ApiProperty({ description: 'Item ID (UUID)' })
+  @IsUUID()
+  itemId: string;
+
+  @ApiProperty({ example: 10, minimum: 1 })
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  quantity: number;
+}
+
 export class HarvestPlantStatusDto {
   @ApiProperty()
   @IsUUID()

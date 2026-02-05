@@ -1,11 +1,11 @@
 import { Controller, Get, Post, Body, Query, BadRequestException, Param, ParseUUIDPipe} from '@nestjs/common';
 import {ApiBearerAuth, ApiOperation, ApiTags, ApiQuery} from '@nestjs/swagger';
 import { CLanWarehouseService } from './clan-warehouse.service';
-import { BuyItemDto, GetAllItemsInWarehouseQueryDto, SeedClanWarehouseDto } from './dto/clan-warehouse.dto';
+import { AddItemDto, BuyItemDto, GetAllItemsInWarehouseQueryDto, SeedClanWarehouseDto } from './dto/clan-warehouse.dto';
 import { UserEntity } from '@modules/user/entity/user.entity';
 import { USER_TOKEN } from '@constant';
 import { ClsService } from 'nestjs-cls';
-import { RequireAdmin, RequireClanRoles } from '@libs/decorator';
+import { RequireAdmin } from '@libs/decorator';
 import { UUID } from 'crypto';
 
 @ApiBearerAuth()
@@ -24,6 +24,16 @@ export class ClanWarehouseController {
     @Query() query: GetAllItemsInWarehouseQueryDto
   ) {
     return this.farmWarehouseService.getAllItemsInWarehouse(clanId, query);
+  }
+
+  @Post('add-item-to-warehouse')
+  @RequireAdmin()
+  @ApiOperation({ summary: 'Add item to clan warehouse' })
+  async addItemToWarehouse(
+    @Param('clan_id', ParseUUIDPipe) clanId: string,
+    @Query() dto: AddItemDto,
+  ) {
+    return this.farmWarehouseService.addItemToClanWarehouse(clanId, dto.itemId, dto.quantity);
   }
 
   @Post('buy-items-clan')
