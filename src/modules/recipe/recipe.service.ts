@@ -115,7 +115,7 @@ export class RecipeService extends BaseService<RecipeEntity> {
         recipe['current_slot_quantity'] = clan?.max_slot_pet_active ?? 0;
         
         for (const ingredient of recipe.ingredients || []) {
-          ingredient.required_quantity = ingredient.required_quantity * (clan?.max_slot_pet_active ?? 0);
+          ingredient['total_required_quantity'] = ingredient.required_quantity * (clan?.max_slot_pet_active || 1);
         }
       }
 
@@ -159,13 +159,24 @@ export class RecipeService extends BaseService<RecipeEntity> {
         }
 
         if (ingredient.item_id) {
-          const inventoryItem = await this.inventoryRepository.findOne({
+          let inventoryItem: Inventory | ClanWarehouseEntity | null = null;
+
+          inventoryItem = await this.inventoryRepository.findOne({
             where: {
               user: { id: user.id },
               item: { id: ingredient.item_id },
               inventory_type: InventoryType.ITEM,
             },
           });
+
+          if (!inventoryItem) {
+            inventoryItem = await this.clanWarehouseRepo.findOne({
+              where: {
+                clan_id: user.clan_id,
+                item_id: ingredient.item_id,
+              },
+            });
+          }
 
           ingredient['current_quantity'] = inventoryItem?.quantity ?? 0;
         }
