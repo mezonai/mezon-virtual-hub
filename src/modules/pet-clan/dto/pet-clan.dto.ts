@@ -1,7 +1,7 @@
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 import { IsEnum, IsNumber, IsOptional, IsString, Max, Min } from 'class-validator';
 import { Transform } from 'class-transformer';
-import { PetClanType } from '@enum';
+import { PetCLanCode, PetClanType } from '@enum';
 
 export class getListPetClansDto {
   @ApiPropertyOptional({ enum: PetClanType, example: PetClanType.DOG, required: false })
@@ -23,6 +23,10 @@ export class CreatePetClanDto {
   @ApiProperty({ enum: PetClanType })
   @IsEnum(PetClanType)
   type: PetClanType;
+
+  @ApiProperty({ enum: PetCLanCode })
+  @IsEnum(PetCLanCode)
+  pet_clan_code: PetCLanCode;
 
   @ApiProperty({ default: 10 })
   @IsNumber()
