@@ -163,6 +163,20 @@ export enum PetClanType {
   DRAGON = 'dragon',
 }
 
+export enum PetCLanCode {
+  //DOG
+  PET_CLAN_DOG_001 = 'pet_clan_dog_001',
+  PET_CLAN_DOG_002 = 'pet_clan_dog_002',
+
+  //CAT
+  PET_CLAN_CAT_001 = 'pet_clan_cat_001',
+  PET_CLAN_CAT_002 = 'pet_clan_cat_002',
+
+  //BIRD
+  PET_CLAN_BIRD_001 = 'pet_clan_bird_001',
+  PET_CLAN_BIRD_002 = 'pet_clan_bird_002',
+}
+
 export enum SkillType {
   ATTACK = 'attack',
   DEFENSE = 'defense',
