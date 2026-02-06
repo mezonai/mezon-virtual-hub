@@ -34,7 +34,7 @@ export class PetClanEntity extends AuditEntity {
     nullable: true,
     unique: true,
   })
-  pet_clan_code: PetCLanCode | null;
+  pet_clan_code: PetCLanCode;
 
   @Column({ type: 'float', default: 10.0 })
   @ApiProperty()
