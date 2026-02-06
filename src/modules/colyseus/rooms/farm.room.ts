@@ -29,6 +29,8 @@ export class FarmRoom extends BaseGameRoom {
   private interruptLocks = new Map<string, boolean>(); // khóa theo farm_slot_id
   private slotLocks = new Map<string, boolean>();
   private plantTimers = new Map<string, NodeJS.Timeout[]>();
+  private guardPetLocks = new Map<string, boolean>(); // khóa theo pet_clan_id
+
 
   private playerCount = 0;
   constructor(
@@ -84,12 +86,11 @@ export class FarmRoom extends BaseGameRoom {
     });
 
     pets.forEach((pet) => {
-      if (pet.pet_clan.type !== PetClanType.DOG) return;
       const guardPet = new GuardPet();
       guardPet.id = pet.id;
       guardPet.name = pet.pet_clan.name;
       guardPet.petClanId = pet.pet_clan_id;
-      guardPet.type = pet.pet_clan.type;
+      guardPet.petCLanCode = pet.pet_clan.pet_clan_code;
       guardPet.slotIndex = Number(pet.slot_index ?? 0);
       guardPet.isActive = true;
       this.state.guardPets.set(guardPet.id, guardPet);
@@ -394,11 +395,10 @@ export class FarmRoom extends BaseGameRoom {
 
           if (totalDogRate > 0) {
             const roll = Math.random() * 100;
-
             if (roll < totalDogRate) {
-              client.send(MessageTypes.ON_HARVEST_DENIED, {
+              client.send(MessageTypes.ON_DOG_BITE, {
                 sessionId: client.sessionId,
-                message: 'Bạn bị chó canh nông trại phát hiện! Thu hoạch thất bại 🐕',
+                message: 'Bạn bị chó canh nông trại phát hiện! Thu hoạch thất bại',
               });
               return;
             }
@@ -736,36 +736,70 @@ export class FarmRoom extends BaseGameRoom {
 
     this.onMessage('activateGuardPet', async (client, payload) => {
       if (!client.sessionId) return;
-      const pet = await this.clanAnimalsService.activateClanAnimal(
-        payload.clan_id,
-        payload.id,
-      );
+      const lockKey = payload.id; // pet_id
 
-      let guardPet = this.state.guardPets.get(pet.id);
-      guardPet = new GuardPet();
-      guardPet.id = pet.id;
-      guardPet.petClanId = pet.pet_clan_id;
-      guardPet.name = pet.pet_clan.name;
-      guardPet.type = pet.pet_clan.type;
-      guardPet.slotIndex = pet.slot_index!;
-      guardPet.isActive = true;
-      this.state.guardPets.set(guardPet.id, guardPet);
+      if (this.guardPetLocks.get(lockKey)) {
+        client.send(MessageTypes.ON_ACTIVATE_PET_FAILED, {
+          message: 'Pet đang được người khác thao tác, vui lòng thử lại!',
+        });
+        return;
+      }
+
+      this.guardPetLocks.set(lockKey, true);
+      try {
+        const pet = await this.clanAnimalsService.activateClanAnimal(
+          payload.clan_id,
+          payload.id,
+        );
+        let guardPet = this.state.guardPets.get(pet.id);
+        guardPet = new GuardPet();
+        guardPet.id = pet.id;
+        guardPet.petClanId = pet.pet_clan_id;
+        guardPet.name = pet.pet_clan.name;
+        guardPet.petCLanCode = pet.pet_clan.pet_clan_code;
+        guardPet.slotIndex = pet.slot_index!;
+        guardPet.isActive = true;
+        this.state.guardPets.set(guardPet.id, guardPet);
+      } catch (err: any) {
+        client.send(MessageTypes.ON_ACTIVATE_PET_FAILED, {
+          message: `Không thể đưa pet ra nông trại có thể đã đạt tối đa pet ở nông trại!!`,
+        });
+      } finally {
+        this.guardPetLocks.delete(lockKey);
+      }
     });
 
     this.onMessage('deactivateGuardPet', async (client, payload) => {
       if (!client.sessionId) return;
-      const pet = await this.clanAnimalsService.deactivateClanAnimal(
-        payload.clan_id,
-        payload.id,
-      );
-      let guardPet = this.state.guardPets.get(pet.id);
-      if (guardPet) {
-        guardPet = new GuardPet();
-        guardPet.id = pet.id;
-        guardPet.petClanId = pet.pet_clan_id;
-        guardPet.isActive = false;
-        this.state.guardPets.set(guardPet.id, guardPet);
+      const lockKey = payload.id;
+      if (this.guardPetLocks.get(lockKey)) {
+        client.send(MessageTypes.ON_DEACTIVATE_PET_FAILED, {
+          message: 'Pet đang được người khác thao tác!',
+        });
+        return;
       }
+
+      this.guardPetLocks.set(lockKey, true);
+        try {
+          const pet = await this.clanAnimalsService.deactivateClanAnimal(
+            payload.clan_id,
+            payload.id,
+          );
+          let guardPet = this.state.guardPets.get(pet.id);
+          if (guardPet) {
+            guardPet = new GuardPet();
+            guardPet.id = pet.id;
+            guardPet.petClanId = pet.pet_clan_id;
+            guardPet.isActive = false;
+            this.state.guardPets.set(guardPet.id, guardPet);
+          }
+        } catch (err: any) {
+            client.send(MessageTypes.ON_DEACTIVATE_PET_FAILED, {
+              message: `Không thể đưa pet về chuồng!!`,
+            });
+        }finally {
+          this.guardPetLocks.delete(lockKey);
+        }
     });
   }
 

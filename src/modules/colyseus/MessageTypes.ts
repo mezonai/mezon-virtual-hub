@@ -48,6 +48,7 @@ export enum MessageTypes {
   ON_HARVEST_STARTED = 'onHarvestStarted',
   ON_HARVEST_COMPLETE = 'onHarvestComplete',
   ON_HARVEST_DENIED = 'onHarvestDenied',
+  ON_DOG_BITE = 'onDogBite',
   ON_PLANT_DEATH = 'onPlantDeath',
   ON_HARVEST_FAILED = 'onHarvestFailed',
   ON_HARVEST_INTERRUPTED = 'onHarvestInterrupted',
@@ -59,6 +60,6 @@ export enum MessageTypes {
   ON_DECREASE_GROWTH_TIME = 'onDecreaseGrowthTime',
   ON_DECREASE_GROWTH_TIME_FAILED = 'onDecreaseGrowthTimeFailed',
   ON_CHANGE_TOTAL_SLOT_PET_BATTLE = 'onChangeTotalSlotPetBatte',
-  ON_DOG_BITE_FAILED = 'onDogBiteFailed',
-  ON_DOG_BITE_SUCCESS = 'onDogBiteSuccess',
+  ON_ACTIVATE_PET_FAILED= 'onActivatePetFailed',
+  ON_DEACTIVATE_PET_FAILED= 'onDeactivatePetFailed'
 }
