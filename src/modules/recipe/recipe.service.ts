@@ -89,6 +89,7 @@ export class RecipeService extends BaseService<RecipeEntity> {
         'ASC',
       )
       .addOrderBy('item.gold', 'ASC')
+      .addOrderBy('pet_clan.created_at', 'ASC')
       .getMany();
 
     if (!user.clan_id) {
