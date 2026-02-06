@@ -114,6 +114,7 @@ export class ClanAnimalsService {
         clanId: user.clan_id,
         userId: user.id,
         actionType: ClanActivityActionType.PURCHASE,
+        quantity: 1,
         itemName: petClan.name,
         officeName: user.clan?.farm.name,
       });
