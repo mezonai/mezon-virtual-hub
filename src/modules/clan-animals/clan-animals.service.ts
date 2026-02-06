@@ -327,7 +327,7 @@ export class ClanAnimalsService {
     const pets = await this.clanAnimalRepository.find({
       where: { ...query },
       relations: ['pet_clan'],
-      order: { created_at: 'ASC' },
+      order: { slot_index: 'ASC' },
     });
 
     const clan = await this.clanRepo.findOne({

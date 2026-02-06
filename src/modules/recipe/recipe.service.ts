@@ -13,7 +13,7 @@ import {
   RecipeQueryDto,
   UpdateRecipeDto,
 } from './dto/recipe.dto';
-import { InventoryType, RecipeType } from '@enum';
+import { InventoryType, PetClanType, RecipeType } from '@enum';
 import { TOOL_RATE_MAP } from '@constant/farm.constant';
 import { ClanWarehouseEntity } from '@modules/clan-warehouse/entity/clan-warehouse.entity';
 import { ClanFundEntity } from '@modules/clan-fund/entity/clan-fund.entity';
@@ -66,7 +66,7 @@ export class RecipeService extends BaseService<RecipeEntity> {
   }
 
   async getAllRecipes(user: UserEntity, query: RecipeQueryDto) {
-    const recipes = await this.recipeRepo
+    const qb = this.recipeRepo
       .createQueryBuilder('recipe')
       .leftJoinAndSelect('recipe.item', 'item')
       .leftJoinAndSelect('recipe.pet', 'pet')
@@ -77,8 +77,23 @@ export class RecipeService extends BaseService<RecipeEntity> {
       .leftJoinAndSelect('recipe.ingredients', 'ingredients')
       .leftJoinAndSelect('ingredients.item', 'ingredient_items')
       .leftJoinAndSelect('ingredients.plant', 'ingredient_plants')
-      .where('recipe.type = :type', { type: query.type })
-      .orderBy(`
+      .where('recipe.type = :type', { type: query.type });
+
+    if (query.type === RecipeType.PET_CLAN) {
+      qb.orderBy(`
+        CASE pet_clan.type
+          WHEN '${PetClanType.DOG}' THEN 1
+          WHEN '${PetClanType.CAT}' THEN 2
+          WHEN '${PetClanType.BIRD}' THEN 3
+          ELSE 99
+        END
+      `,
+        'ASC',
+      )
+        .addOrderBy('pet_clan.base_rate_affect', 'ASC');
+    } 
+    if (query.type === RecipeType.FARM_TOOL) {
+      qb.orderBy(`
         CASE
           WHEN item.item_code LIKE 'harvest_tool_%' THEN 1
           WHEN item.item_code LIKE 'growth_plant_tool_%' THEN 2
@@ -88,9 +103,10 @@ export class RecipeService extends BaseService<RecipeEntity> {
       `,
         'ASC',
       )
-      .addOrderBy('item.gold', 'ASC')
-      .addOrderBy('pet_clan.created_at', 'ASC')
-      .getMany();
+        .addOrderBy('item.gold', 'ASC');
+    }
+
+    const recipes = await qb.getMany();
 
     if (!user.clan_id) {
       throw new BadRequestException('User is not in a clan');
@@ -114,7 +130,7 @@ export class RecipeService extends BaseService<RecipeEntity> {
           where: { id: user.clan_id },
         });
         recipe['current_slot_quantity'] = clan?.max_slot_pet_active ?? 0;
-        
+
         for (const ingredient of recipe.ingredients || []) {
           ingredient['total_required_quantity'] = ingredient.required_quantity * (clan?.max_slot_pet_active || 1);
         }
