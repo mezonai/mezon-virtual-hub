@@ -366,7 +366,7 @@ export class ClanAnimalsService {
   getExpRequiredForNextLevel(level: number, petClan: PetClanEntity) {
     if (level >= petClan.max_level) return Infinity;
 
-    return Math.floor(
+    return level = 1 ? petClan.base_exp_increment_per_level : Math.floor(
       petClan.base_exp_per_level +
       Math.pow(petClan.base_exp_increment_per_level, level - 1),
     );
