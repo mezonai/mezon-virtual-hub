@@ -36,7 +36,7 @@ export class CreatePetClanDto {
   @IsNumber()
   base_exp_per_level: number;
 
-  @ApiProperty({ default: 5 })
+  @ApiProperty({ default: 1.5 })
   @IsNumber()
   base_exp_increment_per_level: number;
 
@@ -44,7 +44,7 @@ export class CreatePetClanDto {
   @IsNumber()
   max_level: number;
 
-  @ApiProperty({ default: 0.2 })
+  @ApiProperty({ default: 0.5 })
   @IsNumber()
   level_up_rate_multiplier: number;
 }
