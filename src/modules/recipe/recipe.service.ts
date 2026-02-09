@@ -202,6 +202,10 @@ export class RecipeService extends BaseService<RecipeEntity> {
           ingredient['current_quantity'] = clanfund ? clanfund.amount : 0;
         }
       }
+
+      if (recipe.ingredients?.length) {
+        recipe.ingredients.sort((a, b) => a.part - b.part);
+      }
     }
 
     return recipes;
