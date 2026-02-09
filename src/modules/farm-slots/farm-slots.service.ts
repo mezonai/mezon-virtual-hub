@@ -609,7 +609,7 @@ export class FarmSlotService {
       ? farmConfig.HARVEST.FORMULA.OTHER_CLAN
       : farmConfig.HARVEST.FORMULA.MY_CLAN;
     const careBonus = Math.round((multiplierRatio - 1) * 100);
-    const finalScore = Math.floor(baseScore * multiplierRatio * clanMultiplier);
+    const finalScore = Math.ceil(baseScore * multiplierRatio * clanMultiplier);
     const bonusPercent = Math.round(
       ((finalScore - baseScore) / baseScore) * 100,
     );
@@ -617,8 +617,8 @@ export class FarmSlotService {
     const goldBonusMultiplier = 1 + catRateBonus / 100;
     const scoreBonusMultiplier = 1 + birdRateBonus / 100;
 
-    const finalGold = Math.floor(finalScore * goldBonusMultiplier);
-    const finalPlayerScore = Math.floor(finalScore * scoreBonusMultiplier);
+    const finalGold = Math.ceil(finalScore * goldBonusMultiplier);
+    const finalPlayerScore = Math.ceil(finalScore * scoreBonusMultiplier);
 
     await this.clanFundService.addToFund(user.clan.id, user, {
       type: ClanFundType.GOLD,
@@ -682,11 +682,14 @@ export class FarmSlotService {
       baseScore: baseScore,
       careBonus,
       clanMultiplier,
+      finalScore: finalScore,
       finalPlayerScore: finalPlayerScore,
       finalGold: finalGold,
       bonusPercent: bonusPercent,
-      catBonusRate: catRateBonus,
-      birdBonusRate: birdRateBonus,
+      catRateBonus: catRateBonus,
+      catGoldBonus: Math.ceil(finalScore * catRateBonus / 100),
+      birdRateBonus: birdRateBonus,
+      birdScoreBonus: Math.ceil(finalScore * birdRateBonus / 100),
       max: farmConfig.HARVEST.ENABLE_LIMIT
         ? farmConfig.HARVEST.MAX_HARVEST
         : farmConfig.HARVEST.UNLIMITED,

@@ -114,6 +114,7 @@ export class ClanAnimalsService {
         clanId: user.clan_id,
         userId: user.id,
         actionType: ClanActivityActionType.PURCHASE,
+        quantity: 1,
         itemName: petClan.name,
         officeName: user.clan?.farm.name,
       });
@@ -366,8 +367,8 @@ export class ClanAnimalsService {
   getExpRequiredForNextLevel(level: number, petClan: PetClanEntity) {
     if (level >= petClan.max_level) return Infinity;
 
-    return Math.floor(
-      petClan.base_exp_per_level +
+    return level = Math.floor(
+      petClan.base_exp_per_level *
       Math.pow(petClan.base_exp_increment_per_level, level - 1),
     );
   }
