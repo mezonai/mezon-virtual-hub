@@ -995,7 +995,7 @@ export class FarmRoom extends BaseGameRoom {
         catRateBonus: result.catRateBonus,
         catGoldBonus: result.catGoldBonus,
         birdRateBonus: result.birdRateBonus,
-        birdGoldBonus: result.birdScoreBonus,
+        birdScoreBonus: result.birdScoreBonus,
         remainingHarvest: result.remaining,
         maxHarvest: result.max,
       });
