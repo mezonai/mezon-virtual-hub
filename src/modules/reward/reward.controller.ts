@@ -7,16 +7,19 @@ import {
   ParseUUIDPipe,
   Post,
   Put,
+  Query,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiOperation,
   ApiParam,
+  ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
 import { ClsService } from 'nestjs-cls';
 import { RewardService } from './reward.service';
 import { CreateRewardDto } from './dto/reward.dto';
+import { RewardType } from '@enum';
 
 @ApiTags('Reward')
 @Controller('rewards')
@@ -32,8 +35,13 @@ export class RewardController {
   @ApiOperation({
     summary: 'Get list all rewards',
   })
-  async getAllRewards() {
-    return await this.rewardService.getAll();
+  @ApiQuery({
+    name: 'type',
+    enum: RewardType,
+    required: false,
+  })
+  async getAllRewards(@Query('type') type: RewardType) {
+    return await this.rewardService.getAll(type);
   }
 
   @Post()

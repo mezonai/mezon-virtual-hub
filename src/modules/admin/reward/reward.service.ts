@@ -9,7 +9,7 @@ import { BaseService } from '@libs/base/base.service';
 import { RewardEntity } from '@modules/reward/entity/reward.entity';
 import { ClanService } from '@modules/clan/clan.service';
 import { UserService } from '@modules/user/user.service';
-import { ClanActivityActionType, ClanFundType, RewardType } from '@enum';
+import { ClanActivityActionType, ClanFundType, RewardItemType, RewardType } from '@enum';
 import { ClanFundService } from '@modules/clan-fund/clan-fund.service';
 import { CLanWarehouseService } from '@modules/clan-warehouse/clan-warehouse.service';
 import { ClanActivityService } from '@modules/clan-activity/clan-activity.service';
@@ -117,7 +117,7 @@ export class RewardManagementService extends BaseService<RewardEntity> {
   }
 
   async rewardWeeklyTopClans() {
-    const topClans = await this.clanService.getAllClansWithMemberCount({ page: 1, limit: 3, isWeekly: true });
+    const topClans = await this.clanService.getAllClansWithMemberCount({ page: 1, limit: 10, isWeekly: true });
 
     const rewardMap = {
       1: { rewardType: RewardType.WEEKLY_RANKING_CLAN_1, activityType: ClanActivityActionType.WEEKLY_RANKING_CLAN_1 },
@@ -128,22 +128,37 @@ export class RewardManagementService extends BaseService<RewardEntity> {
     const rewardedClans: ClanEntity[] = [];
 
     for (const clan of topClans.result.filter(clan => clan.weekly_score > 0)) {
-      const rewardType = rewardMap[clan.rank].rewardType;
-      const activityType = rewardMap[clan.rank].activityType;
+
+      let rewardType: RewardType | undefined;
+      let activityType: ClanActivityActionType | undefined;
+
+      if (clan.rank >= 1 && clan.rank <= 3) {
+        rewardType = rewardMap[clan.rank].rewardType;
+        activityType = rewardMap[clan.rank].activityType;
+      } else if (clan.rank >= 4 && clan.rank <= 10) {
+        rewardType = RewardType.WEEKLY_RANKING_CLAN_TOP_10;
+        activityType = ClanActivityActionType.WEEKLY_RANKING_CLAN_TOP_10;
+      }
+
       if (!rewardType || !activityType) continue;
 
       const reward = await this.getRewardByType(rewardType);
       if (!reward) continue;
 
       for (const item of reward.items) {
-        if (item.type === 'gold' || item.type === 'diamond') {
+        if (item.type === RewardItemType.GOLD || item.type === RewardItemType.DIAMOND) {
           await this.clanFundService.rewardClanFund(clan.id, {
-            type: item.type === 'gold' ? ClanFundType.GOLD : ClanFundType.DIAMOND,
+            type: item.type === RewardItemType.GOLD ? ClanFundType.GOLD : ClanFundType.DIAMOND,
             amount: item.quantity,
           });
         }
-        if (item.type === 'plant' && item.plant) {
+
+        if (item.type === RewardItemType.PLANT && item.plant) {
           await this.clanWarehouseService.rewardSeedToClans(clan.id, item.plant.id, item.quantity);
+        }
+
+        if (item.type === RewardItemType.ITEM && item.item) {
+          await this.clanWarehouseService.addItemToClanWarehouse(clan.id, item.item.id, item.quantity);
         }
       }
 

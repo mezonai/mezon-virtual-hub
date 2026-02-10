@@ -303,6 +303,7 @@ export enum RewardType {
   WEEKLY_RANKING_CLAN_1 = 'weekly_ranking_clan_1',
   WEEKLY_RANKING_CLAN_2 = 'weekly_ranking_clan_2',
   WEEKLY_RANKING_CLAN_3 = 'weekly_ranking_clan_3',
+  WEEKLY_RANKING_CLAN_TOP_10 = 'weekly_ranking_clan_top_10',
 
   EVENT_REWARD = 'event_reward',
 }
@@ -363,4 +364,5 @@ export enum ClanActivityActionType {
   WEEKLY_RANKING_CLAN_1 = 'weekly_ranking_clan_1',
   WEEKLY_RANKING_CLAN_2 = 'weekly_ranking_clan_2',
   WEEKLY_RANKING_CLAN_3 = 'weekly_ranking_clan_3',
+  WEEKLY_RANKING_CLAN_TOP_10 = 'weekly_ranking_clan_top_10',
 }
