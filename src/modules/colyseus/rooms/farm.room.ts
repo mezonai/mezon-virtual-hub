@@ -667,13 +667,6 @@ export class FarmRoom extends BaseGameRoom {
 
         const slotClanid = await this.farmSlotsService.getClanByFarmSlot(farm_slot_id);
 
-        if (player.clan_id !== slotClanid) {
-          client.send(MessageTypes.ON_DECREASE_GROWTH_TIME_FAILED, {
-            message:
-              'Bạn không thuộc clan sở hữu nông trại này.',
-          });
-        }
-
         const slotBefore = await this.farmSlotsService.getSlotWithPlantById(
           payload.farm_slot_id,
         );
