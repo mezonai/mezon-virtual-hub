@@ -20,9 +20,9 @@ export class RewardService extends BaseService<RewardEntity> {
     super(rewardRepo, RewardEntity.name);
   }
 
-  async getAll(type: RewardType) {
+  async getAll(type?: RewardType) {
     const rewards = await this.rewardRepo.find({
-      where: { type },
+      where: type ? { type } : {},
       relations: ['items', 'items.pet', 'items.food', 'items.item'],
     });
     return rewards;
