@@ -991,8 +991,9 @@ export class BaseGameRoom extends Room<RoomState> {
           default:
             throw new Error('Loại vật phẩm không hợp lệ');
         }
-        client.send(MessageTypes.ON_BUY_CLAN_ITEM_SUCCESS, {
+        this.broadcast(MessageTypes.ON_BUY_CLAN_ITEM_SUCCESS, {
           clanId: user.clan_id,
+          sessionId: client.sessionId,
           item: result.item,
           fund: result.fund,
         });
