@@ -77,7 +77,7 @@ export class ClanAnimalsService {
       for (const ingredient of recipePetClan.ingredients) {
         if (ingredient.gold > 0) {
           if (clanFund.amount < ingredient.gold) {
-            throw new BadRequestException('Insufficient clan fund');
+            throw new BadRequestException('Not enough clan fund');
           }
           clanFund.amount -= ingredient.gold;
           continue;
@@ -94,7 +94,7 @@ export class ClanAnimalsService {
          });
 
         if (!clanWarehouse || clanWarehouse.quantity < ingredient.required_quantity) {
-          throw new BadRequestException('Insufficient items in clan warehouse');
+          throw new BadRequestException('Not enough ingredients in clan warehouse');
         }
 
         clanWarehouse.quantity -= ingredient.required_quantity;

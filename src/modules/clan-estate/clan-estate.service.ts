@@ -104,7 +104,7 @@ export class ClanEstateService extends BaseService<ClanEstateEntity> {
           },
         });
         if (!warehouseItem || warehouseItem.quantity < requiredQuantity) {
-          throw new BadRequestException(`Not enough ${ingredient.item?.name || ingredient.plant?.name} in clan warehouse`);
+          throw new BadRequestException(`Not enough ingredients in clan warehouse`);
         }
         warehouseItem.quantity -= requiredQuantity;
         await this.warehouseRepo.save(warehouseItem);
