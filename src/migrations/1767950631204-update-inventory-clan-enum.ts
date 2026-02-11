@@ -27,7 +27,7 @@ export class UpdateInventoryClanEnum1767950631204 implements MigrationInterface 
                 'interrupt_harvest_tool_4',
                 'interrupt_harvest_tool_5',
                 'lock_plant_tool',
-                'lock_pick_tool',
+                'lock_pick_tool'
             )
         `);
         await queryRunner.query(`
