@@ -4,12 +4,12 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { MoreThan, Repository } from 'typeorm';
 import { ClanAnimalEntity } from './entity/clan-animal.entity';
 import { ClanEntity } from '@modules/clan/entity/clan.entity';
 import { PetClanEntity } from '@modules/pet-clan/entity/pet-clan.entity';
 import { UserEntity } from '@modules/user/entity/user.entity';
-import { GetListClanAnimalsDto, PickupIngredientsDto } from '@modules/clan-animals/dto/clan-animals.dto';
+import { GetListClanAnimalsDto } from '@modules/clan-animals/dto/clan-animals.dto';
 import { RecipeService } from '@modules/recipe/recipe.service';
 import { ClanFundEntity } from '@modules/clan-fund/entity/clan-fund.entity';
 import { ClanActivityService } from '@modules/clan-activity/clan-activity.service';
@@ -83,11 +83,15 @@ export class ClanAnimalsService {
           continue;
         }
 
-        const where: PickupIngredientsDto = { clan_id: user.clan_id };
-        if (ingredient.item_id) where.item_id = ingredient.item_id;
-        if (ingredient.plant_id) where.plant_id = ingredient.plant_id;
-
-        const clanWarehouse = await clanWarehouseRepo.findOne({ where });
+        const clanWarehouse = await clanWarehouseRepo.findOne({ 
+          where: {
+            clan_id: user.clan_id,
+            item_id: ingredient.item_id,
+            plant_id: ingredient.plant_id,
+            is_harvested: ingredient.plant_id ? true : false,
+            quantity: MoreThan(0),
+          }
+         });
 
         if (!clanWarehouse || clanWarehouse.quantity < ingredient.required_quantity) {
           throw new BadRequestException('Insufficient items in clan warehouse');
