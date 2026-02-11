@@ -161,6 +161,7 @@ export class ClanAnimalsService {
             plant_id: ingredient.plant_id,
             item_id: ingredient.item_id,
             is_harvested: ingredient.plant_id ? true : false,
+            quantity: MoreThan(0),
           },
         });
         if (!warehouseItem || warehouseItem.quantity < requiredQuantity) {
