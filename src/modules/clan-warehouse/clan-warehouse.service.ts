@@ -29,6 +29,9 @@ export class CLanWarehouseService {
     @InjectRepository(ClanFundEntity)
     private readonly clanFundRepo: Repository<ClanFundEntity>,
 
+    @InjectRepository(ItemEntity)
+    private readonly itemRepo: Repository<ItemEntity>,
+
     private readonly clanActivityService: ClanActivityService,
 
     private readonly recipeService: RecipeService,
@@ -69,7 +72,7 @@ export class CLanWarehouseService {
           ELSE 99
         END
       `, 'ASC')
-      .addOrderBy('item.gold', 'ASC');
+        .addOrderBy('item.gold', 'ASC');
     }
 
     const items = await qb.getMany();
@@ -143,7 +146,7 @@ export class CLanWarehouseService {
       }
       warehouseItem.quantity -= requiredQuantity;
       await this.warehouseRepo.save(warehouseItem);
-    }   
+    }
 
     const pricePerUnit = plant
       ? plant.buy_price
@@ -199,6 +202,43 @@ export class CLanWarehouseService {
       item: savedItem,
       fund: fundRecord.amount,
     };
+  }
+
+  async addItemToClanWarehouse(
+    clanId: string,
+    itemId: string,
+    quantity: number,
+  ) {
+    const item = await this.itemRepo.findOne({ where: { id: itemId } });
+    if (!item) throw new NotFoundException('Item not found');
+
+    let warehouseItem = await this.warehouseRepo.findOne({
+      where: {
+        clan_id: clanId,
+        item_id: itemId,
+      },
+    });
+
+    if (warehouseItem) {
+      warehouseItem.quantity += quantity;
+    }
+    else {
+      warehouseItem = this.warehouseRepo.create({
+        clan_id: clanId,
+        item_id: itemId,
+        type: ITEM_CODE_TO_INVENTORY_TYPE[item.item_code!],
+        quantity,
+        is_harvested: false,
+      });
+    }
+
+    await this.warehouseRepo.save(warehouseItem);
+
+    return {
+      success: true,
+      clanId: clanId,
+      item: warehouseItem,
+    }
   }
 
   async updateClanWarehousePlant(

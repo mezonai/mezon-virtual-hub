@@ -13,7 +13,7 @@ import {
   RecipeQueryDto,
   UpdateRecipeDto,
 } from './dto/recipe.dto';
-import { InventoryType, RecipeType } from '@enum';
+import { InventoryType, PetClanType, RecipeType } from '@enum';
 import { TOOL_RATE_MAP } from '@constant/farm.constant';
 import { ClanWarehouseEntity } from '@modules/clan-warehouse/entity/clan-warehouse.entity';
 import { ClanFundEntity } from '@modules/clan-fund/entity/clan-fund.entity';
@@ -25,6 +25,10 @@ import { PlantEntity } from '@modules/plant/entity/plant.entity';
 import { PetClanEntity } from '@modules/pet-clan/entity/pet-clan.entity';
 import { MapEntity } from '@modules/map/entity/map.entity';
 import { DecorItemEntity } from '@modules/decor-item/entity/decor-item.entity';
+import { ClanAnimalEntity } from '@modules/clan-animals/entity/clan-animal.entity';
+import { ClanEntity } from '@modules/clan/entity/clan.entity';
+import { ClanEstateEntity } from '@modules/clan-estate/entity/clan-estate.entity';
+import { ClanDecorInventoryEntity } from '@modules/clan-decor-invetory/entity/clan-decor-inventory.entity';
 
 @Injectable()
 export class RecipeService extends BaseService<RecipeEntity> {
@@ -49,12 +53,20 @@ export class RecipeService extends BaseService<RecipeEntity> {
     private readonly mapRepository: Repository<MapEntity>,
     @InjectRepository(DecorItemEntity)
     private readonly decorItemRepository: Repository<DecorItemEntity>,
+    @InjectRepository(ClanAnimalEntity)
+    private readonly clanAnimalRepository: Repository<ClanAnimalEntity>,
+    @InjectRepository(ClanEntity)
+    private readonly clanRepository: Repository<ClanEntity>,
+    @InjectRepository(ClanEstateEntity)
+    private readonly clanEstateRepo: Repository<ClanEstateEntity>,
+    @InjectRepository(ClanDecorInventoryEntity)
+    private readonly clanInventoryRepo: Repository<ClanDecorInventoryEntity>,
   ) {
     super(recipeRepo, RecipeEntity.name);
   }
 
   async getAllRecipes(user: UserEntity, query: RecipeQueryDto) {
-    const recipes = await this.recipeRepo
+    const qb = this.recipeRepo
       .createQueryBuilder('recipe')
       .leftJoinAndSelect('recipe.item', 'item')
       .leftJoinAndSelect('recipe.pet', 'pet')
@@ -65,8 +77,23 @@ export class RecipeService extends BaseService<RecipeEntity> {
       .leftJoinAndSelect('recipe.ingredients', 'ingredients')
       .leftJoinAndSelect('ingredients.item', 'ingredient_items')
       .leftJoinAndSelect('ingredients.plant', 'ingredient_plants')
-      .where('recipe.type = :type', { type: query.type })
-      .orderBy(`
+      .where('recipe.type = :type', { type: query.type });
+
+    if (query.type === RecipeType.PET_CLAN) {
+      qb.orderBy(`
+        CASE pet_clan.type
+          WHEN '${PetClanType.DOG}' THEN 1
+          WHEN '${PetClanType.CAT}' THEN 2
+          WHEN '${PetClanType.BIRD}' THEN 3
+          ELSE 99
+        END
+      `,
+        'ASC',
+      )
+        .addOrderBy('pet_clan.base_rate_affect', 'ASC');
+    } 
+    if (query.type === RecipeType.FARM_TOOL) {
+      qb.orderBy(`
         CASE
           WHEN item.item_code LIKE 'harvest_tool_%' THEN 1
           WHEN item.item_code LIKE 'growth_plant_tool_%' THEN 2
@@ -76,14 +103,10 @@ export class RecipeService extends BaseService<RecipeEntity> {
       `,
         'ASC',
       )
-      .addOrderBy('item.gold', 'ASC')
-      .getMany();
-
-    if (query.type === RecipeType.FARM_TOOL) {
-      for (const recipe of recipes) {
-        recipe.item!['rate'] = TOOL_RATE_MAP[recipe.item?.item_code!] ?? 0;
-      }
+        .addOrderBy('item.gold', 'ASC');
     }
+
+    const recipes = await qb.getMany();
 
     if (!user.clan_id) {
       throw new BadRequestException('User is not in a clan');
@@ -91,6 +114,54 @@ export class RecipeService extends BaseService<RecipeEntity> {
     const clanfund = await this.clanFundRepo.findOne({ where: { clan_id: user.clan_id } });
 
     for (const recipe of recipes) {
+      if (recipe.type === RecipeType.PET_CLAN) {
+        const clanAnimals = await this.clanAnimalRepository.findOne({
+          where: {
+            clan_id: user.clan_id,
+            pet_clan_id: recipe.pet_clan_id,
+          },
+        });
+        recipe.pet_clan!['current_pet_quantity'] = clanAnimals ? 1 : 0;
+        recipe.pet_clan!['max_pet_quantity'] = 1;
+      }
+
+      if (query.type === RecipeType.PET_CLAN_SLOT) {
+        const clan = await this.clanRepository.findOne({
+          where: { id: user.clan_id },
+        });
+        recipe['current_slot_quantity'] = clan?.max_slot_pet_active ?? 0;
+
+        for (const ingredient of recipe.ingredients || []) {
+          ingredient['total_required_quantity'] = ingredient.required_quantity * (clan?.max_slot_pet_active || 1);
+        }
+      }
+
+      if (query.type === RecipeType.DECOR_ITEM) {
+        const decorInventory = await this.clanInventoryRepo.findOne({
+          where: {
+            clan: { id: user.clan_id },
+            decorItem: { id: recipe.decor_item_id },
+          },
+        });
+        recipe.decor_item!['current_decor_item_quantity'] = decorInventory ? 1 : 0;
+        recipe.decor_item!['max_decor_item_quantity'] = 1;
+      }
+
+      if (query.type === RecipeType.MAP) {
+        const clanEstate = await this.clanEstateRepo.findOne({
+          where: {
+            clan: { id: user.clan_id },
+            realEstate: { id: recipe.map_id },
+          },
+        });
+        recipe.map!['current_map_quantity'] = clanEstate ? 1 : 0;
+        recipe.map!['max_map_quantity'] = 1;
+      }
+
+      if (query.type === RecipeType.FARM_TOOL) {
+        recipe.item!['rate'] = TOOL_RATE_MAP[recipe.item?.item_code!] ?? 0;
+      }
+
       for (const ingredient of recipe.ingredients!) {
         if (ingredient.plant_id) {
           const harvestedPlant = await this.clanWarehouseRepo.findOne({
@@ -105,7 +176,9 @@ export class RecipeService extends BaseService<RecipeEntity> {
         }
 
         if (ingredient.item_id) {
-          const inventoryItem = await this.inventoryRepository.findOne({
+          let inventoryItem: Inventory | ClanWarehouseEntity | null = null;
+
+          inventoryItem = await this.inventoryRepository.findOne({
             where: {
               user: { id: user.id },
               item: { id: ingredient.item_id },
@@ -113,12 +186,25 @@ export class RecipeService extends BaseService<RecipeEntity> {
             },
           });
 
+          if (!inventoryItem) {
+            inventoryItem = await this.clanWarehouseRepo.findOne({
+              where: {
+                clan_id: user.clan_id,
+                item_id: ingredient.item_id,
+              },
+            });
+          }
+
           ingredient['current_quantity'] = inventoryItem?.quantity ?? 0;
         }
 
         if (ingredient.gold > 0) {
           ingredient['current_quantity'] = clanfund ? clanfund.amount : 0;
         }
+      }
+
+      if (recipe.ingredients?.length) {
+        recipe.ingredients.sort((a, b) => a.part - b.part);
       }
     }
 

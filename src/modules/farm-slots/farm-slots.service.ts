@@ -19,7 +19,7 @@ import { FarmEntity } from '@modules/farm/entity/farm.entity';
 import { ClanWarehouseEntity } from '@modules/clan-warehouse/entity/clan-warehouse.entity';
 import { PlantCareUtils } from '@modules/plant/plant-care.service';
 import { CLanWarehouseService } from '@modules/clan-warehouse/clan-warehouse.service';
-import { ClanActivityActionType, ClanFundType, PlantState } from '@enum';
+import { ClanActivityActionType, ClanFundType, PetClanType, PlantState } from '@enum';
 import { CLAN_WAREHOUSE, FARM_CONFIG, TOOL_RATE_MAP } from '@constant/farm.constant';
 import { UserClanStatEntity as UserClanStatEntity } from '@modules/user-clan-stat/entity/user-clan-stat.entity';
 import { UserClanStatService } from '@modules/user-clan-stat/user-clan-stat.service';
@@ -512,6 +512,30 @@ export class FarmSlotService {
     });
     if (!user?.clan) throw new BadRequestException('Người chơi không có clan');
 
+    const slotClanId = await this.getClanByFarmSlot(farmSlotId);
+    if (!slotClanId) throw new BadRequestException('Farm slot không thuộc clan nào');
+
+    let catRateBonus = 0;
+    let birdRateBonus = 0;
+
+    if (user.clan.id === slotClanId) {
+      const activePetClanAnimals = await this.clanAnimalsService.getListClanAnimalsByClanId({
+        clan_id: user.clan.id,
+        is_active: true,
+      });
+
+      for (const pet of activePetClanAnimals) {
+        switch (pet.pet_clan?.type) {
+          case PetClanType.CAT:
+            catRateBonus += pet.total_rate_affect ?? 0;
+            break;
+          case PetClanType.BIRD:
+            birdRateBonus += pet.total_rate_affect ?? 0;
+            break;
+        }
+      }
+    }
+
     const { score } = await this.userClanStatService.getOrCreateUserClanStat(
       userId,
       user.clan.id,
@@ -585,14 +609,20 @@ export class FarmSlotService {
       ? farmConfig.HARVEST.FORMULA.OTHER_CLAN
       : farmConfig.HARVEST.FORMULA.MY_CLAN;
     const careBonus = Math.round((multiplierRatio - 1) * 100);
-    const finalScore = Math.floor(baseScore * multiplierRatio * clanMultiplier);
+    const finalScore = Math.ceil(baseScore * multiplierRatio * clanMultiplier);
     const bonusPercent = Math.round(
       ((finalScore - baseScore) / baseScore) * 100,
     );
 
+    const goldBonusMultiplier = 1 + catRateBonus / 100;
+    const scoreBonusMultiplier = 1 + birdRateBonus / 100;
+
+    const finalGold = Math.ceil(finalScore * goldBonusMultiplier);
+    const finalPlayerScore = Math.ceil(finalScore * scoreBonusMultiplier);
+
     await this.clanFundService.addToFund(user.clan.id, user, {
       type: ClanFundType.GOLD,
-      amount: finalScore,
+      amount: finalGold,
     });
 
     if (isIntruder) {
@@ -602,7 +632,7 @@ export class FarmSlotService {
         actionType: ClanActivityActionType.HARVEST_INTRUDER,
         itemName: slotPlant.plant?.name ?? 'vật phẩm',
         quantity: 1,
-        amount: finalScore,
+        amount: finalGold,
         officeName: user.clan.farm?.name ?? user.clan.name + ' Farm',
       });
 
@@ -612,7 +642,7 @@ export class FarmSlotService {
         actionType: ClanActivityActionType.HARVESTED_OTHER_FARM,
         itemName: slotPlant.plant?.name ?? 'vật phẩm',
         quantity: 1,
-        amount: finalScore,
+        amount: finalGold,
         officeName: slot.farm.name,
       });
     } else {
@@ -622,7 +652,7 @@ export class FarmSlotService {
         actionType: ClanActivityActionType.HARVEST,
         itemName: slotPlant.plant?.name ?? 'vật phẩm',
         quantity: 1,
-        amount: finalScore,
+        amount: finalGold,
         officeName: slot.farm.name ?? user.clan.name + ' Farm',
       });
     }
@@ -630,7 +660,7 @@ export class FarmSlotService {
     await this.userClanStatService.addScore(
       user.id,
       user.clan.id,
-      finalScore,
+      finalPlayerScore,
       farmConfig.HARVEST.ENABLE_LIMIT,
     );
     slot.current_slot_plant_id = null;
@@ -638,10 +668,7 @@ export class FarmSlotService {
     await this.slotPlantRepo.softRemove(slotPlant);
 
     if (slot.farm.clan_id === user.clan.id) {
-      await this.clanAnimalsService.gainExpForActiveClanAnimals(
-        user.clan.id,
-        1,
-      );
+      await this.clanAnimalsService.gainExpForActiveClanAnimals(user.clan.id, slotPlant.plant.harvest_point || 1);
     }
 
     return {
@@ -655,8 +682,14 @@ export class FarmSlotService {
       baseScore: baseScore,
       careBonus,
       clanMultiplier,
-      totalScore: finalScore,
+      finalScore: finalScore,
+      finalPlayerScore: finalPlayerScore,
+      finalGold: finalGold,
       bonusPercent: bonusPercent,
+      catRateBonus: catRateBonus,
+      catGoldBonus: Math.ceil(finalScore * catRateBonus / 100),
+      birdRateBonus: birdRateBonus,
+      birdScoreBonus: Math.ceil(finalScore * birdRateBonus / 100),
       max: farmConfig.HARVEST.ENABLE_LIMIT
         ? farmConfig.HARVEST.MAX_HARVEST
         : farmConfig.HARVEST.UNLIMITED,

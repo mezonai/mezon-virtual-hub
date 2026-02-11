@@ -7,6 +7,7 @@ import { Repository } from 'typeorm';
 import { CreateRewardDto } from './dto/reward.dto';
 import { RewardEntity } from './entity/reward.entity';
 import { BaseService } from '@libs/base/base.service';
+import { RewardType } from '@enum';
 
 @Injectable()
 export class RewardService extends BaseService<RewardEntity> {
@@ -19,8 +20,9 @@ export class RewardService extends BaseService<RewardEntity> {
     super(rewardRepo, RewardEntity.name);
   }
 
-  async getAll() {
+  async getAll(type?: RewardType) {
     const rewards = await this.rewardRepo.find({
+      where: type ? { type } : {},
       relations: ['items', 'items.pet', 'items.food', 'items.item'],
     });
     return rewards;

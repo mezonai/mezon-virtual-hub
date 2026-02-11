@@ -32,7 +32,7 @@ export class ClanWarehouseEntity {
 
   @ApiProperty({ enum: InventoryClanType, description: 'Type of item (PLANT, MATERIAL, TOOL, etc.)' })
   @IsEnum(InventoryClanType)
-  @Column({ type: 'enum', enum: InventoryClanType, default: InventoryClanType.PLANT })
+  @Column({ type: 'varchar', length: 50, nullable: false })
   type: InventoryClanType;
 
   @ApiProperty({ description: 'Quantity of this item in warehouse' })

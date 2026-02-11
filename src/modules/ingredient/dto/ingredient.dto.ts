@@ -63,11 +63,19 @@ export class CreateIngredientDto {
 }
 
 export class UpdateIngredientDto {
+  @ApiProperty({
+    description: 'Part number of the ingredient item',
+    example: 1,
+  })
   @IsOptional()
   @IsInt()
   @Min(1)
   part?: number;
 
+  @ApiPropertyOptional({
+    description: 'Required quantity of the ingredient item',
+    example: 1,
+  })
   @IsOptional()
   @IsInt()
   @Min(1)

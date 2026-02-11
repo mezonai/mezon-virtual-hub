@@ -129,7 +129,13 @@ export class ClanDecorInventoryService extends BaseService<ClanDecorInventoryEnt
       decorItem: recipe.decor_item,
     });
 
-    return await this.clanInventoryRepo.save(inventory);
+    const savedDecorItem = await this.clanInventoryRepo.save(inventory);
+
+    return {
+      clan_id: user.clan_id,
+      item: savedDecorItem,
+      fund: fundRecord.amount,
+    };
   }
 
   async removeDecorItemFromClan(id: string) {

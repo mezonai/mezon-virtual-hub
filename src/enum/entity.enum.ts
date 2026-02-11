@@ -77,6 +77,7 @@ export enum ItemCode {
   VOLTSTRIDER_FRAGMENT_2 = 'voltstrider_fragment_2',
   VOLTSTRIDER_FRAGMENT_3 = 'voltstrider_fragment_3',
   VOLTSTRIDER_FRAGMENT_4 = 'voltstrider_fragment_4',
+  PET_CLAN_SLOT_CARD = 'pet_clan_slot_card',
   // Cosmetic items ....
 }
 
@@ -134,6 +135,8 @@ export enum InventoryClanType {
   
   LOCK_PLANT_TOOL = 'lock_plant_tool',
   LOCK_PICK_TOOL = 'lock_pick_tool',
+
+  PET_CLAN_SLOT_CARD = 'pet_clan_slot_card',
 }
 
 export enum AnimalRarity {
@@ -158,6 +161,20 @@ export enum PetClanType {
   CAT = 'cat',
   BIRD = 'bird',
   DRAGON = 'dragon',
+}
+
+export enum PetCLanCode {
+  //DOG
+  PET_CLAN_DOG_001 = 'pet_clan_dog_001',
+  PET_CLAN_DOG_002 = 'pet_clan_dog_002',
+
+  //CAT
+  PET_CLAN_CAT_001 = 'pet_clan_cat_001',
+  PET_CLAN_CAT_002 = 'pet_clan_cat_002',
+
+  //BIRD
+  PET_CLAN_BIRD_001 = 'pet_clan_bird_001',
+  PET_CLAN_BIRD_002 = 'pet_clan_bird_002',
 }
 
 export enum SkillType {
@@ -286,6 +303,7 @@ export enum RewardType {
   WEEKLY_RANKING_CLAN_1 = 'weekly_ranking_clan_1',
   WEEKLY_RANKING_CLAN_2 = 'weekly_ranking_clan_2',
   WEEKLY_RANKING_CLAN_3 = 'weekly_ranking_clan_3',
+  WEEKLY_RANKING_CLAN_TOP_10 = 'weekly_ranking_clan_top_10',
 
   EVENT_REWARD = 'event_reward',
 }
@@ -346,4 +364,5 @@ export enum ClanActivityActionType {
   WEEKLY_RANKING_CLAN_1 = 'weekly_ranking_clan_1',
   WEEKLY_RANKING_CLAN_2 = 'weekly_ranking_clan_2',
   WEEKLY_RANKING_CLAN_3 = 'weekly_ranking_clan_3',
+  WEEKLY_RANKING_CLAN_TOP_10 = 'weekly_ranking_clan_top_10',
 }

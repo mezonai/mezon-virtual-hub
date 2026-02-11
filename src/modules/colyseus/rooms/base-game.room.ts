@@ -1,7 +1,7 @@
 import { MapSchema, Schema, type } from '@colyseus/schema';
 import { configEnv } from '@config/env.config';
 import { BATTLE_MAX_FEE, BATTLE_MIN_FEE, EXCHANGERATE, RPS_FEE, SYSTEM_ERROR } from '@constant';
-import { ActionKey, ClanRole, InventoryClanType, MapKey, QuestType } from '@enum';
+import { ActionKey, ClanRole, InventoryClanType, MapKey, QuestType, RecipeType } from '@enum';
 import { Logger } from '@libs/logger';
 import { JwtPayload } from '@modules/auth/dtos/response';
 import { GameEventService } from '@modules/game-event/game-event.service';
@@ -17,7 +17,7 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
-import { AuthenticatedClient, FarmSlotState, Player, PlayerBattleInfo, WithdrawMezonPayload } from '@types';
+import { AuthenticatedClient, FarmSlotState, GuardPet, Player, PlayerBattleInfo, WithdrawMezonPayload } from '@types';
 import { Client, matchMaker, Room } from 'colyseus';
 import { IncomingMessage } from 'http';
 import { Repository } from 'typeorm';
@@ -36,6 +36,9 @@ import { PlayerQuestService } from '@modules/player-quest/player-quest.service';
 import { ClanFundService } from '@modules/clan-fund/clan-fund.service';
 import { CLanWarehouseService } from '@modules/clan-warehouse/clan-warehouse.service';
 import { FarmSlotService } from '@modules/farm-slots/farm-slots.service';
+import { ClanDecorInventoryService } from '@modules/clan-decor-invetory/clan-decor-inventory.service';
+import { ClanEstateService } from '@modules/clan-estate/clan-estate.service';
+import { ClanAnimalsService } from '@modules/clan-animals/clan-animals.service';
 
 export class Item extends Schema {
   @type('number') x: number = 0;
@@ -64,6 +67,7 @@ export class RoomState extends Schema {
   @type({ map: Door }) doors = new MapSchema<Door>();
   @type({ map: PlayerBattleInfo }) battlePlayers = new MapSchema<PlayerBattleInfo>();
   @type({ map: FarmSlotState }) farmSlotState = new MapSchema<FarmSlotState>();
+  @type({ map: GuardPet }) guardPets = new MapSchema<GuardPet>();
 }
 
 @Injectable()
@@ -91,6 +95,9 @@ export class BaseGameRoom extends Room<RoomState> {
     @Inject() readonly playerQuestService: PlayerQuestService,
     @Inject() private readonly clanFundService: ClanFundService,
     @Inject() private readonly cLanWarehouseService: CLanWarehouseService,
+    @Inject() private readonly clanDecorInventoryService: ClanDecorInventoryService,
+    @Inject() readonly clanAnimalService: ClanAnimalsService,
+    @Inject() private readonly clanEstateService: ClanEstateService,
   ) {
     super();
     this.logger.log(`GameRoom created : ${this.roomName}`);
@@ -906,7 +913,7 @@ export class BaseGameRoom extends Room<RoomState> {
       });
     });
 
-    this.onMessage(MessageTypes.ON_BUY_CLAN_ITEM, async (client, payload: { recipeId?: string; plantId?: string; quantity: number }) => {
+    this.onMessage(MessageTypes.ON_BUY_CLAN_ITEM, async (client, payload: { recipeId?: string; plantId?: string; quantity: number, type: RecipeType }) => {
       const player = this.state.players.get(client.sessionId);
       const user = player &&
         (await this.userRepository.findOne({
@@ -953,17 +960,40 @@ export class BaseGameRoom extends Room<RoomState> {
       }
 
       try {
-        const result = await this.cLanWarehouseService.buyItemsForClanFarm(
-          user,
-          {
-            recipeId: payload.recipeId,
-            plantId: payload.plantId,
-            quantity: payload.quantity,
-          },
-        );
+        let result;
 
-        client.send(MessageTypes.ON_BUY_CLAN_ITEM_SUCCESS, {
+        switch (payload.type) {
+          case RecipeType.FARM_TOOL:
+          case RecipeType.PLANT:
+            result = await this.cLanWarehouseService.buyItemsForClanFarm(user, {
+              recipeId: payload.recipeId,
+              plantId: payload.plantId,
+              quantity: payload.quantity,
+            });
+            break;
+
+          case RecipeType.PET_CLAN:
+            result = await this.clanAnimalService.buyAnimalForClan(user, payload.recipeId!);
+            break;
+
+          case RecipeType.DECOR_ITEM:
+            result = await this.clanDecorInventoryService.buyDecorItemForClan(user, payload.recipeId!);
+            break;
+
+          case RecipeType.MAP:
+            result = await this.clanEstateService.buyMapForClan(user, payload.recipeId!);
+            break;
+
+          case RecipeType.PET_CLAN_SLOT:
+            result = await this.clanAnimalService.buyPetClanSlot(user, payload.recipeId!);
+            break;
+
+          default:
+            throw new Error('Loại vật phẩm không hợp lệ');
+        }
+        this.broadcast(MessageTypes.ON_BUY_CLAN_ITEM_SUCCESS, {
           clanId: user.clan_id,
+          sessionId: client.sessionId,
           item: result.item,
           fund: result.fund,
         });
@@ -977,8 +1007,7 @@ export class BaseGameRoom extends Room<RoomState> {
           message: err instanceof Error ? err.message : 'Lỗi không xác định',
         });
       }
-    },
-    );
+    });
 
     //combat
     this.onMessage('p2pCombatActionAccept', (sender, data) => {

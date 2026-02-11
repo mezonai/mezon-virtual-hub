@@ -9,7 +9,7 @@ import { ClanAnimalEntity } from './entity/clan-animal.entity';
 import { ClanEntity } from '@modules/clan/entity/clan.entity';
 import { PetClanEntity } from '@modules/pet-clan/entity/pet-clan.entity';
 import { UserEntity } from '@modules/user/entity/user.entity';
-import { GetListClanAnimalsDto } from '@modules/clan-animals/dto/clan-animals.dto';
+import { GetListClanAnimalsDto, PickupIngredientsDto } from '@modules/clan-animals/dto/clan-animals.dto';
 import { RecipeService } from '@modules/recipe/recipe.service';
 import { ClanFundEntity } from '@modules/clan-fund/entity/clan-fund.entity';
 import { ClanActivityService } from '@modules/clan-activity/clan-activity.service';
@@ -74,7 +74,6 @@ export class ClanAnimalsService {
         throw new NotFoundException('Clan fund not found');
       }
 
-      // 👉 Trừ nguyên liệu
       for (const ingredient of recipePetClan.ingredients) {
         if (ingredient.gold > 0) {
           if (clanFund.amount < ingredient.gold) {
@@ -84,7 +83,7 @@ export class ClanAnimalsService {
           continue;
         }
 
-        const where: any = { clan_id: user.clan_id };
+        const where: PickupIngredientsDto = { clan_id: user.clan_id };
         if (ingredient.item_id) where.item_id = ingredient.item_id;
         if (ingredient.plant_id) where.plant_id = ingredient.plant_id;
 
@@ -109,17 +108,22 @@ export class ClanAnimalsService {
         bonus_rate_affect: 0,
       });
 
-      const saved = await clanAnimalRepo.save(clanAnimal);
+      const savedClanAnimal = await clanAnimalRepo.save(clanAnimal);
 
       await this.clanActivityService.logActivity({
         clanId: user.clan_id,
         userId: user.id,
         actionType: ClanActivityActionType.PURCHASE,
+        quantity: 1,
         itemName: petClan.name,
         officeName: user.clan?.farm.name,
       });
 
-      return saved;
+      return {
+        clan_id: user.clan_id,
+        item: savedClanAnimal,
+        fund: clanFund.amount,
+      };
     });
   }
 
@@ -146,7 +150,7 @@ export class ClanAnimalsService {
 
     for (const ingredient of recipe?.ingredients || []) {
       if (ingredient.item || ingredient.plant) {
-        const requiredQuantity = ingredient.required_quantity;
+        const requiredQuantity = ingredient.required_quantity * clan.max_slot_pet_active;
         const warehouseItem = await this.warehouseRepo.findOne({
           where: {
             clan_id: user.clan_id,
@@ -156,7 +160,7 @@ export class ClanAnimalsService {
           },
         });
         if (!warehouseItem || warehouseItem.quantity < requiredQuantity) {
-          throw new BadRequestException(`Not enough ${ingredient.item?.name || ingredient.plant?.name} in clan warehouse`);
+          throw new BadRequestException(`Not enough ingredients in clan warehouse`);
         }
         warehouseItem.quantity -= requiredQuantity;
         await this.warehouseRepo.save(warehouseItem);
@@ -173,27 +177,33 @@ export class ClanAnimalsService {
     }
 
     clan.max_slot_pet_active += 1;
-    return await this.clanRepo.save(clan);
+    const savedClan = await this.clanRepo.save(clan);
+
+    return {
+      clan_id: user.clan_id,
+      item: savedClan,
+      fund: fundRecord.amount,
+    };
   }
 
-  async activateClanAnimal(user: UserEntity, clanAnimalId: string) {
+  async activateClanAnimal(clan_id: string, clanAnimalId: string) {
     return this.clanAnimalRepository.manager.transaction(async (manager) => {
       const clanAnimalRepo = manager.getRepository(ClanAnimalEntity);
       const clanRepo = manager.getRepository(ClanEntity);
 
-      if (!user.clan_id) {
+      if (!clan_id) {
         throw new BadRequestException('User does not belong to any clan');
       }
 
       const clan = await clanRepo.findOne({
-        where: { id: user.clan_id },
+        where: { id: clan_id },
       });
       if (!clan) {
         throw new NotFoundException('Clan not found');
       }
 
       const clanAnimal = await clanAnimalRepo.findOne({
-        where: { id: clanAnimalId, clan_id: user.clan_id },
+        where: { id: clanAnimalId, clan_id: clan_id },
         relations: ['pet_clan'],
       });
       if (!clanAnimal) {
@@ -202,23 +212,8 @@ export class ClanAnimalsService {
 
       if (clanAnimal.is_active) return clanAnimal;
 
-      const existedSameType = await clanAnimalRepo.findOne({
-        where: {
-          clan_id: user.clan_id,
-          is_active: true,
-          pet_clan: { type: clanAnimal.pet_clan.type },
-        },
-        relations: ['pet_clan'],
-      });
-
-      if (existedSameType) {
-        throw new BadRequestException(
-          `Clan đã có pet loại ${clanAnimal.pet_clan.type} đang hoạt động`,
-        );
-      }
-
       const activePets = await clanAnimalRepo.find({
-        where: { clan_id: user.clan_id, is_active: true },
+        where: { clan_id: clan_id, is_active: true },
         select: ['slot_index'],
       });
 
@@ -247,15 +242,15 @@ export class ClanAnimalsService {
     });
   }
 
-  async deactivateClanAnimal(user: UserEntity, clanAnimalId: string) {
-    if (!user.clan_id) {
+  async deactivateClanAnimal(clan_id: string, clanAnimalId: string) {
+    if (!clan_id) {
       throw new BadRequestException('User does not belong to any clan');
     }
 
     const clanAnimal = await this.clanAnimalRepository.findOne({
       where: {
         id: clanAnimalId,
-        clan_id: user.clan_id,
+        clan_id: clan_id,
       },
     });
 
@@ -295,7 +290,7 @@ export class ClanAnimalsService {
     }
   }
 
-  async gainExpForActiveClanAnimals(clanId: string, expGain = 1) {
+  async gainExpForActiveClanAnimals(clanId: string, expGain: number) {
     const activeAnimals = await this.clanAnimalRepository.find({
       where: {
         clan_id: clanId,
@@ -316,33 +311,33 @@ export class ClanAnimalsService {
         petClan,
       );
 
-      if (animal.exp < requiredExp) {
-        await this.clanAnimalRepository.save(animal);
-        continue;
+      if (animal.exp >= requiredExp) {
+        animal.exp -= requiredExp;
+        animal.level += 1;
+
+        animal.bonus_rate_affect +=
+          petClan.base_rate_affect *
+          petClan.level_up_rate_multiplier;
       }
-
-      animal.level += 1;
-
-      animal.exp = 0;
-
-      animal.bonus_rate_affect +=
-        petClan.base_rate_affect *
-        petClan.level_up_rate_multiplier;
 
       await this.clanAnimalRepository.save(animal);
     }
   }
 
-
   async getListClanAnimalsByClanId(query: GetListClanAnimalsDto) {
     const pets = await this.clanAnimalRepository.find({
       where: { ...query },
       relations: ['pet_clan'],
-      order: { created_at: 'ASC' },
+      order: { slot_index: 'ASC' },
+    });
+
+    const clan = await this.clanRepo.findOne({
+      where: { id: query.clan_id },
     });
 
     return pets.map(pet => ({
       ...pet,
+      max_slot_pet_active: clan?.max_slot_pet_active,
       required_exp: this.getExpRequiredForNextLevel(pet.level, pet.pet_clan),
       total_rate_affect:
         (pet.pet_clan?.base_rate_affect ?? 0) +
@@ -372,9 +367,9 @@ export class ClanAnimalsService {
   getExpRequiredForNextLevel(level: number, petClan: PetClanEntity) {
     if (level >= petClan.max_level) return Infinity;
 
-    return (
-      petClan.base_exp_per_level +
-      (level - 1) * petClan.base_exp_increment_per_level
+    return level = Math.floor(
+      petClan.base_exp_per_level *
+      Math.pow(petClan.base_exp_increment_per_level, level - 1),
     );
   }
 }

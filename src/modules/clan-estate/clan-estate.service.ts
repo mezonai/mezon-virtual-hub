@@ -23,8 +23,6 @@ export class ClanEstateService extends BaseService<ClanEstateEntity> {
     private readonly clanEstateRepo: Repository<ClanEstateEntity>,
     @InjectRepository(ClanEntity)
     private readonly clanRepo: Repository<ClanEntity>,
-    @InjectRepository(MapEntity)
-    private readonly mapRepo: Repository<MapEntity>,
     @InjectRepository(RecipeEntity)
     private readonly recipeRepo: Repository<RecipeEntity>,
     @InjectRepository(ClanWarehouseEntity)
@@ -127,7 +125,13 @@ export class ClanEstateService extends BaseService<ClanEstateEntity> {
       realEstate: recipe.map,
     });
 
-    return this.clanEstateRepo.save(clanEstate);
+    const savedMap = await this.clanEstateRepo.save(clanEstate);
+
+    return {
+      clan_id: user.clan_id,
+      item: savedMap,
+      fund: fundRecord.amount,
+    };
   }
 
   async deleteClanEstateById(id: string) {

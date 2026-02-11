@@ -8,6 +8,7 @@ import { CLanWarehouseService } from './clan-warehouse.service';
 import { ClanWarehouseController } from './clan-warehouse.controller';
 import { ClanActivityModule } from '@modules/clan-activity/clan-activity.module';
 import { RecipeModule } from '@modules/recipe/recipe.module';
+import { ItemEntity } from '@modules/item/entity/item.entity';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { RecipeModule } from '@modules/recipe/recipe.module';
       ClanWarehouseEntity,
       PlantEntity,
       ClanFundEntity,
+      ItemEntity,
     ]),
     ClsModule,
     ClanActivityModule,

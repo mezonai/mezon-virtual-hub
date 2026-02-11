@@ -1,17 +1,9 @@
 import { Inject, Injectable } from '@nestjs/common';
-import {
-  AuthenticatedClient,
-  FarmSlotState,
-  PlantDataSchema,
-  Player,
-} from '@types';
+import { AuthenticatedClient, FarmSlotState, GuardPet, PlantDataSchema, Player } from '@types';
 import { BaseGameRoom } from './base-game.room';
 import { FarmSlotService } from '@modules/farm-slots/farm-slots.service';
 import { PlantCareUtils } from '@modules/plant/plant-care.service';
-import {
-  PlantOnSlotDto,
-  SlotWithStatusDto,
-} from '@modules/farm-slots/dto/farm-slot.dto';
+import { PlantOnSlotDto, SlotWithStatusDto } from '@modules/farm-slots/dto/farm-slot.dto';
 import { UserEntity } from '@modules/user/entity/user.entity';
 import { Repository } from 'typeorm';
 import { UserService } from '@modules/user/user.service';
@@ -28,6 +20,8 @@ import { FARM_CONFIG } from '@constant/farm.constant';
 import { GameConfigStore } from '@modules/admin/game-config/game-config.store';
 import { GAME_CONFIG_KEYS } from '@constant/game-config.keys';
 import { ClanAnimalsService } from '@modules/clan-animals/clan-animals.service';
+import { ClanDecorInventoryService } from '@modules/clan-decor-invetory/clan-decor-inventory.service';
+import { ClanEstateService } from '@modules/clan-estate/clan-estate.service';
 
 @Injectable()
 export class FarmRoom extends BaseGameRoom {
@@ -35,6 +29,8 @@ export class FarmRoom extends BaseGameRoom {
   private interruptLocks = new Map<string, boolean>(); // khóa theo farm_slot_id
   private slotLocks = new Map<string, boolean>();
   private plantTimers = new Map<string, NodeJS.Timeout[]>();
+  private guardPetLocks = new Map<string, boolean>(); // khóa theo pet_clan_id
+
 
   private playerCount = 0;
   constructor(
@@ -47,6 +43,9 @@ export class FarmRoom extends BaseGameRoom {
     playerQuestService: PlayerQuestService,
     clanFundService: ClanFundService,
     cLanWarehouseService: CLanWarehouseService,
+    clanDecorInventoryService: ClanDecorInventoryService,
+    clanAnimalService: ClanAnimalsService,
+    clanEstateService: ClanEstateService,
     @Inject() private readonly farmSlotsService: FarmSlotService,
     private readonly configStore: GameConfigStore,
     @Inject() private readonly clanAnimalsService: ClanAnimalsService,
@@ -61,6 +60,9 @@ export class FarmRoom extends BaseGameRoom {
       playerQuestService,
       clanFundService,
       cLanWarehouseService,
+      clanDecorInventoryService,
+      clanAnimalService,
+      clanEstateService,
     );
   }
 
@@ -77,6 +79,23 @@ export class FarmRoom extends BaseGameRoom {
     const farm = await this.farmSlotsService.getFarmWithSlotsByClan(
       this.roomName.split('-farm')[0],
     );
+
+    const pets = await this.clanAnimalsService.getListClanAnimalsByClanId({
+      clan_id: this.roomName.split('-farm')[0],
+      is_active: true,
+    });
+
+    pets.forEach((pet) => {
+      const guardPet = new GuardPet();
+      guardPet.id = pet.id;
+      guardPet.name = pet.pet_clan.name;
+      guardPet.petClanId = pet.pet_clan_id;
+      guardPet.petCLanCode = pet.pet_clan.pet_clan_code;
+      guardPet.slotIndex = Number(pet.slot_index ?? 0);
+      guardPet.isActive = true;
+      this.state.guardPets.set(guardPet.id, guardPet);
+    });
+
     farm.slots.forEach((slot) => {
       const slotState = new FarmSlotState();
       slotState.id = slot.id;
@@ -376,11 +395,10 @@ export class FarmRoom extends BaseGameRoom {
 
           if (totalDogRate > 0) {
             const roll = Math.random() * 100;
-
             if (roll < totalDogRate) {
-              client.send(MessageTypes.ON_HARVEST_DENIED, {
+              client.send(MessageTypes.ON_DOG_BITE, {
                 sessionId: client.sessionId,
-                message: 'Bạn bị chó canh nông trại phát hiện! Thu hoạch thất bại 🐕',
+                message: 'Bạn bị chó canh nông trại phát hiện! Thu hoạch thất bại',
               });
               return;
             }
@@ -649,13 +667,6 @@ export class FarmRoom extends BaseGameRoom {
 
         const slotClanid = await this.farmSlotsService.getClanByFarmSlot(farm_slot_id);
 
-        if (player.clan_id !== slotClanid) {
-          client.send(MessageTypes.ON_DECREASE_GROWTH_TIME_FAILED, {
-            message:
-              'Bạn không thuộc clan sở hữu nông trại này.',
-          });
-        }
-
         const slotBefore = await this.farmSlotsService.getSlotWithPlantById(
           payload.farm_slot_id,
         );
@@ -714,6 +725,74 @@ export class FarmRoom extends BaseGameRoom {
       } finally {
         this.slotLocks.delete(farm_slot_id);
       }
+    });
+
+    this.onMessage('activateGuardPet', async (client, payload) => {
+      if (!client.sessionId) return;
+      const lockKey = payload.id; // pet_id
+
+      if (this.guardPetLocks.get(lockKey)) {
+        client.send(MessageTypes.ON_ACTIVATE_PET_FAILED, {
+          message: 'Pet đang được người khác thao tác, vui lòng thử lại!',
+        });
+        return;
+      }
+
+      this.guardPetLocks.set(lockKey, true);
+      try {
+        const pet = await this.clanAnimalsService.activateClanAnimal(
+          payload.clan_id,
+          payload.id,
+        );
+        let guardPet = this.state.guardPets.get(pet.id);
+        guardPet = new GuardPet();
+        guardPet.id = pet.id;
+        guardPet.petClanId = pet.pet_clan_id;
+        guardPet.name = pet.pet_clan.name;
+        guardPet.petCLanCode = pet.pet_clan.pet_clan_code;
+        guardPet.slotIndex = pet.slot_index!;
+        guardPet.isActive = true;
+        this.state.guardPets.set(guardPet.id, guardPet);
+      } catch (err: any) {
+        client.send(MessageTypes.ON_ACTIVATE_PET_FAILED, {
+          message: `Không thể đưa pet ra nông trại có thể đã đạt tối đa pet ở nông trại!!`,
+        });
+      } finally {
+        this.guardPetLocks.delete(lockKey);
+      }
+    });
+
+    this.onMessage('deactivateGuardPet', async (client, payload) => {
+      if (!client.sessionId) return;
+      const lockKey = payload.id;
+      if (this.guardPetLocks.get(lockKey)) {
+        client.send(MessageTypes.ON_DEACTIVATE_PET_FAILED, {
+          message: 'Pet đang được người khác thao tác!',
+        });
+        return;
+      }
+
+      this.guardPetLocks.set(lockKey, true);
+        try {
+          const pet = await this.clanAnimalsService.deactivateClanAnimal(
+            payload.clan_id,
+            payload.id,
+          );
+          let guardPet = this.state.guardPets.get(pet.id);
+          if (guardPet) {
+            guardPet = new GuardPet();
+            guardPet.id = pet.id;
+            guardPet.petClanId = pet.pet_clan_id;
+            guardPet.isActive = false;
+            this.state.guardPets.set(guardPet.id, guardPet);
+          }
+        } catch (err: any) {
+            client.send(MessageTypes.ON_DEACTIVATE_PET_FAILED, {
+              message: `Không thể đưa pet về chuồng!!`,
+            });
+        }finally {
+          this.guardPetLocks.delete(lockKey);
+        }
     });
   }
 
@@ -865,8 +944,14 @@ export class FarmRoom extends BaseGameRoom {
       }
     }
 
+    if (this.playerCount <= 0) {
+      this.clearAllGuardPets();
+    }
     this.state.players.delete(sessionId);
-    this.logger.log(`Player ${sessionId} left FarmRoom`);
+  }
+
+  private clearAllGuardPets() {
+    this.state.guardPets.clear();
   }
 
   override onDispose() {
@@ -896,8 +981,14 @@ export class FarmRoom extends BaseGameRoom {
         baseScore: result.baseScore,
         careBonus: result.careBonus,
         clanMultiplier: result.clanMultiplier,
-        totalScore: result.totalScore,
+        finalScore: result.finalScore,
+        finalPlayerScore: result.finalPlayerScore,
+        finalGold: result.finalGold,
         bonusPercent: result.bonusPercent,
+        catRateBonus: result.catRateBonus,
+        catGoldBonus: result.catGoldBonus,
+        birdRateBonus: result.birdRateBonus,
+        birdScoreBonus: result.birdScoreBonus,
         remainingHarvest: result.remaining,
         maxHarvest: result.max,
       });

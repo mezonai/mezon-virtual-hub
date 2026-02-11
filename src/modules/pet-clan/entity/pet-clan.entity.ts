@@ -7,7 +7,7 @@ import {
   Entity,
   OneToMany,
 } from 'typeorm';
-import { PetClanType } from '@enum';
+import { PetCLanCode, PetClanType } from '@enum';
 import { ClanAnimalEntity } from '@modules/clan-animals/entity/clan-animal.entity';
 
 @Entity({ name: 'pet_clan' })
@@ -27,17 +27,26 @@ export class PetClanEntity extends AuditEntity {
   @IsEnum(PetClanType)
   type: PetClanType = PetClanType.DOG;
 
-  @Column({ type: 'float', default: 10.0 })
+  @Column({
+    name: 'pet_clan_code',
+    type: 'varchar',
+    length: 100,
+    nullable: true,
+    unique: true,
+  })
+  pet_clan_code: PetCLanCode;
+
+  @Column({ type: 'int', default: 10 })
   @ApiProperty()
   @IsNumber()
   base_rate_affect: number;
 
-  @Column({ type: 'int', default: 100 })
+  @Column({ type: 'int', default: 1000 })
   @ApiProperty()
   @IsNumber()
   base_exp_per_level: number;
 
-  @Column({ type: 'int', default: 50 })
+  @Column({ type: 'float', default: 1.5 })
   @ApiProperty()
   @IsNumber()
   base_exp_increment_per_level: number;

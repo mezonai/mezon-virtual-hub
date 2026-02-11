@@ -27,6 +27,7 @@ import { JwtPayload } from './dtos/response';
 import { OAuth2Service } from './oauth2.service';
 import { QuestEventEmitter } from '@modules/player-quest/events/quest.events';
 import { QuestType } from '@enum';
+import { Logger } from '@libs/logger';
 
 @Injectable()
 export class AuthService {
@@ -36,6 +37,7 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly oauth2Service: OAuth2Service,
     private readonly playerQuestService: PlayerQuestService,
+    private readonly logger: Logger,
   ) {
     this.userRepository = new GenericRepository(UserEntity, manager);
   }
@@ -196,11 +198,7 @@ export class AuthService {
     const isAdminBypass = adminBypassUsers.includes(username);
 
     if (!isAdminBypass && hashGenerate !== hash) {
-      console.error('[MEZON HASH FAIL]', {
-        username,
-        hashGenerate,
-        hash,
-      });
+       this.logger.log(`[MEZON HASH FAIL] username=${username}`);
       throw new BadRequestException('Invalid login hash');
     }
 
@@ -210,12 +208,7 @@ export class AuthService {
         authDate < now - timeOffset ||
         authDate > now + 5)
     ) {
-      console.error('[MEZON AUTH DATE FAIL]', {
-        username,
-        authDate,
-        now,
-        timeOffset,
-      });
+      this.logger.log(`[MEZON AUTH DATE FAIL] username=${username} authDate=${authDate}`);
       throw new BadRequestException('Login data expired');
     }
 
